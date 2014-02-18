@@ -1,0 +1,5321 @@
+# DP: gdc updates up to 20130611.
+
+--- a/src/gcc/d/ChangeLog
++++ b/src/gcc/d/ChangeLog
+@@ -1,3 +1,75 @@
++2013-06-10  Iain Buclaw  <ibuclaw@gdcproject.org>
++
++	* d-objfile.cc(FuncDeclaration::toObjFile): Set 'this' parameter as
++	implicitly read-only.
++	* d-codegen.cc(declaration_type): Set 'this' declaration type as
++	implicitly const.
++	(build_frame_type): Set frame or closure type as implicitly const.
++
++2013-06-09  Iain Buclaw  <ibuclaw@gdcproject.org>
++
++	* d-builtins.c(d_init_builtins): Make d_unknown_type_node a
++	RECORD_TYPE.
++	* d-lang.cc(d_build_eh_type_type): Cast the returned typeinfo decl to
++	void pointer type.
++
++2013-06-07  Iain Buclaw  <ibuclaw@gdcproject.org>
++
++	* d-codegen.cc(IRState::var): Rename to get_decl_tree.
++	(IRState::convertForArgument): Rename to convert_for_argument.
++	(IRState::floatMod): Rename to build_float_modulus.
++	(IRState::findThis): Rename to find_this_tree.
++	(IRState::emitLocalVar): Update signature.
++	(IRState::arrayElemRef): Remove function.
++	* d-elem.cc(IndexExp::toElem): Move implementation of
++	IRState::arrayElemRef here.
++
++2013-06-04  Iain Buclaw  <ibuclaw@gdcproject.org>
++
++	* d-codegen.cc(cmodule): Rename to current_module_decl.
++	(object_file): Remove variable.
++	* d-objfile.cc(ObjectFile::moduleInfo): Rename to current_module_info.
++	(ObjectFile::modules): Rename to output_modules.
++	(ObjectFile::staticCtorList): Rename to static_ctor_list.
++	(ObjectFile::staticDtorList): Rename to static_dtor_list.
++	(ObjectFile::emitTemplates): Rename to flag_emit_templates.
++	(ObjectFile::beginModule): Remove function.
++	(ObjectFile::endModule): Remove function.
++	(ObjectFile::finish): Rename to d_finish_module.
++	(ObjectFile::doLineNote): Remove function.
++	(ObjectFile::setLoc): Rename to set_input_location.
++	(ObjectFile::setDeclLoc): Rename to set_decl_location.
++	(ObjectFile::setCfunEndLoc): Rename to set_function_end_locus.
++	(ObjectFile::giveDeclUniqueName): Rename to get_unique_name.
++	(ObjectFile::setupSymbolStorage): Rename to setup_symbol_storage.
++	(ObjectFile::setupStaticStorage): Remove function.
++	(ObjectFile::makeDeclOneOnly): Rename to d_comdat_linkage.
++	(ObjectFile::outputStaticSymbol): Rename to d_finish_symbol.
++	(ObjectFile::outputFunction): Rename to d_finish_function.
++	(ObjectFile::addAggMethod): Remove function.
++	(ObjectFile::initTypeDecl): Rename to build_type_decl.
++	(ObjectFile::declareType): Remove function.
++	(ObjectFile::shouldEmit): Rename to output_declaration_p.
++	(ObjectFile::shouldEmit): Rename variant to output_symbol_p.
++	(ObjectFile::doThunk): Rename to use_thunk.
++	(ObjectFile::stripVarDecl): Remove function.
++	(ObjectFile::doSimpleFunction): Rename to build_simple_function.
++	(ObjectFile::doFunctionToCallFunctions): Rename to
++	build_call_function.
++	(ObjectFile::doCtorFunction): Rename to build_ctor_function.
++	(ObjectFile::doDtorFunction): Rename to build_dtor_function.
++	(ObjectFile::doUnittestFunction): Rename to build_unittest_function.
++	(ObjectFile::hasModule): Rename to output_module_p.
++	(ObjectFile::outputThunk): Rename to finish_thunk.
++	(write_deferred_thunks): New function to emit deferred thunks.
++
++2013-06-03  Iain Buclaw  <ibuclaw@gdcproject.org>
++
++	* d-decls.cc(VarDeclaration::toSymbol): Don't set default tls model.
++	* d-objfile.cc(ObjectFile::setupSymbolStorage): Set default tls
++	model for var decls before determining whether symbol is public.
++	(build_tlssections): Likewise for TLS symbols.
++
+ 2013-06-01  Johannes Pfau  <johannespfau@gmail.com>
+ 
+ 	* d-codegen.cc(maybe_set_builtin_frontend): Check parameter and
+--- a/src/gcc/d/d-builtins.c
++++ b/src/gcc/d/d-builtins.c
+@@ -732,10 +732,10 @@
+   Expression *arg0 = (*arguments)[0];
+   Type *t0 = arg0->type;
+ 
+-  static IRState irs;
+   tree callee = NULL_TREE;
+   tree result;
+-  irs.doLineNote (loc);
++
++  set_input_location (loc);
+ 
+   switch (builtin)
+     {
+@@ -805,6 +805,7 @@
+       gcc_unreachable();
+     }
+ 
++  static IRState irs;
+   TypeFunction *tf = (TypeFunction *) gcc_type_to_d_type (TREE_TYPE (callee));
+   result = irs.call (tf, callee, NULL, arguments);
+   result = fold (result);
+@@ -846,8 +847,8 @@
+       tree callee = NULL_TREE;
+ 
+       // cirstate is not available.
+-      IRState irs;
+-      irs.doLineNote (loc);
++      static IRState irs;
++      set_input_location (loc);
+       tree result = irs.call (tf, callee, NULL, arguments);
+       result = fold (result);
+ 
+@@ -1177,7 +1178,7 @@
+   D_TYPE_IMAGINARY_FLOAT (d_ireal_type_node) = 1;
+ 
+   /* Used for ModuleInfo, ClassInfo, and Interface decls.  */
+-  d_unknown_type_node = make_node (LANG_TYPE);
++  d_unknown_type_node = make_node (RECORD_TYPE);
+ 
+   {
+     /* Make sure we get a unique function type, so we can give
+--- a/src/gcc/d/d-codegen.cc
++++ b/src/gcc/d/d-codegen.cc
+@@ -25,9 +25,8 @@
+ #include "dfrontend/target.h"
+ 
+ 
+-Module *cmodule;
++Module *current_module_decl;
+ IRState *cirstate;
+-ObjectFile *object_file;
+ 
+ 
+ // Public routine called from D frontend to hide from glue interface.
+@@ -37,7 +36,7 @@
+ bool
+ d_gcc_force_templates (void)
+ {
+-  return ObjectFile::emitTemplates == TEprivate;
++  return flag_emit_templates == TEprivate;
+ }
+ 
+ // Return the DECL_CONTEXT for symbol DSYM.
+@@ -105,7 +104,7 @@
+   if (sym->SframeField)
+     {
+       // Fixes debugging local variables.
+-      SET_DECL_VALUE_EXPR (var_decl, var (vd));
++      SET_DECL_VALUE_EXPR (var_decl, get_decl_tree (vd, this->func));
+       DECL_HAS_VALUE_EXPR_P (var_decl) = 1;
+     }
+   var_exp = var_decl;
+@@ -130,7 +129,7 @@
+ 
+   if (!no_init)
+     {
+-      object_file->doLineNote (vd->loc);
++      set_input_location (vd->loc);
+ 
+       if (!init_val)
+ 	{
+@@ -216,11 +215,11 @@
+     }
+ }
+ 
+-// Return the correct decl to be used for variable VD.
+-// Could be a VAR_DECL, or a FIELD_DECL from a closure.
++// Return the correct decl to be used for variable DECL accessed from
++// function FUNC.  Could be a VAR_DECL, or a FIELD_DECL from a closure.
+ 
+ tree
+-IRState::var (Declaration *decl)
++get_decl_tree (Declaration *decl, FuncDeclaration *func)
+ {
+   VarDeclaration *vd = decl->isVarDeclaration();
+ 
+@@ -236,12 +235,10 @@
+       else if (vsym->SframeField != NULL_TREE)
+ 	{
+     	  // Get the closure holding the var decl.
+-    	  FuncDeclaration *fd = vd->toParent2()->isFuncDeclaration();
+-    	  tree frame_ref = get_framedecl (this->func, fd);
+-    	  tree field = vsym->SframeField;
++    	  FuncDeclaration *parent = vd->toParent2()->isFuncDeclaration();
++    	  tree frame_ref = get_framedecl (func, parent);
+ 
+-    	  gcc_assert (field != NULL_TREE);
+-    	  return component_ref (build_deref (frame_ref), field);
++    	  return component_ref (build_deref (frame_ref), vsym->SframeField);
+     	}
+     }
+ 
+@@ -301,7 +298,7 @@
+ 	}
+       else
+ 	{
+-	  ::error ("can't convert a delegate expression to %s", target_type->toChars());
++	  error ("can't convert a delegate expression to %s", target_type->toChars());
+ 	  return error_mark (target_type);
+ 	}
+       break;
+@@ -321,7 +318,7 @@
+ 	  }
+ 	else
+ 	  {
+-	    ::error ("can't convert struct %s to %s", exp_type->toChars(), target_type->toChars());
++	    error ("can't convert struct %s to %s", exp_type->toChars(), target_type->toChars());
+ 	    return error_mark (target_type);
+ 	  }
+       }
+@@ -406,8 +403,8 @@
+ 
+ 	  if ((dim * esize) % tsize != 0)
+ 	    {
+-	      ::error ("cannot cast %s to %s since sizes don't line up",
+-		       exp_type->toChars(), target_type->toChars());
++	      error ("cannot cast %s to %s since sizes don't line up",
++		     exp_type->toChars(), target_type->toChars());
+ 	      return error_mark (target_type);
+ 	    }
+ 	  dim = (dim * esize) / tsize;
+@@ -430,8 +427,8 @@
+ 	}
+       else
+ 	{
+-	  ::error ("cannot cast expression of type %s to type %s",
+-		   exp_type->toChars(), target_type->toChars());
++	  error ("cannot cast expression of type %s to type %s",
++		 exp_type->toChars(), target_type->toChars());
+ 	  return error_mark (target_type);
+ 	}
+       break;
+@@ -474,8 +471,8 @@
+ 	}
+       else
+ 	{
+-	  ::error ("cannot cast expression of type %s to %s",
+-		   exp_type->toChars(), target_type->toChars());
++	  error ("cannot cast expression of type %s to %s",
++		 exp_type->toChars(), target_type->toChars());
+ 	  return error_mark (target_type);
+ 	}
+       break;
+@@ -562,8 +559,15 @@
+ 	      tree index = build2 (RANGE_EXPR, Type::tsize_t->toCtype(),
+ 				   integer_zero_node, build_integer_cst (count - 1));
+ 	      tree value = convert_for_assignment (expr, exp_type, sa_type->next);
++	      
++	      // Can't use VAR_DECLs in CONSTRUCTORS.
++	      if (TREE_CODE (value) == VAR_DECL)
++		{
++		  value = DECL_INITIAL (value);
++		  gcc_assert (value);
++		}
+ 
+-	      CONSTRUCTOR_APPEND_ELT (ce, index, object_file->stripVarDecl (value));
++	      CONSTRUCTOR_APPEND_ELT (ce, index, value);
+ 	      CONSTRUCTOR_ELTS (ctor) = ce;
+ 	    }
+ 	  TREE_READONLY (ctor) = 1;
+@@ -597,23 +601,19 @@
+ // Return a TREE representation of EXPR converted to represent parameter type ARG.
+ 
+ tree
+-IRState::convertForArgument (Expression *expr, Parameter *arg)
++convert_for_argument (tree exp_tree, Expression *expr, Parameter *arg)
+ {
+   if (arg_reference_p (arg))
+     {
+-      tree exp_tree = expr->toElem (this);
+-      // front-end already sometimes automatically takes the address
+-      // TODO: Make this safer?  Can this be confused by a non-zero SymOff?
++      // Front-end already sometimes automatically takes the address
+       if (expr->op != TOKaddress && expr->op != TOKsymoff && expr->op != TOKadd)
+ 	exp_tree = build_address (exp_tree);
+ 
+       return convert (type_passed_as (arg), exp_tree);
+     }
+-  else
+-    {
+-      // Lazy arguments: expr should already be a delegate
+-      return expr->toElem (this);
+-    }
++
++  // Lazy arguments: expr should already be a delegate
++  return exp_tree;
+ }
+ 
+ // Perform default promotions for data used in expressions.
+@@ -736,6 +736,8 @@
+       TypeDelegate *t = new TypeDelegate (tf);
+       decl_type = t->merge()->toCtype();
+     }
++  else if (decl->isThisDeclaration())
++    decl_type = insert_type_modifiers (decl_type, MODconst);
+ 
+   return decl_type;
+ }
+@@ -1117,7 +1119,7 @@
+       return d_array_length (exp);
+ 
+     default:
+-      ::error ("can't determine the length of a %s", type->toChars());
++      error ("can't determine the length of a %s", type->toChars());
+       return error_mark (type);
+     }
+ }
+@@ -1300,7 +1302,7 @@
+ 	 split dynamic array varargs. */
+       TYPE_LANG_SPECIFIC (rec_type) = build_d_type_lang_specific (type);
+ 
+-      /* ObjectFile::declareType will try to declare it as top-level type
++      /* build_type_decl will try to declare it as top-level type
+ 	 which can break debugging info for element types. */
+       tree stub_decl = build_decl (BUILTINS_LOCATION, TYPE_DECL,
+ 				   get_identifier (type->toChars()), rec_type);
+@@ -1667,7 +1669,7 @@
+ 
+   // Deal with float mod expressions immediately.
+   if (code == FLOAT_MOD_EXPR)
+-    return floatMod (TREE_TYPE (arg0), arg0, arg1);
++    return build_float_modulus (TREE_TYPE (arg0), arg0, arg1);
+ 
+   if (POINTER_TYPE_P (t0) && INTEGRAL_TYPE_P (t1))
+     return build_nop (type, build_offset_op (code, arg0, arg1));
+@@ -1793,83 +1795,6 @@
+   return false;
+ }
+ 
+-// Builds an array index expression from AE.  ASC may build a
+-// BIND_EXPR if temporaries were created for bounds checking.
+-
+-tree
+-IRState::arrayElemRef (IndexExp *ae, ArrayScope *asc)
+-{
+-  Expression *e1 = ae->e1;
+-  Expression *e2 = ae->e2;
+-
+-  Type *base_type = e1->type->toBasetype();
+-  TY base_type_ty = base_type->ty;
+-  // expression that holds the array data.
+-  tree array_expr = e1->toElem (this);
+-  // expression that indexes the array data
+-  tree subscript_expr = e2->toElem (this);
+-  // base pointer to the elements
+-  tree ptr_exp;
+-  // reference the the element
+-  tree elem_ref;
+-
+-  switch (base_type_ty)
+-    {
+-    case Tarray:
+-    case Tsarray:
+-      array_expr = asc->setArrayExp (array_expr, e1->type);
+-
+-      // If it's a static array and the index is constant,
+-      // the front end has already checked the bounds.
+-      if (array_bounds_check() && !(base_type_ty == Tsarray && e2->isConst()))
+-	{
+-	  tree array_len_expr;
+-	  // implement bounds check as a conditional expression:
+-	  // array [inbounds(index) ? index : { throw ArrayBoundsError }]
+-
+-	  // First, set up the index expression to only be evaluated once.
+-	  tree index_expr = maybe_make_temp (subscript_expr);
+-
+-	  if (base_type_ty == Tarray)
+-	    {
+-	      array_expr = maybe_make_temp (array_expr);
+-	      array_len_expr = d_array_length (array_expr);
+-	    }
+-	  else
+-	    array_len_expr = ((TypeSArray *) base_type)->dim->toElem (this);
+-
+-	  subscript_expr = d_checked_index (ae->loc, index_expr,
+-					    array_len_expr, false);
+-	}
+-
+-      if (base_type_ty == Tarray)
+-	ptr_exp = d_array_ptr (array_expr);
+-      else
+-	ptr_exp = build_address (array_expr);
+-
+-      // This conversion is required for static arrays and is just-to-be-safe
+-      // for dynamic arrays
+-      ptr_exp = convert (base_type->nextOf()->pointerTo()->toCtype(), ptr_exp);
+-      break;
+-
+-    case Tpointer:
+-      // Ignores array scope.
+-      ptr_exp = array_expr;
+-      break;
+-
+-    default:
+-      gcc_unreachable();
+-    }
+-
+-  ptr_exp = void_okay_p (ptr_exp);
+-  subscript_expr = asc->finish (subscript_expr);
+-  elem_ref = indirect_ref (TREE_TYPE (TREE_TYPE (ptr_exp)),
+-			   build_array_index (ptr_exp, subscript_expr));
+-
+-  return elem_ref;
+-}
+-
+-
+ void
+ IRState::doArraySet (tree in_ptr, tree in_value, tree in_count)
+ {
+@@ -2070,9 +1995,9 @@
+ 	  if (call_by_alias_p (func, fd))
+ 	    {
+ 	      // Re-evaluate symbol storage treating 'fd' as public.
+-	      object_file->setupSymbolStorage (fd, callee, true);
++	      setup_symbol_storage (fd, callee, true);
+ 	    }
+-	  object = getFrameForSymbol (fd);
++	  object = get_frame_for_symbol (this->func, fd);
+ 	}
+       else if (fd->needThis())
+ 	{
+@@ -2182,7 +2107,7 @@
+ 	{
+ 	  // Actual arguments for declared formal arguments
+ 	  Parameter *formal_arg = Parameter::getNth (formal_args, fi);
+-	  arg_tree = convertForArgument (arg_exp, formal_arg);
++	  arg_tree = convert_for_argument (arg_exp->toElem (this), arg_exp, formal_arg);
+ 	  ++fi;
+ 	}
+       else
+@@ -3019,7 +2944,7 @@
+ // ARG0 and ARG1 are the arguments pass to the function.
+ 
+ tree
+-IRState::floatMod (tree type, tree arg0, tree arg1)
++build_float_modulus (tree type, tree arg0, tree arg1)
+ {
+   tree fmodfn = NULL_TREE;
+   tree basetype = type;
+@@ -3037,7 +2962,7 @@
+   if (!fmodfn)
+     {
+       // %qT pretty prints the tree type.
+-      ::error ("tried to perform floating-point modulo division on %qT", type);
++      error ("tried to perform floating-point modulo division on %qT", type);
+       return error_mark_node;
+     }
+ 
+@@ -3130,20 +3055,20 @@
+ 
+ 	  switch (i)
+ 	    {
+-	    case 0:
+-	    case 1:
++	    case INTRINSIC_BSF:
++	    case INTRINSIC_BSR:
+ 	      if (!(strcmp (ftype->deco, FuintZint) == 0 || strcmp (ftype->deco, FulongZint) == 0))
+ 		return;
+ 	      break;
+ 
+-	    case 2:
++	    case INTRINSIC_BSWAP:
+ 	      if (!(strcmp (ftype->deco, FuintZuint) == 0))
+ 		return;
+ 	      break;
+ 
+-	    case 3:
+-	    case 4:
+-	    case 5:
++	    case INTRINSIC_BTC:
++	    case INTRINSIC_BTR:
++	    case INTRINSIC_BTS:
+ 	      if (!(strcmp (ftype->deco, FlongplongZint) == 0 || strcmp (ftype->deco, FintpintZint) == 0))
+ 		return;
+ 	      break;
+@@ -3170,27 +3095,31 @@
+ 	  if (i == -1)
+ 	    return;
+ 
++	  // Adjust 'i' for this range of enums
++	  i += INTRINSIC_COS;
++	  gcc_assert (i >= INTRINSIC_COS && i <= INTRINSIC_SQRT);
++
+ 	  switch (i)
+ 	    {
+-	    case 0:
+-	    case 1:
+-	    case 3:
+-	    case 5:
++	    case INTRINSIC_COS:
++	    case INTRINSIC_FABS:
++	    case INTRINSIC_RINT:
++	    case INTRINSIC_SIN:
+ 	      if (!(strcmp (ftype->deco, FeZe) == 0 || strcmp (ftype->deco, FeZe2) == 0))
+ 		return;
+ 	      break;
+ 
+-	    case 2:
++	    case INTRINSIC_LDEXP:
+ 	      if (!(strcmp (ftype->deco, FrealintZint) == 0))
+ 		return;
+ 	      break;
+ 
+-	    case 4:
++	    case INTRINSIC_RNDTOL:
+ 	      if (!(strcmp (ftype->deco, FrealZlong) == 0))
+ 		return;
+ 	      break;
+ 
+-	    case 6:
++	    case INTRINSIC_SQRT:
+ 	      if (!(strcmp (ftype->deco, "FNaNbNfdZd") == 0 || //double
+ 		    strcmp (ftype->deco, "FNaNbNffZf") == 0 || //& float version
+ 		    strcmp (ftype->deco, FeZe) == 0 ||
+@@ -3199,9 +3128,6 @@
+ 	      break;
+ 	    }
+ 
+-	  // Adjust 'i' for this range of enums
+-	  i += INTRINSIC_COS;
+-	  gcc_assert (i >= INTRINSIC_COS && i <= INTRINSIC_SQRT);
+ 	  tree t = decl->toSymbol()->Stree;
+ 
+ 	  // rndtol returns a long type, sqrt any float type,
+@@ -3278,24 +3204,24 @@
+ 
+   // Not setting this doesn't seem to cause problems (unlike VAR_DECLs).
+   if (loc.filename)
+-    object_file->setDeclLoc (decl, loc);
++    set_decl_location (decl, loc);
+ 
+   return decl;
+ }
+ 
+-// If NESTED_SYM is a nested function, return the static chain to be
+-// used when invoking that function.
++// If SYM is a nested function, return the static chain to be
++// used when calling that function from FUNC.
+ 
+-// If NESTED_SYM is a nested class or struct, return the static chain
+-// to be used when creating an instance of the class.
++// If SYM is a nested class or struct, return the static chain
++// to be used when creating an instance of the class from FUNC.
+ 
+ tree
+-IRState::getFrameForSymbol (Dsymbol *nested_sym)
++get_frame_for_symbol (FuncDeclaration *func, Dsymbol *sym)
+ {
+-  FuncDeclaration *nested_func = NULL;
++  FuncDeclaration *nested_func = sym->isFuncDeclaration();
+   FuncDeclaration *outer_func = NULL;
+ 
+-  if ((nested_func = nested_sym->isFuncDeclaration()))
++  if (nested_func != NULL)
+     {
+       // Check that the nested function is properly defined.
+       if (!nested_func->fbody)
+@@ -3308,16 +3234,19 @@
+       outer_func = nested_func->toParent2()->isFuncDeclaration();
+       gcc_assert (outer_func != NULL);
+ 
+-      if (this->func != outer_func)
++      if (func != outer_func)
+ 	{
+-	  Dsymbol *this_func = this->func;
+-	  if (!this->func->vthis) // if no frame pointer for this function
++	  // If no frame pointer for this function
++	  if (!func->vthis)
+ 	    {
+-	      nested_sym->error ("is a nested function and cannot be accessed from %s", this->func->toChars());
++	      sym->error ("is a nested function and cannot be accessed from %s", func->toChars());
+ 	      return d_null_pointer;
+ 	    }
+-	  /* Make sure we can get the frame pointer to the outer function,
+-	     else we'll ICE later in tree-ssa.  */
++
++	  Dsymbol *this_func = func;
++
++	  // Make sure we can get the frame pointer to the outer function,
++	  // else we'll ICE later in tree-ssa.
+ 	  while (nested_func != this_func)
+ 	    {
+ 	      FuncDeclaration *fd;
+@@ -3327,7 +3256,7 @@
+ 	      // Special case for __ensure and __require.
+ 	      if (nested_func->ident == Id::ensure || nested_func->ident == Id::require)
+ 		{
+-		  outer_func = this->func;
++		  outer_func = func;
+ 		  break;
+ 		}
+ 
+@@ -3335,12 +3264,14 @@
+ 		{
+ 		  if (outer_func == fd->toParent2())
+ 		    break;
++
+ 		  gcc_assert (fd->isNested() || fd->vthis);
+ 		}
+ 	      else if ((cd = this_func->isClassDeclaration()))
+ 		{
+ 		  if (!cd->isNested() || !cd->vthis)
+ 		    goto cannot_get_frame;
++
+ 		  if (outer_func == cd->toParent2())
+ 		    break;
+ 		}
+@@ -3348,13 +3279,14 @@
+ 		{
+ 		  if (!sd->isNested() || !sd->vthis)
+ 		    goto cannot_get_frame;
++
+ 		  if (outer_func == sd->toParent2())
+ 		    break;
+ 		}
+ 	      else
+ 		{
+-	    cannot_get_frame:
+-		  this->func->error ("cannot get frame pointer to %s", nested_sym->toChars());
++	        cannot_get_frame:
++		  func->error ("cannot get frame pointer to %s", sym->toChars());
+ 		  return d_null_pointer;
+ 		}
+ 	      this_func = this_func->toParent2();
+@@ -3366,33 +3298,41 @@
+       /* It's a class (or struct).  NewExp::toElem has already determined its
+ 	 outer scope is not another class, so it must be a function. */
+ 
+-      Dsymbol *sym = nested_sym;
+-
+-      while (sym && !(outer_func = sym->isFuncDeclaration()))
++      while (sym && !sym->isFuncDeclaration())
+ 	sym = sym->toParent2();
+ 
++      outer_func = (FuncDeclaration *) sym;
++
+       /* Make sure we can access the frame of outer_func.  */
+-      if (outer_func != this->func)
++      if (outer_func != func)
+ 	{
+-	  Dsymbol *o = nested_func = this->func;
+-	  do {
++	  nested_func = func;
++	  while (nested_func && nested_func != outer_func)
++	    {
++	      Dsymbol *outer = nested_func->toParent2();
++
+ 	      if (!nested_func->isNested())
+ 		{
+ 		  if (!nested_func->isMember2())
+ 		    goto cannot_access_frame;
+ 		}
+-	      while ((o = o->toParent2()))
++
++	      while (outer)
+ 		{
+-		  if ((nested_func = o->isFuncDeclaration()))
++		  if (outer->isFuncDeclaration())
+ 		    break;
++
++		  outer = outer->toParent2();
+ 		}
+-	  } while (o && o != outer_func);
+ 
+-	  if (!o)
++	      nested_func = (FuncDeclaration *) outer;
++	    }
++
++	  if (!nested_func)
+ 	    {
+-	cannot_access_frame:
++	    cannot_access_frame:
+ 	      error ("cannot access frame of function '%s' from '%s'",
+-		     outer_func->toChars(), this->func->toChars());
++		     outer_func->toChars(), func->toChars());
+ 	      return d_null_pointer;
+ 	    }
+ 	}
+@@ -3400,11 +3340,12 @@
+ 
+   if (!outer_func)
+     outer_func = nested_func->toParent2()->isFuncDeclaration();
++
+   gcc_assert (outer_func != NULL);
+ 
+   FuncFrameInfo *ffo = get_frameinfo (outer_func);
+   if (ffo->creates_frame || ffo->static_chain)
+-    return get_framedecl (this->func, outer_func);
++    return get_framedecl (func, outer_func);
+ 
+   return d_null_pointer;
+ }
+@@ -3444,39 +3385,39 @@
+ }
+ 
+ 
+-// Starting from the current function, try to find a suitable value of
+-// 'this' in nested function instances.
+-
+-// A suitable 'this' value is an instance of OCD or a class that has
+-// OCD as a base.
++// Starting from the current function FUNC, try to find a suitable value of
++// 'this' in nested function instances.  A suitable 'this' value is an
++// instance of OCD or a class that has OCD as a base.
+ 
+-tree
+-IRState::findThis (ClassDeclaration *ocd)
++static tree
++find_this_tree (FuncDeclaration *func, ClassDeclaration *ocd)
+ {
+-  FuncDeclaration *fd = func;
+-
+-  while (fd)
++  while (func)
+     {
+-      AggregateDeclaration *ad = fd->isThis();
++      AggregateDeclaration *ad = func->isThis();
+       ClassDeclaration *cd = ad ? ad->isClassDeclaration() : NULL;
+ 
+       if (cd != NULL)
+ 	{
+ 	  if (ocd == cd)
+-	    return var (fd->vthis);
++	    return get_decl_tree (func->vthis, func);
+ 	  else if (ocd->isBaseOf (cd, NULL))
+-	    return convert_expr (var (fd->vthis), cd->type, ocd->type);
+-	  else
+-	    fd = d_nested_class (cd);
++	    return convert_expr (get_decl_tree (func->vthis, func), cd->type, ocd->type);
++
++	  func = d_nested_class (cd);
+ 	}
+       else
+ 	{
+-	  if (fd->isNested())
+-	    fd = fd->toParent2()->isFuncDeclaration();
+-	  else
+-	    fd = NULL;
++	  if (func->isNested())
++	    {
++	      func = func->toParent2()->isFuncDeclaration();
++	      continue;
++	    }
++
++	  func = NULL;
+ 	}
+     }
++
+   return NULL_TREE;
+ }
+ 
+@@ -3500,7 +3441,7 @@
+ 
+       if (cdo)
+ 	{
+-	  vthis_value = findThis (cdo);
++	  vthis_value = find_this_tree (this->func, cdo);
+ 	  if (vthis_value == NULL_TREE)
+ 	    e->error ("outer class %s 'this' needed to 'new' nested class %s",
+ 		      cdo->toChars(), cd->toChars());
+@@ -3516,9 +3457,9 @@
+ 	  FuncFrameInfo *ffo = get_frameinfo (fdo);
+ 	  if (ffo->creates_frame || ffo->static_chain
+ 	      || fdo->hasNestedFrameRefs())
+-	    vthis_value = getFrameForSymbol (cd);
++	    vthis_value = get_frame_for_symbol (this->func, cd);
+ 	  else if (fdo->vthis && fdo->vthis->type != Type::tvoidptr)
+-	    vthis_value = var (fdo->vthis);
++	    vthis_value = get_decl_tree (fdo->vthis, this->func);
+ 	  else
+ 	    vthis_value = d_null_pointer;
+ 	}
+@@ -3533,7 +3474,7 @@
+ 
+       if (cdo)
+ 	{
+-	  vthis_value = findThis (cdo);
++	  vthis_value = find_this_tree (this->func, cdo);
+ 	  if (vthis_value == NULL_TREE)
+ 	    e->error ("outer class %s 'this' needed to create nested struct %s",
+ 		      cdo->toChars(), sd->toChars());
+@@ -3543,9 +3484,9 @@
+ 	  FuncFrameInfo *ffo = get_frameinfo (fdo);
+ 	  if (ffo->creates_frame || ffo->static_chain
+ 	      || fdo->hasNestedFrameRefs())
+-	    vthis_value = getFrameForSymbol (sd);
++	    vthis_value = get_frame_for_symbol (this->func, sd);
+ 	  else if (fdo->vthis && fdo->vthis->type != Type::tvoidptr)
+-	    vthis_value = var (fdo->vthis);
++	    vthis_value = get_decl_tree (fdo->vthis, this->func);
+ 	  else
+ 	    vthis_value = d_null_pointer;
+ 	}
+@@ -3620,6 +3561,7 @@
+   tree ptr_field = build_decl (BUILTINS_LOCATION, FIELD_DECL,
+ 			       get_identifier ("__chain"), ptr_type_node);
+   DECL_CONTEXT (ptr_field) = frame_rec_type;
++  TYPE_READONLY (frame_rec_type) = 1;
+ 
+   tree fields = chainon (NULL_TREE, ptr_field);
+ 
+@@ -3672,7 +3614,7 @@
+ 			       v->ident ? get_identifier (v->ident->string) : NULL_TREE,
+ 			       declaration_type (v));
+       s->SframeField = field;
+-      object_file->setDeclLoc (field, v);
++      set_decl_location (field, v);
+       DECL_CONTEXT (field) = frame_rec_type;
+       fields = chainon (fields, field);
+       TREE_USED (s->Stree) = 1;
+@@ -3980,7 +3922,7 @@
+       tree ident = var_decl->ident ? get_identifier (var_decl->ident->string) : NULL_TREE;
+       tree field_decl = build_decl (UNKNOWN_LOCATION, FIELD_DECL, ident,
+ 				    declaration_type (var_decl));
+-      object_file->setDeclLoc (field_decl, var_decl);
++      set_decl_location (field_decl, var_decl);
+       var_decl->csym = new Symbol;
+       var_decl->csym->Stree = field_decl;
+ 
+@@ -4035,7 +3977,7 @@
+   DECL_FIELD_BIT_OFFSET (field_decl) = bitsize_zero_node;
+ 
+   // Must set this or we crash with DWARF debugging.
+-  object_file->setDeclLoc (field_decl, l);
++  set_decl_location (field_decl, l);
+ 
+   TREE_THIS_VOLATILE (field_decl) = TYPE_VOLATILE (TREE_TYPE (field_decl));
+ 
+--- a/src/gcc/d/d-codegen.h
++++ b/src/gcc/d/d-codegen.h
+@@ -163,6 +163,7 @@
+ extern tree build_two_field_type (tree t1, tree t2, Type *type, const char *n1, const char *n2);
+ 
+ extern tree build_exception_object (void);
++extern tree build_float_modulus (tree type, tree t1, tree t2);
+ 
+ extern tree indirect_ref (tree type, tree exp);
+ extern tree build_deref (tree exp);
+@@ -220,6 +221,9 @@
+ extern FuncFrameInfo *get_frameinfo (FuncDeclaration *fd);
+ extern tree get_framedecl (FuncDeclaration *inner, FuncDeclaration *outer);
+ 
++// Static chain for nested functions
++extern tree get_frame_for_symbol (FuncDeclaration *func, Dsymbol *sym);
++
+ extern bool needs_static_chain (FuncDeclaration *f);
+ 
+ // Local variables
+@@ -227,6 +231,8 @@
+ extern tree create_temporary_var (tree type);
+ extern tree maybe_temporary_var (tree exp, tree *out_var);
+ 
++extern tree get_decl_tree (Declaration *decl, FuncDeclaration *func);
++
+ // Temporaries (currently just SAVE_EXPRs)
+ extern tree maybe_make_temp (tree t);
+ extern bool d_has_side_effects (tree t);
+@@ -405,22 +411,17 @@
+ {
+  public:
+   // ** Local variables
+-  void emitLocalVar (VarDeclaration *v, bool no_init = false);
++  void emitLocalVar (VarDeclaration *v, bool no_init);
+ 
+   void expandDecl (tree t_decl);
+ 
+-  tree var (Declaration *decl);
+-
+   // ** Type conversion
+-  tree convertForArgument (Expression *exp, Parameter *arg);
+   tree toDArray (Expression *exp);
+ 
+   // ** Various expressions
+   static tree buildOp (enum tree_code code, tree type, tree arg0, tree arg1);
+   tree buildAssignOp (enum tree_code code, Type *type, Expression *e1, Expression *e2);
+ 
+-  tree arrayElemRef (IndexExp *aer_exp, ArrayScope *aryscp);
+-
+   void doArraySet (tree in_ptr, tree in_value, tree in_count);
+   tree arraySetExpr (tree ptr, tree value, tree count);
+ 
+@@ -430,26 +431,19 @@
+   tree call (FuncDeclaration *func_decl, tree object, Expressions *args);
+   tree call (TypeFunction *guess, tree callable, tree object, Expressions *arguments);
+ 
+-  static tree floatMod (tree type, tree arg0, tree arg1);
+-
+   tree typeinfoReference (Type *t);
+ 
+   void buildChain (FuncDeclaration *func);
+ 
+-  tree findThis (ClassDeclaration *target_cd);
+   tree getVThis (Dsymbol *decl, Expression *e);
+ 
+-  // Static chain for nested functions
+-  tree getFrameForSymbol (Dsymbol *nested_sym);
+-
+  protected:
+   tree maybeExpandSpecialCall (tree call_exp);
+ };
+ 
+ // Globals.
+-extern Module *cmodule;
++extern Module *current_module_decl;
+ extern IRState *cirstate;
+-extern ObjectFile *object_file;
+ 
+ // Various helpers that need extra state
+ 
+--- a/src/gcc/d/d-ctype.cc
++++ b/src/gcc/d/d-ctype.cc
+@@ -272,9 +272,7 @@
+ 		}
+ 	    }
+ 	  TYPE_VALUES (ctype) = enum_values;
+-
+-	  object_file->initTypeDecl (ctype, sym);
+-	  object_file->declareType (ctype, sym);
++	  build_type_decl (ctype, sym);
+ 	}
+     }
+ 
+@@ -311,7 +309,7 @@
+ 	  agg_layout.go();
+ 	  agg_layout.finish (sym->userAttributes);
+ 
+-	  object_file->initTypeDecl (ctype, sym);
++	  build_type_decl (ctype, sym);
+ 	  TYPE_CONTEXT (ctype) = d_decl_context (sym);
+ 	}
+     }
+@@ -672,7 +670,7 @@
+ 
+ 	  agg_layout.finish (sym->userAttributes);
+ 
+-	  object_file->initTypeDecl (rec_type, sym);
++	  build_type_decl (rec_type, sym);
+ 	  TYPE_CONTEXT (rec_type) = d_decl_context (sym);
+ 	}
+     }
+--- a/src/gcc/d/d-decls.cc
++++ b/src/gcc/d/d-decls.cc
+@@ -164,10 +164,10 @@
+ 
+       DECL_LANG_SPECIFIC (var_decl) = build_d_decl_lang_specific (this);
+       d_keep (var_decl);
+-      object_file->setDeclLoc (var_decl, this);
++      set_decl_location (var_decl, this);
+ 
+       if (decl_kind == VAR_DECL)
+-	object_file->setupSymbolStorage (this, var_decl);
++	setup_symbol_storage (this, var_decl, false);
+       else if (decl_kind == PARM_DECL)
+ 	{
+ 	  /* from gcc code: Some languages have different nominal and real types.  */
+@@ -234,18 +234,12 @@
+ 	insert_decl_attributes (var_decl, "dllexport");
+ #endif
+ 
+-      if (isDataseg() && isThreadlocal())
++      if (global.params.vtls && isDataseg() && isThreadlocal())
+ 	{
+-	  // Tell backend this is a thread local decl.
+-	  DECL_TLS_MODEL (var_decl) = decl_default_tls_model (var_decl);
+-
+-	  if (global.params.vtls)
+-	    {
+-	      char *p = loc.toChars();
+-	      fprintf (stderr, "%s: %s is thread local\n", p ? p : "", toChars());
+-	      if (p)
+-		free (p);
+-	    }
++	  char *p = loc.toChars();
++	  fprintf (stderr, "%s: %s is thread local\n", p ? p : "", toChars());
++	  if (p)
++	    free (p);
+ 	}
+     }
+   return csym;
+@@ -282,9 +276,9 @@
+       TREE_TYPE (csym->Stree) = TREE_TYPE (TREE_TYPE (csym->Stree));
+       TREE_USED (csym->Stree) = 1;
+ 
+-      // In gdc, built-in typeinfo will be referenced as one-only.
++      // Built-in typeinfo will be referenced as one-only.
+       D_DECL_ONE_ONLY (csym->Stree) = 1;
+-      object_file->makeDeclOneOnly (csym->Stree);
++      d_comdat_linkage (csym->Stree);
+     }
+   return csym;
+ }
+@@ -477,8 +471,8 @@
+ 	  else if (isExport())
+ 	    insert_decl_attributes (fndecl, "dllexport");
+ #endif
+-	  object_file->setDeclLoc (fndecl, this);
+-	  object_file->setupSymbolStorage (this, fndecl);
++	  set_decl_location (fndecl, this);
++	  setup_symbol_storage (this, fndecl, false);
+ 	  if (!ident)
+ 	    TREE_PUBLIC (fndecl) = 0;
+ 
+@@ -569,7 +563,7 @@
+       d_keep (thunk_decl);
+       sthunk->Stree = thunk_decl;
+ 
+-      object_file->doThunk (thunk_decl, target_func_decl, offset);
++      use_thunk (thunk_decl, target_func_decl, offset);
+ 
+       thunk->symbol = sthunk;
+     }
+@@ -591,8 +585,8 @@
+       csym->Stree = decl;
+       d_keep (decl);
+ 
+-      object_file->setupStaticStorage (this, decl);
+-      object_file->setDeclLoc (decl, this);
++      setup_symbol_storage (this, decl, true);
++      set_decl_location (decl, this);
+ 
+       // ClassInfo cannot be const data, because we use the monitor on it.
+       TREE_CONSTANT (decl) = 0;
+@@ -614,8 +608,8 @@
+       csym->Stree = decl;
+       d_keep (decl);
+ 
+-      object_file->setupStaticStorage (this, decl);
+-      object_file->setDeclLoc (decl, this);
++      setup_symbol_storage (this, decl, true);
++      set_decl_location (decl, this);
+ 
+       TREE_CONSTANT (decl) = 1;
+     }
+@@ -636,8 +630,8 @@
+       csym->Stree = decl;
+       d_keep (decl);
+ 
+-      object_file->setupStaticStorage (this, decl);
+-      object_file->setDeclLoc (decl, this);
++      setup_symbol_storage (this, decl, true);
++      set_decl_location (decl, this);
+ 
+       // Not readonly, moduleinit depends on this.
+       TREE_CONSTANT (decl) = 0;
+@@ -655,8 +649,6 @@
+ {
+   if (!vtblsym)
+     {
+-      tree decl;
+-
+       vtblsym = toSymbolX ("__vtbl", 0, 0, "Z");
+ 
+       /* The DECL_INITIAL value will have a different type object from the
+@@ -664,13 +656,13 @@
+       TypeSArray *vtbl_type = new TypeSArray (Type::tvoidptr,
+ 					       new IntegerExp (loc, vtbl.dim, Type::tindex));
+ 
+-      decl = build_decl (UNKNOWN_LOCATION, VAR_DECL,
+-			 get_identifier (vtblsym->Sident), vtbl_type->toCtype());
++      tree decl = build_decl (UNKNOWN_LOCATION, VAR_DECL,
++			      get_identifier (vtblsym->Sident), vtbl_type->toCtype());
+       vtblsym->Stree = decl;
+       d_keep (decl);
+ 
+-      object_file->setupStaticStorage (this, decl);
+-      object_file->setDeclLoc (decl, this);
++      setup_symbol_storage (this, decl, true);
++      set_decl_location (decl, this);
+ 
+       TREE_READONLY (decl) = 1;
+       TREE_CONSTANT (decl) = 1;
+@@ -700,31 +692,35 @@
+ {
+   if (!sinit)
+     {
++      StructDeclaration *sd = isStructDeclaration();
+       sinit = toSymbolX ("__init", 0, 0, "Z");
+ 
+-      StructDeclaration *sd = isStructDeclaration();
+       if (sd)
+ 	sinit->Salignment = sd->alignment;
+     }
+ 
+-  if (!sinit->Stree && object_file != NULL)
++  if (!sinit->Stree && current_module_decl)
+     {
+-      tree struct_type = type->toCtype();
+-      if (POINTER_TYPE_P (struct_type))
+-	struct_type = TREE_TYPE (struct_type); // for TypeClass, want the RECORD_TYPE, not the REFERENCE_TYPE
+-      tree t = build_decl (UNKNOWN_LOCATION, VAR_DECL,
+-			   get_identifier (sinit->Sident), struct_type);
+-      sinit->Stree = t;
+-      d_keep (t);
+-
+-      object_file->setupStaticStorage (this, t);
+-      object_file->setDeclLoc (t, this);
+-
+-      TREE_ADDRESSABLE (t) = 1;
+-      TREE_READONLY (t) = 1;
+-      TREE_CONSTANT (t) = 1;
+-      DECL_CONTEXT (t) = 0; // These are always global
++      tree stype;
++      if (isStructDeclaration())
++	stype = type->toCtype();
++      else
++	stype = TREE_TYPE (type->toCtype());
++
++      sinit->Stree = build_decl (UNKNOWN_LOCATION, VAR_DECL,
++				 get_identifier (sinit->Sident), stype);
++      d_keep (sinit->Stree);
++
++      setup_symbol_storage (this, sinit->Stree, true);
++      set_decl_location (sinit->Stree, this);
++
++      TREE_ADDRESSABLE (sinit->Stree) = 1;
++      TREE_READONLY (sinit->Stree) = 1;
++      TREE_CONSTANT (sinit->Stree) = 1;
++      // These initialisers are always global.
++      DECL_CONTEXT (sinit->Stree) = 0;
+     }
++
+   return sinit;
+ }
+ 
+@@ -733,28 +729,23 @@
+ Symbol *
+ TypedefDeclaration::toInitializer (void)
+ {
+-  Symbol *s;
+-
+   if (!sinit)
++    sinit = toSymbolX ("__init", 0, 0, "Z");
++
++  if (!sinit->Stree && current_module_decl)
+     {
+-      s = toSymbolX ("__init", 0, 0, "Z");
+-      sinit = s;
+-      sinit->Sdt = ((TypeTypedef *) type)->sym->init->toDt();
+-    }
+-
+-  if (!sinit->Stree && object_file != NULL)
+-    {
+-      tree t = build_decl (UNKNOWN_LOCATION, VAR_DECL,
+-			   get_identifier (sinit->Sident), type->toCtype());
+-      sinit->Stree = t;
+-      d_keep (t);
+-
+-      object_file->setupStaticStorage (this, t);
+-      object_file->setDeclLoc (t, this);
+-      TREE_CONSTANT (t) = 1;
+-      TREE_READONLY (t) = 1;
+-      DECL_CONTEXT (t) = 0;
++      sinit->Stree = build_decl (UNKNOWN_LOCATION, VAR_DECL,
++				 get_identifier (sinit->Sident), type->toCtype());
++      d_keep (sinit->Stree);
++
++      setup_symbol_storage (this, sinit->Stree, true);
++      set_decl_location (sinit->Stree, this);
++
++      TREE_CONSTANT (sinit->Stree) = 1;
++      TREE_READONLY (sinit->Stree) = 1;
++      DECL_CONTEXT (sinit->Stree) = 0;
+     }
++
+   return sinit;
+ }
+ 
+@@ -763,31 +754,29 @@
+ Symbol *
+ EnumDeclaration::toInitializer (void)
+ {
+-  Symbol *s;
+-
+   if (!sinit)
+     {
+       Identifier *ident_save = ident;
+       if (!ident)
+ 	ident = Lexer::uniqueId("__enum");
+-      s = toSymbolX ("__init", 0, 0, "Z");
++      sinit = toSymbolX ("__init", 0, 0, "Z");
+       ident = ident_save;
+-      sinit = s;
+     }
+ 
+-  if (!sinit->Stree && object_file != NULL)
++  if (!sinit->Stree && current_module_decl)
+     {
+-      tree t = build_decl (UNKNOWN_LOCATION, VAR_DECL,
+-			   get_identifier (sinit->Sident), type->toCtype());
+-      sinit->Stree = t;
+-      d_keep (t);
+-
+-      object_file->setupStaticStorage (this, t);
+-      object_file->setDeclLoc (t, this);
+-      TREE_CONSTANT (t) = 1;
+-      TREE_READONLY (t) = 1;
+-      DECL_CONTEXT (t) = 0;
++      sinit->Stree = build_decl (UNKNOWN_LOCATION, VAR_DECL,
++				 get_identifier (sinit->Sident), type->toCtype());
++      d_keep (sinit->Stree);
++
++      setup_symbol_storage (this, sinit->Stree, true);
++      set_decl_location (sinit->Stree, this);
++
++      TREE_CONSTANT (sinit->Stree) = 1;
++      TREE_READONLY (sinit->Stree) = 1;
++      DECL_CONTEXT (sinit->Stree) = 0;
+     }
++
+   return sinit;
+ }
+ 
+@@ -848,7 +837,7 @@
+       TYPE_BINFO (rec_type) = intfc_binfo_for (NULL_TREE, this, offset);
+     }
+ 
+-  object_file->declareType (rec_type, this);
++  build_type_decl (rec_type, this);
+ }
+ 
+ void
+@@ -875,7 +864,7 @@
+ StructDeclaration::toDebug (void)
+ {
+   tree ctype = type->toCtype();
+-  object_file->declareType (ctype, this);
++  build_type_decl (ctype, this);
+   rest_of_type_compilation (ctype, 1);
+ }
+ 
+--- a/src/gcc/d/d-elem.cc
++++ b/src/gcc/d/d-elem.cc
+@@ -1038,11 +1038,69 @@
+     }
+   else
+     {
+-      /* arrayElemRef will call aryscp.finish.  This result
+-	 of this function may be used as an lvalue and we
+-	 do not want it to be a BIND_EXPR. */
+-      ArrayScope aryscp (lengthVar, loc);
+-      return irs->arrayElemRef (this, &aryscp);
++      // Build an array index expression.  ArrayScope may build a BIND_EXPR
++      // if temporaries were created for bounds checking.
++      ArrayScope arrscope (lengthVar, loc);
++
++      // The expression that holds the array data.
++      tree t1 = e1->toElem (irs);
++      // The expression that indexes the array data.
++      tree t2 = e2->toElem (irs);
++      // The base pointer to the elements.
++      tree ptrexp;
++
++      switch (tb1->ty)
++	{
++	case Tarray:
++	case Tsarray:
++	  t1 = arrscope.setArrayExp (t1, e1->type);
++
++	  // If it's a static array and the index is constant,
++	  // the front end has already checked the bounds.
++	  if (array_bounds_check() && !(tb1->ty == Tsarray && e2->isConst()))
++	    {
++	      // Implement bounds check as a conditional expression:
++	      // array [inbounds(index) ? index : { throw ArrayBoundsError}]
++	      tree length;
++
++	      // First, set up the index expression to only be evaluated once.
++	      tree index = maybe_make_temp (t2);
++
++	      if (tb1->ty == Tarray)
++		{
++		  t1 = maybe_make_temp (t1);
++		  length = d_array_length (t1);
++		}
++	      else
++		length = ((TypeSArray *) tb1)->dim->toElem (irs);
++
++	      t2 = d_checked_index (loc, index, length, false);
++	    }
++
++	  if (tb1->ty == Tarray)
++	    ptrexp = d_array_ptr (t1);
++	  else
++	    ptrexp = build_address (t1);
++
++	  // This conversion is required for static arrays and is
++	  // just-to-be-safe for dynamic arrays.
++	  ptrexp = convert (tb1->nextOf()->pointerTo()->toCtype(), ptrexp);
++	  break;
++
++	case Tpointer:
++	  // Ignores ArrayScope.
++	  ptrexp = t1;
++	  break;
++
++	default:
++	  gcc_unreachable();
++	}
++
++      ptrexp = void_okay_p (ptrexp);
++      t2 = arrscope.finish (t2);
++
++      return indirect_ref (TREE_TYPE (TREE_TYPE (ptrexp)),
++			   build_array_index (ptrexp, t2));
+     }
+ }
+ 
+@@ -1360,7 +1418,7 @@
+       if (!decl_reference_p (sym_exp->var))
+ 	{
+ 	  rec_type = sym_exp->var->type->toBasetype();
+-	  rec_tree = irs->var (sym_exp->var);
++	  rec_tree = get_decl_tree (sym_exp->var, irs->func);
+ 	  the_offset = sym_exp->offset;
+ 	}
+     }
+@@ -1492,7 +1550,7 @@
+ 	  if (e1->op == TOKnull)
+ 	    this_tree = e1->toElem (irs);
+ 	  else
+-	    this_tree = irs->getFrameForSymbol (func);
++	    this_tree = get_frame_for_symbol (irs->func, func);
+ 	}
+       else
+ 	{
+@@ -1537,7 +1595,7 @@
+       else if (var_decl)
+ 	{
+ 	  if (!(var_decl->storage_class & STCfield))
+-	    return irs->var (var_decl);
++	    return get_decl_tree (var_decl, irs->func);
+ 	  else
+ 	    {
+ 	      tree this_tree = e1->toElem (irs);
+@@ -1695,7 +1753,7 @@
+ 
+     case Tdelegate:
+       return build_method_call (build_address (fd->toSymbol()->Stree),
+-				irs->getFrameForSymbol (fd), type);
++				get_frame_for_symbol (irs->func, fd), type);
+ 
+     default:
+       ::error ("Unexpected FuncExp type");
+@@ -1727,7 +1785,7 @@
+       if (var->ident == Id::ctfe)
+ 	return integer_zero_node;
+ 
+-      exp = irs->var (var);
++      exp = get_decl_tree (var, irs->func);
+       TREE_USED (exp) = 1;
+ 
+       // For variables that are references (currently only out/inout arguments;
+@@ -1741,7 +1799,7 @@
+     {
+       size_t offset = ((SymOffExp *) this)->offset;
+ 
+-      exp = irs->var (var);
++      exp = get_decl_tree (var, irs->func);
+       TREE_USED (exp) = 1;
+ 
+       if (decl_reference_p (var))
+@@ -2347,16 +2405,17 @@
+ ThisExp::toElem (IRState *irs)
+ {
+   tree this_tree = NULL_TREE;
++  FuncDeclaration *fd = irs->func;
+ 
+   if (var)
+     {
+       gcc_assert(var->isVarDeclaration());
+-      this_tree = irs->var (var);
++      this_tree = get_decl_tree (var, fd);
+     }
+   else
+     {
+-      gcc_assert (irs->func && irs->func->vthis);
+-      this_tree = irs->var (irs->func->vthis);
++      gcc_assert (fd && fd->vthis);
++      this_tree = get_decl_tree (fd->vthis, fd);
+     }
+ 
+   if (type->ty == Tstruct)
+--- a/src/gcc/d/dfrontend/argtypes.c
++++ b/src/gcc/d/dfrontend/argtypes.c
+@@ -157,14 +157,6 @@
+ #endif
+ }
+ 
+-TypeTuple *TypeDArray::toArgTypes()
+-{
+-    /* Should be done as if it were:
+-     * struct S { size_t length; void* ptr; }
+-     */
+-    return new TypeTuple(Type::tsize_t, Type::tvoidptr);
+-}
+-
+ TypeTuple *TypeAArray::toArgTypes()
+ {
+     return new TypeTuple(Type::tvoidptr);
+@@ -175,14 +167,6 @@
+     return new TypeTuple(Type::tvoidptr);
+ }
+ 
+-TypeTuple *TypeDelegate::toArgTypes()
+-{
+-    /* Should be done as if it were:
+-     * struct S { void* ptr; void* funcptr; }
+-     */
+-    return new TypeTuple(Type::tvoidptr, Type::tvoidptr);
+-}
+-
+ /*************************************
+  * Convert a floating point type into the equivalent integral type.
+  */
+@@ -276,6 +260,38 @@
+     return t;
+ }
+ 
++TypeTuple *TypeDArray::toArgTypes()
++{
++    /* Should be done as if it were:
++     * struct S { size_t length; void* ptr; }
++     */
++    if (global.params.is64bit && !global.params.isLP64)
++    {
++        // For X32 ABI on 64bit, D arrays fit into a single integer register.
++        unsigned offset = Type::tsize_t->size(0);
++        Type *t = argtypemerge(Type::tsize_t, Type::tvoidptr, offset);
++        if (t)
++            return new TypeTuple(t);
++    }
++    return new TypeTuple(Type::tsize_t, Type::tvoidptr);
++}
++
++TypeTuple *TypeDelegate::toArgTypes()
++{
++    /* Should be done as if it were:
++     * struct S { size_t length; void* ptr; }
++     */
++    if (global.params.is64bit && !global.params.isLP64)
++    {
++        // For X32 ABI on 64bit, D arrays fit into a single integer register.
++        unsigned offset = Type::tsize_t->size(0);
++        Type *t = argtypemerge(Type::tsize_t, Type::tvoidptr, offset);
++        if (t)
++            return new TypeTuple(t);
++    }
++    return new TypeTuple(Type::tvoidptr, Type::tvoidptr);
++}
++
+ TypeTuple *TypeStruct::toArgTypes()
+ {
+     //printf("TypeStruct::toArgTypes() %s\n", toChars());
+--- a/src/gcc/d/dfrontend/artistic.txt
++++ b/src/gcc/d/dfrontend/artistic.txt
+@@ -1,117 +1,117 @@
+-
+-
+-
+-
+-			 The "Artistic License"
+-
+-				Preamble
+-
+-The intent of this document is to state the conditions under which a
+-Package may be copied, such that the Copyright Holder maintains some
+-semblance of artistic control over the development of the package,
+-while giving the users of the package the right to use and distribute
+-the Package in a more-or-less customary fashion, plus the right to make
+-reasonable modifications.
+-
+-Definitions:
+-
+-	"Package" refers to the collection of files distributed by the
+-	Copyright Holder, and derivatives of that collection of files
+-	created through textual modification.
+-
+-	"Standard Version" refers to such a Package if it has not been
+-	modified, or has been modified in accordance with the wishes
+-	of the Copyright Holder as specified below.
+-
+-	"Copyright Holder" is whoever is named in the copyright or
+-	copyrights for the package.
+-
+-	"You" is you, if you're thinking about copying or distributing
+-	this Package.
+-
+-	"Reasonable copying fee" is whatever you can justify on the
+-	basis of media cost, duplication charges, time of people involved,
+-	and so on.  (You will not be required to justify it to the
+-	Copyright Holder, but only to the computing community at large
+-	as a market that must bear the fee.)
+-
+-	"Freely Available" means that no fee is charged for the item
+-	itself, though there may be fees involved in handling the item.
+-	It also means that recipients of the item may redistribute it
+-	under the same conditions they received it.
+-
+-1. You may make and give away verbatim copies of the source form of the
+-Standard Version of this Package without restriction, provided that you
+-duplicate all of the original copyright notices and associated disclaimers.
+-
+-2. You may apply bug fixes, portability fixes and other modifications
+-derived from the Public Domain or from the Copyright Holder.  A Package
+-modified in such a way shall still be considered the Standard Version.
+-
+-3. You may otherwise modify your copy of this Package in any way, provided
+-that you insert a prominent notice in each changed file stating how and
+-when you changed that file, and provided that you do at least ONE of the
+-following:
+-
+-    a) place your modifications in the Public Domain or otherwise make them
+-    Freely Available, such as by posting said modifications to Usenet or
+-    an equivalent medium, or placing the modifications on a major archive
+-    site such as uunet.uu.net, or by allowing the Copyright Holder to include
+-    your modifications in the Standard Version of the Package.
+-
+-    b) use the modified Package only within your corporation or organization.
+-
+-    c) rename any non-standard executables so the names do not conflict
+-    with standard executables, which must also be provided, and provide
+-    a separate manual page for each non-standard executable that clearly
+-    documents how it differs from the Standard Version.
+-
+-    d) make other distribution arrangements with the Copyright Holder.
+-
+-4. You may distribute the programs of this Package in object code or
+-executable form, provided that you do at least ONE of the following:
+-
+-    a) distribute a Standard Version of the executables and library files,
+-    together with instructions (in the manual page or equivalent) on where
+-    to get the Standard Version.
+-
+-    b) accompany the distribution with the machine-readable source of
+-    the Package with your modifications.
+-
+-    c) give non-standard executables non-standard names, and clearly
+-    document the differences in manual pages (or equivalent), together
+-    with instructions on where to get the Standard Version.
+-
+-    d) make other distribution arrangements with the Copyright Holder.
+-
+-5. You may charge a reasonable copying fee for any distribution of this
+-Package.  You may charge any fee you choose for support of this
+-Package.  You may not charge a fee for this Package itself.  However,
+-you may distribute this Package in aggregate with other (possibly
+-commercial) programs as part of a larger (possibly commercial) software
+-distribution provided that you do not advertise this Package as a
+-product of your own.  You may embed this Package's interpreter within
+-an executable of yours (by linking); this shall be construed as a mere
+-form of aggregation, provided that the complete Standard Version of the
+-interpreter is so embedded.
+-
+-6. The source code and object code supplied as input to or produced as
+-output from the programs of this Package do not automatically fall
+-under the copyright of this Package, but belong to whoever generated
+-them, and may be sold commercially, and may be aggregated with this
+-Package.
+-
+-7. Aggregation of this Package with a commercial distribution is always
+-permitted provided that the use of this Package is embedded; that is,
+-when no overt attempt is made to make this Package's interfaces visible
+-to the end user of the commercial distribution.  Such use shall not be
+-construed as a distribution of this Package.
+-
+-8. The name of the Copyright Holder may not be used to endorse or promote
+-products derived from this software without specific prior written permission.
+-
+-9. THIS PACKAGE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR
+-IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+-WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+-
+-				The End
++
++
++
++
++			 The "Artistic License"
++
++				Preamble
++
++The intent of this document is to state the conditions under which a
++Package may be copied, such that the Copyright Holder maintains some
++semblance of artistic control over the development of the package,
++while giving the users of the package the right to use and distribute
++the Package in a more-or-less customary fashion, plus the right to make
++reasonable modifications.
++
++Definitions:
++
++	"Package" refers to the collection of files distributed by the
++	Copyright Holder, and derivatives of that collection of files
++	created through textual modification.
++
++	"Standard Version" refers to such a Package if it has not been
++	modified, or has been modified in accordance with the wishes
++	of the Copyright Holder as specified below.
++
++	"Copyright Holder" is whoever is named in the copyright or
++	copyrights for the package.
++
++	"You" is you, if you're thinking about copying or distributing
++	this Package.
++
++	"Reasonable copying fee" is whatever you can justify on the
++	basis of media cost, duplication charges, time of people involved,
++	and so on.  (You will not be required to justify it to the
++	Copyright Holder, but only to the computing community at large
++	as a market that must bear the fee.)
++
++	"Freely Available" means that no fee is charged for the item
++	itself, though there may be fees involved in handling the item.
++	It also means that recipients of the item may redistribute it
++	under the same conditions they received it.
++
++1. You may make and give away verbatim copies of the source form of the
++Standard Version of this Package without restriction, provided that you
++duplicate all of the original copyright notices and associated disclaimers.
++
++2. You may apply bug fixes, portability fixes and other modifications
++derived from the Public Domain or from the Copyright Holder.  A Package
++modified in such a way shall still be considered the Standard Version.
++
++3. You may otherwise modify your copy of this Package in any way, provided
++that you insert a prominent notice in each changed file stating how and
++when you changed that file, and provided that you do at least ONE of the
++following:
++
++    a) place your modifications in the Public Domain or otherwise make them
++    Freely Available, such as by posting said modifications to Usenet or
++    an equivalent medium, or placing the modifications on a major archive
++    site such as uunet.uu.net, or by allowing the Copyright Holder to include
++    your modifications in the Standard Version of the Package.
++
++    b) use the modified Package only within your corporation or organization.
++
++    c) rename any non-standard executables so the names do not conflict
++    with standard executables, which must also be provided, and provide
++    a separate manual page for each non-standard executable that clearly
++    documents how it differs from the Standard Version.
++
++    d) make other distribution arrangements with the Copyright Holder.
++
++4. You may distribute the programs of this Package in object code or
++executable form, provided that you do at least ONE of the following:
++
++    a) distribute a Standard Version of the executables and library files,
++    together with instructions (in the manual page or equivalent) on where
++    to get the Standard Version.
++
++    b) accompany the distribution with the machine-readable source of
++    the Package with your modifications.
++
++    c) give non-standard executables non-standard names, and clearly
++    document the differences in manual pages (or equivalent), together
++    with instructions on where to get the Standard Version.
++
++    d) make other distribution arrangements with the Copyright Holder.
++
++5. You may charge a reasonable copying fee for any distribution of this
++Package.  You may charge any fee you choose for support of this
++Package.  You may not charge a fee for this Package itself.  However,
++you may distribute this Package in aggregate with other (possibly
++commercial) programs as part of a larger (possibly commercial) software
++distribution provided that you do not advertise this Package as a
++product of your own.  You may embed this Package's interpreter within
++an executable of yours (by linking); this shall be construed as a mere
++form of aggregation, provided that the complete Standard Version of the
++interpreter is so embedded.
++
++6. The source code and object code supplied as input to or produced as
++output from the programs of this Package do not automatically fall
++under the copyright of this Package, but belong to whoever generated
++them, and may be sold commercially, and may be aggregated with this
++Package.
++
++7. Aggregation of this Package with a commercial distribution is always
++permitted provided that the use of this Package is embedded; that is,
++when no overt attempt is made to make this Package's interfaces visible
++to the end user of the commercial distribution.  Such use shall not be
++construed as a distribution of this Package.
++
++8. The name of the Copyright Holder may not be used to endorse or promote
++products derived from this software without specific prior written permission.
++
++9. THIS PACKAGE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR
++IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++
++				The End
+--- a/src/gcc/d/dfrontend/gpl.txt
++++ b/src/gcc/d/dfrontend/gpl.txt
+@@ -1,248 +1,248 @@
+-		    GNU GENERAL PUBLIC LICENSE
+-		     Version 1, February 1989
+-
+- Copyright (C) 1989 Free Software Foundation, Inc.
+-                59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
+- Everyone is permitted to copy and distribute verbatim copies
+- of this license document, but changing it is not allowed.
+-
+-			    Preamble
+-
+-  The license agreements of most software companies try to keep users
+-at the mercy of those companies.  By contrast, our General Public
+-License is intended to guarantee your freedom to share and change free
+-software--to make sure the software is free for all its users.  The
+-General Public License applies to the Free Software Foundation's
+-software and to any other program whose authors commit to using it.
+-You can use it for your programs, too.
+-
+-  When we speak of free software, we are referring to freedom, not
+-price.  Specifically, the General Public License is designed to make
+-sure that you have the freedom to give away or sell copies of free
+-software, that you receive source code or can get it if you want it,
+-that you can change the software or use pieces of it in new free
+-programs; and that you know you can do these things.
+-
+-  To protect your rights, we need to make restrictions that forbid
+-anyone to deny you these rights or to ask you to surrender the rights.
+-These restrictions translate to certain responsibilities for you if you
+-distribute copies of the software, or if you modify it.
+-
+-  For example, if you distribute copies of a such a program, whether
+-gratis or for a fee, you must give the recipients all the rights that
+-you have.  You must make sure that they, too, receive or can get the
+-source code.  And you must tell them their rights.
+-
+-  We protect your rights with two steps: (1) copyright the software, and
+-(2) offer you this license which gives you legal permission to copy,
+-distribute and/or modify the software.
+-
+-  Also, for each author's protection and ours, we want to make certain
+-that everyone understands that there is no warranty for this free
+-software.  If the software is modified by someone else and passed on, we
+-want its recipients to know that what they have is not the original, so
+-that any problems introduced by others will not reflect on the original
+-authors' reputations.
+-
+-  The precise terms and conditions for copying, distribution and
+-modification follow.
+-
+-		    GNU GENERAL PUBLIC LICENSE
+-   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+-
+-  0. This License Agreement applies to any program or other work which
+-contains a notice placed by the copyright holder saying it may be
+-distributed under the terms of this General Public License.  The
+-"Program", below, refers to any such program or work, and a "work based
+-on the Program" means either the Program or any work containing the
+-Program or a portion of it, either verbatim or with modifications.  Each
+-licensee is addressed as "you".
+-
+-  1. You may copy and distribute verbatim copies of the Program's source
+-code as you receive it, in any medium, provided that you conspicuously and
+-appropriately publish on each copy an appropriate copyright notice and
+-disclaimer of warranty; keep intact all the notices that refer to this
+-General Public License and to the absence of any warranty; and give any
+-other recipients of the Program a copy of this General Public License
+-along with the Program.  You may charge a fee for the physical act of
+-transferring a copy.
+-
+-  2. You may modify your copy or copies of the Program or any portion of
+-it, and copy and distribute such modifications under the terms of Paragraph
+-1 above, provided that you also do the following:
+-
+-    a) cause the modified files to carry prominent notices stating that
+-    you changed the files and the date of any change; and
+-
+-    b) cause the whole of any work that you distribute or publish, that
+-    in whole or in part contains the Program or any part thereof, either
+-    with or without modifications, to be licensed at no charge to all
+-    third parties under the terms of this General Public License (except
+-    that you may choose to grant warranty protection to some or all
+-    third parties, at your option).
+-
+-    c) If the modified program normally reads commands interactively when
+-    run, you must cause it, when started running for such interactive use
+-    in the simplest and most usual way, to print or display an
+-    announcement including an appropriate copyright notice and a notice
+-    that there is no warranty (or else, saying that you provide a
+-    warranty) and that users may redistribute the program under these
+-    conditions, and telling the user how to view a copy of this General
+-    Public License.
+-
+-    d) You may charge a fee for the physical act of transferring a
+-    copy, and you may at your option offer warranty protection in
+-    exchange for a fee.
+-
+-Mere aggregation of another independent work with the Program (or its
+-derivative) on a volume of a storage or distribution medium does not bring
+-the other work under the scope of these terms.
+-
+-  3. You may copy and distribute the Program (or a portion or derivative of
+-it, under Paragraph 2) in object code or executable form under the terms of
+-Paragraphs 1 and 2 above provided that you also do one of the following:
+-
+-    a) accompany it with the complete corresponding machine-readable
+-    source code, which must be distributed under the terms of
+-    Paragraphs 1 and 2 above; or,
+-
+-    b) accompany it with a written offer, valid for at least three
+-    years, to give any third party free (except for a nominal charge
+-    for the cost of distribution) a complete machine-readable copy of the
+-    corresponding source code, to be distributed under the terms of
+-    Paragraphs 1 and 2 above; or,
+-
+-    c) accompany it with the information you received as to where the
+-    corresponding source code may be obtained.  (This alternative is
+-    allowed only for noncommercial distribution and only if you
+-    received the program in object code or executable form alone.)
+-
+-Source code for a work means the preferred form of the work for making
+-modifications to it.  For an executable file, complete source code means
+-all the source code for all modules it contains; but, as a special
+-exception, it need not include source code for modules which are standard
+-libraries that accompany the operating system on which the executable
+-file runs, or for standard header files or definitions files that
+-accompany that operating system.
+-
+-  4. You may not copy, modify, sublicense, distribute or transfer the
+-Program except as expressly provided under this General Public License.
+-Any attempt otherwise to copy, modify, sublicense, distribute or transfer
+-the Program is void, and will automatically terminate your rights to use
+-the Program under this License.  However, parties who have received
+-copies, or rights to use copies, from you under this General Public
+-License will not have their licenses terminated so long as such parties
+-remain in full compliance.
+-
+-  5. By copying, distributing or modifying the Program (or any work based
+-on the Program) you indicate your acceptance of this license to do so,
+-and all its terms and conditions.
+-
+-  6. Each time you redistribute the Program (or any work based on the
+-Program), the recipient automatically receives a license from the original
+-licensor to copy, distribute or modify the Program subject to these
+-terms and conditions.  You may not impose any further restrictions on the
+-recipients' exercise of the rights granted herein.
+-
+-  7. The Free Software Foundation may publish revised and/or new versions
+-of the General Public License from time to time.  Such new versions will
+-be similar in spirit to the present version, but may differ in detail to
+-address new problems or concerns.
+-
+-Each version is given a distinguishing version number.  If the Program
+-specifies a version number of the license which applies to it and "any
+-later version", you have the option of following the terms and conditions
+-either of that version or of any later version published by the Free
+-Software Foundation.  If the Program does not specify a version number of
+-the license, you may choose any version ever published by the Free Software
+-Foundation.
+-
+-  8. If you wish to incorporate parts of the Program into other free
+-programs whose distribution conditions are different, write to the author
+-to ask for permission.  For software which is copyrighted by the Free
+-Software Foundation, write to the Free Software Foundation; we sometimes
+-make exceptions for this.  Our decision will be guided by the two goals
+-of preserving the free status of all derivatives of our free software and
+-of promoting the sharing and reuse of software generally.
+-
+-			    NO WARRANTY
+-
+-  9. BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
+-FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN
+-OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
+-PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED
+-OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+-MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS
+-TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE
+-PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
+-REPAIR OR CORRECTION.
+-
+-  10. IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+-WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
+-REDISTRIBUTE THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES,
+-INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING
+-OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED
+-TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY
+-YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
+-PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
+-POSSIBILITY OF SUCH DAMAGES.
+-
+-		     END OF TERMS AND CONDITIONS
+-
+-	Appendix: How to Apply These Terms to Your New Programs
+-
+-  If you develop a new program, and you want it to be of the greatest
+-possible use to humanity, the best way to achieve this is to make it
+-free software which everyone can redistribute and change under these
+-terms.
+-
+-  To do so, attach the following notices to the program.  It is safest to
+-attach them to the start of each source file to most effectively convey
+-the exclusion of warranty; and each file should have at least the
+-"copyright" line and a pointer to where the full notice is found.
+-
+-    <one line to give the program's name and a brief idea of what it does.>
+-    Copyright (C) 19yy  <name of author>
+-
+-    This program is free software; you can redistribute it and/or modify
+-    it under the terms of the GNU General Public License as published by
+-    the Free Software Foundation; either version 1, or (at your option)
+-    any later version.
+-
+-    This program is distributed in the hope that it will be useful,
+-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-    GNU General Public License for more details.
+-
+-    You should have received a copy of the GNU General Public License
+-    along with this program; if not, write to the Free Software Foundation,
+-    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+-
+-Also add information on how to contact you by electronic and paper mail.
+-
+-If the program is interactive, make it output a short notice like this
+-when it starts in an interactive mode:
+-
+-    Gnomovision version 69, Copyright (C) 19xx name of author
+-    Gnomovision comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
+-    This is free software, and you are welcome to redistribute it
+-    under certain conditions; type `show c' for details.
+-
+-The hypothetical commands `show w' and `show c' should show the
+-appropriate parts of the General Public License.  Of course, the
+-commands you use may be called something other than `show w' and `show
+-c'; they could even be mouse-clicks or menu items--whatever suits your
+-program.
+-
+-You should also get your employer (if you work as a programmer) or your
+-school, if any, to sign a "copyright disclaimer" for the program, if
+-necessary.  Here a sample; alter the names:
+-
+-  Yoyodyne, Inc., hereby disclaims all copyright interest in the
+-  program `Gnomovision' (a program to direct compilers to make passes
+-  at assemblers) written by James Hacker.
+-
+-  <signature of Ty Coon>, 1 April 1989
+-  Ty Coon, President of Vice
+-
+-That's all there is to it!
++		    GNU GENERAL PUBLIC LICENSE
++		     Version 1, February 1989
++
++ Copyright (C) 1989 Free Software Foundation, Inc.
++                59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
++ Everyone is permitted to copy and distribute verbatim copies
++ of this license document, but changing it is not allowed.
++
++			    Preamble
++
++  The license agreements of most software companies try to keep users
++at the mercy of those companies.  By contrast, our General Public
++License is intended to guarantee your freedom to share and change free
++software--to make sure the software is free for all its users.  The
++General Public License applies to the Free Software Foundation's
++software and to any other program whose authors commit to using it.
++You can use it for your programs, too.
++
++  When we speak of free software, we are referring to freedom, not
++price.  Specifically, the General Public License is designed to make
++sure that you have the freedom to give away or sell copies of free
++software, that you receive source code or can get it if you want it,
++that you can change the software or use pieces of it in new free
++programs; and that you know you can do these things.
++
++  To protect your rights, we need to make restrictions that forbid
++anyone to deny you these rights or to ask you to surrender the rights.
++These restrictions translate to certain responsibilities for you if you
++distribute copies of the software, or if you modify it.
++
++  For example, if you distribute copies of a such a program, whether
++gratis or for a fee, you must give the recipients all the rights that
++you have.  You must make sure that they, too, receive or can get the
++source code.  And you must tell them their rights.
++
++  We protect your rights with two steps: (1) copyright the software, and
++(2) offer you this license which gives you legal permission to copy,
++distribute and/or modify the software.
++
++  Also, for each author's protection and ours, we want to make certain
++that everyone understands that there is no warranty for this free
++software.  If the software is modified by someone else and passed on, we
++want its recipients to know that what they have is not the original, so
++that any problems introduced by others will not reflect on the original
++authors' reputations.
++
++  The precise terms and conditions for copying, distribution and
++modification follow.
++
++		    GNU GENERAL PUBLIC LICENSE
++   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
++
++  0. This License Agreement applies to any program or other work which
++contains a notice placed by the copyright holder saying it may be
++distributed under the terms of this General Public License.  The
++"Program", below, refers to any such program or work, and a "work based
++on the Program" means either the Program or any work containing the
++Program or a portion of it, either verbatim or with modifications.  Each
++licensee is addressed as "you".
++
++  1. You may copy and distribute verbatim copies of the Program's source
++code as you receive it, in any medium, provided that you conspicuously and
++appropriately publish on each copy an appropriate copyright notice and
++disclaimer of warranty; keep intact all the notices that refer to this
++General Public License and to the absence of any warranty; and give any
++other recipients of the Program a copy of this General Public License
++along with the Program.  You may charge a fee for the physical act of
++transferring a copy.
++
++  2. You may modify your copy or copies of the Program or any portion of
++it, and copy and distribute such modifications under the terms of Paragraph
++1 above, provided that you also do the following:
++
++    a) cause the modified files to carry prominent notices stating that
++    you changed the files and the date of any change; and
++
++    b) cause the whole of any work that you distribute or publish, that
++    in whole or in part contains the Program or any part thereof, either
++    with or without modifications, to be licensed at no charge to all
++    third parties under the terms of this General Public License (except
++    that you may choose to grant warranty protection to some or all
++    third parties, at your option).
++
++    c) If the modified program normally reads commands interactively when
++    run, you must cause it, when started running for such interactive use
++    in the simplest and most usual way, to print or display an
++    announcement including an appropriate copyright notice and a notice
++    that there is no warranty (or else, saying that you provide a
++    warranty) and that users may redistribute the program under these
++    conditions, and telling the user how to view a copy of this General
++    Public License.
++
++    d) You may charge a fee for the physical act of transferring a
++    copy, and you may at your option offer warranty protection in
++    exchange for a fee.
++
++Mere aggregation of another independent work with the Program (or its
++derivative) on a volume of a storage or distribution medium does not bring
++the other work under the scope of these terms.
++
++  3. You may copy and distribute the Program (or a portion or derivative of
++it, under Paragraph 2) in object code or executable form under the terms of
++Paragraphs 1 and 2 above provided that you also do one of the following:
++
++    a) accompany it with the complete corresponding machine-readable
++    source code, which must be distributed under the terms of
++    Paragraphs 1 and 2 above; or,
++
++    b) accompany it with a written offer, valid for at least three
++    years, to give any third party free (except for a nominal charge
++    for the cost of distribution) a complete machine-readable copy of the
++    corresponding source code, to be distributed under the terms of
++    Paragraphs 1 and 2 above; or,
++
++    c) accompany it with the information you received as to where the
++    corresponding source code may be obtained.  (This alternative is
++    allowed only for noncommercial distribution and only if you
++    received the program in object code or executable form alone.)
++
++Source code for a work means the preferred form of the work for making
++modifications to it.  For an executable file, complete source code means
++all the source code for all modules it contains; but, as a special
++exception, it need not include source code for modules which are standard
++libraries that accompany the operating system on which the executable
++file runs, or for standard header files or definitions files that
++accompany that operating system.
++
++  4. You may not copy, modify, sublicense, distribute or transfer the
++Program except as expressly provided under this General Public License.
++Any attempt otherwise to copy, modify, sublicense, distribute or transfer
++the Program is void, and will automatically terminate your rights to use
++the Program under this License.  However, parties who have received
++copies, or rights to use copies, from you under this General Public
++License will not have their licenses terminated so long as such parties
++remain in full compliance.
++
++  5. By copying, distributing or modifying the Program (or any work based
++on the Program) you indicate your acceptance of this license to do so,
++and all its terms and conditions.
++
++  6. Each time you redistribute the Program (or any work based on the
++Program), the recipient automatically receives a license from the original
++licensor to copy, distribute or modify the Program subject to these
++terms and conditions.  You may not impose any further restrictions on the
++recipients' exercise of the rights granted herein.
++
++  7. The Free Software Foundation may publish revised and/or new versions
++of the General Public License from time to time.  Such new versions will
++be similar in spirit to the present version, but may differ in detail to
++address new problems or concerns.
++
++Each version is given a distinguishing version number.  If the Program
++specifies a version number of the license which applies to it and "any
++later version", you have the option of following the terms and conditions
++either of that version or of any later version published by the Free
++Software Foundation.  If the Program does not specify a version number of
++the license, you may choose any version ever published by the Free Software
++Foundation.
++
++  8. If you wish to incorporate parts of the Program into other free
++programs whose distribution conditions are different, write to the author
++to ask for permission.  For software which is copyrighted by the Free
++Software Foundation, write to the Free Software Foundation; we sometimes
++make exceptions for this.  Our decision will be guided by the two goals
++of preserving the free status of all derivatives of our free software and
++of promoting the sharing and reuse of software generally.
++
++			    NO WARRANTY
++
++  9. BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
++FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN
++OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
++PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED
++OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS
++TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE
++PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
++REPAIR OR CORRECTION.
++
++  10. IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
++WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
++REDISTRIBUTE THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES,
++INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING
++OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED
++TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY
++YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
++PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
++POSSIBILITY OF SUCH DAMAGES.
++
++		     END OF TERMS AND CONDITIONS
++
++	Appendix: How to Apply These Terms to Your New Programs
++
++  If you develop a new program, and you want it to be of the greatest
++possible use to humanity, the best way to achieve this is to make it
++free software which everyone can redistribute and change under these
++terms.
++
++  To do so, attach the following notices to the program.  It is safest to
++attach them to the start of each source file to most effectively convey
++the exclusion of warranty; and each file should have at least the
++"copyright" line and a pointer to where the full notice is found.
++
++    <one line to give the program's name and a brief idea of what it does.>
++    Copyright (C) 19yy  <name of author>
++
++    This program is free software; you can redistribute it and/or modify
++    it under the terms of the GNU General Public License as published by
++    the Free Software Foundation; either version 1, or (at your option)
++    any later version.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program; if not, write to the Free Software Foundation,
++    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
++
++Also add information on how to contact you by electronic and paper mail.
++
++If the program is interactive, make it output a short notice like this
++when it starts in an interactive mode:
++
++    Gnomovision version 69, Copyright (C) 19xx name of author
++    Gnomovision comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
++    This is free software, and you are welcome to redistribute it
++    under certain conditions; type `show c' for details.
++
++The hypothetical commands `show w' and `show c' should show the
++appropriate parts of the General Public License.  Of course, the
++commands you use may be called something other than `show w' and `show
++c'; they could even be mouse-clicks or menu items--whatever suits your
++program.
++
++You should also get your employer (if you work as a programmer) or your
++school, if any, to sign a "copyright disclaimer" for the program, if
++necessary.  Here a sample; alter the names:
++
++  Yoyodyne, Inc., hereby disclaims all copyright interest in the
++  program `Gnomovision' (a program to direct compilers to make passes
++  at assemblers) written by James Hacker.
++
++  <signature of Ty Coon>, 1 April 1989
++  Ty Coon, President of Vice
++
++That's all there is to it!
+--- a/src/gcc/d/dfrontend/readme.txt
++++ b/src/gcc/d/dfrontend/readme.txt
+@@ -1,15 +1,15 @@
+ 
+ 		The D Programming Language
+ 		Compiler Front End Source
+-		Copyright (c) 1999-2009, by Digital Mars
+-		http://www.digitalmars.com
++		Copyright (c) 1999-2013, by Digital Mars
++		http://www.digitalmars.com/
+ 		All Rights Reserved
+ 
+ 
+ This is the source code to the front end Digital Mars D compiler.
+ It covers the lexical analysis, parsing, and semantic analysis
+ of the D Programming Language defined in the documents at
+-http://www.digitalmars.com/d/
++http://dlang.org/
+ 
+ These sources are free, they are redistributable and modifiable
+ under the terms of the GNU General Public License as published by
+--- a/src/gcc/d/dfrontend/root.h
++++ b/src/gcc/d/dfrontend/root.h
+@@ -15,7 +15,6 @@
+ #ifdef DEBUG
+ #include <assert.h>
+ #endif
+-
+ #include "port.h"
+ 
+ #if __DMC__
+--- a/src/gcc/d/d-ir.cc
++++ b/src/gcc/d/d-ir.cc
+@@ -58,8 +58,10 @@
+ {
+   tree t_label;
+ 
+-  object_file->setLoc (loc); /* This makes the 'undefined label' error show up on the correct line...
+-				The extra doLineNote in doJump shouldn't cause a problem. */
++  /* This makes the 'undefined label' error show up on the correct line...
++     The extra doLineNote in doJump shouldn't cause a problem.  */
++  irs->doLineNote (loc);
++
+   if (!label->statement)
+     error ("label %s is undefined", label->toChars());
+   else if (tf != label->statement->tf)
+@@ -68,6 +70,7 @@
+     irs->checkGoto (this, label);
+ 
+   t_label = irs->getLabelTree (label);
++
+   if (t_label != NULL_TREE)
+     irs->doJump (this, t_label);
+   // else, there was an error
+@@ -165,7 +168,7 @@
+ 	      // need to override initializer...
+ 	      // set DECL_INITIAL now and emitLocalVar will know not to change it
+ 	      DECL_INITIAL (catch_var) = exc_obj;
+-	      irs->emitLocalVar (a_catch->var);
++	      irs->emitLocalVar (a_catch->var, false);
+ 	    }
+ 
+ 	  if (a_catch->handler)
+@@ -187,7 +190,7 @@
+ {
+   irs->startScope();
+   if (wthis)
+-    irs->emitLocalVar (wthis);
++    irs->emitLocalVar (wthis, false);
+ 
+   if (body)
+     body->toIR (irs);
+--- a/src/gcc/d/d-irstate.cc
++++ b/src/gcc/d/d-irstate.cc
+@@ -48,28 +48,28 @@
+     }
+ 
+   cirstate = (IRState *) new_irs;
+-  ModuleInfo & mi = *object_file->moduleInfo;
++  ModuleInfo *mi = current_module_info;
+ 
+   if (decl->isSharedStaticCtorDeclaration())
+-    mi.sharedctors.push (decl);
++    mi->sharedctors.push (decl);
+   else if (decl->isStaticCtorDeclaration())
+-    mi.ctors.push (decl);
++    mi->ctors.push (decl);
+   else if (decl->isSharedStaticDtorDeclaration())
+     {
+       VarDeclaration *vgate;
+       if ((vgate = decl->isSharedStaticDtorDeclaration()->vgate))
+-	mi.sharedctorgates.push (vgate);
+-      mi.shareddtors.push (decl);
++	mi->sharedctorgates.push (vgate);
++      mi->shareddtors.push (decl);
+     }
+   else if (decl->isStaticDtorDeclaration())
+     {
+       VarDeclaration *vgate;
+       if ((vgate = decl->isStaticDtorDeclaration()->vgate))
+-	mi.ctorgates.push (vgate);
+-      mi.dtors.push (decl);
++	mi->ctorgates.push (vgate);
++      mi->dtors.push (decl);
+     }
+   else if (decl->isUnitTestDeclaration())
+-    mi.unitTests.push (decl);
++    mi->unitTests.push (decl);
+ 
+   return new_irs;
+ }
+@@ -77,7 +77,7 @@
+ void
+ IRBase::endFunction (void)
+ {
+-  gcc_assert (this->scopes.dim == 0);
++  gcc_assert (this->scopes_.dim == 0);
+   cirstate = (IRState *) this->parent;
+ }
+ 
+@@ -104,9 +104,9 @@
+   if (EXPR_P (e) && !EXPR_HAS_LOCATION (e))
+     SET_EXPR_LOCATION (e, input_location);
+ 
+-  tree stmt_list = (tree) this->statementList.pop();
++  tree stmt_list = (tree) this->statementList_.pop();
+   append_to_statement_list_force (e, &stmt_list);
+-  this->statementList.push (stmt_list);
++  this->statementList_.push (stmt_list);
+ }
+ 
+ 
+@@ -114,14 +114,14 @@
+ IRBase::pushStatementList (void)
+ {
+   tree t = alloc_stmt_list();
+-  this->statementList.push (t);
++  this->statementList_.push (t);
+   d_keep (t);
+ }
+ 
+ tree
+ IRBase::popStatementList (void)
+ {
+-  tree t = (tree) this->statementList.pop();
++  tree t = (tree) this->statementList_.pop();
+ 
+   /* If the statement list is completely empty, just return it.  This is
+      just as good small as build_empty_stmt, with the advantage that
+@@ -166,9 +166,9 @@
+ {
+   Label *l = new Label();
+ 
+-  for (int i = this->loops.dim - 1; i >= 0; i--)
++  for (int i = this->loops_.dim - 1; i >= 0; i--)
+     {
+-      Flow *flow = this->loops[i];
++      Flow *flow = this->loops_[i];
+ 
+       if (flow->kind != level_block
+ 	  && flow->kind != level_switch)
+@@ -200,9 +200,9 @@
+       if (scope_stmt)
+ 	stmt = scope_stmt->statement;
+ 
+-      for (int i = this->loops.dim - 1; i >= 0; i--)
++      for (int i = this->loops_.dim - 1; i >= 0; i--)
+ 	{
+-	  Flow *flow = this->loops[i];
++	  Flow *flow = this->loops_[i];
+ 
+ 	  if (flow->statement == stmt)
+ 	    {
+@@ -215,9 +215,9 @@
+     }
+   else
+     {
+-      for (int i = this->loops.dim - 1; i >= 0; i--)
++      for (int i = this->loops_.dim - 1; i >= 0; i--)
+ 	{
+-	  Flow *flow = this->loops[i];
++	  Flow *flow = this->loops_[i];
+ 
+ 	  if ((!want_continue && flow->statement->hasBreak())
+ 	      || flow->statement->hasContinue())
+@@ -232,33 +232,31 @@
+ IRBase::beginFlow (Statement *stmt)
+ {
+   Flow *flow = new Flow (stmt);
+-  this->loops.push (flow);
+-  pushStatementList();
++  this->loops_.push (flow);
++  this->pushStatementList();
+   return flow;
+ }
+ 
+ void
+ IRBase::endFlow (void)
+ {
+-  Flow *flow;
++  gcc_assert (this->loops_.dim);
+ 
+-  gcc_assert (this->loops.dim);
++  Flow *flow = (Flow *) this->loops_.pop();
+ 
+-  flow = (Flow *) this->loops.pop();
+   if (flow->exitLabel)
+-    doLabel (flow->exitLabel);
+-  //%% delete flow;
++    this->doLabel (flow->exitLabel);
+ }
+ 
+ void
+-IRBase::doLabel (tree t_label)
++IRBase::doLabel (tree label)
+ {
+   /* Don't write out label unless it is marked as used by the frontend.
+      This makes auto-vectorization possible in conditional loops.
+      The only excemption to this is in LabelStatement::toIR, in which
+      all computed labels are marked regardless.  */
+-  if (TREE_USED (t_label))
+-    addExp (build1 (LABEL_EXPR, void_type_node, t_label));
++  if (TREE_USED (label))
++    this->addExp (build1 (LABEL_EXPR, void_type_node, label));
+ }
+ 
+ 
+@@ -267,8 +265,9 @@
+ {
+   unsigned *p_count = new unsigned;
+   *p_count = 0;
+-  this->scopes.push (p_count);
+-  startBindings();
++
++  this->scopes_.push (p_count);
++  this->startBindings();
+ }
+ 
+ void
+@@ -276,20 +275,22 @@
+ {
+   unsigned *p_count = currentScope();
+   while (*p_count)
+-    endBindings();
++    this->endBindings();
+ 
+-  this->scopes.pop();
++  this->scopes_.pop();
+ }
+ 
+ 
+ void
+ IRBase::startBindings (void)
+ {
++  tree block;
++
+   pushlevel (0);
+-  tree block = make_node (BLOCK);
++  block = make_node (BLOCK);
+   set_block (block);
+ 
+-  pushStatementList();
++  this->pushStatementList();
+ 
+   ++(*currentScope());
+ }
+@@ -299,9 +300,9 @@
+ {
+   tree block = poplevel (1,0,0);
+ 
+-  tree t_body = popStatementList();
+-  addExp (build3 (BIND_EXPR, void_type_node,
+-		  BLOCK_VARS (block), t_body, block));
++  tree body = this->popStatementList();
++  this->addExp (build3 (BIND_EXPR, void_type_node,
++			BLOCK_VARS (block), body, block));
+ 
+   // Because we used set_block, the popped level/block is not automatically recorded
+   insert_block (block);
+@@ -312,13 +313,13 @@
+ 
+ 
+ // Routines for building statement lists around if/else conditions.
+-// STMT contains the statement to be executed if T_COND is true.
++// STMT contains the statement to be executed if COND is true.
+ 
+ void
+-IRBase::startCond (Statement *stmt, tree t_cond)
++IRBase::startCond (Statement *stmt, tree cond)
+ {
+-  Flow *f = beginFlow (stmt);
+-  f->condition = t_cond;
++  Flow *flow = this->beginFlow (stmt);
++  flow->condition = cond;
+ }
+ 
+ // Start a new statement list for the false condition branch.
+@@ -326,8 +327,9 @@
+ void
+ IRBase::startElse (void)
+ {
+-  currentFlow()->trueBranch = popStatementList();
+-  pushStatementList();
++  Flow *flow = this->currentFlow();
++  flow->trueBranch = this->popStatementList();
++  this->pushStatementList();
+ }
+ 
+ // Wrap up our constructed if condition into a COND_EXPR.
+@@ -335,20 +337,20 @@
+ void
+ IRBase::endCond (void)
+ {
+-  Flow *f = currentFlow();
+-  tree t_brnch = popStatementList();
+-  tree t_false_brnch = NULL_TREE;
++  Flow *flow = this->currentFlow();
++  tree branch = this->popStatementList();
++  tree false_branch = NULL_TREE;
+ 
+-  if (f->trueBranch == NULL_TREE)
+-    f->trueBranch = t_brnch;
++  if (flow->trueBranch == NULL_TREE)
++    flow->trueBranch = branch;
+   else
+-    t_false_brnch = t_brnch;
++    false_branch = branch;
+ 
+-  object_file->doLineNote (f->statement->loc);
+-  tree t_stmt = build3 (COND_EXPR, void_type_node,
+-			f->condition, f->trueBranch, t_false_brnch);
+-  endFlow();
+-  addExp (t_stmt);
++  this->doLineNote (flow->statement->loc);
++  tree stmt = build3 (COND_EXPR, void_type_node,
++		      flow->condition, flow->trueBranch, false_branch);
++  this->endFlow();
++  this->addExp (stmt);
+ }
+ 
+ 
+@@ -358,9 +360,9 @@
+ void
+ IRBase::startLoop (Statement *stmt)
+ {
+-  Flow *f = beginFlow (stmt);
++  Flow *flow = this->beginFlow (stmt);
+   // should be end for 'do' loop
+-  f->continueLabel = d_build_label (stmt ? stmt->loc : 0, NULL);
++  flow->continueLabel = d_build_label (stmt ? stmt->loc : 0, NULL);
+ }
+ 
+ // Emit continue label for loop.
+@@ -368,25 +370,27 @@
+ void
+ IRBase::continueHere (void)
+ {
+-  doLabel (currentFlow()->continueLabel);
++  Flow *flow = this->currentFlow();
++  this->doLabel (flow->continueLabel);
+ }
+ 
+ // Set LBL as the continue label for the current loop.
+ // Used in unrolled loop statements.
+ 
+ void
+-IRBase::setContinueLabel (tree lbl)
++IRBase::setContinueLabel (tree label)
+ {
+-  currentFlow()->continueLabel = lbl;
++  Flow *flow = this->currentFlow();
++  flow->continueLabel = label;
+ }
+ 
+ // Emit exit loop condition.
+ 
+ void
+-IRBase::exitIfFalse (tree t_cond)
++IRBase::exitIfFalse (tree cond)
+ {
+-  addExp (build1 (EXIT_EXPR, void_type_node,
+-		  build1 (TRUTH_NOT_EXPR, TREE_TYPE (t_cond), t_cond)));
++  this->addExp (build1 (EXIT_EXPR, void_type_node,
++			build1 (TRUTH_NOT_EXPR, TREE_TYPE (cond), cond)));
+ }
+ 
+ // Emit a goto to the continue label IDENT of a loop.
+@@ -394,7 +398,8 @@
+ void
+ IRBase::continueLoop (Identifier *ident)
+ {
+-  doJump (NULL, getLoopForLabel (ident, true)->continueLabel);
++  Flow *flow = this->getLoopForLabel (ident, true);
++  this->doJump (NULL, flow->continueLabel);
+ }
+ 
+ // Emit a goto to the exit label IDENT of a loop.
+@@ -402,10 +407,10 @@
+ void
+ IRBase::exitLoop (Identifier *ident)
+ {
+-  Flow *flow = getLoopForLabel (ident);
++  Flow *flow = this->getLoopForLabel (ident);
+   if (!flow->exitLabel)
+     flow->exitLabel = d_build_label (flow->statement->loc, NULL);
+-  doJump (NULL, flow->exitLabel);
++  this->doJump (NULL, flow->exitLabel);
+ }
+ 
+ // Wrap up constructed loop body in a LOOP_EXPR.
+@@ -414,44 +419,42 @@
+ IRBase::endLoop (void)
+ {
+   // says must contain an EXIT_EXPR -- what about while (1)..goto;? something other thand LOOP_EXPR?
+-  tree t_body = popStatementList();
+-  tree t_loop = build1 (LOOP_EXPR, void_type_node, t_body);
+-  addExp (t_loop);
+-  endFlow();
++  tree body = this->popStatementList();
++  tree loop = build1 (LOOP_EXPR, void_type_node, body);
++  this->addExp (loop);
++  this->endFlow();
+ }
+ 
+ 
+ // Routines for building statement lists around switches.  STMT is the body
+-// of the switch statement, T_COND is the condition to the switch. If HAS_VARS
++// of the switch statement, COND is the condition to the switch. If HAS_VARS
+ // is true, then the switch statement has been converted to an if-then-else.
+ 
+ void
+-IRBase::startCase (Statement *stmt, tree t_cond, int has_vars)
++IRBase::startCase (Statement *stmt, tree cond, int has_vars)
+ {
+-  Flow *f = beginFlow (stmt);
+-  f->condition = t_cond;
+-  f->kind = level_switch;
++  Flow *flow = this->beginFlow (stmt);
++  flow->condition = cond;
++  flow->kind = level_switch;
+   if (has_vars)
+     {
+       // %% dummy value so the tree is not NULL
+-      f->hasVars = integer_one_node;
++      flow->hasVars = integer_one_node;
+     }
+ }
+ 
+-// Emit a case statement for T_VALUE.
++// Emit a case statement for VALUE.
+ 
+ void
+-IRBase::doCase (tree t_value, tree t_label)
++IRBase::doCase (tree value, tree label)
+ {
+-  if (currentFlow()->hasVars)
+-    {
+-      // SwitchStatement has already taken care of label jumps.
+-      doLabel (t_label);
+-    }
++  // SwitchStatement has already taken care of label jumps.
++  if (this->currentFlow()->hasVars)
++    this->doLabel (label);
+   else
+     {
+-      tree t_case = build_case_label (t_value, NULL_TREE, t_label);
+-      addExp (t_case);
++      tree case_label = build_case_label (value, NULL_TREE, label);
++      this->addExp (case_label);
+     }
+ }
+ 
+@@ -460,21 +463,21 @@
+ void
+ IRBase::endCase (void)
+ {
+-  Flow *f = currentFlow();
+-  tree t_body = popStatementList();
+-  tree t_condtype = TREE_TYPE (f->condition);
+-  if (f->hasVars)
+-    {
+-      // %% switch was converted to if-then-else expression
+-      addExp (t_body);
+-    }
++  Flow *flow = this->currentFlow();
++  tree body = this->popStatementList();
++  tree condtype = TREE_TYPE (flow->condition);
++
++  // Switch was converted to if-then-else expression
++  if (flow->hasVars)
++    this->addExp (body);
+   else
+     {
+-      tree t_stmt = build3 (SWITCH_EXPR, t_condtype, f->condition,
+-			    t_body, NULL_TREE);
+-      addExp (t_stmt);
++      tree stmt = build3 (SWITCH_EXPR, condtype,
++			  flow->condition, body, NULL_TREE);
++      this->addExp (stmt);
+     }
+-  endFlow();
++
++  this->endFlow();
+ }
+ 
+ // Routines for building statement lists around try/catch/finally.
+@@ -483,8 +486,8 @@
+ void
+ IRBase::startTry (Statement *stmt)
+ {
+-  beginFlow (stmt);
+-  currentFlow()->kind = level_try;
++  Flow *flow = this->beginFlow (stmt);
++  flow->kind = level_try;
+ }
+ 
+ // Pops the try body and starts a new statement list for all catches.
+@@ -492,18 +495,19 @@
+ void
+ IRBase::startCatches (void)
+ {
+-  currentFlow()->tryBody = popStatementList();
+-  currentFlow()->kind = level_catch;
+-  pushStatementList();
++  Flow *flow = this->currentFlow();
++  flow->tryBody = this->popStatementList();
++  flow->kind = level_catch;
++  this->pushStatementList();
+ }
+ 
+-// Start a new catch expression for exception type T_TYPE.
++// Start a new catch expression for exception type TYPE.
+ 
+ void
+-IRBase::startCatch (tree t_type)
++IRBase::startCatch (tree type)
+ {
+-  currentFlow()->catchType = t_type;
+-  pushStatementList();
++  this->currentFlow()->catchType = type;
++  this->pushStatementList();
+ }
+ 
+ // Wrap up catch expression into a CATCH_EXPR.
+@@ -511,11 +515,11 @@
+ void
+ IRBase::endCatch (void)
+ {
+-  tree t_body = popStatementList();
++  tree body = this->popStatementList();
+   // % Wrong loc... can set pass statement to startCatch, set
+-  // The loc on t_type and then use it here...
+-  addExp (build2 (CATCH_EXPR, void_type_node,
+-		  currentFlow()->catchType, t_body));
++  // The loc on type and then use it here...
++  this->addExp (build2 (CATCH_EXPR, void_type_node,
++			this->currentFlow()->catchType, body));
+ }
+ 
+ // Wrap up try/catch into a TRY_CATCH_EXPR.
+@@ -523,11 +527,13 @@
+ void
+ IRBase::endCatches (void)
+ {
+-  tree t_catches = popStatementList();
+-  object_file->doLineNote (currentFlow()->statement->loc);
+-  addExp (build2 (TRY_CATCH_EXPR, void_type_node,
+-		  currentFlow()->tryBody, t_catches));
+-  endFlow();
++  Flow *flow = this->currentFlow();
++  tree catches = this->popStatementList();
++
++  this->doLineNote (flow->statement->loc);
++  this->addExp (build2 (TRY_CATCH_EXPR, void_type_node,
++      			flow->tryBody, catches));
++  this->endFlow();
+ }
+ 
+ // Start a new finally expression.
+@@ -535,9 +541,10 @@
+ void
+ IRBase::startFinally (void)
+ {
+-  currentFlow()->tryBody = popStatementList();
+-  currentFlow()->kind = level_finally;
+-  pushStatementList();
++  Flow *flow = this->currentFlow();
++  flow->tryBody = this->popStatementList();
++  flow->kind = level_finally;
++  this->pushStatementList();
+ }
+ 
+ // Wrap-up try/finally into a TRY_FINALLY_EXPR.
+@@ -545,40 +552,44 @@
+ void
+ IRBase::endFinally (void)
+ {
+-  tree t_finally = popStatementList();
+-  object_file->doLineNote (currentFlow()->statement->loc);
+-  addExp (build2 (TRY_FINALLY_EXPR, void_type_node,
+-		  currentFlow()->tryBody, t_finally));
+-  endFlow();
++  Flow *flow = this->currentFlow();
++  tree finally = this->popStatementList();
++
++  this->doLineNote (flow->statement->loc);
++  this->addExp (build2 (TRY_FINALLY_EXPR, void_type_node,
++			flow->tryBody, finally));
++  this->endFlow();
+ }
+ 
+-// Emit a return expression of value T_VALUE.
++// Emit a return expression of value VALUE.
+ 
+ void
+-IRBase::doReturn (tree t_value)
++IRBase::doReturn (tree value)
+ {
+-  addExp (build1 (RETURN_EXPR, void_type_node, t_value));
++  this->addExp (build1 (RETURN_EXPR, void_type_node, value));
+ }
+ 
+-// Emit goto expression to T_LABEL.
++// Emit goto expression to LABEL.
+ 
+ void
+-IRBase::doJump (Statement *stmt, tree t_label)
++IRBase::doJump (Statement *stmt, tree label)
+ {
+   if (stmt)
+-    object_file->doLineNote (stmt->loc);
+-  addExp (build1 (GOTO_EXPR, void_type_node, t_label));
+-  TREE_USED (t_label) = 1;
++    this->doLineNote (stmt->loc);
++
++  this->addExp (build1 (GOTO_EXPR, void_type_node, label));
++  TREE_USED (label) = 1;
+ }
+ 
+ // Routines for checking goto statements don't jump to invalid locations.
+ // In particular, it is illegal for a goto to be used to skip initializations.
+-// Saves the block label L is declared in for analysis later.
++// Saves the block LABEL is declared in for analysis later.
+ 
+ void
+-IRBase::pushLabel (LabelDsymbol *l)
++IRBase::pushLabel (LabelDsymbol *label)
+ {
+-  this->labels.push (getLabelBlock (l));
++  Label *lblock = this->getLabelBlock (label);
++  this->labels_.push (lblock);
+ }
+ 
+ // Error if STMT is in it's own try statement separate from other
+@@ -587,9 +598,8 @@
+ void
+ IRBase::checkSwitchCase (Statement *stmt, int default_flag)
+ {
+-  Flow *flow = currentFlow();
++  Flow *flow = this->currentFlow();
+ 
+-  gcc_assert (flow);
+   if (flow->kind != level_switch && flow->kind != level_block)
+     {
+       stmt->error ("%s cannot be in different try block level from switch",
+@@ -604,15 +614,15 @@
+ IRBase::checkGoto (Statement *stmt, LabelDsymbol *label)
+ {
+   Statement *curBlock = NULL;
+-  unsigned curLevel = this->loops.dim;
++  unsigned curLevel = this->loops_.dim;
+   int found = 0;
+ 
+   if (curLevel)
+-    curBlock = currentFlow()->statement;
++    curBlock = this->currentFlow()->statement;
+ 
+-  for (size_t i = 0; i < this->labels.dim; i++)
++  for (size_t i = 0; i < this->labels_.dim; i++)
+     {
+-      Label *linfo = this->labels[i];
++      Label *linfo = this->labels_[i];
+       gcc_assert (linfo);
+ 
+       if (label == linfo->label)
+@@ -635,9 +645,12 @@
+   // Push forward referenced gotos.
+   if (!found)
+     {
++      Label *lblock = this->getLabelBlock (label, stmt);
++
+       if (!label->statement->fwdrefs)
+ 	label->statement->fwdrefs = new Blocks();
+-      label->statement->fwdrefs->push (getLabelBlock (label, stmt));
++
++      label->statement->fwdrefs->push (lblock);
+     }
+ }
+ 
+@@ -657,9 +670,9 @@
+       gcc_assert (ref && ref->from);
+       stmt = ref->from;
+ 
+-      for (size_t i = 0; i < this->labels.dim; i++)
++      for (size_t i = 0; i < this->labels_.dim; i++)
+ 	{
+-	  Label *linfo = this->labels[i];
++	  Label *linfo = this->labels_[i];
+ 	  gcc_assert (linfo);
+ 
+ 	  if (ref->label == linfo->label)
+--- a/src/gcc/d/d-irstate.h
++++ b/src/gcc/d/d-irstate.h
+@@ -124,15 +124,11 @@
+   VarDeclarations *varsInScope;
+ 
+   // ** Statement Lists
+-  Array statementList;    // of tree
+-
+   void addExp (tree e);
+   void pushStatementList (void);
+   tree popStatementList (void);
+ 
+   // ** Labels
+-  Labels labels;
+-
+   // It is only valid to call this while the function in which the label is defined
+   // is being compiled.
+   tree    getLabelTree (LabelDsymbol *label);
+@@ -142,8 +138,6 @@
+   { return this->func->returnLabel ? ident == this->func->returnLabel->ident : 0; }
+ 
+   // ** Loops (and case statements)
+-  Flows loops;
+-
+   // These routines don't generate code.  They are for tracking labeled loops.
+   Flow *getLoopForLabel (Identifier *ident, bool want_continue = false);
+   Flow *beginFlow (Statement *stmt);
+@@ -152,8 +146,8 @@
+ 
+   Flow *currentFlow (void)
+   {
+-    gcc_assert (this->loops.dim);
+-    return (Flow *) this->loops.tos();
++    gcc_assert (this->loops_.dim);
++    return (Flow *) this->loops_.tos();
+   }
+ 
+   void doLabel (tree t_label);
+@@ -171,14 +165,13 @@
+      where the variable is declared and ends at it's containing scope.
+    */
+ 
+-  Array scopes; // of unsigned *
+   void startScope (void);
+   void endScope (void);
+ 
+   unsigned *currentScope (void)
+   {
+-    gcc_assert (this->scopes.dim);
+-    return (unsigned *) this->scopes.tos();
++    gcc_assert (this->scopes_.dim);
++    return (unsigned *) this->scopes_.tos();
+   }
+ 
+   void startBindings (void);
+@@ -186,7 +179,7 @@
+ 
+   // Update current source file location to LOC.
+   void doLineNote (const Loc& loc)
+-  { ObjectFile::doLineNote (loc); }
++  { set_input_location (loc); }
+ 
+   // ** Instruction stream manipulation
+ 
+@@ -227,6 +220,12 @@
+ 
+   // ** Return statement.
+   void doReturn (tree t_value);
++
++ protected:
++  Array statementList_;	// of tree
++  Array scopes_;	// of unsigned *
++  Flows loops_;
++  Labels labels_;
+ };
+ 
+ 
+--- a/src/gcc/d/d-lang.cc
++++ b/src/gcc/d/d-lang.cc
+@@ -120,6 +120,9 @@
+ 
+ static const char *fonly_arg;
+ 
++/* List of modules being compiled.  */
++Modules output_modules;
++
+ /* Zero disables all standard directories for headers.  */
+ static bool std_inc = true;
+ 
+@@ -153,7 +156,7 @@
+   global.params.fileImppath = new Strings();
+ 
+   // extra D-specific options
+-  ObjectFile::emitTemplates = TEnormal;
++  flag_emit_templates = TEnormal;
+ }
+ 
+ /* Initialize options structure OPTS.  */
+@@ -411,7 +414,7 @@
+       break;
+ 
+     case OPT_femit_templates:
+-      ObjectFile::emitTemplates = value ? TEprivate : TEnone;
++      flag_emit_templates = value ? TEprivate : TEnone;
+       break;
+ 
+     case OPT_femit_moduleinfo:
+@@ -1034,11 +1037,10 @@
+   if (global.errors || global.warnings)
+     goto had_errors;
+ 
+-  object_file = new ObjectFile();
+   if (fonly_arg)
+-    object_file->modules.push (output_module);
++    output_modules.push (output_module);
+   else
+-    object_file->modules.append (&modules);
++    output_modules.append (&modules);
+ 
+   cirstate = new IRState();
+ 
+@@ -1101,10 +1103,10 @@
+   // Add D frontend error count to GCC error count to to exit with error status
+   errorcount += (global.errors + global.warnings);
+ 
+-  object_file->finish();
+-  output_module = NULL;
+-
++  d_finish_module();
+   d_backend_term();
++
++  output_module = NULL;
+ }
+ 
+ static tree
+@@ -1592,11 +1594,16 @@
+ static tree
+ d_build_eh_type_type (tree type)
+ {
+-  TypeClass *d_type = (TypeClass *) build_dtype (type);
+-  gcc_assert (d_type);
+-  d_type = (TypeClass *) d_type->toBasetype();
+-  gcc_assert (d_type->ty == Tclass);
+-  return build_address (d_type->sym->toSymbol()->Stree);
++  Type *dtype = build_dtype (type);
++  Symbol *sym;
++
++  if (dtype)
++    dtype = dtype->toBasetype();
++
++  gcc_assert (dtype && dtype->ty == Tclass);
++  sym = ((TypeClass *) dtype)->sym->toSymbol();
++
++  return convert (ptr_type_node, build_address (sym->Stree));
+ }
+ 
+ void
+--- a/src/gcc/d/d-objfile.cc
++++ b/src/gcc/d/d-objfile.cc
+@@ -28,13 +28,13 @@
+ #include "dfrontend/target.h"
+ 
+ 
+-ModuleInfo *ObjectFile::moduleInfo;
+-Modules ObjectFile::modules;
+-unsigned  ObjectFile::moduleSearchIndex;
+-DeferredThunks ObjectFile::deferredThunks;
+-FuncDeclarations ObjectFile::staticCtorList;
+-FuncDeclarations ObjectFile::staticDtorList;
+-TemplateEmission ObjectFile::emitTemplates;
++// Module info.  Assuming only one module per run of the compiler.
++ModuleInfo *current_module_info;
++
++// static constructors (not D static constructors)
++static FuncDeclarations static_ctor_list;
++static FuncDeclarations static_dtor_list;
++
+ 
+ // Construct a new Symbol.
+ 
+@@ -699,7 +699,7 @@
+       // local variables of a function.  Otherwise, it would be
+       // enough to make a check for isVarDeclaration() in
+       // DeclarationExp::toElem.
+-      cirstate->emitLocalVar (this);
++      cirstate->emitLocalVar (this, false);
+     }
+ }
+ 
+@@ -886,7 +886,7 @@
+   if (!global.params.useUnitTests && isUnitTestDeclaration())
+     return;
+ 
+-  if (!object_file->shouldEmit (this))
++  if (!output_declaration_p (this))
+     return;
+ 
+   Symbol *sym = toSymbol();
+@@ -923,14 +923,14 @@
+   tree return_type = TREE_TYPE (TREE_TYPE (fndecl));
+   tree result_decl = build_decl (UNKNOWN_LOCATION, RESULT_DECL, NULL_TREE, return_type);
+ 
+-  object_file->setDeclLoc (result_decl, this);
++  set_decl_location (result_decl, this);
+   DECL_RESULT (fndecl) = result_decl;
+   DECL_CONTEXT (result_decl) = fndecl;
+   DECL_ARTIFICIAL (result_decl) = 1;
+   DECL_IGNORED_P (result_decl) = 1;
+ 
+   allocate_struct_function (fndecl, false);
+-  object_file->setCfunEndLoc (endloc);
++  set_function_end_locus (endloc);
+ 
+   // Add method to record for debug information.
+   if (isThis())
+@@ -941,7 +941,8 @@
+       if (ad->isClassDeclaration())
+ 	rec = TREE_TYPE (rec);
+ 
+-      object_file->addAggMethod (rec, this);
++      if (write_symbols != NO_DEBUG)
++	TYPE_METHODS (rec) = chainon (TYPE_METHODS (rec), fndecl);
+     }
+ 
+   tree parm_decl = NULL_TREE;
+@@ -950,23 +951,24 @@
+   // Special arguments...
+ 
+   // 'this' parameter
++  // For nested functions, D still generates a vthis, but it
++  // should not be referenced in any expression.
+   if (vthis)
+     {
+       parm_decl = vthis->toSymbol()->Stree;
+-      // For nested functions, D still generates a vthis, but it
+-      // should not be referenced in any expression.
+-      if (!isThis() && isNested())
+-	DECL_ARTIFICIAL (parm_decl) = 1;
+-      irs->sthis = parm_decl;
+-      object_file->setDeclLoc (parm_decl, vthis);
++      DECL_ARTIFICIAL (parm_decl) = 1;
++      TREE_READONLY (parm_decl) = 1;
++
++      set_decl_location (parm_decl, vthis);
+       param_list = chainon (param_list, parm_decl);
++      irs->sthis = parm_decl;
+     }
+ 
+   // _arguments parameter.
+   if (v_arguments)
+     {
+       parm_decl = v_arguments->toSymbol()->Stree;
+-      object_file->setDeclLoc (parm_decl, v_arguments);
++      set_decl_location (parm_decl, v_arguments);
+       param_list = chainon (param_list, parm_decl);
+     }
+ 
+@@ -977,7 +979,7 @@
+     {
+       VarDeclaration *param = (*parameters)[i];
+       parm_decl = param->toSymbol()->Stree;
+-      object_file->setDeclLoc (parm_decl, (Dsymbol *) param);
++      set_decl_location (parm_decl, (Dsymbol *) param);
+       // chain them in the correct order
+       param_list = chainon (param_list, parm_decl);
+     }
+@@ -1025,7 +1027,7 @@
+   if (v_argptr)
+     irs->pushStatementList();
+   if (v_arguments_var)
+-    irs->emitLocalVar (v_arguments_var);
++    irs->emitLocalVar (v_arguments_var, false);
+ 
+   /* The fabled D named return value optimisation.
+      Implemented by overriding all the RETURN_EXPRs and replacing all
+@@ -1051,7 +1053,7 @@
+   if (v_argptr)
+     {
+       tree body = irs->popStatementList();
+-      tree var = irs->var (v_argptr);
++      tree var = get_decl_tree (v_argptr, this);
+       var = build_address (var);
+ 
+       tree init_exp = d_build_call_nary (builtin_decl_explicit (BUILT_IN_VA_START), 2, var, parm_decl);
+@@ -1132,7 +1134,7 @@
+   sym->outputStage = Finished;
+ 
+   if (!errorcount && !global.errors)
+-    object_file->outputFunction (this);
++    d_finish_function (this);
+ 
+   // Process all deferred nested functions.
+   for (size_t i = 0; i < this->deferred.dim; ++i)
+@@ -1204,12 +1206,12 @@
+ void
+ Module::genobjfile (int)
+ {
+-  /* Normally would create an ObjFile here, but gcc is limited to one obj file
+-     per pass and there may be more than one module per obj file. */
+-  gcc_assert (object_file);
++  // Normally would create an ObjFile here, but gcc is limited to one object
++  // file per pass and there may be more than one module per object file.
++  current_module_info = new ModuleInfo;
++  current_module_decl = this;
+ 
+-  object_file->beginModule (this);
+-  object_file->setupStaticStorage (this, toSymbol()->Stree);
++  setup_symbol_storage (this, toSymbol()->Stree, /*public_p*/true);
+ 
+   if (members)
+     {
+@@ -1224,92 +1226,81 @@
+   // Can be switched off for not compiling against runtime library.
+   if (!global.params.betterC)
+     {
+-      ModuleInfo& mi = *object_file->moduleInfo;
+-      if (mi.ctors.dim || mi.ctorgates.dim)
+-	sctor = object_file->doCtorFunction ("*__modctor", &mi.ctors, &mi.ctorgates)->toSymbol();
+-      if (mi.dtors.dim)
+-	sdtor = object_file->doDtorFunction ("*__moddtor", &mi.dtors)->toSymbol();
+-      if (mi.sharedctors.dim || mi.sharedctorgates.dim)
+-	ssharedctor = object_file->doCtorFunction ("*__modsharedctor",
+-						   &mi.sharedctors, &mi.sharedctorgates)->toSymbol();
+-      if (mi.shareddtors.dim)
+-	sshareddtor = object_file->doDtorFunction ("*__modshareddtor", &mi.shareddtors)->toSymbol();
+-      if (mi.unitTests.dim)
+-	stest = object_file->doUnittestFunction ("*__modtest", &mi.unitTests)->toSymbol();
++      ModuleInfo *mi = current_module_info;
+ 
+-      genmoduleinfo();
+-    }
++      if (mi->ctors.dim || mi->ctorgates.dim)
++	sctor = build_ctor_function ("*__modctor", &mi->ctors, &mi->ctorgates);
+ 
+-  object_file->endModule();
+-}
++      if (mi->dtors.dim)
++	sdtor = build_dtor_function ("*__moddtor", &mi->dtors);
+ 
++      if (mi->sharedctors.dim || mi->sharedctorgates.dim)
++	ssharedctor = build_ctor_function ("*__modsharedctor", &mi->sharedctors, &mi->sharedctorgates);
+ 
+-void
+-ObjectFile::beginModule (Module *m)
+-{
+-  moduleInfo = new ModuleInfo;
+-  cmodule = m;
+-}
++      if (mi->shareddtors.dim)
++	sshareddtor = build_dtor_function ("*__modshareddtor", &mi->shareddtors);
+ 
+-void
+-ObjectFile::endModule (void)
+-{
+-  for (size_t i = 0; i < deferredThunks.dim; i++)
+-    {
+-      DeferredThunk *t = deferredThunks[i];
+-      outputThunk (t->decl, t->target, t->offset);
++      if (mi->unitTests.dim)
++	stest = build_unittest_function ("*__modtest", &mi->unitTests);
++
++      genmoduleinfo();
+     }
+-  deferredThunks.setDim (0);
+-  moduleInfo = NULL;
+-  cmodule = NULL;
++
++  // Finish off any thunks deferred during compilation.
++  write_deferred_thunks();
++
++  free (current_module_info);
++  current_module_decl = NULL;
+ }
+ 
++// Support for multiple modules per object file.
++// Returns TRUE if module M is being compiled.
++
+ bool
+-ObjectFile::hasModule (Module *m)
++output_module_p (Module *m)
+ {
+-  if (!m || !modules.dim)
++  static unsigned search_index = 0;
++
++  if (!m || !output_modules.dim)
+     return false;
+ 
+-  if (modules[moduleSearchIndex] == m)
++  if (output_modules[search_index] == m)
+     return true;
+-  for (size_t i = 0; i < modules.dim; i++)
++
++  for (size_t i = 0; i < output_modules.dim; i++)
+     {
+-      if (modules[i] == m)
+-	{
+-	  moduleSearchIndex = i;
+-	  return true;
+-	}
++      if (output_modules[i] == m)
++       {
++         search_index = i;
++         return true;
++       }
+     }
++
+   return false;
+ }
+ 
+ void
+-ObjectFile::finish (void)
++d_finish_module (void)
+ {
+   /* If the target does not directly support static constructors,
+-     staticCtorList contains a list of all static constructors defined
++     static_ctor_list contains a list of all static constructors defined
+      so far.  This routine will create a function to call all of those
+      and is picked up by collect2. */
+-  if (staticCtorList.dim)
++  const char *ident;
++
++  if (static_ctor_list.dim)
+     {
+-      doFunctionToCallFunctions (IDENTIFIER_POINTER (get_file_function_name ("I")),
+-				 &staticCtorList, true);
++      ident = IDENTIFIER_POINTER (get_file_function_name ("I"));
++      build_call_function (ident, &static_ctor_list, true);
+     }
+-  if (staticDtorList.dim)
++
++  if (static_dtor_list.dim)
+     {
+-      doFunctionToCallFunctions (IDENTIFIER_POINTER (get_file_function_name ("D")),
+-				 &staticDtorList, true);
++      ident = IDENTIFIER_POINTER (get_file_function_name ("D"));
++      build_call_function (ident, &static_dtor_list, true);
+     }
+ }
+ 
+-void
+-ObjectFile::doLineNote (const Loc& loc)
+-{
+-  if (loc.filename)
+-    setLoc (loc);
+-  // else do nothing
+-}
+-
+ static location_t
+ cvtLocToloc_t (const Loc loc)
+ {
+@@ -1323,18 +1314,19 @@
+   return gcc_location;
+ }
+ 
++// Update input_location to LOC.
++
+ void
+-ObjectFile::setLoc (const Loc& loc)
++set_input_location (const Loc& loc)
+ {
+   if (loc.filename)
+-    {
+-      input_location = cvtLocToloc_t (loc);
+-    }
+-  // else do nothing
++    input_location = cvtLocToloc_t (loc);
+ }
+ 
++// Set the decl T source location to LOC.
++
+ void
+-ObjectFile::setDeclLoc (tree t, const Loc& loc)
++set_decl_location (tree t, const Loc& loc)
+ {
+   // DWARF2 will often crash if the DECL_SOURCE_FILE is not set.  It's
+   // easier the error here.
+@@ -1342,54 +1334,52 @@
+   DECL_SOURCE_LOCATION (t) = cvtLocToloc_t (loc);
+ }
+ 
++// Some D Declarations don't have the loc set, this searches DECL's parents
++// until a valid loc is found.
++
+ void
+-ObjectFile::setDeclLoc (tree t, Dsymbol *decl)
++set_decl_location (tree t, Dsymbol *decl)
+ {
+   Dsymbol *dsym = decl;
+   while (dsym)
+     {
+       if (dsym->loc.filename)
+ 	{
+-	  setDeclLoc (t, dsym->loc);
++	  set_decl_location (t, dsym->loc);
+ 	  return;
+ 	}
+       dsym = dsym->toParent();
+     }
+ 
+-  // fallback; backend sometimes crashes if not set
+-
++  // Fallback; backend sometimes crashes if not set
++  Module *m = decl->getModule();
+   Loc l;
+ 
+-  Module *m = decl->getModule();
+   if (m && m->srcfile && m->srcfile->name)
+     l.filename = m->srcfile->name->str;
+   else
+-    l.filename = "<no_file>"; // Emptry string can mess up debug info
++    // Emptry string can mess up debug info
++    l.filename = "<no_file>";
+ 
+   l.linnum = 1;
+-  setDeclLoc (t, l);
++  set_decl_location (t, l);
+ }
+ 
+ void
+-ObjectFile::setCfunEndLoc (const Loc& loc)
++set_function_end_locus (const Loc& loc)
+ {
+-  tree fn_decl = cfun->decl;
+   if (loc.filename)
+     cfun->function_end_locus = cvtLocToloc_t (loc);
+   else
+-    cfun->function_end_locus = DECL_SOURCE_LOCATION (fn_decl);
++    cfun->function_end_locus = DECL_SOURCE_LOCATION (cfun->decl);
+ }
+ 
+ void
+-ObjectFile::giveDeclUniqueName (tree decl, const char *prefix)
++get_unique_name (tree decl, const char *prefix)
+ {
+-  /* It would be nice to be able to use TRANSLATION_UNIT_DECL
+-     so lhd_set_decl_assembler_name would do this automatically.
+-     Unforntuately, the non-NULL decl context confuses dwarf2out.
+-
+-     Maybe this is fixed in later versions of GCC.
+-     */
+   const char *name;
++  char *label;
++
+   if (prefix)
+     name = prefix;
+   else if (DECL_NAME (decl))
+@@ -1397,7 +1387,6 @@
+   else
+     name = "___s";
+ 
+-  char *label;
+   ASM_FORMAT_PRIVATE_NAME (label, name, DECL_UID (decl));
+   SET_DECL_ASSEMBLER_NAME (decl, get_identifier (label));
+ 
+@@ -1419,171 +1408,235 @@
+ 
+ 
+ void
+-ObjectFile::makeDeclOneOnly (tree decl_tree)
++d_comdat_linkage (tree decl)
+ {
+-  if (!D_DECL_IS_TEMPLATE (decl_tree) || emitTemplates != TEprivate)
++  /* First method: Use one-only.  If user has specified -femit-templates,
++     honor that even if the target supports one-only. */
++  if (!D_DECL_IS_TEMPLATE (decl) || flag_emit_templates != TEprivate)
+     {
+       // Weak definitions have to be public.
+-      if (!TREE_PUBLIC (decl_tree))
++      if (!TREE_PUBLIC (decl))
+ 	return;
+-    }
+ 
+-  /* First method: Use one-only.  If user has specified -femit-templates,
+-     honor that even if the target supports one-only. */
+-  if (!D_DECL_IS_TEMPLATE (decl_tree) || emitTemplates != TEprivate)
+-    {
+       // Necessary to allow DECL_ONE_ONLY or DECL_WEAK functions to be inlined
+-      if (TREE_CODE (decl_tree) == FUNCTION_DECL)
+-	DECL_DECLARED_INLINE_P (decl_tree) = 1;
++      if (TREE_CODE (decl) == FUNCTION_DECL)
++	DECL_DECLARED_INLINE_P (decl) = 1;
+ 
+       // The following makes assumptions about the behavior of make_decl_one_only.
+       if (SUPPORTS_ONE_ONLY)
+ 	{
+-	  make_decl_one_only (decl_tree, d_comdat_group (decl_tree));
++	  make_decl_one_only (decl, d_comdat_group (decl));
+ 	  return;
+ 	}
+       else if (SUPPORTS_WEAK)
+ 	{
+-	  tree decl_init = DECL_INITIAL (decl_tree);
+-	  DECL_INITIAL (decl_tree) = integer_zero_node;
+-	  make_decl_one_only (decl_tree, d_comdat_group (decl_tree));
+-	  DECL_INITIAL (decl_tree) = decl_init;
++	  tree decl_init = DECL_INITIAL (decl);
++	  DECL_INITIAL (decl) = integer_zero_node;
++	  make_decl_one_only (decl, d_comdat_group (decl));
++	  DECL_INITIAL (decl) = decl_init;
+ 	  return;
+ 	}
+     }
+   /* Second method: Make a private copy.  For RTTI, we can always make
+      a private copy.  For templates, only do this if the user specified
+      -femit-templates. */
+-  else if (emitTemplates == TEprivate)
++  else if (flag_emit_templates == TEprivate)
+     {
+-      TREE_PRIVATE (decl_tree) = 1;
+-      TREE_PUBLIC (decl_tree) = 0;
++      TREE_PRIVATE (decl) = 1;
++      TREE_PUBLIC (decl) = 0;
+     }
+ 
+   /* Fallback, cannot have multiple copies. */
+-  if (DECL_INITIAL (decl_tree) == NULL_TREE
+-      || DECL_INITIAL (decl_tree) == error_mark_node)
+-    DECL_COMMON (decl_tree) = 1;
++  if (DECL_INITIAL (decl) == NULL_TREE
++      || DECL_INITIAL (decl) == error_mark_node)
++    DECL_COMMON (decl) = 1;
+ }
+ 
++// Set a DECL's STATIC and EXTERN based on the decl's storage class
++// and if it is to be emitted in this module.
++
+ void
+-ObjectFile::setupSymbolStorage (Dsymbol *dsym, tree decl_tree, bool force_static_public)
++setup_symbol_storage (Dsymbol *dsym, tree decl, bool public_p)
+ {
+-  Declaration *real_decl = dsym->isDeclaration();
+-  FuncDeclaration *func_decl = real_decl ? real_decl->isFuncDeclaration() : 0;
++  Declaration *rd = dsym->isDeclaration();
+ 
+-  if (force_static_public
+-      || (TREE_CODE (decl_tree) == VAR_DECL && (real_decl && real_decl->isDataseg()))
+-      || (TREE_CODE (decl_tree) == FUNCTION_DECL))
++  if (public_p
++      || (TREE_CODE (decl) == VAR_DECL && (rd && rd->isDataseg()))
++      || (TREE_CODE (decl) == FUNCTION_DECL))
+     {
+-      bool has_module = false;
+-      bool is_template = false;
++      bool local_p = output_module_p (dsym->getModule());
+       Dsymbol *sym = dsym->toParent();
+-      Module *ti_obj_file_mod;
++      Module *timod = NULL;
+ 
+       while (sym)
+ 	{
+ 	  TemplateInstance *ti = sym->isTemplateInstance();
+ 	  if (ti)
+ 	    {
+-	      ti_obj_file_mod = ti->objFileModule;
+-	      is_template = true;
++	      timod = ti->objFileModule;
++	      D_DECL_ONE_ONLY (decl) = 1;
++	      D_DECL_IS_TEMPLATE (decl) = 1;
++
++	      local_p = flag_emit_templates != TEnone
++		&& output_module_p (timod);
+ 	      break;
+ 	    }
+ 	  sym = sym->toParent();
+ 	}
+ 
+-      if (is_template)
++      VarDeclaration *vd = rd ? rd->isVarDeclaration() : NULL;
++      if (vd != NULL)
+ 	{
+-	  D_DECL_ONE_ONLY (decl_tree) = 1;
+-	  D_DECL_IS_TEMPLATE (decl_tree) = 1;
+-	  has_module = hasModule (ti_obj_file_mod) && emitTemplates != TEnone;
+-	}
+-      else
+-	has_module = hasModule (dsym->getModule());
++	  if (vd->storage_class & STCextern)
++	    local_p = false;
+ 
+-      if (real_decl)
+-	{
+-	  if (real_decl->isVarDeclaration()
+-	      && real_decl->storage_class & STCextern)
+-	    has_module = false;
++	  // Tell backend this is a thread local decl.
++	  if (vd->isDataseg() && vd->isThreadlocal())
++	    DECL_TLS_MODEL (decl) = decl_default_tls_model (decl);
+ 	}
+ 
+-      if (has_module)
++      if (local_p)
+ 	{
+-	  DECL_EXTERNAL (decl_tree) = 0;
+-	  TREE_STATIC (decl_tree) = 1;
++	  DECL_EXTERNAL (decl) = 0;
++	  TREE_STATIC (decl) = 1;
+ 
+-	  if (real_decl && real_decl->storage_class & STCcomdat)
+-	    D_DECL_ONE_ONLY (decl_tree) = 1;
++	  if (rd && rd->storage_class & STCcomdat)
++	    D_DECL_ONE_ONLY (decl) = 1;
+ 	}
+       else
+ 	{
+-	  DECL_EXTERNAL (decl_tree) = 1;
+-	  TREE_STATIC (decl_tree) = 0;
++	  DECL_EXTERNAL (decl) = 1;
++	  TREE_STATIC (decl) = 0;
+ 	}
+ 
+       // Do this by default, but allow private templates to override
+-      if (!func_decl || !func_decl->isNested() || force_static_public)
+-	TREE_PUBLIC (decl_tree) = 1;
++      FuncDeclaration *fd = rd ? rd->isFuncDeclaration() : NULL;
++      if (public_p || !fd || !fd->isNested())
++	TREE_PUBLIC (decl) = 1;
+ 
+-      if (D_DECL_ONE_ONLY (decl_tree))
+-	makeDeclOneOnly (decl_tree);
++      if (D_DECL_ONE_ONLY (decl))
++	d_comdat_linkage (decl);
+     }
+   else
+     {
+-      TREE_STATIC (decl_tree) = 0;
+-      DECL_EXTERNAL (decl_tree) = 0;
+-      TREE_PUBLIC (decl_tree) = 0;
++      TREE_STATIC (decl) = 0;
++      DECL_EXTERNAL (decl) = 0;
++      TREE_PUBLIC (decl) = 0;
+     }
+ 
+-  if (real_decl && real_decl->userAttributes)
+-    decl_attributes (&decl_tree, build_attributes (real_decl->userAttributes), 0);
+-  else if (DECL_ATTRIBUTES (decl_tree) != NULL)
+-    decl_attributes (&decl_tree, DECL_ATTRIBUTES (decl_tree), 0);
++  if (rd && rd->userAttributes)
++    decl_attributes (&decl, build_attributes (rd->userAttributes), 0);
++  else if (DECL_ATTRIBUTES (decl) != NULL)
++    decl_attributes (&decl, DECL_ATTRIBUTES (decl), 0);
+ }
+ 
+-void
+-ObjectFile::setupStaticStorage (Dsymbol *dsym, tree decl_tree)
+-{
+-  setupSymbolStorage (dsym, decl_tree, true);
+-}
+ 
++// Finish up a symbol declaration and compile it all the way to
++// the assembler language output.
+ 
+ void
+-ObjectFile::outputStaticSymbol (Symbol *s)
++d_finish_symbol (Symbol *sym)
+ {
+-  tree t = s->Stree;
+-  gcc_assert (t);
++  if (!sym->Stree)
++    {
++      gcc_assert (!sym->Sident);
+ 
+-  if (s->prettyIdent)
+-    DECL_NAME (t) = get_identifier (s->prettyIdent);
+-  if (s->Salignment > 0)
++      tree init = dtvector_to_tree (sym->Sdt);
++      tree var = build_decl (UNKNOWN_LOCATION, VAR_DECL, NULL_TREE, TREE_TYPE (init));
++      get_unique_name (var);
++
++      DECL_INITIAL (var) = init;
++      TREE_STATIC (var) = 1;
++      TREE_USED (var) = 1;
++      TREE_PRIVATE (var) = 1;
++      DECL_IGNORED_P (var) = 1;
++      DECL_ARTIFICIAL (var) = 1;
++
++      sym->Stree = var;
++    }
++
++  tree decl = sym->Stree;
++
++  if (sym->Sdt)
+     {
+-      DECL_ALIGN (t) = s->Salignment * BITS_PER_UNIT;
+-      DECL_USER_ALIGN (t) = 1;
++      if (DECL_INITIAL (decl) == NULL_TREE)
++	{
++	  tree sinit = dtvector_to_tree (sym->Sdt);
++	  if (TREE_TYPE (decl) == d_unknown_type_node)
++	    {
++	      TREE_TYPE (decl) = TREE_TYPE (sinit);
++	      TYPE_NAME (TREE_TYPE (decl)) = get_identifier (sym->Sident);
++	    }
++
++	  DECL_INITIAL (decl) = sinit;
++	}
++      gcc_assert (COMPLETE_TYPE_P (TREE_TYPE (decl)));
+     }
+ 
+-  d_add_global_declaration (t);
++  gcc_assert (!error_mark_p (decl));
+ 
+-  // %% Hack
+-  // Defer output of tls symbols to ensure that
+-  // _tlsstart gets emitted first.
+-  if (!DECL_THREAD_LOCAL_P (t))
+-    rest_of_decl_compilation (t, 1, 0);
++  if (DECL_INITIAL (decl) != NULL_TREE)
++    {
++      TREE_STATIC (decl) = 1;
++      DECL_EXTERNAL (decl) = 0;
++    }
++
++  /* If the symbol was marked as readonly in the frontend, set TREE_READONLY.  */
++  if (sym->Sreadonly)
++    TREE_READONLY (decl) = 1;
++
++  DECL_CONTEXT (decl) = decl_function_context (decl);
++
++  if (!output_symbol_p (sym))
++    return;
++
++  // This was for typeinfo decls ... shouldn't happen now.
++  // %% Oops, this was supposed to be static.
++  gcc_assert (!DECL_EXTERNAL (decl));
++  relayout_decl (decl);
++
++#ifdef ENABLE_TREE_CHECKING
++  if (DECL_INITIAL (decl) != NULL_TREE) 
++    {
++      // Initialiser must never be bigger than symbol size.
++      dinteger_t tsize = int_size_in_bytes (TREE_TYPE (decl));
++      dinteger_t dtsize = int_size_in_bytes (TREE_TYPE (DECL_INITIAL (decl)));
++      if (tsize != dtsize)
++	internal_error ("Mismatch between declaration '%s' size (%wd) and it's initializer size (%wd).",
++			sym->prettyIdent ? sym->prettyIdent : sym->Sident, tsize, dtsize);
++    }
++#endif
++
++  // DECL_NAME for debugging.
++  if (sym->prettyIdent)
++    DECL_NAME (decl) = get_identifier (sym->prettyIdent);
++
++  // User declared alignment.
++  if (sym->Salignment > 0)
++    {
++      DECL_ALIGN (decl) = sym->Salignment * BITS_PER_UNIT;
++      DECL_USER_ALIGN (decl) = 1;
++    }
++
++  d_add_global_declaration (decl);
++
++  // %% Hack: defer output of tls symbols to ensure that _tlsstart gets
++  // emitted first, but this doesn't work because ld may re-order tls data.
++  if (!DECL_THREAD_LOCAL_P (decl))
++    rest_of_decl_compilation (decl, 1, 0);
+   else
+     {
+-      tree sinit = DECL_INITIAL (t);
+-      DECL_INITIAL (t) = NULL_TREE;
++      tree sinit = DECL_INITIAL (decl);
++      DECL_INITIAL (decl) = NULL_TREE;
+ 
+-      DECL_DEFER_OUTPUT (t) = 1;
+-      rest_of_decl_compilation (t, 1, 0);
+-      DECL_INITIAL (t) = sinit;
++      DECL_DEFER_OUTPUT (decl) = 1;
++      rest_of_decl_compilation (decl, 1, 0);
++      DECL_INITIAL (decl) = sinit;
+     }
+ }
+ 
+ void
+-ObjectFile::outputFunction (FuncDeclaration *f)
++d_finish_function (FuncDeclaration *f)
+ {
+   Symbol *s = f->toSymbol();
+   tree t = s->Stree;
+@@ -1602,9 +1655,9 @@
+   if (!targetm.have_ctors_dtors)
+     {
+       if (DECL_STATIC_CONSTRUCTOR (t))
+-	staticCtorList.push (f);
++	static_ctor_list.push (f);
+       if (DECL_STATIC_DESTRUCTOR (t))
+-	staticDtorList.push (f);
++	static_dtor_list.push (f);
+     }
+ 
+   if (!needs_static_chain (f))
+@@ -1614,27 +1667,28 @@
+     }
+ }
+ 
+-/* Multiple copies of the same template instantiations can
+-   be passed to the backend from the frontend leaving
+-   assembler errors left in their wrath.
++/* Multiple copies of the same template instantiations can be
++   passed to the backend from the frontend leaving assembler
++   errors left in their wrath.
+ 
+    One such example:
+-   class c (int i = -1) {}
+-   c!() aa = new c!()();
++     class C (int i = -1) { }
++     auto c = new C!();
++
++   So put these symbols as generated by toSymbol, toInitializer,
++   toVtblSymbol on COMDAT where possible, and disgard duplicates
++   for the benefit of systems without link-once support.  */
+ 
+-   So put these symbols - as generated by toSymbol,
+-   toInitializer, toVtblSymbol - on COMDAT.
+-   */
+ static StringTable *symtab = NULL;
+ 
+ bool
+-ObjectFile::shouldEmit (Declaration *d_sym)
++output_declaration_p (Declaration *dsym)
+ {
+   // If errors occurred compiling it.
+-  if (d_sym->type->ty == Tfunction && ((TypeFunction *) d_sym->type)->next->ty == Terror)
++  if (dsym->type->ty == Tfunction && ((TypeFunction *) dsym->type)->next->ty == Terror)
+     return false;
+ 
+-  FuncDeclaration *fd = d_sym->isFuncDeclaration();
++  FuncDeclaration *fd = dsym->isFuncDeclaration();
+   if (fd && fd->isNested())
+     {
+       // Typically, an error occurred whilst compiling
+@@ -1658,11 +1712,11 @@
+ 	}
+     }
+ 
+-  return shouldEmit (d_sym->toSymbol());
++  return output_symbol_p (dsym->toSymbol());
+ }
+ 
+ bool
+-ObjectFile::shouldEmit (Symbol *sym)
++output_symbol_p (Symbol *sym)
+ {
+   gcc_assert (sym);
+ 
+@@ -1690,73 +1744,32 @@
+     }
+ 
+   // Not emitting templates, so return true all others.
+-  if (emitTemplates == TEnone)
++  if (flag_emit_templates == TEnone)
+     return !D_DECL_IS_TEMPLATE (sym->Stree);
+ 
+   return true;
+ }
+ 
+-void
+-ObjectFile::addAggMethod (tree rec_type, FuncDeclaration *fd)
+-{
+-  if (write_symbols != NO_DEBUG)
+-    {
+-      tree methods = TYPE_METHODS (rec_type);
+-      tree t = fd->toSymbol()->Stree;
+-      TYPE_METHODS (rec_type) = chainon (methods, t);
+-    }
+-}
+-
+-void
+-ObjectFile::initTypeDecl (tree t, Dsymbol *d_sym)
+-{
+-  gcc_assert (!POINTER_TYPE_P (t));
+-  if (!TYPE_STUB_DECL (t))
+-    {
+-      const char *name = d_sym->ident ? d_sym->ident->string : "fix";
+-      tree decl = build_decl (UNKNOWN_LOCATION, TYPE_DECL, get_identifier (name), t);
+-      DECL_CONTEXT (decl) = d_decl_context (d_sym);
+-      setDeclLoc (decl, d_sym);
+-      initTypeDecl (t, decl);
+-    }
+-}
+-
+-
+-void
+-ObjectFile::declareType (tree t, Type *d_type)
+-{
+-  // Note: It is not safe to call d_type->toCtype().
+-  Loc l;
+-  tree decl = build_decl (UNKNOWN_LOCATION, TYPE_DECL, get_identifier (d_type->toChars()), t);
+-  l.filename = "<internal>";
+-  l.linnum = 1;
+-  setDeclLoc (decl, l);
+-
+-  initTypeDecl (t, decl);
+-  declareType (decl);
+-}
+-
+-void
+-ObjectFile::declareType (tree t, Dsymbol *d_sym)
+-{
+-  initTypeDecl (t, d_sym);
+-  declareType (TYPE_NAME (t));
+-}
+-
++// Build TYPE_DECL for the declaration DSYM.
+ 
+ void
+-ObjectFile::initTypeDecl (tree t, tree decl)
++build_type_decl (tree t, Dsymbol *dsym)
+ {
+   if (TYPE_STUB_DECL (t))
+     return;
+-
++  
+   gcc_assert (!POINTER_TYPE_P (t));
+ 
++  const char *name = dsym->ident ? dsym->ident->string : "fix";
++  tree decl = build_decl (UNKNOWN_LOCATION, TYPE_DECL, get_identifier (name), t);
++
++  DECL_CONTEXT (decl) = d_decl_context (dsym);
++  set_decl_location (decl, dsym);
++
+   TYPE_CONTEXT (t) = DECL_CONTEXT (decl);
+   TYPE_NAME (t) = decl;
+ 
+-  if (TREE_CODE (t) == ENUMERAL_TYPE
+-      || TREE_CODE (t) == RECORD_TYPE
++  if (TREE_CODE (t) == ENUMERAL_TYPE || TREE_CODE (t) == RECORD_TYPE
+       || TREE_CODE (t) == UNION_TYPE)
+     {
+       /* Not sure if there is a need for separate TYPE_DECLs in
+@@ -1764,30 +1777,42 @@
+       TYPE_STUB_DECL (t) = decl;
+       DECL_ARTIFICIAL (decl) = 1;
+     }
++
++  bool toplevel = !DECL_CONTEXT (TYPE_NAME (t));
++  rest_of_decl_compilation (TYPE_NAME (t), toplevel, 0);
+ }
+ 
+-void
+-ObjectFile::declareType (tree decl)
++// Can't output thunks while a function is being compiled.
++
++struct DeferredThunk
+ {
+-  bool top_level = !DECL_CONTEXT (decl);
++  tree decl;
++  tree target;
++  int offset;
++};
+ 
+-  rest_of_decl_compilation (decl, top_level, 0);
+-}
++typedef ArrayBase<DeferredThunk> DeferredThunks;
++static DeferredThunks deferred_thunks;
+ 
+-tree
+-ObjectFile::stripVarDecl (tree value)
+-{
+-  if (TREE_CODE (value) != VAR_DECL)
+-    return value;
++// Process all deferred thunks in list DEFERRED_THUNKS.
+ 
+-  if (DECL_INITIAL (value))
+-    return DECL_INITIAL (value);
++void
++write_deferred_thunks (void)
++{
++  for (size_t i = 0; i < deferred_thunks.dim; i++)
++    {
++      DeferredThunk *t = deferred_thunks[i];
++      finish_thunk (t->decl, t->target, t->offset);
++    }
+ 
+-  gcc_unreachable ();
++  deferred_thunks.setDim (0);
+ }
+ 
++// Emit the definition of a D vtable thunk.  If a function
++// is still being compiled, defer emitting.
++
+ void
+-ObjectFile::doThunk (tree thunk_decl, tree target_decl, int offset)
++use_thunk (tree thunk_decl, tree target_decl, int offset)
+ {
+   if (current_function_decl)
+     {
+@@ -1795,10 +1820,10 @@
+       t->decl = thunk_decl;
+       t->target = target_decl;
+       t->offset = offset;
+-      deferredThunks.push (t);
++      deferred_thunks.push (t);
+     }
+   else
+-    outputThunk (thunk_decl, target_decl, offset);
++    finish_thunk (thunk_decl, target_decl, offset);
+ }
+ 
+ /* Thunk code is based on g++ */
+@@ -1852,9 +1877,9 @@
+ }
+ 
+ void
+-ObjectFile::outputThunk (tree thunk_decl, tree target_decl, int offset)
++finish_thunk (tree thunk_decl, tree target_decl, int offset)
+ {
+-  /* Settings used to output D thunks.  */
++  /* Setup how D thunks are outputted.  */
+   int fixed_offset = -offset;
+   bool this_adjusting = true;
+   int virtual_value = 0;
+@@ -1948,224 +1973,151 @@
+     }
+ }
+ 
++// Build and emit a function named NAME, whose function body is in EXPR.
++
+ FuncDeclaration *
+-ObjectFile::doSimpleFunction (const char *name, tree expr, bool static_ctor)
++build_simple_function (const char *name, tree expr, bool static_ctor)
+ {
+-  if (!cmodule)
+-    cmodule = d_gcc_get_output_module();
++  Module *mod = current_module_decl;
++
++  if (!mod)
++    mod = d_gcc_get_output_module();
+ 
+   if (name[0] == '*')
+     {
+-      Symbol *s = cmodule->toSymbolX (name + 1, 0, 0, "FZv");
++      Symbol *s = mod->toSymbolX (name + 1, 0, 0, "FZv");
+       name = s->Sident;
+     }
+ 
+   TypeFunction *func_type = new TypeFunction (0, Type::tvoid, 0, LINKc);
+-  FuncDeclaration *func = new FuncDeclaration (cmodule->loc, cmodule->loc,
++  FuncDeclaration *func = new FuncDeclaration (mod->loc, mod->loc,
+ 					       Lexer::idPool (name), STCstatic, func_type);
+-  func->loc = Loc (cmodule, 1);
++  func->loc = Loc (mod, 1);
+   func->linkage = func_type->linkage;
+-  func->parent = cmodule;
++  func->parent = mod;
+   func->protection = PROTprivate;
+ 
+   tree func_decl = func->toSymbol()->Stree;
++
+   if (static_ctor)
+-    DECL_STATIC_CONSTRUCTOR (func_decl) = 1; // apparently, the back end doesn't do anything with this
++    DECL_STATIC_CONSTRUCTOR (func_decl) = 1;
+ 
+   // D static ctors, dtors, unittests, and the ModuleInfo chain function
+-  // are always private (see ObjectFile::setupSymbolStorage, default case)
++  // are always private (see setup_symbol_storage, default case)
+   TREE_PUBLIC (func_decl) = 0;
+   TREE_USED (func_decl) = 1;
+ 
+   // %% maybe remove the identifier
+-  WrappedExp *body = new WrappedExp (cmodule->loc, TOKcomma, expr, Type::tvoid);
+-  func->fbody = new ExpStatement (cmodule->loc, body);
++  WrappedExp *body = new WrappedExp (mod->loc, TOKcomma, expr, Type::tvoid);
++  func->fbody = new ExpStatement (mod->loc, body);
+   func->toObjFile (0);
+ 
+   return func;
+ }
+ 
+-/* force: If true, create a new function even there is only one function in the
+-   list.
+-   */
++// Build and emit a function identified by NAME that calls (in order)
++// the list of functions in FUNCTIONS.  If FORCE_P, create a new function
++// even if there is only one function to call in the list.
++
+ FuncDeclaration *
+-ObjectFile::doFunctionToCallFunctions (const char *name, FuncDeclarations *functions, bool force_and_public)
++build_call_function (const char *name, FuncDeclarations *functions, bool force_p)
+ {
+   tree expr_list = NULL_TREE;
+ 
+   // If there is only one function, just return that
+-  if (functions->dim == 1 && !force_and_public)
+-    {
+-      return (*functions)[0];
+-    }
+-  else
++  if (functions->dim == 1 && !force_p)
++    return (*functions)[0];
++
++  // Shouldn't front end build these?
++  for (size_t i = 0; i < functions->dim; i++)
+     {
+-      // %% shouldn't front end build these?
+-      for (size_t i = 0; i < functions->dim; i++)
+-	{
+-	  tree fndecl = ((*functions)[i])->toSymbol()->Stree;
+-	  tree call_expr = d_build_call (void_type_node, build_address (fndecl), NULL_TREE);
+-	  expr_list = maybe_vcompound_expr (expr_list, call_expr);
+-	}
++      tree fndecl = ((*functions)[i])->toSymbol()->Stree;
++      tree call_expr = d_build_call (void_type_node, build_address (fndecl), NULL_TREE);
++      expr_list = maybe_vcompound_expr (expr_list, call_expr);
+     }
++
+   if (expr_list)
+-    return doSimpleFunction (name, expr_list, false);
++    return build_simple_function (name, expr_list, false);
+ 
+   return NULL;
+ }
+ 
+ 
+-/* Same as doFunctionToCallFunctions, but includes a gate to
+-   protect static ctors in templates getting called multiple times.
+-   */
+-FuncDeclaration *
+-ObjectFile::doCtorFunction (const char *name, FuncDeclarations *functions, VarDeclarations *gates)
++// Same as build_call_function, but includes a gate to
++// protect static ctors in templates getting called multiple times.
++
++Symbol *
++build_ctor_function (const char *name, FuncDeclarations *functions, VarDeclarations *gates)
+ {
+   tree expr_list = NULL_TREE;
+ 
+   // If there is only one function, just return that
+   if (functions->dim == 1 && !gates->dim)
++    return (*functions)[0]->toSymbol();
++
++  // Increment gates first.
++  for (size_t i = 0; i < gates->dim; i++)
+     {
+-      return (*functions)[0];
++      VarDeclaration *var = (*gates)[i];
++      tree var_decl = var->toSymbol()->Stree;
++      tree value = build2 (PLUS_EXPR, TREE_TYPE (var_decl), var_decl, integer_one_node);
++      tree var_expr = vmodify_expr (var_decl, value);
++      expr_list = maybe_vcompound_expr (expr_list, var_expr);
+     }
+-  else
++
++  // Call Ctor Functions
++  for (size_t i = 0; i < functions->dim; i++)
+     {
+-      // Increment gates first.
+-      for (size_t i = 0; i < gates->dim; i++)
+-	{
+-	  VarDeclaration *var = (*gates)[i];
+-	  tree var_decl = var->toSymbol()->Stree;
+-	  tree value = build2 (PLUS_EXPR, TREE_TYPE (var_decl), var_decl, integer_one_node);
+-	  tree var_expr = vmodify_expr (var_decl, value);
+-	  expr_list = maybe_vcompound_expr (expr_list, var_expr);
+-	}
+-      // Call Ctor Functions
+-      for (size_t i = 0; i < functions->dim; i++)
+-	{
+-	  tree fndecl = ((*functions)[i])->toSymbol()->Stree;
+-	  tree call_expr = d_build_call (void_type_node, build_address (fndecl), NULL_TREE);
+-	  expr_list = maybe_vcompound_expr (expr_list, call_expr);
+-	}
++      tree fndecl = ((*functions)[i])->toSymbol()->Stree;
++      tree call_expr = d_build_call (void_type_node, build_address (fndecl), NULL_TREE);
++      expr_list = maybe_vcompound_expr (expr_list, call_expr);
+     }
++
+   if (expr_list)
+-    return doSimpleFunction (name, expr_list, false);
++    {
++      FuncDeclaration *fd = build_simple_function (name, expr_list, false);
++      return fd->toSymbol();
++    }
+ 
+   return NULL;
+ }
+ 
+-/* Same as doFunctionToCallFunctions, but calls all functions in
+-   the reverse order that the constructors were called in.
+-   */
+-FuncDeclaration *
+-ObjectFile::doDtorFunction (const char *name, FuncDeclarations *functions)
++// Same as build_call_function, but calls all functions in
++// the reverse order that the constructors were called in.
++
++Symbol *
++build_dtor_function (const char *name, FuncDeclarations *functions)
+ {
+   tree expr_list = NULL_TREE;
+ 
+   // If there is only one function, just return that
+   if (functions->dim == 1)
++    return (*functions)[0]->toSymbol();
++
++  for (int i = functions->dim - 1; i >= 0; i--)
+     {
+-      return (*functions)[0];
++      tree fndecl = ((*functions)[i])->toSymbol()->Stree;
++      tree call_expr = d_build_call (void_type_node, build_address (fndecl), NULL_TREE);
++      expr_list = maybe_vcompound_expr (expr_list, call_expr);
+     }
+-  else
++
++  if (expr_list)
+     {
+-      for (int i = functions->dim - 1; i >= 0; i--)
+-	{
+-	  tree fndecl = ((*functions)[i])->toSymbol()->Stree;
+-	  tree call_expr = d_build_call (void_type_node, build_address (fndecl), NULL_TREE);
+-	  expr_list = maybe_vcompound_expr (expr_list, call_expr);
+-	}
++      FuncDeclaration *fd = build_simple_function (name, expr_list, false);
++      return fd->toSymbol();
+     }
+-  if (expr_list)
+-    return doSimpleFunction (name, expr_list, false);
+ 
+   return NULL;
+ }
+ 
+-/* Currently just calls doFunctionToCallFunctions
+-*/
+-FuncDeclaration *
+-ObjectFile::doUnittestFunction (const char *name, FuncDeclarations *functions)
+-{
+-  return doFunctionToCallFunctions (name, functions);
+-}
++// Same as build_call_function, but returns the Symbol to
++// the function generated.
+ 
+-// Finish up a symbol declaration and compile it all the way to
+-// the assembler language output.
+-
+-void
+-d_finish_symbol (Symbol *sym)
++Symbol *
++build_unittest_function (const char *name, FuncDeclarations *functions)
+ {
+-  if (!sym->Stree)
+-    {
+-      gcc_assert (!sym->Sident);
+-
+-      tree init = dtvector_to_tree (sym->Sdt);
+-      tree var = build_decl (UNKNOWN_LOCATION, VAR_DECL, NULL_TREE, TREE_TYPE (init));
+-      object_file->giveDeclUniqueName (var);
+-
+-      DECL_INITIAL (var) = init;
+-      TREE_STATIC (var) = 1;
+-      TREE_USED (var) = 1;
+-      TREE_PRIVATE (var) = 1;
+-      DECL_IGNORED_P (var) = 1;
+-      DECL_ARTIFICIAL (var) = 1;
+-
+-      sym->Stree = var;
+-    }
+-
+-  tree t = sym->Stree;
+-
+-  if (sym->Sdt)
+-    {
+-      if (DECL_INITIAL (t) == NULL_TREE)
+-	{
+-	  tree sinit = dtvector_to_tree (sym->Sdt);
+-	  if (TREE_TYPE (t) == d_unknown_type_node)
+-	    {
+-	      TREE_TYPE (t) = TREE_TYPE (sinit);
+-	      TYPE_NAME (TREE_TYPE (t)) = get_identifier (sym->Sident);
+-	    }
+-
+-	  DECL_INITIAL (t) = sinit;
+-	}
+-      gcc_assert (COMPLETE_TYPE_P (TREE_TYPE (t)));
+-    }
+-
+-  gcc_assert (!error_mark_p (t));
+-
+-  if (DECL_INITIAL (t) != NULL_TREE)
+-    {
+-      TREE_STATIC (t) = 1;
+-      DECL_EXTERNAL (t) = 0;
+-    }
+-
+-  /* If the symbol was marked as readonly in the frontend, set TREE_READONLY.  */
+-  if (sym->Sreadonly)
+-    TREE_READONLY (t) = 1;
+-
+-  DECL_CONTEXT (t) = decl_function_context (t);
+-
+-  if (!object_file->shouldEmit (sym))
+-    return;
+-
+-  // This was for typeinfo decls ... shouldn't happen now.
+-  // %% Oops, this was supposed to be static.
+-  gcc_assert (!DECL_EXTERNAL (t));
+-  relayout_decl (t);
+-
+-#ifdef ENABLE_TREE_CHECKING
+-  if (DECL_INITIAL (t) != NULL_TREE) 
+-    {
+-      // Initialiser must never be bigger than symbol size.
+-      dinteger_t tsize = int_size_in_bytes (TREE_TYPE (t));
+-      dinteger_t dtsize = int_size_in_bytes (TREE_TYPE (DECL_INITIAL (t)));
+-      if (tsize != dtsize)
+-	internal_error ("Mismatch between declaration '%s' size (%wd) and it's initializer size (%wd).",
+-			sym->prettyIdent ? sym->prettyIdent : sym->Sident, tsize, dtsize);
+-    }
+-#endif
+-
+-  object_file->outputStaticSymbol (sym);
++  FuncDeclaration *fd = build_call_function (name, functions, false);
++  return fd->toSymbol();
+ }
+ 
+ // Generate our module reference and append to _Dmodule_ref.
+@@ -2198,8 +2150,9 @@
+   // private ModuleReference modref = { next: null, mod: _ModuleInfo_xxx };
+   tree modref = build_decl (UNKNOWN_LOCATION, VAR_DECL, NULL_TREE, tmodref);
+   d_keep (modref);
+-  object_file->giveDeclUniqueName (modref, "__mod_ref");
+-  object_file->setDeclLoc (modref, cmodule);
++
++  get_unique_name (modref, "__mod_ref");
++  set_decl_location (modref, current_module_decl);
+ 
+   DECL_ARTIFICIAL (modref) = 1;
+   DECL_IGNORED_P (modref) = 1;
+@@ -2223,7 +2176,7 @@
+   tree m1 = vmodify_expr (component_ref (modref, nextfield), dmodule_ref);
+   tree m2 = vmodify_expr (dmodule_ref, build_address (modref));
+ 
+-  object_file->doSimpleFunction ("*__modinit", vcompound_expr (m1, m2), true);
++  build_simple_function ("*__modinit", vcompound_expr (m1, m2), true);
+ }
+ 
+ // Put out symbols that define the beginning and end
+@@ -2239,24 +2192,24 @@
+ 
+   tlsstart = build_decl (UNKNOWN_LOCATION, VAR_DECL,
+ 			 get_identifier ("_tlsstart"), size_type_node);
+-  TREE_PUBLIC (tlsstart) = 1;
+   TREE_STATIC (tlsstart) = 1;
+-  DECL_ARTIFICIAL (tlsstart) = 1;
+   // DECL_INITIAL so the symbol goes in .tdata
+   DECL_INITIAL (tlsstart) = build_int_cst (size_type_node, 3);
+   DECL_TLS_MODEL (tlsstart) = decl_default_tls_model (tlsstart);
+-  object_file->setDeclLoc (tlsstart, cmodule);
++  TREE_PUBLIC (tlsstart) = 1;
++  DECL_ARTIFICIAL (tlsstart) = 1;
++  set_decl_location (tlsstart, current_module_decl);
+   rest_of_decl_compilation (tlsstart, 1, 0);
+ 
+   tlsend = build_decl (UNKNOWN_LOCATION, VAR_DECL,
+ 		       get_identifier ("_tlsend"), size_type_node);
+-  TREE_PUBLIC (tlsend) = 1;
+   TREE_STATIC (tlsend) = 1;
+-  DECL_ARTIFICIAL (tlsend) = 1;
+   // DECL_COMMON so the symbol goes in .tcommon
+   DECL_COMMON (tlsend) = 1;
+   DECL_TLS_MODEL (tlsend) = decl_default_tls_model (tlsend);
+-  object_file->setDeclLoc (tlsend, cmodule);
++  TREE_PUBLIC (tlsend) = 1;
++  DECL_ARTIFICIAL (tlsend) = 1;
++  set_decl_location (tlsend, current_module_decl);
+   rest_of_decl_compilation (tlsend, 1, 0);
+ }
+ 
+--- a/src/gcc/d/d-objfile.h
++++ b/src/gcc/d/d-objfile.h
+@@ -98,7 +98,6 @@
+ 
+ extern void build_moduleinfo (Symbol *sym);
+ extern void build_tlssections (void);
+-extern void d_finish_symbol (Symbol *sym);
+ 
+ 
+ struct ModuleInfo
+@@ -115,6 +114,8 @@
+   FuncDeclarations unitTests;
+ };
+ 
++extern ModuleInfo *current_module_info;
++
+ enum TemplateEmission
+ {
+   TEnone,
+@@ -122,102 +123,38 @@
+   TEprivate
+ };
+ 
+-struct DeferredThunk
+-{
+-  tree decl;
+-  tree target;
+-  int offset;
+-};
+-
+-typedef ArrayBase<DeferredThunk> DeferredThunks;
+-
+-
+-/* Nearly everything is static for effeciency since there is
+-   only one object per run of the backend */
+-struct ObjectFile
+-{
+- public:
+-  ObjectFile (void) { };
+-
+-  static void beginModule (Module *m);
+-  static void endModule (void);
+-
+-  static void finish (void);
+-
+-  static void doLineNote (const Loc& loc);
+-  static void setLoc (const Loc& loc);
+-
+-  // ** Declaration maninpulation
+-  static void setDeclLoc (tree t, const Loc& loc);
+-
+-  // Some D Declarations don't have the loc set, this searches decl's parents
+-  // until a valid loc is found.
+-  static void setDeclLoc (tree t, Dsymbol *decl);
+-  static void setCfunEndLoc (const Loc& loc);
+-  static void giveDeclUniqueName (tree decl, const char *prefix = NULL);
+-
+-  // Set a DECL's STATIC and EXTERN based on the decl's storage class
+-  // and if it is to be emitted in this module.
+-  static void setupSymbolStorage (Dsymbol *decl, tree decl_tree, bool force_static_public = false);
++extern void set_input_location (const Loc& loc);
+ 
+-  // Definitely in static data, but not neccessarily this module.
+-  // Assumed to be public data.
+-  static void setupStaticStorage (Dsymbol *dsym, tree decl_tree);
+-  static void makeDeclOneOnly (tree decl_tree);
++extern void set_decl_location (tree t, const Loc& loc);
++extern void set_decl_location (tree t, Dsymbol *decl);
++extern void set_function_end_locus (const Loc& loc);
+ 
+-  static void outputStaticSymbol (Symbol *s);
+-  static void outputFunction (FuncDeclaration *f);
++extern void get_unique_name (tree decl, const char *prefix = NULL);
+ 
+-  static void addAggMethod (tree rec_type, FuncDeclaration *fd);
++extern void setup_symbol_storage (Dsymbol *dsym, tree decl, bool is_public);
++extern void d_comdat_linkage (tree decl);
+ 
+-  static void initTypeDecl (tree t, Dsymbol *d_sym);
+-
+-  static void declareType (tree t, Type *d_type);
+-  static void declareType (tree t, Dsymbol *d_sym);
+-
+-  // Hack for systems without linkonce support
+-  static bool shouldEmit (Declaration *d_sym);
+-  static bool shouldEmit (Symbol *sym);
+-
+-  static void doThunk (tree thunk_decl, tree target_decl, int offset);
+-
+-  // Can't use VAR_DECLs for the DECL_INITIAL of static varibles or in CONSTRUCTORSs
+-  static tree stripVarDecl (tree value);
+-
+-  static FuncDeclaration *doSimpleFunction (const char *name, tree expr, bool static_ctor);
+-  static FuncDeclaration *doFunctionToCallFunctions (const char *name, FuncDeclarations *functions, bool force_and_public = false);
+-  static FuncDeclaration *doCtorFunction (const char *name, FuncDeclarations *functions, VarDeclarations *gates);
+-  static FuncDeclaration *doDtorFunction (const char *name, FuncDeclarations *functions);
+-  static FuncDeclaration *doUnittestFunction (const char *name, FuncDeclarations *functions);
+-
+-  // ** Module info.  Assuming only one module per run of the compiler.
+-
+-  static ModuleInfo *moduleInfo; // of ModuleInfo *
+-
+-  // ** static constructors (not D static constructors)
+-  static FuncDeclarations staticCtorList; // usually only one.
+-  static FuncDeclarations staticDtorList; // only if __attribute__(destructor) is used.
+-
+-  /* support for multiple modules per object file */
+-  static bool hasModule (Module *m);
+-  static Modules modules;
+-
+-  // Template emission behaviour.
+-  static TemplateEmission emitTemplates;
+-
+- protected:
+-  static void outputThunk (tree thunk_decl, tree target_decl, int offset);
+-
+-  static void initTypeDecl (tree t, tree decl);
+-  static void declareType (tree decl);
++extern void d_finish_symbol (Symbol *sym);
++extern void d_finish_function (FuncDeclaration *f);
++extern void d_finish_module (void);
+ 
+-  // Can't output thunks while a function is being compiled.
+-  static DeferredThunks deferredThunks;
++extern void build_type_decl (tree t, Dsymbol *dsym);
+ 
+- private:
+-  static unsigned moduleSearchIndex;
++extern Modules output_modules;
++extern bool output_module_p (Module *mod);
+ 
+-};
++extern bool output_declaration_p (Declaration *dsym);
++extern bool output_symbol_p (Symbol *sym);
++
++extern void write_deferred_thunks (void);
++extern void use_thunk (tree thunk_decl, tree target_decl, int offset);
++extern void finish_thunk (tree thunk_decl, tree target_decl, int offset);
++
++extern FuncDeclaration *build_simple_function (const char *, tree, bool);
++extern FuncDeclaration *build_call_function (const char *, FuncDeclarations *, bool);
++extern Symbol *build_ctor_function (const char *, FuncDeclarations *, VarDeclarations *);
++extern Symbol *build_dtor_function (const char *, FuncDeclarations *);
++extern Symbol *build_unittest_function (const char *, FuncDeclarations *);
+ 
+ #endif
+ 
+--- a/src/gcc/d/d-target.cc
++++ b/src/gcc/d/d-target.cc
+@@ -110,7 +110,10 @@
+   else if (global.params.isLinux)
+     {
+       // sizeof(pthread_mutex_t) for Linux.
+-      return global.params.isLP64 ? 40 : 24;
++      if (global.params.is64bit)
++	return global.params.isLP64 ? 40 : 32;
++      else
++	return global.params.isLP64 ? 40 : 24;
+     }
+   else if (global.params.isFreeBSD)
+     {
+--- a/src/gcc/d/d-todt.cc
++++ b/src/gcc/d/d-todt.cc
+@@ -111,7 +111,7 @@
+ 	}
+     }
+   else
+-    dt = build_constructor (d_unknown_type_node, NULL);
++    dt = build_constructor (aggtype, NULL);
+ 
+   TYPE_FIELDS (aggtype) = fields;
+   TYPE_SIZE (aggtype) = size_binop (MULT_EXPR, offset, size_int (BITS_PER_UNIT));
+--- a/src/gcc/d/lang.opt
++++ b/src/gcc/d/lang.opt
+@@ -15,9 +15,15 @@
+ ; along with GCC; see the file COPYING3.  If not see
+ ; <http://www.gnu.org/licenses/>.
+ 
++; Please try to keep this file in ASCII collating order.
++
+ Language
+ D
+ 
++Variable
++int flag_emit_templates
++
++
+ debuglib=
+ Driver Joined
+ Debug library to use instead of phobos
+--- a/src/gcc/testsuite/gdc.test/runnable/test22.d
++++ b/src/gcc/testsuite/gdc.test/runnable/test22.d
+@@ -549,9 +549,13 @@
+ void test26()
+ {
+   static cdouble[] A = [1+0i, 0+1i, 1+1i];
++  string s;
+ 
+   foreach( cdouble z; A )
+-    printf("%.*s  ",toString26(z));
++  {
++    s = toString26(z);
++    printf("%.*s  ", s.length, s.ptr);
++  }
+   printf("\n");
+ 
+   for(int ii=0; ii<A.length; ii++ )
+@@ -562,7 +566,10 @@
+   assert(A[2] == 2);
+ 
+   foreach( cdouble z; A )
+-    printf("%.*s  ",toString26(z));
++  {
++    s = toString26(z);
++    printf("%.*s  ", s.length, s.ptr);
++  }
+   printf("\n");
+ }
+ 
+--- a/src/gcc/testsuite/gdc.test/runnable/test42.d
++++ b/src/gcc/testsuite/gdc.test/runnable/test42.d
+@@ -611,7 +611,7 @@
+ 
+ /***************************************************/
+ 
+-struct S41
++align (16) struct S41
+ {
+     int[4] a;
+ }
+@@ -4182,36 +4182,27 @@
+ /***************************************************/
+ //
+ 
+-version (X86_64)
++void bug6184()
+ {
+-    void bug6184()
++    bool cmp(ref int[3] a, ref int[3] b)
+     {
+-        bool cmp(ref int[3] a, ref int[3] b)
+-        {
+-            return a is b;
+-        }
+-
+-        static struct Ary
+-        {
+-            int[3] ary;
+-        }
+-
+-        auto a = new Ary;
+-        auto b = new Ary;
+-        assert(!cmp(a.ary, b.ary));
+-        b = a;
+-        assert(cmp(a.ary, b.ary));
+-
+-        // change high bit of ary address
+-        *(cast(size_t*)&b) ^= (1UL << 32);
+-        assert(!cmp(a.ary, b.ary));
++        return a is b;
+     }
+-}
+-else
+-{
+-    void bug6184()
++
++    static struct Ary
+     {
++        int[3] ary;
+     }
++
++    auto a = new Ary;
++    auto b = new Ary;
++    assert(!cmp(a.ary, b.ary));
++    b = a;
++    assert(cmp(a.ary, b.ary));
++
++    // change high bit of ary address
++    *(cast(size_t*)&b) ^= (1UL << (size_t.sizeof * 4));
++    assert(!cmp(a.ary, b.ary));
+ }
+ 
+ /***************************************************/
+--- a/src/libphobos/libdruntime/core/stdc/time.d
++++ b/src/libphobos/libdruntime/core/stdc/time.d
+@@ -55,8 +55,15 @@
+     }
+ }
+ 
+-alias c_long time_t;
+-alias c_long clock_t;
++version ( Posix )
++{
++    public import core.sys.posix.sys.types : time_t, clock_t;
++}
++else
++{
++    alias c_long time_t;
++    alias c_long clock_t;
++}
+ 
+ version( Windows )
+ {
+--- a/src/libphobos/libdruntime/core/sys/linux/config.d
++++ b/src/libphobos/libdruntime/core/sys/linux/config.d
+@@ -0,0 +1,22 @@
++/**
++ * D header file for GNU/Linux
++ *
++ * Authors: Martin Nowak
++ */
++module core.sys.linux.config;
++
++version (linux):
++
++public import core.sys.posix.config;
++
++// man 7 feature_test_macros
++// http://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
++enum _GNU_SOURCE         = true;
++// deduced <features.h>
++// http://sourceware.org/git/?p=glibc.git;a=blob;f=include/features.h
++enum _BSD_SOURCE            = true;
++enum _SVID_SOURCE           = true;
++enum _ATFILE_SOURCE         = true;
++
++enum __USE_GNU           = _GNU_SOURCE;
++enum __USE_MISC          = _BSD_SOURCE || _SVID_SOURCE;
+--- a/src/libphobos/libdruntime/core/sys/posix/sys/stat.d
++++ b/src/libphobos/libdruntime/core/sys/posix/sys/stat.d
+@@ -81,161 +81,124 @@
+ 
+ version( linux )
+ {
+-    version (X86) version = AnyX86;
+-    version (X86_64) version = AnyX86;
+-
+-    version (MIPS)
++    version (X86)
+     {
+-        version (MIPS_O32)
++        struct stat_t
+         {
+-            struct stat_t
++            dev_t       st_dev;
++            ushort      __pad1;
++            static if (!__USE_FILE_OFFSET64)
+             {
+-                c_ulong     st_dev;
+-                c_long[3]   st_pad1;
+                 ino_t       st_ino;
+-                mode_t      st_mode;
+-                nlink_t     st_nlink;
+-                uid_t       st_uid;
+-                gid_t       st_gid;
+-                c_ulong     st_rdev;
+-                static if (!__USE_FILE_OFFSET64)
+-                {
+-                    c_long[2]   st_pad2;
+-                    off_t       st_size;
+-                    c_long      st_pad3;
+-                }
+-                else
+-                {
+-                    c_long[3]   st_pad2;
+-                    off_t       st_size;
+-                }
+-                static if (__USE_MISC || __USE_XOPEN2K8)
+-                {
+-                    timespec    st_atim;
+-                    timespec    st_mtim;
+-                    timespec    st_ctim;
+-                    extern(D)
+-                    {
+-                        @property ref time_t st_atime() { return st_atim.tv_sec; }
+-                        @property ref time_t st_mtime() { return st_mtim.tv_sec; }
+-                        @property ref time_t st_ctime() { return st_ctim.tv_sec; }
+-                    }
+-                }
+-                else
+-                {
+-                    time_t      st_atime;
+-                    c_ulong     st_atimensec;
+-                    time_t      st_mtime;
+-                    c_ulong     st_mtimensec;
+-                    time_t      st_ctime;
+-                    c_ulong     st_ctimensec;
+-                }
+-                blksize_t   st_blksize;
+-                static if (!__USE_FILE_OFFSET64)
+-                {
+-                    blkcnt_t    st_blocks;
+-                }
+-                else
+-                {
+-                    c_long      st_pad4;
+-                    blkcnt_t    st_blocks;
+-                }
+-                c_long[14]  st_pad5;
+             }
+-        }
+-        else
+-        {
+-            struct stat_t
++            else
+             {
+-                dev_t       st_dev;
+-                int[3]      st_pad1;
+-                ino_t       st_ino;
+-                mode_t      st_mode;
+-                nlink_t     st_nlink;
+-                uid_t       st_uid;
+-                gid_t       st_gid;
+-                dev_t       st_rdev;
+-                static if (!__USE_FILE_OFFSET64)
+-                {
+-                    uint[2]     st_pad2;
+-                    off_t       st_size;
+-                    int         st_pad3;
+-                }
+-                else
+-                {
+-                    uint[3]     st_pad2;
+-                    off_t       st_size;
+-                }
+-                static if (__USE_MISC || __USE_XOPEN2K8)
+-                {
+-                    timespec    st_atim;
+-                    timespec    st_mtim;
+-                    timespec    st_ctim;
+-                    extern(D)
+-                    {
+-                        @property ref time_t st_atime() { return st_atim.tv_sec; }
+-                        @property ref time_t st_mtime() { return st_mtim.tv_sec; }
+-                        @property ref time_t st_ctime() { return st_ctim.tv_sec; }
+-                    }
+-                }
+-                else
++                uint        __st_ino;
++            }
++            mode_t      st_mode;
++            nlink_t     st_nlink;
++            uid_t       st_uid;
++            gid_t       st_gid;
++            dev_t       st_rdev;
++            ushort      __pad2;
++            off_t       st_size;
++            blksize_t   st_blksize;
++            blkcnt_t    st_blocks;
++            static if (__USE_MISC || __USE_XOPEN2K8)
++            {
++                timespec    st_atim;
++                timespec    st_mtim;
++                timespec    st_ctim;
++                extern(D)
+                 {
+-                    time_t      st_atime;
+-                    c_ulong     st_atimensec;
+-                    time_t      st_mtime;
+-                    c_ulong     st_mtimensec;
+-                    time_t      st_ctime;
+-                    c_ulong     st_ctimensec;
++                    @property ref time_t st_atime() { return st_atim.tv_sec; }
++                    @property ref time_t st_mtime() { return st_mtim.tv_sec; }
++                    @property ref time_t st_ctime() { return st_ctim.tv_sec; }
+                 }
+-                blksize_t   st_blksize;
+-                uint        st_pad4;
+-                blkcnt_t    st_blocks;
+-                int[14]     st_pad5;
+             }
+-        }
+-    }
+-    else version (AnyX86)
+-    {
+-        struct stat_t
+-        {
+-            dev_t       st_dev;
+-            static if(__WORDSIZE==32)
++            else
+             {
+-                ushort      __pad1;
++                time_t      st_atime;
++                ulong_t     st_atimensec;
++                time_t      st_mtime;
++                ulong_t     st_mtimensec;
++                time_t      st_ctime;
++                ulong_t     st_ctimensec;
+             }
+-            static if( !__USE_FILE_OFFSET64 || __WORDSIZE==64 )
++            static if (__USE_FILE_OFFSET64)
+             {
+-                uint        st_ino;
++                ino_t       st_ino;
+             }
+             else
+             {
+-                uint        __st_ino;
++                c_ulong     __unused4;
++                c_ulong     __unused5;
+             }
+-            static if (__WORDSIZE==32)
++        }
++    }
++    else version (X86_64)
++    {
++        struct stat_t
++        {
++            dev_t       st_dev;
++            ino_t       st_ino;
++            nlink_t     st_nlink;
++            mode_t      st_mode;
++            uid_t       st_uid;
++            gid_t       st_gid;
++            uint        __pad0;
++            dev_t       st_rdev;
++            off_t       st_size;
++            blksize_t   st_blksize;
++            blkcnt_t    st_blocks;
++            static if (__USE_MISC || __USE_XOPEN2K8)
+             {
+-                mode_t      st_mode;
+-                nlink_t     st_nlink;
++                timespec    st_atim;
++                timespec    st_mtim;
++                timespec    st_ctim;
++                extern(D)
++                {
++                    @property ref time_t st_atime() { return st_atim.tv_sec; }
++                    @property ref time_t st_mtime() { return st_mtim.tv_sec; }
++                    @property ref time_t st_ctime() { return st_ctim.tv_sec; }
++                }
+             }
+             else
+             {
+-                nlink_t     st_nlink;
+-                mode_t      st_mode;
++                time_t      st_atime;
++                ulong_t     st_atimensec;
++                time_t      st_mtime;
++                ulong_t     st_mtimensec;
++                time_t      st_ctime;
++                ulong_t     st_ctimensec;
+             }
++            slong_t     __unused[3];
++        }
++    }
++    else version (MIPS_O32)
++    {
++        struct stat_t
++        {
++            c_ulong     st_dev;
++            c_long[3]   st_pad1;
++            ino_t       st_ino;
++            mode_t      st_mode;
++            nlink_t     st_nlink;
+             uid_t       st_uid;
+             gid_t       st_gid;
+-            static if(__WORDSIZE==64)
++            c_ulong     st_rdev;
++            static if (!__USE_FILE_OFFSET64)
+             {
+-                uint        pad0;
++                c_long[2]   st_pad2;
++                off_t       st_size;
++                c_long      st_pad3;
+             }
+-            dev_t       st_rdev;
+-            static if(__WORDSIZE==32)
++            else
+             {
+-                ushort      __pad2;
++                c_long[3]   st_pad2;
++                off_t       st_size;
+             }
+-            off_t       st_size;
+-            blksize_t   st_blksize;
+-            blkcnt_t    st_blocks;
+-            static if( __USE_MISC || __USE_XOPEN2K8 )
++            static if (__USE_MISC || __USE_XOPEN2K8)
+             {
+                 timespec    st_atim;
+                 timespec    st_mtim;
+@@ -256,22 +219,66 @@
+                 time_t      st_ctime;
+                 c_ulong     st_ctimensec;
+             }
+-            static if(__WORDSIZE==64)
++            blksize_t   st_blksize;
++            static if (!__USE_FILE_OFFSET64)
+             {
+-                c_long      __unused[3];
++                blkcnt_t    st_blocks;
+             }
+             else
+             {
+-                static if( __USE_FILE_OFFSET64 )
+-                {
+-                    ino_t       st_ino;
+-                }
+-                else
+-                {
+-                    c_ulong     __unused4;
+-                    c_ulong     __unused5;
+-                }
++                c_long      st_pad4;
++                blkcnt_t    st_blocks;
+             }
++            c_long[14]  st_pad5;
++        }
++    }
++    else version (PPC)
++    {
++        struct stat_t
++        {
++            c_ulong     st_dev;
++            ino_t       st_ino;
++            mode_t      st_mode;
++            nlink_t     st_nlink;
++            uid_t       st_uid;
++            gid_t       st_gid;
++            c_ulong     st_rdev;
++            off_t       st_size;
++            c_ulong     st_blksize;
++            c_ulong     st_blocks;
++            c_ulong     st_atime;
++            c_ulong     st_atime_nsec;
++            c_ulong     st_mtime;
++            c_ulong     st_mtime_nsec;
++            c_ulong     st_ctime;
++            c_ulong     st_ctime_nsec;
++            c_ulong     __unused4;
++            c_ulong     __unused5;
++        }
++    }
++    else version (PPC64)
++    {
++        struct stat_t
++        {
++            c_ulong     st_dev;
++            ino_t       st_ino;
++            nlink_t     st_nlink;
++            mode_t      st_mode;
++            uid_t       st_uid;
++            gid_t       st_gid;
++            c_ulong     st_rdev;
++            off_t       st_size;
++            c_ulong     st_blksize;
++            c_ulong     st_blocks;
++            c_ulong     st_atime;
++            c_ulong     st_atime_nsec;
++            c_ulong     st_mtime;
++            c_ulong     st_mtime_nsec;
++            c_ulong     st_ctime;
++            c_ulong     st_ctime_nsec;
++            c_ulong     __unused4;
++            c_ulong     __unused5;
++            c_ulong     __unused6;
+         }
+     }
+     else
+@@ -554,13 +561,13 @@
+     enum S_ISVTX = 0x200;
+ 
+     private
+-    {   
++    {
+         extern (D) bool S_ISTYPE(mode_t mode, uint mask)
+         {
+             return (mode & S_IFMT) == mask;
+         }
+     }
+-      
++
+     extern (D) bool S_ISBLK(mode_t mode) { return S_ISTYPE(mode, S_IFBLK); }
+     extern (D) bool S_ISCHR(mode_t mode) { return S_ISTYPE(mode, S_IFCHR); }
+     extern (D) bool S_ISDIR(mode_t mode) { return S_ISTYPE(mode, S_IFDIR); }
+--- a/src/libphobos/libdruntime/core/sys/posix/sys/types.d
++++ b/src/libphobos/libdruntime/core/sys/posix/sys/types.d
+@@ -18,12 +18,46 @@
+ private import core.sys.posix.config;
+ private import core.stdc.stdint;
+ public import core.stdc.stddef; // for size_t
+-public import core.stdc.time;   // for clock_t, time_t
+ 
+ version (Posix):
+ extern (C):
+ 
+ //
++// bits/typesizes.h -- underlying types for *_t.
++//
++/*
++__syscall_slong_t
++__syscall_ulong_t
++*/
++version (linux)
++{
++    version (X86_64)
++    {
++        version (D_X32)
++        {
++            // X32 kernel interface is 64-bit.
++            alias long slong_t;
++            alias ulong ulong_t;
++        }
++        else
++        {
++            alias c_long slong_t;
++            alias c_ulong ulong_t;
++        }
++    }
++    else
++    {
++        alias c_long slong_t;
++        alias c_ulong ulong_t;
++    }
++}
++else
++{
++    alias c_long slong_t;
++    alias c_ulong ulong_t;
++}
++
++//
+ // Required
+ //
+ /*
+@@ -52,19 +86,19 @@
+   }
+   else
+   {
+-    alias c_long    blkcnt_t;
+-    alias c_ulong   ino_t;
+-    alias c_long    off_t;
++    alias slong_t   blkcnt_t;
++    alias ulong_t   ino_t;
++    alias slong_t   off_t;
+   }
+-    alias c_long    blksize_t;
++    alias slong_t   blksize_t;
+     alias ulong     dev_t;
+     alias uint      gid_t;
+     alias uint      mode_t;
+-    alias c_ulong   nlink_t;
++    alias ulong_t   nlink_t;
+     alias int       pid_t;
+     //size_t (defined in core.stdc.stddef)
+     alias c_long    ssize_t;
+-    //time_t (defined in core.stdc.time)
++    alias slong_t   time_t;
+     alias uint      uid_t;
+ }
+ else version( OSX )
+@@ -80,7 +114,7 @@
+     alias int       pid_t;
+     //size_t (defined in core.stdc.stddef)
+     alias c_long    ssize_t;
+-    //time_t (defined in core.stdc.time)
++    alias c_long    time_t;
+     alias uint      uid_t;
+ }
+ else version( FreeBSD )
+@@ -96,7 +130,7 @@
+     alias int       pid_t;
+     //size_t (defined in core.stdc.stddef)
+     alias c_long    ssize_t;
+-    //time_t (defined in core.stdc.time)
++    alias c_long    time_t;
+     alias uint      uid_t;
+     alias uint      fflags_t;
+ }
+@@ -139,6 +173,7 @@
+     alias uint nlink_t;
+     alias int pid_t;
+     alias c_long ssize_t;
++    alias c_long time_t;
+     alias uint uid_t;
+ }
+ else
+@@ -168,30 +203,30 @@
+   }
+   else
+   {
+-    alias c_ulong   fsblkcnt_t;
+-    alias c_ulong   fsfilcnt_t;
++    alias ulong_t   fsblkcnt_t;
++    alias ulong_t   fsfilcnt_t;
+   }
+-    // clock_t (defined in core.stdc.time)
++    alias slong_t   clock_t;
+     alias uint      id_t;
+     alias int       key_t;
+-    alias c_long    suseconds_t;
++    alias slong_t   suseconds_t;
+     alias uint      useconds_t;
+ }
+ else version( OSX )
+ {
+-    //clock_t
+-    alias uint  fsblkcnt_t;
+-    alias uint  fsfilcnt_t;
+-    alias uint  id_t;
++    alias uint   fsblkcnt_t;
++    alias uint   fsfilcnt_t;
++    alias c_long clock_t;
++    alias uint   id_t;
+     // key_t
+-    alias int   suseconds_t;
+-    alias uint  useconds_t;
++    alias int    suseconds_t;
++    alias uint   useconds_t;
+ }
+ else version( FreeBSD )
+ {
+-    // clock_t (defined in core.stdc.time)
+     alias ulong     fsblkcnt_t;
+     alias ulong     fsfilcnt_t;
++    alias c_long    clock_t;
+     alias long      id_t;
+     alias c_long    key_t;
+     alias c_long    suseconds_t;
+@@ -210,6 +245,7 @@
+         alias c_ulong fsfilcnt_t;
+     }
+ 
++    alias c_long clock_t;
+     alias int id_t;
+     alias int key_t;
+     alias c_long suseconds_t;
+@@ -244,7 +280,34 @@
+ 
+ version( linux )
+ {
+-    version(D_LP64)
++    version (X86_64)
++    {
++        static if (__WORDSIZE == 64)
++        {
++            enum __SIZEOF_PTHREAD_ATTR_T = 56;
++            enum __SIZEOF_PTHREAD_MUTEX_T = 40;
++            enum __SIZEOF_PTHREAD_MUTEXATTR_T = 4;
++            enum __SIZEOF_PTHREAD_COND_T = 48;
++            enum __SIZEOF_PTHREAD_CONDATTR_T = 4;
++            enum __SIZEOF_PTHREAD_RWLOCK_T = 56;
++            enum __SIZEOF_PTHREAD_RWLOCKATTR_T = 8;
++            enum __SIZEOF_PTHREAD_BARRIER_T = 32;
++            enum __SIZEOF_PTHREAD_BARRIERATTR_T = 4;
++        }
++        else
++        {
++            enum __SIZEOF_PTHREAD_ATTR_T = 32;
++            enum __SIZEOF_PTHREAD_MUTEX_T = 32;
++            enum __SIZEOF_PTHREAD_MUTEXATTR_T = 4;
++            enum __SIZEOF_PTHREAD_COND_T = 48;
++            enum __SIZEOF_PTHREAD_CONDATTR_T = 4;
++            enum __SIZEOF_PTHREAD_RWLOCK_T = 44;
++            enum __SIZEOF_PTHREAD_RWLOCKATTR_T = 8;
++            enum __SIZEOF_PTHREAD_BARRIER_T = 20;
++            enum __SIZEOF_PTHREAD_BARRIERATTR_T = 4;
++        }
++    }
++    else version (D_LP64)
+     {
+         enum __SIZEOF_PTHREAD_ATTR_T = 56;
+         enum __SIZEOF_PTHREAD_MUTEX_T = 40;
+--- a/src/libphobos/libdruntime/gcc/deh.d
++++ b/src/libphobos/libdruntime/gcc/deh.d
+@@ -102,13 +102,17 @@
+     }
+   }
+ 
+-  version (GNU_ARM_EABI_Unwinder)
+-    int _pad;  // to place 'obj' behind unwindHeader
++  // To place 'obj' behing unwindHeader.
++  enum UNWIND_PAD = (Phase1Info.sizeof + Object.sizeof)
++    % _Unwind_Exception.alignof;
++
++  static if (UNWIND_PAD > 0)
++    byte[UNWIND_PAD] _pad;
+ 
+   Object obj;
+ 
+   // The exception object must be directly behind unwindHeader.
+-  // (See IRState::exceptionObject.)
++  // (See build_exception_object.)
+   static assert(unwindHeader.offsetof - obj.offsetof == obj.sizeof);
+ 
+   // The generic exception header
+@@ -358,7 +362,7 @@
+     while (p < info.action_table)
+       {
+ 	_Unwind_Ptr cs_start, cs_len, cs_lp;
+-	_Unwind_Word cs_action;
++	_uleb128_t cs_action;
+ 
+ 	// Note that all call-site encodings are "absolute" displacements.
+ 	p = read_encoded_value (null, info.call_site_encoding, p, &cs_start);
+--- a/src/libphobos/libdruntime/Makefile.am
++++ b/src/libphobos/libdruntime/Makefile.am
+@@ -143,9 +143,9 @@
+ 	     core/sys/freebsd/dlfcn.di core/sys/freebsd/execinfo.di \
+ 	     core/sys/freebsd/sys/event.di \
+ 	     \
+-	     core/sys/linux/elf.di core/sys/linux/epoll.di \
+-	     core/sys/linux/execinfo.di core/sys/linux/sys/signalfd.di \
+-	     core/sys/linux/sys/xattr.di \
++	     core/sys/linux/config.di core/sys/linux/elf.di \
++	     core/sys/linux/epoll.di core/sys/linux/execinfo.di \
++	     core/sys/linux/sys/signalfd.di core/sys/linux/sys/xattr.di \
+ 	     \
+ 	     core/sys/osx/execinfo.di core/sys/osx/mach/dyld.di \
+ 	     core/sys/osx/mach/getsect.di core/sys/osx/mach/kern_return.di \
+@@ -212,9 +212,10 @@
+ 			$(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; \
+ 		done; \
+ 	done
+-	for i in core core/stdc core/sync core/sys/osx/mach core/sys/posix \
+-		core/sys/posix/arpa core/sys/posix/net core/sys/posix/netinet \
+-		core/sys/posix/sys core/sys/windows; do \
++	for i in core core/stdc core/sync core/sys/freebsd core/sys/freebsd/sys \
++		core/sys/linux core/sys/linux/sys core/sys/osx core/sys/osx/mach \
++		core/sys/posix core/sys/posix/arpa core/sys/posix/net \
++		core/sys/posix/netinet core/sys/posix/sys core/sys/windows; do \
+ 		$(mkinstalldirs) $(DESTDIR)$(gdc_include_dir)/$(host_alias)/$(MULTISUBDIR)/$$i; \
+ 		for f in $(IMPORT)/$$i/*.di; do \
+ 			$(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$(host_alias)/$(MULTISUBDIR)/$$i; \
+--- a/src/libphobos/libdruntime/Makefile.in
++++ b/src/libphobos/libdruntime/Makefile.in
+@@ -295,9 +295,9 @@
+ 	     core/sys/freebsd/dlfcn.di core/sys/freebsd/execinfo.di \
+ 	     core/sys/freebsd/sys/event.di \
+ 	     \
+-	     core/sys/linux/elf.di core/sys/linux/epoll.di \
+-	     core/sys/linux/execinfo.di core/sys/linux/sys/signalfd.di \
+-	     core/sys/linux/sys/xattr.di \
++	     core/sys/linux/config.di core/sys/linux/elf.di \
++	     core/sys/linux/epoll.di core/sys/linux/execinfo.di \
++	     core/sys/linux/sys/signalfd.di core/sys/linux/sys/xattr.di \
+ 	     \
+ 	     core/sys/osx/execinfo.di core/sys/osx/mach/dyld.di \
+ 	     core/sys/osx/mach/getsect.di core/sys/osx/mach/kern_return.di \
+@@ -627,9 +627,10 @@
+ 			$(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; \
+ 		done; \
+ 	done
+-	for i in core core/stdc core/sync core/sys/osx/mach core/sys/posix \
+-		core/sys/posix/arpa core/sys/posix/net core/sys/posix/netinet \
+-		core/sys/posix/sys core/sys/windows; do \
++	for i in core core/stdc core/sync core/sys/freebsd core/sys/freebsd/sys \
++		core/sys/linux core/sys/linux/sys core/sys/osx core/sys/osx/mach \
++		core/sys/posix core/sys/posix/arpa core/sys/posix/net \
++		core/sys/posix/netinet core/sys/posix/sys core/sys/windows; do \
+ 		$(mkinstalldirs) $(DESTDIR)$(gdc_include_dir)/$(host_alias)/$(MULTISUBDIR)/$$i; \
+ 		for f in $(IMPORT)/$$i/*.di; do \
+ 			$(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$(host_alias)/$(MULTISUBDIR)/$$i; \

@@ -1,0 +1,13 @@
+# DP: Fix cross building a native compiler.
+
+--- a/src/gcc/configure.ac
++++ b/src/gcc/configure.ac
+@@ -1516,7 +1516,7 @@
+ 	/* | [A-Za-z]:[\\/]* ) realsrcdir=${srcdir};;
+ 	*) realsrcdir=../${srcdir};;
+ 	esac
+-	CC="${CC_FOR_BUILD}" CFLAGS="${CFLAGS_FOR_BUILD}" \
++	CC="${CC_FOR_BUILD}" CFLAGS="${CFLAGS_FOR_BUILD} -DGENERATOR_FILE" \
+ 	LDFLAGS="${LDFLAGS_FOR_BUILD}" GMPINC="" \
+ 	${realsrcdir}/configure \
+ 		--enable-languages=${enable_languages-all} \

@@ -1,0 +1,280 @@
+# DP: Enable libsanitizer on ARM.
+
+libsanitizer/
+
+2013-06-20  Christophe Lyon  <christophe.lyon@linaro.org>
+
+	Backport from trunk r198683.
+	2013-05-07  Christophe Lyon  <christophe.lyon@linaro.org>
+
+	* configure.tgt: Add ARM pattern.
+
+gcc/
+
+2013-06-20  Christophe Lyon  <christophe.lyon@linaro.org>
+
+	Backport from trunk r198683.
+	2013-05-07  Christophe Lyon  <christophe.lyon@linaro.org>
+
+	* config/arm/arm.c (arm_asan_shadow_offset): New function.
+	(TARGET_ASAN_SHADOW_OFFSET): Define.
+	* config/arm/linux-eabi.h (ASAN_CC1_SPEC): Define.
+	(LINUX_OR_ANDROID_CC): Add ASAN_CC1_SPEC.
+
+gcc/testsuite/
+
+2013-06-20  Christophe Lyon  <christophe.lyon@linaro.org>
+
+	Backport from trunk r198683.
+	2013-05-07  Christophe Lyon  <christophe.lyon@linaro.org>
+
+	* lib/target-supports.exp (check_effective_target_hw): New
+	function.
+	* c-c++-common/asan/clone-test-1.c: Call
+	check_effective_target_hw.
+	* c-c++-common/asan/rlimit-mmap-test-1.c: Likewise.
+	* c-c++-common/asan/heap-overflow-1.c: Update regexps to accept
+	possible decorations.
+	* c-c++-common/asan/null-deref-1.c: Likewise.
+	* c-c++-common/asan/stack-overflow-1.c: Likewise.
+	* c-c++-common/asan/strncpy-overflow-1.c: Likewise.
+	* c-c++-common/asan/use-after-free-1.c: Likewise.
+	* g++.dg/asan/deep-thread-stack-1.C: Likewise.
+	* g++.dg/asan/large-func-test-1.C: Likewise.
+
+Index: b/src/libsanitizer/configure.tgt
+===================================================================
+--- a/src/libsanitizer/configure.tgt
++++ b/src/libsanitizer/configure.tgt
+@@ -29,6 +29,8 @@
+ 	;;
+   sparc*-*-linux*)
+ 	;;
++  arm*-*-linux*)
++	;;
+   x86_64-*-darwin[1]* | i?86-*-darwin[1]*)
+ 	TSAN_SUPPORTED=no
+ 	;;
+Index: b/src/gcc/testsuite/lib/target-supports.exp
+===================================================================
+--- a/src/gcc/testsuite/lib/target-supports.exp
++++ b/src/gcc/testsuite/lib/target-supports.exp
+@@ -4591,6 +4591,33 @@
+     return 0
+ }
+ 
++# Return 1 if programs are intended to be run on hardware rather than
++# on a simulator
++
++proc check_effective_target_hw { } {
++
++    # All "src/sim" simulators set this one.
++    if [board_info target exists is_simulator] {
++	if [board_info target is_simulator] {
++	  return 0
++	} else {
++	  return 1
++	}
++    }
++
++    # The "sid" simulators don't set that one, but at least they set
++    # this one.
++    if [board_info target exists slow_simulator] {
++	if [board_info target slow_simulator] {
++	  return 0
++	} else {
++	  return 1
++	}
++    }
++
++    return 1
++}
++
+ # Return 1 if the target is a VxWorks kernel.
+ 
+ proc check_effective_target_vxworks_kernel { } {
+Index: b/src/gcc/testsuite/g++.dg/asan/large-func-test-1.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/asan/large-func-test-1.C
++++ b/src/gcc/testsuite/g++.dg/asan/large-func-test-1.C
+@@ -37,9 +37,9 @@
+ 
+ // { dg-output "ERROR: AddressSanitizer:? heap-buffer-overflow on address\[^\n\r]*" }
+ // { dg-output "0x\[0-9a-f\]+ at pc 0x\[0-9a-f\]+ bp 0x\[0-9a-f\]+ sp 0x\[0-9a-f\]+\[^\n\r]*(\n|\r\n|\r)" }
+-// { dg-output "READ of size 4 at 0x\[0-9a-f\]+ thread T0\[^\n\r]*(\n|\r\n|\r)" }
++// { dg-output "\[^\n\r]*READ of size 4 at 0x\[0-9a-f\]+ thread T0\[^\n\r]*(\n|\r\n|\r)" }
+ // { dg-output "    #0 0x\[0-9a-f\]+ (in \[^\n\r]*LargeFunction\[^\n\r]*(large-func-test-1.C:18|\[^\n\r]*:0)|\[(\]).*(\n|\r\n|\r)" }
+-// { dg-output "0x\[0-9a-f\]+ is located 44 bytes to the right of 400-byte region.*(\n|\r\n|\r)" }
+-// { dg-output "allocated by thread T0 here:\[^\n\r]*(\n|\r\n|\r)" }
++// { dg-output "\[^\n\r]*0x\[0-9a-f\]+ is located 44 bytes to the right of 400-byte region.*(\n|\r\n|\r)" }
++// { dg-output "\[^\n\r]*allocated by thread T0 here:\[^\n\r]*(\n|\r\n|\r)" }
+ // { dg-output "    #0( 0x\[0-9a-f\]+ (in _*(interceptor_|)malloc|\[(\])\[^\n\r]*(\n|\r\n|\r)" }
+ // { dg-output "    #1|) 0x\[0-9a-f\]+ (in (operator new|_*_Zn\[aw\]\[mj\])|\[(\])\[^\n\r]*(\n|\r\n|\r)" }
+Index: b/src/gcc/testsuite/g++.dg/asan/deep-thread-stack-1.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/asan/deep-thread-stack-1.C
++++ b/src/gcc/testsuite/g++.dg/asan/deep-thread-stack-1.C
+@@ -45,9 +45,9 @@
+ }
+ 
+ // { dg-output "ERROR: AddressSanitizer: heap-use-after-free.*(\n|\r\n|\r)" }
+-// { dg-output "WRITE of size 4 at 0x\[0-9a-f\]+ thread T(\[0-9\]+).*(\n|\r\n|\r)" }
+-// { dg-output "freed by thread T(\[0-9\]+) here:.*(\n|\r\n|\r)" }
+-// { dg-output "previously allocated by thread T(\[0-9\]+) here:.*(\n|\r\n|\r)" }
++// { dg-output "\[^\n\r]*WRITE of size 4 at 0x\[0-9a-f\]+ thread T(\[0-9\]+).*(\n|\r\n|\r)" }
++// { dg-output "\[^\n\r]*freed by thread T(\[0-9\]+) here:.*(\n|\r\n|\r)" }
++// { dg-output "\[^\n\r]*previously allocated by thread T(\[0-9\]+) here:.*(\n|\r\n|\r)" }
+ // { dg-output "Thread T\\2 created by T(\[0-9\]+) here:.*(\n|\r\n|\r)" }
+ // { dg-output "Thread T\\8 created by T0 here:.*(\n|\r\n|\r)" }
+ // { dg-output "Thread T\\4 created by T(\[0-9\]+) here:.*(\n|\r\n|\r)" }
+Index: b/src/gcc/testsuite/c-c++-common/asan/strncpy-overflow-1.c
+===================================================================
+--- a/src/gcc/testsuite/c-c++-common/asan/strncpy-overflow-1.c
++++ b/src/gcc/testsuite/c-c++-common/asan/strncpy-overflow-1.c
+@@ -15,7 +15,7 @@
+ /* { dg-output "WRITE of size \[0-9\]* at 0x\[0-9a-f\]+ thread T0\[^\n\r]*(\n|\r\n|\r)" } */
+ /* { dg-output "    #0 0x\[0-9a-f\]+ (in _*(interceptor_|)strncpy|\[(\])\[^\n\r]*(\n|\r\n|\r)" } */
+ /* { dg-output "    #1 0x\[0-9a-f\]+ (in _*main (\[^\n\r]*strncpy-overflow-1.c:11|\[^\n\r]*:0)|\[(\]).*(\n|\r\n|\r)" } */
+-/* { dg-output "0x\[0-9a-f\]+ is located 0 bytes to the right of 9-byte region\[^\n\r]*(\n|\r\n|\r)" } */
+-/* { dg-output "allocated by thread T0 here:\[^\n\r]*(\n|\r\n|\r)" } */
++/* { dg-output "\[^\n\r]*0x\[0-9a-f\]+ is located 0 bytes to the right of 9-byte region\[^\n\r]*(\n|\r\n|\r)" } */
++/* { dg-output "\[^\n\r]*allocated by thread T0 here:\[^\n\r]*(\n|\r\n|\r)" } */
+ /* { dg-output "    #0 0x\[0-9a-f\]+ (in _*(interceptor_|)malloc|\[(\])\[^\n\r]*(\n|\r\n|\r)" } */
+ /* { dg-output "    #1 0x\[0-9a-f\]+ (in _*main (\[^\n\r]*strncpy-overflow-1.c:10|\[^\n\r]*:0)|\[(\])\[^\n\r]*(\n|\r\n|\r)" } */
+Index: b/src/gcc/testsuite/c-c++-common/asan/rlimit-mmap-test-1.c
+===================================================================
+--- a/src/gcc/testsuite/c-c++-common/asan/rlimit-mmap-test-1.c
++++ b/src/gcc/testsuite/c-c++-common/asan/rlimit-mmap-test-1.c
+@@ -2,6 +2,7 @@
+ 
+ /* { dg-do run { target setrlimit } } */
+ /* { dg-skip-if "" { *-*-* } { "*" } { "-O0" } } */
++/* { dg-require-effective-target hw } */
+ /* { dg-shouldfail "asan" } */
+ 
+ #include <stdlib.h>
+Index: b/src/gcc/testsuite/c-c++-common/asan/stack-overflow-1.c
+===================================================================
+--- a/src/gcc/testsuite/c-c++-common/asan/stack-overflow-1.c
++++ b/src/gcc/testsuite/c-c++-common/asan/stack-overflow-1.c
+@@ -19,4 +19,4 @@
+ 
+ /* { dg-output "READ of size 1 at 0x\[0-9a-f\]+ thread T0\[^\n\r]*(\n|\r\n|\r)" } */
+ /* { dg-output "    #0 0x\[0-9a-f\]+ (in _*main (\[^\n\r]*stack-overflow-1.c:16|\[^\n\r]*:0)|\[(\]).*(\n|\r\n|\r)" } */
+-/* { dg-output "Address 0x\[0-9a-f\]+ is\[^\n\r]*frame <main>" } */
++/* { dg-output "\[^\n\r]*Address 0x\[0-9a-f\]+ is\[^\n\r]*frame <main>" } */
+Index: b/src/gcc/testsuite/c-c++-common/asan/use-after-free-1.c
+===================================================================
+--- a/src/gcc/testsuite/c-c++-common/asan/use-after-free-1.c
++++ b/src/gcc/testsuite/c-c++-common/asan/use-after-free-1.c
+@@ -11,12 +11,12 @@
+ 
+ /* { dg-output "ERROR: AddressSanitizer:? heap-use-after-free on address\[^\n\r]*" } */
+ /* { dg-output "0x\[0-9a-f\]+ at pc 0x\[0-9a-f\]+ bp 0x\[0-9a-f\]+ sp 0x\[0-9a-f\]+\[^\n\r]*(\n|\r\n|\r)" } */
+-/* { dg-output "READ of size 1 at 0x\[0-9a-f\]+ thread T0\[^\n\r]*(\n|\r\n|\r)" } */
++/* { dg-output "\[^\n\r]*READ of size 1 at 0x\[0-9a-f\]+ thread T0\[^\n\r]*(\n|\r\n|\r)" } */
+ /* { dg-output "    #0 0x\[0-9a-f\]+ (in _*main (\[^\n\r]*use-after-free-1.c:9|\[^\n\r]*:0)|\[(\]).*(\n|\r\n|\r)" } */
+-/* { dg-output "0x\[0-9a-f\]+ is located 5 bytes inside of 10-byte region .0x\[0-9a-f\]+,0x\[0-9a-f\]+\[^\n\r]*(\n|\r\n|\r)" } */
+-/* { dg-output "freed by thread T0 here:\[^\n\r]*(\n|\r\n|\r)" } */
++/* { dg-output "\[^\n\r]*0x\[0-9a-f\]+ is located 5 bytes inside of 10-byte region .0x\[0-9a-f\]+,0x\[0-9a-f\]+\[^\n\r]*(\n|\r\n|\r)" } */
++/* { dg-output "\[^\n\r]*freed by thread T0 here:\[^\n\r]*(\n|\r\n|\r)" } */
+ /* { dg-output "    #0 0x\[0-9a-f\]+ (in _*(interceptor_|)free|\[(\])\[^\n\r]*(\n|\r\n|\r)" } */
+ /* { dg-output "    #1 0x\[0-9a-f\]+ (in _*main (\[^\n\r]*use-after-free-1.c:8|\[^\n\r]*:0)|\[(\]).*(\n|\r\n|\r)" } */
+-/* { dg-output "previously allocated by thread T0 here:\[^\n\r]*(\n|\r\n|\r)" } */
++/* { dg-output "\[^\n\r]*previously allocated by thread T0 here:\[^\n\r]*(\n|\r\n|\r)" } */
+ /* { dg-output "    #0 0x\[0-9a-f\]+ (in _*(interceptor_|)malloc|\[(\])\[^\n\r]*(\n|\r\n|\r)" } */
+ /* { dg-output "    #1 0x\[0-9a-f\]+ (in _*main (\[^\n\r]*use-after-free-1.c:7|\[^\n\r]*:0)|\[(\])\[^\n\r]*(\n|\r\n|\r)" } */
+Index: b/src/gcc/testsuite/c-c++-common/asan/clone-test-1.c
+===================================================================
+--- a/src/gcc/testsuite/c-c++-common/asan/clone-test-1.c
++++ b/src/gcc/testsuite/c-c++-common/asan/clone-test-1.c
+@@ -3,6 +3,7 @@
+ 
+ /* { dg-do run { target { *-*-linux* } } } */
+ /* { dg-require-effective-target clone } */
++/* { dg-require-effective-target hw } */
+ /* { dg-options "-D_GNU_SOURCE" } */
+ 
+ #include <stdio.h>
+Index: b/src/gcc/testsuite/c-c++-common/asan/heap-overflow-1.c
+===================================================================
+--- a/src/gcc/testsuite/c-c++-common/asan/heap-overflow-1.c
++++ b/src/gcc/testsuite/c-c++-common/asan/heap-overflow-1.c
+@@ -25,7 +25,7 @@
+ 
+ /* { dg-output "READ of size 1 at 0x\[0-9a-f\]+ thread T0.*(\n|\r\n|\r)" } */
+ /* { dg-output "    #0 0x\[0-9a-f\]+ (in _*main (\[^\n\r]*heap-overflow-1.c:21|\[^\n\r]*:0)|\[(\]).*(\n|\r\n|\r)" } */
+-/* { dg-output "0x\[0-9a-f\]+ is located 0 bytes to the right of 10-byte region\[^\n\r]*(\n|\r\n|\r)" } */
+-/* { dg-output "allocated by thread T0 here:\[^\n\r]*(\n|\r\n|\r)" } */
++/* { dg-output "\[^\n\r]*0x\[0-9a-f\]+ is located 0 bytes to the right of 10-byte region\[^\n\r]*(\n|\r\n|\r)" } */
++/* { dg-output "\[^\n\r]*allocated by thread T0 here:\[^\n\r]*(\n|\r\n|\r)" } */
+ /* { dg-output "    #0 0x\[0-9a-f\]+ (in _*(interceptor_|)malloc|\[(\])\[^\n\r]*(\n|\r\n|\r)" } */
+ /* { dg-output "    #1 0x\[0-9a-f\]+ (in _*main (\[^\n\r]*heap-overflow-1.c:19|\[^\n\r]*:0)|\[(\])\[^\n\r]*(\n|\r\n|\r)" } */
+Index: b/src/gcc/testsuite/c-c++-common/asan/null-deref-1.c
+===================================================================
+--- a/src/gcc/testsuite/c-c++-common/asan/null-deref-1.c
++++ b/src/gcc/testsuite/c-c++-common/asan/null-deref-1.c
+@@ -18,6 +18,6 @@
+ 
+ /* { dg-output "ERROR: AddressSanitizer:? SEGV on unknown address\[^\n\r]*" } */
+ /* { dg-output "0x\[0-9a-f\]+ \[^\n\r]*pc 0x\[0-9a-f\]+\[^\n\r]*(\n|\r\n|\r)" } */
+-/* { dg-output "AddressSanitizer can not provide additional info.*(\n|\r\n|\r)" } */
++/* { dg-output "\[^\n\r]*AddressSanitizer can not provide additional info.*(\n|\r\n|\r)" } */
+ /* { dg-output "    #0 0x\[0-9a-f\]+ (in \[^\n\r]*NullDeref\[^\n\r]* (\[^\n\r]*null-deref-1.c:10|\[^\n\r]*:0)|\[(\])\[^\n\r]*(\n|\r\n|\r)" } */
+ /* { dg-output "    #1 0x\[0-9a-f\]+ (in _*main (\[^\n\r]*null-deref-1.c:15|\[^\n\r]*:0)|\[(\])\[^\n\r]*(\n|\r\n|\r)" } */
+Index: b/src/gcc/config/arm/arm.c
+===================================================================
+--- a/src/gcc/config/arm/arm.c
++++ b/src/gcc/config/arm/arm.c
+@@ -280,6 +280,7 @@
+ 
+ static void arm_canonicalize_comparison (int *code, rtx *op0, rtx *op1,
+ 					 bool op0_preserve_value);
++static unsigned HOST_WIDE_INT arm_asan_shadow_offset (void);
+ 
+ /* Table of machine attributes.  */
+ static const struct attribute_spec arm_attribute_table[] =
+@@ -649,6 +650,9 @@
+ #define TARGET_CANONICALIZE_COMPARISON \
+   arm_canonicalize_comparison
+ 
++#undef TARGET_ASAN_SHADOW_OFFSET
++#define TARGET_ASAN_SHADOW_OFFSET arm_asan_shadow_offset
++
+ struct gcc_target targetm = TARGET_INITIALIZER;
+ 
+ /* Obstack for minipool constant handling.  */
+@@ -27450,4 +27454,12 @@
+ 
+ }
+ 
++/* Implement the TARGET_ASAN_SHADOW_OFFSET hook.  */
++
++static unsigned HOST_WIDE_INT
++arm_asan_shadow_offset (void)
++{
++  return (unsigned HOST_WIDE_INT) 1 << 29;
++}
++
+ #include "gt-arm.h"
+Index: b/src/gcc/config/arm/linux-eabi.h
+===================================================================
+--- a/src/gcc/config/arm/linux-eabi.h
++++ b/src/gcc/config/arm/linux-eabi.h
+@@ -84,10 +84,14 @@
+   LINUX_OR_ANDROID_LD (LINUX_TARGET_LINK_SPEC,				\
+ 		       LINUX_TARGET_LINK_SPEC " " ANDROID_LINK_SPEC)
+ 
++#undef  ASAN_CC1_SPEC
++#define ASAN_CC1_SPEC "%{fsanitize=*:-funwind-tables}"
++
+ #undef  CC1_SPEC
+ #define CC1_SPEC							\
+-  LINUX_OR_ANDROID_CC (GNU_USER_TARGET_CC1_SPEC,			\
+-		       GNU_USER_TARGET_CC1_SPEC " " ANDROID_CC1_SPEC)
++  LINUX_OR_ANDROID_CC (GNU_USER_TARGET_CC1_SPEC " " ASAN_CC1_SPEC,	\
++		       GNU_USER_TARGET_CC1_SPEC " " ASAN_CC1_SPEC " "	\
++		       ANDROID_CC1_SPEC)
+ 
+ #define CC1PLUS_SPEC \
+   LINUX_OR_ANDROID_CC ("", ANDROID_CC1PLUS_SPEC)

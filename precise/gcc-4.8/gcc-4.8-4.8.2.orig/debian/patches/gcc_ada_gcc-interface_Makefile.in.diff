@@ -1,0 +1,35 @@
+--- a/src/gcc/ada/gcc-interface/Makefile.in	2011-11-18 12:46:58.000000000 +0100
++++ b/src/gcc/ada/gcc-interface/Makefile.in	2012-03-28 11:28:09.000000000 +0200
+@@ -1143,6 +1116,32 @@
+   LIBRARY_VERSION := $(LIB_VERSION)
+ endif
+ 
++ifeq ($(strip $(filter-out %86 gnu%,$(arch) $(osys))),)
++  LIBGNAT_TARGET_PAIRS = \
++  a-intnam.ads<a-intnam-freebsd.ads \
++  a-numaux.adb<a-numaux-x86.adb \
++  a-numaux.ads<a-numaux-x86.ads \
++  s-inmaop.adb<s-inmaop-posix.adb \
++  s-intman.adb<s-intman-posix.adb \
++  s-osinte.adb<s-osinte-gnu.adb \
++  s-osinte.ads<s-osinte-gnu.ads \
++  s-osprim.adb<s-osprim-posix.adb \
++  s-taprop.adb<s-taprop-gnu.adb \
++  s-taspri.ads<s-taspri-posix.ads \
++  s-tpopsp.adb<s-tpopsp-posix-foreign.adb \
++  system.ads<system-freebsd-x86.ads
++
++  TOOLS_TARGET_PAIRS =  \
++    mlib-tgt-specific.adb<mlib-tgt-specific-linux.adb \
++    indepsw.adb<indepsw-gnu.adb
++
++  EH_MECHANISM=-gcc
++  THREADSLIB = -lpthread
++  GNATLIB_SHARED = gnatlib-shared-dual
++  GMEM_LIB = gmemlib
++  LIBRARY_VERSION := $(LIB_VERSION)
++endif
++
+ ifeq ($(strip $(filter-out x86_64 kfreebsd%,$(arch) $(osys))),)
+   LIBGNAT_TARGET_PAIRS = \
+   a-intnam.ads<a-intnam-freebsd.ads \

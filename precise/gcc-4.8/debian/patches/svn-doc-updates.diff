@@ -1,0 +1,103 @@
+# DP: updates from the 4.8 branch upto 20130421 (documentation).
+
+svn diff svn://gcc.gnu.org/svn/gcc/tags/gcc_4_8_0_release svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch \
+	| sed -r 's,^--- (\S+)\t(\S+)(.*)$,--- a/src/\1\t\2,;s,^\+\+\+ (\S+)\t(\S+)(.*)$,+++ b/src/\1\t\2,' \
+	| awk '/^Index:.*\.texi/ {skip=0; print; next} /^Index:/ {skip=1; next} skip==0'
+
+Index: gcc/doc/standards.texi
+===================================================================
+--- a/src/gcc/doc/standards.texi	(.../tags/gcc_4_8_0_release)
++++ b/src/gcc/doc/standards.texi	(.../branches/gcc-4_8-branch)
+@@ -280,13 +280,8 @@
+ 
+ @section Go language
+ 
+-The Go language continues to evolve as of this writing; see the
+-@uref{http://golang.org/@/ref/@/spec, current language
+-specifications}.  At present there are no specific versions of Go, and
+-there is no way to describe the language supported by GCC in terms of
+-a specific version.  In general GCC tracks the evolving specification
+-closely, and any given release will support the language as of the
+-date that the release was frozen.
++As of the GCC 4.7.1 release, GCC supports the Go 1 language standard,
++described at @uref{http://golang.org/doc/go1.html}.
+ 
+ @section References for other languages
+ 
+Index: gcc/doc/extend.texi
+===================================================================
+--- a/src/gcc/doc/extend.texi	(.../tags/gcc_4_8_0_release)
++++ b/src/gcc/doc/extend.texi	(.../branches/gcc-4_8-branch)
+@@ -1339,7 +1339,7 @@
+ accesses to these data read from generic address space, i.e.@:
+ from RAM,
+ so that you need special accessors like @code{pgm_read_byte}
+-from @w{@uref{http://nongnu.org/avr-libc/user-manual,AVR-LibC}}
++from @w{@uref{http://nongnu.org/avr-libc/user-manual/,AVR-LibC}}
+ together with attribute @code{progmem}.
+ 
+ @noindent
+@@ -4914,7 +4914,7 @@
+ In order to read data located with the @code{progmem} attribute
+ (inline) assembler must be used.
+ @smallexample
+-/* Use custom macros from @w{@uref{http://nongnu.org/avr-libc/user-manual,AVR-LibC}} */
++/* Use custom macros from @w{@uref{http://nongnu.org/avr-libc/user-manual/,AVR-LibC}} */
+ #include <avr/pgmspace.h> 
+ 
+ /* Locate var in flash memory */
+Index: gcc/doc/invoke.texi
+===================================================================
+--- a/src/gcc/doc/invoke.texi	(.../tags/gcc_4_8_0_release)
++++ b/src/gcc/doc/invoke.texi	(.../branches/gcc-4_8-branch)
+@@ -922,7 +922,6 @@
+ -mfaster-structs  -mno-faster-structs  -mflat  -mno-flat @gol
+ -mfpu  -mno-fpu  -mhard-float  -msoft-float @gol
+ -mhard-quad-float  -msoft-quad-float @gol
+--mlittle-endian @gol
+ -mstack-bias  -mno-stack-bias @gol
+ -munaligned-doubles  -mno-unaligned-doubles @gol
+ -mv8plus  -mno-v8plus  -mvis  -mno-vis @gol
+@@ -8177,7 +8176,7 @@
+ and those merged by attribute @code{externally_visible} become static functions
+ and in effect are optimized more aggressively by interprocedural optimizers.
+ 
+-In combination with @code{-flto} using this option should not be used.
++This option should not be used in combination with @code{-flto}.
+ Instead relying on a linker plugin should provide safer and more precise
+ information.
+ 
+@@ -11701,7 +11700,7 @@
+ The startup code from libgcc never sets @code{EIND}.
+ Notice that startup code is a blend of code from libgcc and AVR-LibC.
+ For the impact of AVR-LibC on @code{EIND}, see the
+-@w{@uref{http://nongnu.org/avr-libc/user-manual,AVR-LibC user manual}}.
++@w{@uref{http://nongnu.org/avr-libc/user-manual/,AVR-LibC user manual}}.
+ 
+ @item
+ It is legitimate for user-specific startup code to set up @code{EIND}
+@@ -19291,11 +19290,6 @@
+ on SPARC-V9 processors in 64-bit environments:
+ 
+ @table @gcctabopt
+-@item -mlittle-endian
+-@opindex mlittle-endian
+-Generate code for a processor running in little-endian mode.  It is only
+-available for a few configurations and most notably not on Solaris and Linux.
+-
+ @item -m32
+ @itemx -m64
+ @opindex m32
+Index: gcc/fortran/intrinsic.texi
+===================================================================
+--- a/src/gcc/fortran/intrinsic.texi	(.../tags/gcc_4_8_0_release)
++++ b/src/gcc/fortran/intrinsic.texi	(.../branches/gcc-4_8-branch)
+@@ -9248,7 +9248,7 @@
+ @item @emph{Arguments}:
+ @multitable @columnfractions .15 .70
+ @item @var{X} @tab Shall be of type @code{REAL}.
+-@item @var{S} @tab (Optional) shall be of type @code{REAL} and
++@item @var{S} @tab Shall be of type @code{REAL} and
+ not equal to zero.
+ @end multitable
+ 

@@ -1,0 +1,151 @@
+# DP: Changes for the Linaro 4.8-2013.12 release (documentation).
+
+--- a/src/gcc/doc/tm.texi
++++ b/src/gcc/doc/tm.texi
+@@ -10926,10 +10926,18 @@
+ @samp{TARGET_INIT_BUILTINS}.  @var{fndecl} is the declaration of the
+ built-in function.  @var{n_args} is the number of arguments passed to
+ the function; the arguments themselves are pointed to by @var{argp}.
+-The result is another tree containing a simplified expression for the
+-call's result.  If @var{ignore} is true the value will be ignored.
++The result is another tree, valid for both GIMPLE and GENERIC,
++containing a simplified expression for the call's result.  If
++@var{ignore} is true the value will be ignored.
+ @end deftypefn
+ 
++@deftypefn {Target Hook} bool TARGET_GIMPLE_FOLD_BUILTIN (gimple_stmt_iterator *@var{gsi})
++Fold a call to a machine specific built-in function that was set up
++by @samp{TARGET_INIT_BUILTINS}.  @var{gsi} points to the gimple
++statement holding the function call.  Returns true if any change
++was made to the GIMPLE stream.
++@end deftypefn
++
+ @deftypefn {Target Hook} int TARGET_COMPARE_VERSION_PRIORITY (tree @var{decl1}, tree @var{decl2})
+ This hook is used to compare the target attributes in two functions to
+ determine which function's features get higher priority.  This is used
+--- a/src/gcc/doc/tm.texi.in
++++ b/src/gcc/doc/tm.texi.in
+@@ -10772,10 +10772,13 @@
+ @samp{TARGET_INIT_BUILTINS}.  @var{fndecl} is the declaration of the
+ built-in function.  @var{n_args} is the number of arguments passed to
+ the function; the arguments themselves are pointed to by @var{argp}.
+-The result is another tree containing a simplified expression for the
+-call's result.  If @var{ignore} is true the value will be ignored.
++The result is another tree, valid for both GIMPLE and GENERIC,
++containing a simplified expression for the call's result.  If
++@var{ignore} is true the value will be ignored.
+ @end deftypefn
+ 
++@hook TARGET_GIMPLE_FOLD_BUILTIN
++
+ @hook TARGET_COMPARE_VERSION_PRIORITY
+ This hook is used to compare the target attributes in two functions to
+ determine which function's features get higher priority.  This is used
+--- a/src/gcc/doc/invoke.texi
++++ b/src/gcc/doc/invoke.texi
+@@ -510,7 +510,9 @@
+ -mtp=@var{name} -mtls-dialect=@var{dialect} @gol
+ -mword-relocations @gol
+ -mfix-cortex-m3-ldrd @gol
+--munaligned-access}
++-munaligned-access @gol
++-mneon-for-64bits @gol
++-mrestrict-it}
+ 
+ @emph{AVR Options}
+ @gccoptlist{-mmcu=@var{mcu} -maccumulate-args -mbranch-cost=@var{cost} @gol
+@@ -10966,6 +10968,8 @@
+ the following:
+ 
+ @table @samp
++@item crc
++Enable CRC extension.
+ @item crypto
+ Enable Crypto extension.  This implies Advanced SIMD is enabled.
+ @item fp
+@@ -11263,8 +11267,8 @@
+ @samp{arm1136j-s}, @samp{arm1136jf-s}, @samp{mpcore}, @samp{mpcorenovfp},
+ @samp{arm1156t2-s}, @samp{arm1156t2f-s}, @samp{arm1176jz-s}, @samp{arm1176jzf-s},
+ @samp{cortex-a5}, @samp{cortex-a7}, @samp{cortex-a8}, @samp{cortex-a9}, 
+-@samp{cortex-a15}, @samp{cortex-r4}, @samp{cortex-r4f}, @samp{cortex-r5},
+-@samp{cortex-m4}, @samp{cortex-m3},
++@samp{cortex-a15}, @samp{cortex-a53}, @samp{cortex-r4}, @samp{cortex-r4f},
++@samp{cortex-r5}, @samp{cortex-r7}, @samp{cortex-m4}, @samp{cortex-m3},
+ @samp{cortex-m1},
+ @samp{cortex-m0},
+ @samp{cortex-m0plus},
+@@ -11530,6 +11534,17 @@
+ preprocessor symbol @code{__ARM_FEATURE_UNALIGNED} will also be
+ defined.
+ 
++@item -mneon-for-64bits
++@opindex mneon-for-64bits
++Enables using Neon to handle scalar 64-bits operations. This is
++disabled by default since the cost of moving data from core registers
++to Neon is high.
++
++@item -mrestrict-it
++@opindex mrestrict-it
++Restricts generation of IT blocks to conform to the rules of ARMv8.
++IT blocks can only contain a single 16-bit instruction from a select
++set of instructions. This option is on by default for ARMv8 Thumb mode.
+ @end table
+ 
+ @node AVR Options
+--- a/src/gcc/doc/arm-neon-intrinsics.texi
++++ b/src/gcc/doc/arm-neon-intrinsics.texi
+@@ -5748,6 +5748,18 @@
+ 
+ 
+ @itemize @bullet
++@item float16x4_t vcvt_f16_f32 (float32x4_t)
++@*@emph{Form of expected instruction(s):} @code{vcvt.f16.f32 @var{d0}, @var{q0}}
++@end itemize
++
++
++@itemize @bullet
++@item float32x4_t vcvt_f32_f16 (float16x4_t)
++@*@emph{Form of expected instruction(s):} @code{vcvt.f32.f16 @var{q0}, @var{d0}}
++@end itemize
++
++
++@itemize @bullet
+ @item float32x2_t vcvt_n_f32_u32 (uint32x2_t, const int)
+ @*@emph{Form of expected instruction(s):} @code{vcvt.f32.u32 @var{d0}, @var{d0}, #@var{0}}
+ @end itemize
+--- a/src/gcc/doc/md.texi
++++ b/src/gcc/doc/md.texi
+@@ -1711,9 +1711,6 @@
+ @item Z
+ Integer constant zero
+ 
+-@item Usa
+-An absolute symbolic address
+-
+ @item Ush
+ The high part (bits 12 and upwards) of the pc-relative address of a symbol
+ within 4GB of the instruction
+@@ -8828,7 +8825,8 @@
+ (define_cond_exec
+   [@var{predicate-pattern}]
+   "@var{condition}"
+-  "@var{output-template}")
++  "@var{output-template}"
++  "@var{optional-insn-attribues}")
+ @end smallexample
+ 
+ @var{predicate-pattern} is the condition that must be true for the
+@@ -8849,6 +8847,13 @@
+ @code{current_insn_predicate} that will contain the entire predicate
+ if the current insn is predicated, and will otherwise be @code{NULL}.
+ 
++@var{optional-insn-attributes} is an optional vector of attributes that gets
++appended to the insn attributes of the produced cond_exec rtx. It can
++be used to add some distinguishing attribute to cond_exec rtxs produced
++that way. An example usage would be to use this attribute in conjunction
++with attributes on the main pattern to disable particular alternatives under
++certain conditions.
++
+ When @code{define_cond_exec} is used, an implicit reference to
+ the @code{predicable} instruction attribute is made.
+ @xref{Insn Attributes}.  This attribute must be a boolean (i.e.@: have

@@ -1,0 +1,189 @@
+# DP: - Remaining multiarch patches, not yet submitted upstream.
+# DP: - Add MULTIARCH_DIRNAME definitions for multilib configurations,
+# DP:   which are used for the non-multilib builds.
+
+2013-06-12  Matthias Klose  <doko@ubuntu.com>
+
+	* config/i386/t-linux64: Set MULTIARCH_DIRNAME.
+	* config/i386/t-kfreebsd: Set MULTIARCH_DIRNAME.
+	* config.gcc (i[34567]86-*-linux* | x86_64-*-linux*): Prepend
+	i386/t-linux to $tmake_file.
+	* config/mips/t-linux64: Set MULTIARCH_DIRNAME.
+	* config/rs6000/t-linux64: Set MULTIARCH_DIRNAME.
+	* config/s390/t-linux64: Set MULTIARCH_DIRNAME.
+	* config/sparc/t-linux64: Set MULTIARCH_DIRNAME.
+
+Index: b/src/libstdc++-v3/python/hook.in
+===================================================================
+--- a/src/libstdc++-v3/python/hook.in
++++ b/src/libstdc++-v3/python/hook.in
+@@ -47,14 +47,18 @@
+     libdir = libdir[len (prefix):]
+ 
+     # Compute the ".."s needed to get from libdir to the prefix.
+-    dotdots = ('..' + os.sep) * len (libdir.split (os.sep))
++    backdirs = len (libdir.split (os.sep))
++    if not os.path.basename(os.path.dirname(__file__)).startswith('lib'):
++        backdirs += 1 # multiarch subdir
++    dotdots = ('..' + os.sep) * backdirs
+ 
+     objfile = gdb.current_objfile ().filename
+     dir_ = os.path.join (os.path.dirname (objfile), dotdots, pythondir)
+ 
+-    if not dir_ in sys.path:
++    if not objfile.startswith('/usr/lib/debug/') and not dir_ in sys.path:
+         sys.path.insert(0, dir_)
+ 
+ # Load the pretty-printers.
+-from libstdcxx.v6.printers import register_libstdcxx_printers
+-register_libstdcxx_printers (gdb.current_objfile ())
++if gdb.current_objfile () is None or not gdb.current_objfile ().filename.startswith ('/usr/lib/debug/'):
++    from libstdcxx.v6.printers import register_libstdcxx_printers
++    register_libstdcxx_printers (gdb.current_objfile ())
+Index: b/src/gcc/config/sh/t-linux
+===================================================================
+--- a/src/gcc/config/sh/t-linux
++++ b/src/gcc/config/sh/t-linux
+@@ -1,2 +1,4 @@
+ MULTILIB_DIRNAMES= 
+ MULTILIB_MATCHES = 
++
++MULTILIB_OSDIRNAMES = sh4-linux-gnu:sh4-linux-gnu sh4_nofpu-linux-gnu:sh4-linux-gnu
+Index: b/src/gcc/config/sparc/t-linux64
+===================================================================
+--- a/src/gcc/config/sparc/t-linux64
++++ b/src/gcc/config/sparc/t-linux64
+@@ -27,3 +27,5 @@
+ MULTILIB_DIRNAMES = 64 32
+ MULTILIB_OSDIRNAMES = ../lib64$(call if_multiarch,:sparc64-linux-gnu)
+ MULTILIB_OSDIRNAMES += $(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:sparc-linux-gnu)
++
++MULTIARCH_DIRNAME = $(call if_multiarch,sparc$(if $(findstring 64,$(target)),64)-linux-gnu)
+Index: b/src/gcc/config/s390/t-linux64
+===================================================================
+--- a/src/gcc/config/s390/t-linux64
++++ b/src/gcc/config/s390/t-linux64
+@@ -9,3 +9,5 @@
+ MULTILIB_DIRNAMES = 64 32
+ MULTILIB_OSDIRNAMES = ../lib64$(call if_multiarch,:s390x-linux-gnu)
+ MULTILIB_OSDIRNAMES += $(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:s390-linux-gnu)
++
++MULTIARCH_DIRNAME = $(call if_multiarch,s390$(if $(findstring s390x,$(target)),x)-linux-gnu)
+Index: b/src/gcc/config/rs6000/t-linux
+===================================================================
+--- a/src/gcc/config/rs6000/t-linux
++++ b/src/gcc/config/rs6000/t-linux
+@@ -2,7 +2,7 @@
+ # or soft-float.
+ ifeq (,$(filter $(with_cpu),$(SOFT_FLOAT_CPUS))$(findstring soft,$(with_float)))
+ ifneq (,$(findstring spe,$(target)))
+-MULTIARCH_DIRNAME = powerpc-linux-gnuspe$(if $(findstring rs6000/e500-double.h, $(tm_file_list)),,v1)
++MULTIARCH_DIRNAME = powerpc-linux-gnuspe$(if $(findstring 8548,$(with_cpu)),,v1)
+ else
+ MULTIARCH_DIRNAME = powerpc-linux-gnu
+ endif
+Index: b/src/gcc/config/rs6000/t-linux64
+===================================================================
+--- a/src/gcc/config/rs6000/t-linux64
++++ b/src/gcc/config/rs6000/t-linux64
+@@ -30,3 +30,5 @@
+ MULTILIB_EXTRA_OPTS := 
+ MULTILIB_OSDIRNAMES := m64=../lib64$(call if_multiarch,:powerpc64-linux-gnu)
+ MULTILIB_OSDIRNAMES += m32=$(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:powerpc-linux-gnu)
++
++MULTIARCH_DIRNAME = $(call if_multiarch,powerpc$(if $(findstring 64,$(target)),64)-linux-gnu)
+Index: b/src/gcc/config/i386/t-linux64
+===================================================================
+--- a/src/gcc/config/i386/t-linux64
++++ b/src/gcc/config/i386/t-linux64
+@@ -36,3 +36,13 @@
+ MULTILIB_OSDIRNAMES = m64=../lib64$(call if_multiarch,:x86_64-linux-gnu)
+ MULTILIB_OSDIRNAMES+= m32=$(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:i386-linux-gnu)
+ MULTILIB_OSDIRNAMES+= mx32=../libx32$(call if_multiarch,:x86_64-linux-gnux32)
++
++ifneq (,$(findstring x86_64,$(target)))
++  ifneq (,$(findstring biarchx32.h,$(tm_include_list)))
++  MULTIARCH_DIRNAME = $(call if_multiarch,x86_64-linux-gnux32)
++  else
++  MULTIARCH_DIRNAME = $(call if_multiarch,x86_64-linux-gnu)
++  endif
++else
++  MULTIARCH_DIRNAME = $(call if_multiarch,i386-linux-gnu)
++endif
+Index: b/src/gcc/config/i386/t-kfreebsd
+===================================================================
+--- a/src/gcc/config/i386/t-kfreebsd
++++ b/src/gcc/config/i386/t-kfreebsd
+@@ -1,5 +1,9 @@
+-MULTIARCH_DIRNAME = $(call if_multiarch,i386-kfreebsd-gnu)
++ifeq (,$(MULTIARCH_DIRNAME))
++  MULTIARCH_DIRNAME = $(call if_multiarch,i386-kfreebsd-gnu)
++endif
+ 
+ # MULTILIB_OSDIRNAMES are set in t-linux64.
+ KFREEBSD_OS = $(filter kfreebsd%, $(word 3, $(subst -, ,$(target))))
+ MULTILIB_OSDIRNAMES := $(filter-out mx32=%,$(subst linux,$(KFREEBSD_OS),$(MULTILIB_OSDIRNAMES)))
++
++MULTIARCH_DIRNAME := $(subst linux,$(KFREEBSD_OS),$(MULTIARCH_DIRNAME))
+Index: b/src/gcc/config.gcc
+===================================================================
+--- a/src/gcc/config.gcc
++++ b/src/gcc/config.gcc
+@@ -1806,8 +1806,11 @@
+ mips64*-*-linux* | mipsisa64*-*-linux*)
+ 	tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} mips/gnu-user.h mips/gnu-user64.h mips/linux64.h mips/linux-common.h"
+ 	tmake_file="${tmake_file} mips/t-linux64"
+-	tm_defines="${tm_defines} MIPS_ABI_DEFAULT=ABI_N32"
++	tm_defines="${tm_defines} MIPS_ABI_DEFAULT=ABI_64"
+ 	case ${target} in
++		*gnuabin32*)
++			tm_defines=$(echo ${tm_defines}| sed 's/MIPS_ABI_DEFAULT=ABI_64/MIPS_ABI_DEFAULT=ABI_N32/g')
++			;;
+ 		mips64el-st-linux-gnu)
+ 			tm_file="${tm_file} mips/st.h"
+ 			tmake_file="${tmake_file} mips/t-st"
+@@ -3746,7 +3749,7 @@
+ 	i[34567]86-*-darwin* | x86_64-*-darwin*)
+ 		;;
+ 	i[34567]86-*-linux* | x86_64-*-linux*)
+-		tmake_file="$tmake_file i386/t-linux"
++		tmake_file="i386/t-linux $tmake_file"
+ 		;;
+ 	i[34567]86-*-kfreebsd*-gnu | x86_64-*-kfreebsd*-gnu)
+ 		tmake_file="$tmake_file i386/t-kfreebsd"
+Index: b/src/gcc/java/jvspec.c
+===================================================================
+--- a/src/gcc/java/jvspec.c
++++ b/src/gcc/java/jvspec.c
+@@ -59,7 +59,7 @@
+   "jvgenmain %{findirect-dispatch} %{D*} %b %m.i |\n\
+    cc1 %m.i %1 \
+ 		   %{!Q:-quiet} -dumpbase %b.c %{d*} %{m*}\
+-		   %{g*} %{O*} \
++		   %{g*} %{O*} %I \
+ 		   %{v:-version} %{pg:-p} %{p}\
+ 		   %<fbounds-check %<fno-bounds-check\
+ 		   %<fassume-compiled* %<fno-assume-compiled*\
+Index: b/src/gcc/config/aarch64/t-aarch64-linux
+===================================================================
+--- a/src/gcc/config/aarch64/t-aarch64-linux
++++ b/src/gcc/config/aarch64/t-aarch64-linux
+@@ -22,4 +22,4 @@
+ LIB1ASMFUNCS = _aarch64_sync_cache_range
+ 
+ AARCH_BE = $(if $(findstring TARGET_BIG_ENDIAN_DEFAULT=1, $(tm_defines)),_be)
+-MULTILIB_OSDIRNAMES = .=../lib64$(call if_multiarch,:aarch64$(AARCH_BE)-linux-gnu)
++MULTILIB_OSDIRNAMES = .=../lib$(call if_multiarch,:aarch64$(AARCH_BE)-linux-gnu)
+Index: b/src/gcc/Makefile.in
+===================================================================
+--- a/src/gcc/Makefile.in
++++ b/src/gcc/Makefile.in
+@@ -1829,7 +1829,7 @@
+ 	    "$(MULTILIB_EXCLUSIONS)" \
+ 	    "$(MULTILIB_OSDIRNAMES)" \
+ 	    "$(MULTILIB_REQUIRED)" \
+-	    "$(MULTIARCH_DIRNAME)" \
++	    "$(if $(MULTILIB_OSDIRNAMES),,$(MULTIARCH_DIRNAME))" \
+ 	    "$(MULTILIB_REUSE)" \
+ 	    "@enable_multilib@" \
+ 	    > tmp-mlib.h; \

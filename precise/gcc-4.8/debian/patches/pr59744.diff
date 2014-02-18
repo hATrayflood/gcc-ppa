@@ -1,0 +1,146 @@
+# DP: Fix PR target/59744 (AArch64), taken from the trunk.
+
+gcc/
+2014-01-10  Richard Earnshaw  <rearnsha@arm.com>
+
+	PR target/59744
+	* aarch64-modes.def (CC_Zmode): New flags mode.
+	* aarch64.c (aarch64_select_cc_mode): Only allow NEG when the condition
+	represents an equality.
+	(aarch64_get_condition_code): Handle CC_Zmode.
+	* aarch64.md (compare_neg<mode>): Restrict to equality operations.
+
+gcc/testsuite/
+
+2014-01-10  Richard Earnshaw  <rearnsha@arm.com>
+
+	PR target/59744
+	* gcc.target/aarch64/cmn-neg.c: Use equality comparisons.
+	* gcc.target/aarch64/cmn-neg2.c: New test.
+
+--- a/src/gcc/testsuite/gcc.target/aarch64/cmn-neg.c	(revision 206528)
++++ b/src/gcc/testsuite/gcc.target/aarch64/cmn-neg.c	(revision 206530)
+@@ -6,7 +6,7 @@
+ void __attribute__ ((noinline))
+ foo_s32 (int a, int b)
+ {
+-  if (a < -b)
++  if (a == -b)
+     abort ();
+ }
+ /* { dg-final { scan-assembler "cmn\tw\[0-9\]" } } */
+@@ -14,7 +14,7 @@
+ void __attribute__ ((noinline))
+ foo_s64 (long long a, long long b)
+ {
+-  if (a < -b)
++  if (a == -b)
+     abort ();
+ }
+ /* { dg-final { scan-assembler "cmn\tx\[0-9\]" } } */
+--- a/src/gcc/testsuite/gcc.target/aarch64/cmn-neg2.c	(revision 0)
++++ b/src/gcc/testsuite/gcc.target/aarch64/cmn-neg2.c	(revision 206530)
+@@ -0,0 +1,34 @@
++/* { dg-do run } */
++/* { dg-options "-O2 --save-temps" } */
++
++extern void abort (void);
++
++/* It's unsafe to use CMN in these comparisons.  */
++
++void __attribute__ ((noinline))
++foo_s32 (int a, int b)
++{
++  if (a < -b)
++    abort ();
++}
++
++void __attribute__ ((noinline))
++foo_s64 (unsigned long long a, unsigned long long b)
++{
++  if (a > -b)
++    abort ();
++}
++
++
++int
++main (void)
++{
++  int a = 30;
++  int b = 42;
++  foo_s32 (a, b);
++  foo_s64 (a, b);
++  return 0;
++}
++/* { dg-final { scan-assembler-not "cmn\t" } } */
++
++/* { dg-final { cleanup-saved-temps } } */
+--- a/src/gcc/config/aarch64/aarch64.md	(revision 206528)
++++ b/src/gcc/config/aarch64/aarch64.md	(revision 206530)
+@@ -1250,8 +1250,8 @@
+ )
+ 
+ (define_insn "*compare_neg<mode>"
+-  [(set (reg:CC_SWP CC_REGNUM)
+-	(compare:CC_SWP
++  [(set (reg:CC_Z CC_REGNUM)
++	(compare:CC_Z
+ 	 (neg:GPI (match_operand:GPI 0 "register_operand" "r"))
+ 	 (match_operand:GPI 1 "register_operand" "r")))]
+   ""
+--- a/src/gcc/config/aarch64/aarch64-modes.def	(revision 206528)
++++ b/src/gcc/config/aarch64/aarch64-modes.def	(revision 206530)
+@@ -24,6 +24,7 @@
+ CC_MODE (CC_ZESWP); /* zero-extend LHS (but swap to make it RHS).  */
+ CC_MODE (CC_SESWP); /* sign-extend LHS (but swap to make it RHS).  */
+ CC_MODE (CC_NZ);    /* Only N and Z bits of condition flags are valid.  */
++CC_MODE (CC_Z);     /* Only Z bit of condition flags is valid.  */
+ 
+ /* Vector modes.  */
+ VECTOR_MODES (INT, 8);        /*       V8QI V4HI V2SI.  */
+--- a/src/gcc/config/aarch64/aarch64.c	(revision 206528)
++++ b/src/gcc/config/aarch64/aarch64.c	(revision 206530)
+@@ -3326,17 +3326,24 @@
+ 	  || GET_CODE (x) == NEG))
+     return CC_NZmode;
+ 
+-  /* A compare with a shifted or negated operand.  Because of canonicalization,
++  /* A compare with a shifted operand.  Because of canonicalization,
+      the comparison will have to be swapped when we emit the assembly
+      code.  */
+   if ((GET_MODE (x) == SImode || GET_MODE (x) == DImode)
+       && (GET_CODE (y) == REG || GET_CODE (y) == SUBREG)
+       && (GET_CODE (x) == ASHIFT || GET_CODE (x) == ASHIFTRT
+ 	  || GET_CODE (x) == LSHIFTRT
+-	  || GET_CODE (x) == ZERO_EXTEND || GET_CODE (x) == SIGN_EXTEND
+-	  || GET_CODE (x) == NEG))
++	  || GET_CODE (x) == ZERO_EXTEND || GET_CODE (x) == SIGN_EXTEND))
+     return CC_SWPmode;
+ 
++  /* Similarly for a negated operand, but we can only do this for
++     equalities.  */
++  if ((GET_MODE (x) == SImode || GET_MODE (x) == DImode)
++      && (GET_CODE (y) == REG || GET_CODE (y) == SUBREG)
++      && (code == EQ || code == NE)
++      && GET_CODE (x) == NEG)
++    return CC_Zmode;
++
+   /* A compare of a mode narrower than SI mode against zero can be done
+      by extending the value in the comparison.  */
+   if ((GET_MODE (x) == QImode || GET_MODE (x) == HImode)
+@@ -3427,6 +3434,15 @@
+ 	}
+       break;
+ 
++    case CC_Zmode:
++      switch (comp_code)
++	{
++	case NE: return AARCH64_NE;
++	case EQ: return AARCH64_EQ;
++	default: gcc_unreachable ();
++	}
++      break;
++
+     default:
+       gcc_unreachable ();
+       break;

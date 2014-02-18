@@ -1,0 +1,523 @@
+diff -urN debian/changelog gcc-4.8-4.8.2.orig/debian/changelog
+--- debian/changelog	2014-02-17 23:15:32.632681843 +0900
++++ gcc-4.8-4.8.2.orig/debian/changelog	2014-02-17 23:12:02.347639092 +0900
+@@ -1,3 +1,9 @@
++gcc-4.8 (4.8.2-15ubuntu3precise0) precise; urgency=medium
++
++  * ppa for precise
++
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Mon, 17 Feb 2014 20:20:00 +0900
++
+ gcc-4.8 (4.8.2-15ubuntu3) trusty; urgency=medium
+ 
+   * Only build using the ibm branch on ppc64el.
+diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
+--- debian/control	2014-02-17 23:15:32.636681862 +0900
++++ gcc-4.8-4.8.2.orig/debian/control	2014-02-17 20:31:18.900724811 +0900
+@@ -1,12 +1,10 @@
+ Source: gcc-4.8
+ Section: devel
+ Priority: optional
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-XSBC-Original-Maintainer: Debian GCC Maintainers <debian-gcc@lists.debian.org>
+-Uploaders: Matthias Klose <doko@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.9.4
+ Build-Depends: debhelper (>= 5.0.62), g++-multilib [amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32], 
+-  libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6), libc6-dev (>= 2.13-31) [armel armhf], libc6-dev-amd64 [i386 x32], libc6-dev-sparc64 [sparc], libc6-dev-sparc [sparc64], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64 x32], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 mipsn32 mipsn32el mips64 mips64el s390x sparc64 x32], libn32gcc1 [mips mipsel mips64 mips64el], lib64gcc1 [i386 mips mipsel mipsn32 mipsn32el powerpc sparc s390 x32], libc6-dev-mips64 [mips mipsel mipsn32 mipsn32el], libc6-dev-mipsn32 [mips mipsel mips64 mips64el], libc6-dev-mips32 [mipsn32 mipsn32el mips64 mips64el], libc6-dev-x32 [amd64 i386], libx32gcc1 [amd64 i386], libc6-dev-armhf [armel], libhfgcc1 [armel], libc6-dev-armel [armhf], libsfgcc1 [armhf], libc6.1-dbg [alpha ia64] | libc0.3-dbg [hurd-i386] | libc0.1-dbg [kfreebsd-i386 kfreebsd-amd64] | libc6-dbg, 
++  libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6), libc6-dev (>= 2.13-31) [armel armhf], libc6-dev-amd64 [i386 x32], libc6-dev-sparc64 [sparc], libc6-dev-sparc [sparc64], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64 x32], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 mipsn32 mipsn32el mips64 mips64el s390x sparc64 x32], libn32gcc1 [mips mipsel mips64 mips64el], lib64gcc1 [i386 mips mipsel mipsn32 mipsn32el powerpc sparc s390 x32], libc6-dev-mips64 [mips mipsel mipsn32 mipsn32el], libc6-dev-mipsn32 [mips mipsel mips64 mips64el], libc6-dev-mips32 [mipsn32 mipsn32el mips64 mips64el], libc6-dev-armhf [armel], libhfgcc1 [armel], libc6-dev-armel [armhf], libsfgcc1 [armhf], libc6.1-dbg [alpha ia64] | libc0.3-dbg [hurd-i386] | libc0.1-dbg [kfreebsd-i386 kfreebsd-amd64] | libc6-dbg, 
+   kfreebsd-kernel-headers (>= 0.84) [kfreebsd-any], 
+   m4, libtool, autoconf2.64, 
+   libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], 
+@@ -15,12 +13,11 @@
+   gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, 
+   texinfo (>= 4.3), locales, sharutils, 
+   procps, zlib1g-dev, libantlr-java, python, libffi-dev, fastjar, libmagic-dev, libecj-java (>= 3.3.0-2), zip, libasound2-dev [ !hurd-any !kfreebsd-any], libxtst-dev, libxt-dev, libgtk2.0-dev (>= 2.4.4-2), libart-2.0-dev, libcairo2-dev, g++-4.8 [armel armhf], netbase, 
+-  libcloog-isl-dev (>= 0.18), libmpc-dev (>= 1.0), libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), 
++  libcloog-isl-dev (>= 0.17), libmpc-dev, libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), 
+   dejagnu [!m68k !hurd-amd64 !hurd-i386 !hurd-alpha], autogen, realpath (>= 1.9.12), chrpath, lsb-release, quilt
+ Build-Depends-Indep: doxygen (>= 1.7.2), graphviz (>= 2.2), ghostscript, texlive-latex-base, xsltproc, libxml2-utils, docbook-xsl-ns, 
+-Homepage: http://gcc.gnu.org/
+-XS-Vcs-Browser: http://svn.debian.org/viewsvn/gcccvs/branches/sid/gcc-4.8/
+-XS-Vcs-Svn: svn://svn.debian.org/svn/gcccvs/branches/sid/gcc-4.8
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-upper
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ Package: gcc-4.8-base
+ Architecture: any
+@@ -260,34 +257,6 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
+-Package: libx32gcc1
+-Architecture: amd64 i386
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
+-Description: GCC support library (x32)
+- Shared version of the support library, a library of internal subroutines
+- that GCC uses to overcome shortcomings of particular machines, or
+- special needs for some languages.
+-
+-Package: libx32gcc1-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
+-Description: GCC support library (debug symbols)
+- Debug symbols for the GCC support library.
+-
+-Package: libx32gcc-4.8-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Recommends: ${dep:libcdev}
+-Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libgccbiarch}, ${dep:libsspbiarch}, ${dep:libgompbiarch}, ${dep:libitmbiarch}, ${dep:libatomicbiarch}, ${dep:libbtracebiarch}, ${dep:libasanbiarch}, ${dep:libtsanbiarch}, ${dep:libqmathbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GCC support library (x32 development files)
+- This package contains the headers and static library files necessary for
+- building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+-
+ Package: gcc-4.8
+ Architecture: any
+ Section: devel
+@@ -466,23 +435,6 @@
+ Description: GCC OpenMP (GOMP) support library (n32 debug symbols)
+  GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+ 
+-Package: libx32gomp1
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GCC OpenMP (GOMP) support library (x32)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+- in the GNU Compiler Collection.
+-
+-Package: libx32gomp1-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32gomp1 (= ${gcc:Version}), ${misc:Depends}
+-Description: GCC OpenMP (GOMP) support library (x32 debug symbols)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+-
+ Package: libhfgomp1
+ Section: libs
+ Architecture: armel
+@@ -607,26 +559,6 @@
+  accesses to the memory of a process, enabling easy-to-use synchronization of
+  accesses to shared memory by several threads.
+ 
+-Package: libx32itm1
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GNU Transactional Memory Library (x32)
+- This manual documents the usage and internals of libitm. It provides
+- transaction support for accesses to the memory of a process, enabling
+- easy-to-use synchronization of accesses to shared memory by several threads.
+-
+-Package: libx32itm1-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32itm1 (= ${gcc:Version}), ${misc:Depends}
+-Description: GNU Transactional Memory Library (x32 debug symbols)
+- This manual documents the usage and internals of libitm. It provides
+- transaction support for accesses to the memory of a process, enabling
+- easy-to-use synchronization of accesses to shared memory by several threads.
+-
+ Package: libhfitm1
+ Section: libs
+ Architecture: armel
+@@ -747,24 +679,6 @@
+  library providing __atomic built-in functions. When an atomic call cannot
+  be turned into lock-free instructions, GCC will make calls into this library.
+ 
+-Package: libx32atomic1
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: support library providing __atomic built-in functions (x32)
+- library providing __atomic built-in functions. When an atomic call cannot
+- be turned into lock-free instructions, GCC will make calls into this library.
+-
+-Package: libx32atomic1-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32atomic1 (= ${gcc:Version}), ${misc:Depends}
+-Description: support library providing __atomic built-in functions (x32 debug symbols)
+- library providing __atomic built-in functions. When an atomic call cannot
+- be turned into lock-free instructions, GCC will make calls into this library.
+-
+ Package: libhfatomic1
+ Section: libs
+ Architecture: armel
+@@ -881,24 +795,6 @@
+  AddressSanitizer (ASan) is a fast memory error detector.  It finds
+  use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+ 
+-Package: libx32asan0
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: AddressSanitizer -- a fast memory error detector (x32)
+- AddressSanitizer (ASan) is a fast memory error detector.  It finds
+- use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+-
+-Package: libx32asan0-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32asan0 (= ${gcc:Version}), ${misc:Depends}
+-Description: AddressSanitizer -- a fast memory error detector (x32 debug symbols)
+- AddressSanitizer (ASan) is a fast memory error detector.  It finds
+- use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+-
+ Package: libhfasan0
+ Section: libs
+ Architecture: armel
+@@ -1040,25 +936,6 @@
+  A library, which provides quad-precision mathematical functions on targets
+  supporting the __float128 datatype.
+ 
+-Package: libx32quadmath0
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GCC Quad-Precision Math Library (x32)
+- A library, which provides quad-precision mathematical functions on targets
+- supporting the __float128 datatype. The library is used to provide on such
+- targets the REAL(16) type in the GNU Fortran compiler.
+-
+-Package: libx32quadmath0-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32quadmath0 (= ${gcc:Version}), ${misc:Depends}
+-Description: GCC Quad-Precision Math Library (x32 debug symbols)
+- A library, which provides quad-precision mathematical functions on targets
+- supporting the __float128 datatype.
+-
+ Package: libhfquadmath0
+ Section: libs
+ Architecture: armel
+@@ -1180,15 +1057,6 @@
+  This package contains the headers and static library files needed to build
+  GNU ObjC applications.
+ 
+-Package: libx32objc-4.8-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32gcc-4.8-dev (= ${gcc:Version}), libx32objc4 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Objective-C applications (x32 development files)
+- This package contains the headers and static library files needed to build
+- GNU ObjC applications.
+-
+ Package: libhfobjc-4.8-dev
+ Architecture: armel
+ Section: libdevel
+@@ -1277,22 +1145,6 @@
+ Description: Runtime library for GNU Objective-C applications (n32 debug symbols)
+  Library needed for GNU ObjC applications linked against the shared library.
+ 
+-Package: libx32objc4
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Objective-C applications (x32)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+-Package: libx32objc4-dbg
+-Section: debug
+-Architecture: amd64 i386
+-Priority: extra
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32objc4 (= ${gcc:Version}), libx32gcc1-dbg (>= ${gcc:EpochVersion}), ${misc:Depends}
+-Description: Runtime library for GNU Objective-C applications (x32 debug symbols)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+ Package: libhfobjc4
+ Section: libs
+ Architecture: armel
+@@ -1397,15 +1249,6 @@
+  This package contains the headers and static library files needed to build
+  GNU Fortran applications.
+ 
+-Package: libx32gfortran-4.8-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32gcc-4.8-dev (= ${gcc:Version}), libx32gfortran3 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Fortran applications (x32 development files)
+- This package contains the headers and static library files needed to build
+- GNU Fortran applications.
+-
+ Package: libhfgfortran-4.8-dev
+ Architecture: armel
+ Section: libdevel
+@@ -1503,24 +1346,6 @@
+  Library needed for GNU Fortran applications linked against the
+  shared library.
+ 
+-Package: libx32gfortran3
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Fortran applications (x32)
+- Library needed for GNU Fortran applications linked against the
+- shared library.
+-
+-Package: libx32gfortran3-dbg
+-Section: debug
+-Architecture: amd64 i386
+-Priority: extra
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32gfortran3 (= ${gcc:Version}), ${misc:Depends}
+-Description: Runtime library for GNU Fortran applications (x32 debug symbols)
+- Library needed for GNU Fortran applications linked against the
+- shared library.
+-
+ Package: libhfgfortran3
+ Section: libs
+ Architecture: armel
+@@ -1674,25 +1499,6 @@
+  Library needed for GNU Go applications linked against the
+  shared library.
+ 
+-Package: libx32go4
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Replaces: libx32go3
+-Description: Runtime library for GNU Go applications (x32)
+- Library needed for GNU Go applications linked against the
+- shared library.
+-
+-Package: libx32go4-dbg
+-Section: debug
+-Architecture: amd64 i386
+-Priority: extra
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32go4 (= ${gcc:Version}), ${misc:Depends}
+-Description: Runtime library for GNU Go applications (x32 debug symbols)
+- Library needed for GNU Go applications linked against the
+- shared library.
+-
+ Package: gcj-4.8
+ Section: java
+ Architecture: any
+@@ -1899,19 +1705,6 @@
+  was included up to g++-2.95. The first version of libstdc++-v3 appeared
+  in g++-3.0.
+ 
+-Package: libx32stdc++6
+-Architecture: amd64 i386
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32gcc1 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: GNU Standard C++ Library v3 (x32)
+- This package contains an additional runtime library for C++ programs
+- built with the GNU compiler.
+- .
+- libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+- was included up to g++-2.95. The first version of libstdc++-v3 appeared
+- in g++-3.0.
+-
+ Package: libhfstdc++6
+ Architecture: armel
+ Section: libs
+@@ -2050,29 +1843,6 @@
+ Description: GNU Standard C++ Library v3 (debugging files)
+  This package contains the shared library of libstdc++ compiled with
+  debugging symbols.
+-
+-Package: libx32stdc++-4.8-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32gcc-4.8-dev (= ${gcc:Version}), libx32stdc++6 (>= ${gcc:Version}), libstdc++-4.8-dev (= ${gcc:Version}), ${misc:Depends}
+-Description: GNU Standard C++ Library v3 (development files)
+- This package contains the headers and static library files necessary for
+- building C++ programs which use libstdc++.
+- .
+- libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+- was included up to g++-2.95. The first version of libstdc++-v3 appeared
+- in g++-3.0.
+-
+-Package: libx32stdc++6-4.8-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.8-base (= ${gcc:Version}), libx32stdc++6 (>= ${gcc:Version}), libstdc++-4.8-dev (= ${gcc:Version}), libx32gcc1-dbg (>= ${gcc:EpochVersion}), ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libx32stdc++6-dbg, libx32stdc++6-4.6-dbg, libx32stdc++6-4.7-dbg
+-Description: GNU Standard C++ Library v3 (debugging files)
+- This package contains the shared library of libstdc++ compiled with
+- debugging symbols.
+ 
+ Package: libhfstdc++-4.8-dev
+ Architecture: armel
+diff -urN debian/control.m4 gcc-4.8-4.8.2.orig/debian/control.m4
+--- debian/control.m4	2014-02-17 23:15:32.636681862 +0900
++++ gcc-4.8-4.8.2.orig/debian/control.m4	2014-02-17 20:12:53.308325747 +0900
+@@ -34,23 +34,7 @@
+ Source: SRCNAME
+ Section: devel
+ Priority: PRI(optional)
+-ifelse(DIST,`Ubuntu',`dnl
+-ifelse(regexp(SRCNAME, `gnat\|gdc-'),0,`dnl
+-Maintainer: Ubuntu MOTU Developers <ubuntu-motu@lists.ubuntu.com>
+-', `dnl
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-')dnl SRCNAME
+-XSBC-Original-Maintainer: MAINTAINER
+-', `dnl
+-Maintainer: MAINTAINER
+-')dnl DIST
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Uploaders: Ludovic Brenta <lbrenta@debian.org>
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Uploaders: Iain Buclaw <ibuclaw@ubuntu.com>, Matthias Klose <doko@debian.org>
+-', `dnl
+-Uploaders: Matthias Klose <doko@debian.org>
+-')dnl SRCNAME
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.9.4
+ ifdef(`TARGET',`dnl cross
+ Build-Depends: debhelper (>= 5.0.62),
+@@ -75,15 +59,8 @@
+   CHECK_BUILD_DEP realpath (>= 1.9.12), chrpath, lsb-release, quilt
+ Build-Depends-Indep: LIBSTDCXX_BUILD_INDEP JAVA_BUILD_INDEP
+ ')dnl
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Homepage: http://gcc.gnu.org/
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Homepage: http://gdcproject.org/
+-', `dnl
+-Homepage: http://gcc.gnu.org/
+-')dnl SRCNAME
+-XS-Vcs-Browser: http://svn.debian.org/viewsvn/gcccvs/branches/sid/gcc`'PV/
+-XS-Vcs-Svn: svn://svn.debian.org/svn/gcccvs/branches/sid/gcc`'PV
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-upper
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ ifelse(regexp(SRCNAME, `gcc-snapshot'),0,`dnl
+ Package: gcc-snapshot`'TS
+diff -urN debian/patches/libquadmath-fenv.diff gcc-4.8-4.8.2.orig/debian/patches/libquadmath-fenv.diff
+--- debian/patches/libquadmath-fenv.diff	1970-01-01 09:00:00.000000000 +0900
++++ gcc-4.8-4.8.2.orig/debian/patches/libquadmath-fenv.diff	2014-02-15 05:16:09.516638768 +0900
+@@ -0,0 +1,57 @@
++diff -urN a/src/libquadmath/Makefile.in b/src/libquadmath/Makefile.in
++--- a/src/libquadmath/Makefile.in	2013-10-16 16:27:58.000000000 +0900
+++++ b/src/libquadmath/Makefile.in	2014-02-15 05:11:41.527309853 +0900
++@@ -419,7 +420,7 @@
++ MAKEINFOFLAGS = -I $(srcdir)/../gcc/doc/include
++ info_TEXINFOS = libquadmath.texi
++ libquadmath_TEXINFOS = libquadmath-vers.texi
++-all: config.h
+++all: config.h bits/fenv.h
++ 	$(MAKE) $(AM_MAKEFLAGS) all-am
++ 
++ .SUFFIXES:
++@@ -473,6 +474,11 @@
++ 	rm -f stamp-h1
++ 	touch $@
++ 
+++bits/fenv.h:
+++	mkdir -p bits
+++	cp -p /usr/include/bits/fenv.h bits
+++	patch -p0 -i $(srcdir)/fenv.diff
+++
++ distclean-hdr:
++ 	-rm -f config.h stamp-h1
++ install-toolexeclibLTLIBRARIES: $(toolexeclib_LTLIBRARIES)
++diff -urN a/src/libquadmath/fenv.diff b/src/libquadmath/fenv.diff
++--- a/src/libquadmath/fenv.diff	1970-01-01 09:00:00.000000000 +0900
+++++ b/src/libquadmath/fenv.diff	2014-02-15 03:51:52.175560781 +0900
++@@ -0,0 +1,29 @@
+++diff -urN bits.orig/fenv.h bits/fenv.h
+++--- bits.orig/fenv.h	2013-10-01 00:03:16.000000000 +0900
++++++ bits/fenv.h	2014-02-15 03:19:32.000000000 +0900
+++@@ -113,7 +113,12 @@
+++ 	  /* One example of a invalid operation is 0.0 / 0.0.  */
+++ 	  float __f = 0.0;
+++ 
++++# ifdef __SSE_MATH__
+++ 	  __asm__ __volatile__ ("divss %0, %0 " : : "x" (__f));
++++# else
++++	  __asm__ __volatile__ ("fdiv %%st, %%st(0); fwait"
++++				: "=t" (__f) : "0" (__f));
++++# endif
+++ 	  (void) &__f;
+++ 	}
+++       if ((FE_DIVBYZERO & __excepts) != 0)
+++@@ -121,7 +126,12 @@
+++ 	  float __f = 1.0;
+++ 	  float __g = 0.0;
+++ 
++++# ifdef __SSE_MATH__
+++ 	  __asm__ __volatile__ ("divss %1, %0" : : "x" (__f), "x" (__g));
++++# else
++++	  __asm__ __volatile__ ("fdivp %%st(1), %%st; fwait"
++++				: "=t" (__f) : "0" (__f), "u" (__g) : "st(1)");
++++# endif
+++ 	  (void) &__f;
+++ 	}
+++ 
+diff -urN debian/rules.conf gcc-4.8-4.8.2.orig/debian/rules.conf
+--- debian/rules.conf	2014-02-17 23:15:32.804682695 +0900
++++ gcc-4.8-4.8.2.orig/debian/rules.conf	2014-02-16 16:06:20.434537389 +0900
+@@ -355,7 +355,7 @@
+ endif
+ 
+ PPL_BUILD_DEP = libisl-dev,
+-CLOOG_BUILD_DEP = libcloog-isl-dev (>= 0.18),
++CLOOG_BUILD_DEP = libcloog-isl-dev (>= 0.17),
+ # FIXME: currently not dl'opened.
+ #CLOOG_RUNTIME_DEP = libisl10, libcloog-isl4
+ 
+diff -urN debian/rules.parameters gcc-4.8-4.8.2.orig/debian/rules.parameters
+--- debian/rules.parameters	2014-02-17 23:15:32.812682735 +0900
++++ gcc-4.8-4.8.2.orig/debian/rules.parameters	2014-02-14 01:07:13.209421102 +0900
+@@ -2,14 +2,14 @@
+ GCC_VERSION	:= 4.8.2
+ NEXT_GCC_VERSION	:= 4.8.3
+ BASE_VERSION	:= 4.8
+-SOURCE_VERSION	:= 4.8.2-15ubuntu1
+-DEB_VERSION	:= 4.8.2-15ubuntu1
+-DEB_EVERSION	:= 1:4.8.2-15ubuntu1
+-DEB_GDC_VERSION	:= 4.8.2-15ubuntu1
++SOURCE_VERSION	:= 4.8.2-15ubuntu3precise0
++DEB_VERSION	:= 4.8.2-15ubuntu3precise0
++DEB_EVERSION	:= 1:4.8.2-15ubuntu3precise0
++DEB_GDC_VERSION	:= 4.8.2-15ubuntu3precise0
+ DEB_SOVERSION	:= 4.8
+ DEB_SOEVERSION	:= 1:4.8
+ DEB_LIBGCC_SOVERSION	:= 
+-DEB_LIBGCC_VERSION	:= 1:4.8.2-15ubuntu1
++DEB_LIBGCC_VERSION	:= 1:4.8.2-15ubuntu3precise0
+ DEB_STDCXX_SOVERSION	:= 4.8
+ DEB_GCJ_SOVERSION	:= 4.8
+ PKG_GCJ_EXT	:= 14
+diff -urN debian/rules.patch gcc-4.8-4.8.2.orig/debian/rules.patch
+--- debian/rules.patch	2014-02-17 23:15:32.812682735 +0900
++++ gcc-4.8-4.8.2.orig/debian/rules.patch	2014-02-15 03:43:35.665098534 +0900
+@@ -354,6 +354,12 @@
+ endif
+ debian_patches += libgomp-kfreebsd-testsuite
+ 
++ifeq ($(distrelease),precise)
++  ifeq ($(DEB_TARGET_ARCH),amd64)
++    debian_patches += libquadmath-fenv
++  endif
++endif
++
+ series_stamp = $(stampdir)/02-series-stamp
+ series: $(series_stamp)
+ $(series_stamp):

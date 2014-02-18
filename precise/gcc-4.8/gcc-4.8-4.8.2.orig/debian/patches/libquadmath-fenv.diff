@@ -1,0 +1,57 @@
+diff -urN a/src/libquadmath/Makefile.in b/src/libquadmath/Makefile.in
+--- a/src/libquadmath/Makefile.in	2013-10-16 16:27:58.000000000 +0900
++++ b/src/libquadmath/Makefile.in	2014-02-15 05:11:41.527309853 +0900
+@@ -419,7 +420,7 @@
+ MAKEINFOFLAGS = -I $(srcdir)/../gcc/doc/include
+ info_TEXINFOS = libquadmath.texi
+ libquadmath_TEXINFOS = libquadmath-vers.texi
+-all: config.h
++all: config.h bits/fenv.h
+ 	$(MAKE) $(AM_MAKEFLAGS) all-am
+ 
+ .SUFFIXES:
+@@ -473,6 +474,11 @@
+ 	rm -f stamp-h1
+ 	touch $@
+ 
++bits/fenv.h:
++	mkdir -p bits
++	cp -p /usr/include/bits/fenv.h bits
++	patch -p0 -i $(srcdir)/fenv.diff
++
+ distclean-hdr:
+ 	-rm -f config.h stamp-h1
+ install-toolexeclibLTLIBRARIES: $(toolexeclib_LTLIBRARIES)
+diff -urN a/src/libquadmath/fenv.diff b/src/libquadmath/fenv.diff
+--- a/src/libquadmath/fenv.diff	1970-01-01 09:00:00.000000000 +0900
++++ b/src/libquadmath/fenv.diff	2014-02-15 03:51:52.175560781 +0900
+@@ -0,0 +1,29 @@
++diff -urN bits.orig/fenv.h bits/fenv.h
++--- bits.orig/fenv.h	2013-10-01 00:03:16.000000000 +0900
+++++ bits/fenv.h	2014-02-15 03:19:32.000000000 +0900
++@@ -113,7 +113,12 @@
++ 	  /* One example of a invalid operation is 0.0 / 0.0.  */
++ 	  float __f = 0.0;
++ 
+++# ifdef __SSE_MATH__
++ 	  __asm__ __volatile__ ("divss %0, %0 " : : "x" (__f));
+++# else
+++	  __asm__ __volatile__ ("fdiv %%st, %%st(0); fwait"
+++				: "=t" (__f) : "0" (__f));
+++# endif
++ 	  (void) &__f;
++ 	}
++       if ((FE_DIVBYZERO & __excepts) != 0)
++@@ -121,7 +126,12 @@
++ 	  float __f = 1.0;
++ 	  float __g = 0.0;
++ 
+++# ifdef __SSE_MATH__
++ 	  __asm__ __volatile__ ("divss %1, %0" : : "x" (__f), "x" (__g));
+++# else
+++	  __asm__ __volatile__ ("fdivp %%st(1), %%st; fwait"
+++				: "=t" (__f) : "0" (__f), "u" (__g) : "st(1)");
+++# endif
++ 	  (void) &__f;
++ 	}
++ 

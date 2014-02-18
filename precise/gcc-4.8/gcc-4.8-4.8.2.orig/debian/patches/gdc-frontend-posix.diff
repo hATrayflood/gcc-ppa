@@ -1,0 +1,13 @@
+# DP: Fix build of the D frontend on the Hurd and KFreeBSD.
+
+--- a/src/gcc/d/dfrontend/root.c
++++ b/src/gcc/d/dfrontend/root.c
+@@ -7,7 +7,7 @@
+ // in artistic.txt, or the GNU General Public License in gnu.txt.
+ // See the included readme.txt for details.
+ 
+-#define POSIX (linux || __APPLE__ || __FreeBSD__ || __OpenBSD__ || __sun)
++#define POSIX (__linux__ || __GLIBC__ || __gnu_hurd__ || __APPLE__ || __FreeBSD__ || __OpenBSD__ || __sun)
+ 
+ #include <stdio.h>
+ #include <stdlib.h>

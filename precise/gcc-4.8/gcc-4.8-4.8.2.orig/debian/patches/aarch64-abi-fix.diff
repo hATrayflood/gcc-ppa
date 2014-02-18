@@ -1,0 +1,16 @@
+# DP: Proposed patch for PR /59799, allow passing arrays in registers on AArch64.
+
+--- a/src/gcc/config/aarch64/aarch64.c
++++ b/src/gcc/config/aarch64/aarch64.c
+@@ -987,10 +987,7 @@ aarch64_pass_by_reference (cumulative_args_t pcum ATTRIBUTE_UNUSED,
+ 
+   if (type)
+     {
+-      /* Arrays always passed by reference.  */
+-      if (TREE_CODE (type) == ARRAY_TYPE)
+-	return true;
+-      /* Other aggregates based on their size.  */
++      /* Aggregates based on their size.  */
+       if (AGGREGATE_TYPE_P (type))
+ 	size = int_size_in_bytes (type);
+     }

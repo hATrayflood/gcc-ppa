@@ -1,0 +1,5 @@
+*.deb
+gcc-4.8_4.8.2-*
+gcc-4.8_4.8.2.orig.*
+gcc-4.8-4.8.2.orig/*
+!gcc-4.8-4.8.2.orig/debian
