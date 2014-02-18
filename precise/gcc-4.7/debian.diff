@@ -1,0 +1,237 @@
+diff -urN debian/changelog gcc-4.7-4.7.3.orig/debian/changelog
+--- debian/changelog	2014-02-13 22:08:05.292125058 +0900
++++ gcc-4.7-4.7.3.orig/debian/changelog	2014-02-18 02:11:42.893096935 +0900
+@@ -1,3 +1,9 @@
++gcc-4.7 (4.7.3-10ubuntu1precise0) precise; urgency=medium
++
++  * ppa for precise
++
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Mon, 17 Feb 2014 20:20:00 +0900
++
+ gcc-4.7 (4.7.3-10ubuntu1) trusty; urgency=medium
+ 
+   * Merge with Debian; remaining changes:
+diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
+--- debian/control	2014-02-13 22:08:05.296125074 +0900
++++ gcc-4.7-4.7.3.orig/debian/control	2014-02-18 02:14:18.337867744 +0900
+@@ -1,12 +1,10 @@
+ Source: gcc-4.7
+ Section: devel
+ Priority: optional
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-XSBC-Original-Maintainer: Debian GCC Maintainers <debian-gcc@lists.debian.org>
+-Uploaders: Matthias Klose <doko@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.9.4
+-Build-Depends: debhelper (>= 5.0.62), gcc-4.8-base, 
+-  libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6) , libc6-dev (>= 2.13-31) [armel armhf], libc6-dev-amd64 [i386 x32], libc6-dev-sparc64 [sparc], libc6-dev-sparc [sparc64], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64 x32], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32], libn32gcc1 [mips mipsel], lib64gcc1 [i386 mips mipsel powerpc sparc s390 x32], libc6-dev-mips64 [mips mipsel], libc6-dev-mipsn32 [mips mipsel], libc6-dev-x32 [amd64 i386], libx32gcc1 [amd64 i386], libc6-dev-armhf [armel], libhfgcc1 [armel], libc6-dev-armel [armhf], libsfgcc1 [armhf],
++Build-Depends: debhelper (>= 5.0.62), 
++  libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6) , libc6-dev (>= 2.13-31) [armel armhf], libc6-dev-amd64 [i386 x32], libc6-dev-sparc64 [sparc], libc6-dev-sparc [sparc64], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64 x32], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32], libn32gcc1 [mips mipsel], lib64gcc1 [i386 mips mipsel powerpc sparc s390 x32], libc6-dev-mips64 [mips mipsel], libc6-dev-mipsn32 [mips mipsel], libc6-dev-armhf [armel], libhfgcc1 [armel], libc6-dev-armel [armhf], libsfgcc1 [armhf],
+   m4, libtool, autoconf2.64, 
+   libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64],
+   zlib1g-dev, gawk, lzma, xz-utils, patchutils,
+@@ -14,13 +12,12 @@
+   gdb, gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext,
+   texinfo (>= 4.3), sharutils,
+   procps,    netbase,  
+-  libcloog-ppl-dev (>= 0.16), libmpc-dev (>= 1.0), libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~),
++  libcloog-ppl-dev (>= 0.15.11), libmpc-dev, libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~),
+   dejagnu [!m68k !arm !armel !armhf !hurd-i386 !hurd-alpha], autogen, realpath (>= 1.9.12), chrpath, lsb-release, quilt
+ Build-Depends-Indep: doxygen (>= 1.7.2), graphviz (>= 2.2), ghostscript, texlive-latex-base, xsltproc, libxml2-utils, docbook-xsl-ns, 
+ Build-Conflicts: binutils-gold (<< 2.23.52.20130727)
+-Homepage: http://gcc.gnu.org/
+-XS-Vcs-Browser: http://svn.debian.org/viewsvn/gcccvs/branches/sid/gcc-4.7/
+-XS-Vcs-Svn: svn://svn.debian.org/svn/gcccvs/branches/sid/gcc-4.7
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-upper
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ Package: gcc-4.7-base
+ Architecture: any
+@@ -101,17 +98,6 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
+-Package: libx32gcc-4.7-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Recommends: ${dep:libcdev}
+-Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libgccbiarch}, ${dep:libsspbiarch}, ${dep:libgompbiarch}, ${dep:libitmbiarch}, ${dep:libqmathbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Replaces: gcc-4.7-multilib (<< ${gcc:SplitVersion})
+-Description: GCC support library (x32 development files)
+- This package contains the headers and static library files necessary for
+- building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+-
+ Package: gcc-4.7
+ Architecture: any
+ Section: devel
+@@ -326,16 +312,6 @@
+  This package contains the headers and static library files needed to build
+  GNU ObjC applications.
+ 
+-Package: libx32objc-4.7-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.7-base (= ${gcc:Version}), libx32gcc-4.7-dev (= ${gcc:Version}), libx32objc4 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Replaces: gobjc-4.7-multilib (<< ${gcc:SplitVersion})
+-Description: Runtime library for GNU Objective-C applications (x32 development files)
+- This package contains the headers and static library files needed to build
+- GNU ObjC applications.
+-
+ Package: libhfobjc-4.7-dev
+ Architecture: armel
+ Section: libdevel
+@@ -432,17 +408,6 @@
+  This package contains the headers and static library files needed to build
+  GNU Fortran applications.
+ 
+-Package: libx32gfortran-4.7-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.7-base (= ${gcc:Version}), libx32gfortran3 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Replaces: gfortran-4.7-multilib (<< ${gcc:SplitVersion})
+-Breaks: gfortran-4.7-multilib (<< ${gcc:SplitVersion})
+-Description: Runtime library for GNU Fortran applications (x32 development files)
+- This package contains the headers and static library files needed to build
+- GNU Fortran applications.
+-
+ Package: libhfgfortran-4.7-dev
+ Architecture: armel
+ Section: libdevel
+@@ -575,24 +540,6 @@
+  Library needed for GNU Go applications linked against the
+  shared library.
+ 
+-Package: libx32go0
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Go applications (x32)
+- Library needed for GNU Go applications linked against the
+- shared library.
+-
+-Package: libx32go0-dbg
+-Section: debug
+-Architecture: amd64 i386
+-Priority: extra
+-Depends: gcc-4.7-base (= ${gcc:Version}), libx32go0 (= ${gcc:Version}), ${misc:Depends}
+-Description: Runtime library for GNU Go applications (x32 debug symbols)
+- Library needed for GNU Go applications linked against the
+- shared library.
+-
+ Package: libstdc++6-4.7-dev
+ Architecture: any
+ Multi-Arch: same
+@@ -710,31 +657,6 @@
+ Description: GNU Standard C++ Library v3 (debugging files)
+  This package contains the shared library of libstdc++ compiled with
+  debugging symbols.
+-
+-Package: libx32stdc++6-4.7-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.7-base (= ${gcc:Version}), libx32gcc-4.7-dev (= ${gcc:Version}), libx32stdc++6 (>= ${gcc:Version}), libstdc++6-4.7-dev (= ${gcc:Version}), ${misc:Depends}
+-Replaces: libstdc++6-4.7-dev (<< ${gcc:SplitVersion}), g++-4.7-multilib (<< ${gcc:SplitVersion})
+-Breaks: libstdc++6-4.7-dev (<< ${gcc:SplitVersion}), g++-4.7-multilib (<< ${gcc:SplitVersion})
+-Description: GNU Standard C++ Library v3 (development files)
+- This package contains the headers and static library files necessary for
+- building C++ programs which use libstdc++.
+- .
+- libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+- was included up to g++-2.95. The first version of libstdc++-v3 appeared
+- in g++-3.0.
+-
+-Package: libx32stdc++6-4.7-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.7-base (= ${gcc:Version}), libx32stdc++6 (>= ${gcc:Version}), libstdc++6-4.7-dev (= ${gcc:Version}), libx32gcc1-dbg (>= ${gcc:EpochVersion}), ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libx32stdc++6-dbg, libx32stdc++6-4.0-dbg, libx32stdc++6-4.1-dbg, libx32stdc++6-4.2-dbg, libx32stdc++6-4.3-dbg, libx32stdc++6-4.4-dbg, libx32stdc++6-4.5-dbg, libx32stdc++6-4.6-dbg
+-Description: GNU Standard C++ Library v3 (debugging files)
+- This package contains the shared library of libstdc++ compiled with
+- debugging symbols.
+ 
+ Package: libhfstdc++6-4.7-dev
+ Architecture: armel
+diff -urN debian/control.m4 gcc-4.7-4.7.3.orig/debian/control.m4
+--- debian/control.m4	2014-02-13 22:08:05.296125074 +0900
++++ gcc-4.7-4.7.3.orig/debian/control.m4	2014-02-18 02:13:16.289560147 +0900
+@@ -33,23 +33,7 @@
+ Source: SRCNAME
+ Section: devel
+ Priority: PRI(optional)
+-ifelse(DIST,`Ubuntu',`dnl
+-ifelse(regexp(SRCNAME, `gnat\|gdc-'),0,`dnl
+-Maintainer: Ubuntu MOTU Developers <ubuntu-motu@lists.ubuntu.com>
+-', `dnl
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-')dnl SRCNAME
+-XSBC-Original-Maintainer: MAINTAINER
+-', `dnl
+-Maintainer: MAINTAINER
+-')dnl DIST
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Uploaders: Ludovic Brenta <lbrenta@debian.org>
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Uploaders: Iain Buclaw <ibuclaw@ubuntu.com>, Matthias Klose <doko@debian.org>
+-', `dnl
+-Uploaders: Matthias Klose <doko@debian.org>
+-')dnl SRCNAME
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.9.4
+ ifdef(`TARGET',`dnl cross
+ Build-Depends: DPKG_BUILD_DEP debhelper (>= 5.0.62),
+@@ -61,7 +45,7 @@
+   BINUTILS_BUILD_DEP,
+   bison (>= 1:2.3), flex, realpath (>= 1.9.12), lsb-release, quilt
+ ',`dnl native
+-Build-Depends: debhelper (>= 5.0.62), gcc-4.8-base,
++Build-Depends: debhelper (>= 5.0.62),
+   LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP
+   AUTO_BUILD_DEP AUTOGEN_BUILD_DEP
+   libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64],
+@@ -75,15 +59,8 @@
+ Build-Depends-Indep: LIBSTDCXX_BUILD_INDEP JAVA_BUILD_INDEP
+ ')dnl
+ Build-Conflicts: binutils-gold (<< 2.23.52.20130727)
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Homepage: http://gcc.gnu.org/
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Homepage: http://bitbucket.org/goshawk/gdc/
+-', `dnl
+-Homepage: http://gcc.gnu.org/
+-')dnl SRCNAME
+-XS-Vcs-Browser: http://svn.debian.org/viewsvn/gcccvs/branches/sid/gcc`'PV/
+-XS-Vcs-Svn: svn://svn.debian.org/svn/gcccvs/branches/sid/gcc`'PV
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-upper
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ ifelse(regexp(SRCNAME, `gcc-snapshot'),0,`dnl
+ Package: gcc-snapshot`'TS
+diff -urN debian/rules.parameters gcc-4.7-4.7.3.orig/debian/rules.parameters
+--- debian/rules.parameters	2014-02-13 22:08:05.436125772 +0900
++++ gcc-4.7-4.7.3.orig/debian/rules.parameters	2014-02-13 22:44:31.738967056 +0900
+@@ -2,15 +2,15 @@
+ GCC_VERSION	:= 4.7.3
+ NEXT_GCC_VERSION	:= 4.7.4
+ BASE_VERSION	:= 4.7
+-SOURCE_VERSION	:= 4.7.3-9ubuntu2
+-DEB_VERSION	:= 4.7.3-9ubuntu2
+-DEB_EVERSION	:= 1:4.7.3-9ubuntu2
++SOURCE_VERSION	:= 4.7.3-10ubuntu1precise0
++DEB_VERSION	:= 4.7.3-10ubuntu1precise0
++DEB_EVERSION	:= 1:4.7.3-10ubuntu1precise0
+ GDC_BASE_VERSION  := 
+ DEB_GDC_VERSION	:= 
+ DEB_SOVERSION	:= 4.7
+ DEB_SOEVERSION	:= 1:4.7
+ DEB_LIBGCC_SOVERSION	:= 
+-DEB_LIBGCC_VERSION	:= 1:4.7.3-9ubuntu2
++DEB_LIBGCC_VERSION	:= 1:4.7.3-10ubuntu1precise0
+ DEB_STDCXX_SOVERSION	:= 4.7
+ DEB_GCJ_SOVERSION	:= 4.7
+ PKG_GCJ_EXT	:= 13
