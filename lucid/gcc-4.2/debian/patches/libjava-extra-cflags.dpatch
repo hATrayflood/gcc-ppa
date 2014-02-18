@@ -1,0 +1,817 @@
+#! /bin/sh -e
+
+# DP: libjava/classpath: Set and use EXTRA_CFLAGS.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        cd ${dir}libjava/classpath && aclocal -I m4 -I ../.. -I ../../config && autoconf -I m4
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        rm -f ${dir}libjava/classpath/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2008-06-11  Andrew Haley  <aph@redhat.com>
+
+	* native/jawt/Makefile.am,
+	native/fdlibm/Makefile.am,
+	native/jni/java-util/Makefile.am,
+	native/jni/gstreamer-peer/Makefile.am,
+	native/jni/native-lib/Makefile.am,
+	native/jni/gconf-peer/Makefile.am,
+	native/jni/gtk-peer/Makefile.am,
+	native/jni/xmlj/Makefile.am,
+	native/jni/midi-alsa/Makefile.am,
+	native/jni/java-nio/Makefile.am,
+	native/jni/midi-dssi/Makefile.am,
+	native/jni/classpath/Makefile.am,
+	native/jni/java-io/Makefile.am,
+	native/jni/java-lang/Makefile.am,
+	native/jni/java-net/Makefile.am (AM_CFLAGS): Add @EXTRA_CFLAGS@.
+	* configure.ac (EXTRA_CFLAGS): New macro.
+
+	* lib/Makefile.am (resources): Add .svn.
+
+Index: libjava/classpath/Makefile.in
+===================================================================
+--- libjava/classpath/Makefile.in	(revision 137051)
++++ libjava/classpath/Makefile.in	(working copy)
+@@ -178,6 +178,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/native/jni/gstreamer-peer/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/gstreamer-peer/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/gstreamer-peer/Makefile.in	(working copy)
+@@ -157,6 +157,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -345,7 +346,8 @@
+ # gstreamer contain broken prototypes (by design).
+ AM_CFLAGS = @WARNING_CFLAGS@ -Wno-write-strings -Wno-missing-field-initializers \
+             @ERROR_CFLAGS@ -Wno-unused-parameter @GSTREAMER_BASE_CFLAGS@ \
+-            @GDK_CFLAGS@ @GSTREAMER_CFLAGS@ @GSTREAMER_PLUGINS_BASE_CFLAGS@ 
++            @GDK_CFLAGS@ @GSTREAMER_CFLAGS@ @GSTREAMER_PLUGINS_BASE_CFLAGS@ \
++            @EXTRA_CFLAGS@
+ 
+ all: all-am
+ 
+Index: libjava/classpath/native/jni/gstreamer-peer/Makefile.am
+===================================================================
+--- libjava/classpath/native/jni/gstreamer-peer/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jni/gstreamer-peer/Makefile.am	(working copy)
+@@ -19,4 +19,5 @@
+ # gstreamer contain broken prototypes (by design).
+ AM_CFLAGS = @WARNING_CFLAGS@ -Wno-write-strings -Wno-missing-field-initializers \
+             @ERROR_CFLAGS@ -Wno-unused-parameter @GSTREAMER_BASE_CFLAGS@ \
+-            @GDK_CFLAGS@ @GSTREAMER_CFLAGS@ @GSTREAMER_PLUGINS_BASE_CFLAGS@ 
++            @GDK_CFLAGS@ @GSTREAMER_CFLAGS@ @GSTREAMER_PLUGINS_BASE_CFLAGS@ \
++            @EXTRA_CFLAGS@
+Index: libjava/classpath/native/jni/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/Makefile.in	(working copy)
+@@ -137,6 +137,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/native/jni/classpath/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/classpath/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/classpath/Makefile.in	(working copy)
+@@ -147,6 +147,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -326,7 +327,9 @@
+ 
+ AM_LDFLAGS = @CLASSPATH_CONVENIENCE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
++
+ all: all-am
+ 
+ .SUFFIXES:
+Index: libjava/classpath/native/jni/classpath/Makefile.am
+===================================================================
+--- libjava/classpath/native/jni/classpath/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jni/classpath/Makefile.am	(working copy)
+@@ -8,4 +8,5 @@
+ 
+ AM_LDFLAGS = @CLASSPATH_CONVENIENCE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
+Index: libjava/classpath/native/jni/midi-dssi/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/midi-dssi/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/midi-dssi/Makefile.in	(working copy)
+@@ -158,6 +158,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -340,7 +341,7 @@
+ # No STRICT_WARNING_CFLAGS here as we use dlsym to load the address of 
+ # a function,and ISO C prohibits casting void pointers, like those returned
+ # by dlsym, to function pointers.
+-AM_CFLAGS = @WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @ERROR_CFLAGS@ @EXTRA_CFLAGS@
+ all: all-am
+ 
+ .SUFFIXES:
+Index: libjava/classpath/native/jni/midi-dssi/Makefile.am
+===================================================================
+--- libjava/classpath/native/jni/midi-dssi/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jni/midi-dssi/Makefile.am	(working copy)
+@@ -12,4 +12,4 @@
+ # No STRICT_WARNING_CFLAGS here as we use dlsym to load the address of 
+ # a function,and ISO C prohibits casting void pointers, like those returned
+ # by dlsym, to function pointers.
+-AM_CFLAGS = @WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @ERROR_CFLAGS@ @EXTRA_CFLAGS@
+Index: libjava/classpath/native/jni/gconf-peer/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/gconf-peer/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/gconf-peer/Makefile.in	(working copy)
+@@ -156,6 +156,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -332,7 +333,9 @@
+ libgconfpeer_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
+ AM_LDFLAGS = @CLASSPATH_MODULE@ @GCONF_LIBS@ @GDK_LIBS@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+-AM_CFLAGS = @WARNING_CFLAGS@ @ERROR_CFLAGS@ @GCONF_CFLAGS@ @GDK_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @ERROR_CFLAGS@ @GCONF_CFLAGS@ @GDK_CFLAGS@ \
++            @EXTRA_CFLAGS@
++
+ all: all-am
+ 
+ .SUFFIXES:
+Index: libjava/classpath/native/jni/gconf-peer/Makefile.am
+===================================================================
+--- libjava/classpath/native/jni/gconf-peer/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jni/gconf-peer/Makefile.am	(working copy)
+@@ -10,4 +10,5 @@
+ 
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+ 
+-AM_CFLAGS = @WARNING_CFLAGS@ @ERROR_CFLAGS@ @GCONF_CFLAGS@ @GDK_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @ERROR_CFLAGS@ @GCONF_CFLAGS@ @GDK_CFLAGS@ \
++            @EXTRA_CFLAGS@
+Index: libjava/classpath/native/jni/java-io/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/java-io/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/java-io/Makefile.in	(working copy)
+@@ -158,6 +158,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -338,7 +339,9 @@
+ 
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
++
+ all: all-am
+ 
+ .SUFFIXES:
+Index: libjava/classpath/native/jni/java-io/Makefile.am
+===================================================================
+--- libjava/classpath/native/jni/java-io/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jni/java-io/Makefile.am	(working copy)
+@@ -9,4 +9,5 @@
+ 
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
+Index: libjava/classpath/native/jni/native-lib/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/native-lib/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/native-lib/Makefile.in	(working copy)
+@@ -147,6 +147,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -328,7 +329,9 @@
+ 
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
++
+ all: all-am
+ 
+ .SUFFIXES:
+Index: libjava/classpath/native/jni/native-lib/Makefile.am
+===================================================================
+--- libjava/classpath/native/jni/native-lib/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jni/native-lib/Makefile.am	(working copy)
+@@ -9,4 +9,5 @@
+ 
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
+Index: libjava/classpath/native/jni/java-util/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/java-util/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/java-util/Makefile.in	(working copy)
+@@ -155,6 +155,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -329,7 +330,9 @@
+ libjavautil_la_SOURCES = java_util_VMTimeZone.c
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
++
+ all: all-am
+ 
+ .SUFFIXES:
+Index: libjava/classpath/native/jni/java-util/Makefile.am
+===================================================================
+--- libjava/classpath/native/jni/java-util/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jni/java-util/Makefile.am	(working copy)
+@@ -4,4 +4,6 @@
+ 
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
++
+Index: libjava/classpath/native/jni/java-lang/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/java-lang/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/java-lang/Makefile.in	(working copy)
+@@ -172,6 +172,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -357,7 +358,9 @@
+ libjavalangmanagement_la_SOURCES = gnu_java_lang_management_VMOperatingSystemMXBeanImpl.c
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@ -I$(top_srcdir)/native/fdlibm
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
++
+ all: all-am
+ 
+ .SUFFIXES:
+Index: libjava/classpath/native/jni/java-lang/Makefile.am
+===================================================================
+--- libjava/classpath/native/jni/java-lang/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jni/java-lang/Makefile.am	(working copy)
+@@ -16,4 +16,5 @@
+ 
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@ -I$(top_srcdir)/native/fdlibm
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
+Index: libjava/classpath/native/jni/midi-alsa/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/midi-alsa/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/midi-alsa/Makefile.in	(working copy)
+@@ -158,6 +158,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -337,7 +338,9 @@
+ libgjsmalsa_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@ `pkg-config  --cflags-only-I alsa`
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ `pkg-config --cflags-only-other alsa`
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ `pkg-config --cflags-only-other alsa` \
++            @EXTRA_CFLAGS@
++
+ all: all-am
+ 
+ .SUFFIXES:
+Index: libjava/classpath/native/jni/midi-alsa/Makefile.am
+===================================================================
+--- libjava/classpath/native/jni/midi-alsa/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jni/midi-alsa/Makefile.am	(working copy)
+@@ -9,4 +9,5 @@
+ 
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@ `pkg-config  --cflags-only-I alsa`
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ `pkg-config --cflags-only-other alsa`
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ `pkg-config --cflags-only-other alsa` \
++            @EXTRA_CFLAGS@
+Index: libjava/classpath/native/jni/java-nio/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/java-nio/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/java-nio/Makefile.in	(working copy)
+@@ -166,6 +166,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -357,7 +358,9 @@
+ EXTRA_DIST = javanio.c
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
++
+ all: all-am
+ 
+ .SUFFIXES:
+Index: libjava/classpath/native/jni/java-nio/Makefile.am
+===================================================================
+--- libjava/classpath/native/jni/java-nio/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jni/java-nio/Makefile.am	(working copy)
+@@ -20,4 +20,5 @@
+ 
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
+Index: libjava/classpath/native/jni/java-net/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/java-net/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/java-net/Makefile.in	(working copy)
+@@ -168,6 +168,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -358,7 +359,9 @@
+ 
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
++
+ all: all-am
+ 
+ .SUFFIXES:
+Index: libjava/classpath/native/jni/java-net/Makefile.am
+===================================================================
+--- libjava/classpath/native/jni/java-net/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jni/java-net/Makefile.am	(working copy)
+@@ -22,4 +22,5 @@
+ 
+ AM_LDFLAGS = @CLASSPATH_MODULE@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @ERROR_CFLAGS@ \
++            @EXTRA_CFLAGS@
+Index: libjava/classpath/native/jni/xmlj/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/xmlj/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/xmlj/Makefile.in	(working copy)
+@@ -157,6 +157,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -349,7 +350,9 @@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+ 
+ # Don't enable ERROR flags. Code isn't warning free yet.
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @XML_CFLAGS@ @XSLT_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @XML_CFLAGS@ \
++            @XSLT_CFLAGS@ @EXTRA_CFLAGS@
++
+ EXTRA_DIST = BUGS
+ all: all-am
+ 
+Index: libjava/classpath/native/jni/xmlj/Makefile.am
+===================================================================
+--- libjava/classpath/native/jni/xmlj/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jni/xmlj/Makefile.am	(working copy)
+@@ -22,6 +22,7 @@
+ AM_CPPFLAGS = @CLASSPATH_INCLUDES@
+ 
+ # Don't enable ERROR flags. Code isn't warning free yet.
+-AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @XML_CFLAGS@ @XSLT_CFLAGS@
++AM_CFLAGS = @WARNING_CFLAGS@ @STRICT_WARNING_CFLAGS@ @XML_CFLAGS@ \
++            @XSLT_CFLAGS@ @EXTRA_CFLAGS@
+ 
+ EXTRA_DIST = BUGS
+Index: libjava/classpath/native/jni/qt-peer/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/qt-peer/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/qt-peer/Makefile.in	(working copy)
+@@ -173,6 +173,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/native/jni/gtk-peer/Makefile.in
+===================================================================
+--- libjava/classpath/native/jni/gtk-peer/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jni/gtk-peer/Makefile.in	(working copy)
+@@ -194,6 +194,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -424,7 +425,7 @@
+ # headers contain broken prototypes (by design, see gtkitemfactory.h).
+ AM_CFLAGS = @WARNING_CFLAGS@ @ERROR_CFLAGS@ \
+             @GTK_CFLAGS@ @FREETYPE2_CFLAGS@ @PANGOFT2_CFLAGS@ \
+-            @X_CFLAGS@
++            @X_CFLAGS@ @EXTRA_CFLAGS@
+ 
+ all: all-am
+ 
+Index: libjava/classpath/native/jni/gtk-peer/Makefile.am
+===================================================================
+--- libjava/classpath/native/jni/gtk-peer/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jni/gtk-peer/Makefile.am	(working copy)
+@@ -58,4 +58,4 @@
+ # headers contain broken prototypes (by design, see gtkitemfactory.h).
+ AM_CFLAGS = @WARNING_CFLAGS@ @ERROR_CFLAGS@ \
+             @GTK_CFLAGS@ @FREETYPE2_CFLAGS@ @PANGOFT2_CFLAGS@ \
+-            @X_CFLAGS@
++            @X_CFLAGS@ @EXTRA_CFLAGS@
+Index: libjava/classpath/native/Makefile.in
+===================================================================
+--- libjava/classpath/native/Makefile.in	(revision 137051)
++++ libjava/classpath/native/Makefile.in	(working copy)
+@@ -137,6 +137,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/native/jawt/Makefile.in
+===================================================================
+--- libjava/classpath/native/jawt/Makefile.in	(revision 137051)
++++ libjava/classpath/native/jawt/Makefile.in	(working copy)
+@@ -156,6 +156,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -336,7 +337,7 @@
+ # Just the WARNING_CFLAGS. We cannot use the strict flags since the gtk
+ # headers contain broken prototypes (by design, see gtkitemfactory.h).
+ AM_CFLAGS = @WARNING_CFLAGS@ @ERROR_CFLAGS@ \
+-            @GTK_CFLAGS@ @PANGOFT2_CFLAGS@
++            @GTK_CFLAGS@ @PANGOFT2_CFLAGS@ @EXTRA_CFLAGS@
+ 
+ all: all-am
+ 
+Index: libjava/classpath/native/jawt/Makefile.am
+===================================================================
+--- libjava/classpath/native/jawt/Makefile.am	(revision 137051)
++++ libjava/classpath/native/jawt/Makefile.am	(working copy)
+@@ -10,4 +10,4 @@
+ # Just the WARNING_CFLAGS. We cannot use the strict flags since the gtk
+ # headers contain broken prototypes (by design, see gtkitemfactory.h).
+ AM_CFLAGS = @WARNING_CFLAGS@ @ERROR_CFLAGS@ \
+-            @GTK_CFLAGS@ @PANGOFT2_CFLAGS@
++            @GTK_CFLAGS@ @PANGOFT2_CFLAGS@ @EXTRA_CFLAGS@
+Index: libjava/classpath/native/fdlibm/Makefile.in
+===================================================================
+--- libjava/classpath/native/fdlibm/Makefile.in	(revision 137051)
++++ libjava/classpath/native/fdlibm/Makefile.in	(working copy)
+@@ -156,6 +156,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -386,6 +387,7 @@
+ 			namespace.h
+ 
+ AM_LDFLAGS = @CLASSPATH_CONVENIENCE@ 
++AM_CFLAGS = @EXTRA_CFLAGS@
+ all: all-am
+ 
+ .SUFFIXES:
+@@ -688,9 +690,7 @@
+ 	uninstall-info-am
+ 
+ 
+-# We just want the standard flags for fdlibm since it is an upstream lib
+-# and our normal -pedantic -Wall -Werror breaks this lib. So no AM_CFLAGS.
+-# We also don't need extra includes, so no AM_CPPFLAGS either.
++# We don't need extra includes, so no AM_CPPFLAGS.
+ # Tell versions [3.59,3.63) of GNU make to not export all variables.
+ # Otherwise a system limit (for SysV at least) may be exceeded.
+ .NOEXPORT:
+Index: libjava/classpath/native/fdlibm/Makefile.am
+===================================================================
+--- libjava/classpath/native/fdlibm/Makefile.am	(revision 137051)
++++ libjava/classpath/native/fdlibm/Makefile.am	(working copy)
+@@ -60,6 +60,6 @@
+ 
+ AM_LDFLAGS = @CLASSPATH_CONVENIENCE@ 
+ 
+-# We just want the standard flags for fdlibm since it is an upstream lib
+-# and our normal -pedantic -Wall -Werror breaks this lib. So no AM_CFLAGS.
+-# We also don't need extra includes, so no AM_CPPFLAGS either.
++AM_CFLAGS = @EXTRA_CFLAGS@
++
++# We don't need extra includes, so no AM_CPPFLAGS.
+Index: libjava/classpath/native/plugin/Makefile.in
+===================================================================
+--- libjava/classpath/native/plugin/Makefile.in	(revision 137051)
++++ libjava/classpath/native/plugin/Makefile.in	(working copy)
+@@ -155,6 +155,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/resource/Makefile.in
+===================================================================
+--- libjava/classpath/resource/Makefile.in	(revision 137051)
++++ libjava/classpath/resource/Makefile.in	(working copy)
+@@ -140,6 +140,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/scripts/Makefile.in
+===================================================================
+--- libjava/classpath/scripts/Makefile.in	(revision 137051)
++++ libjava/classpath/scripts/Makefile.in	(working copy)
+@@ -130,6 +130,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/tools/Makefile.in
+===================================================================
+--- libjava/classpath/tools/Makefile.in	(revision 137051)
++++ libjava/classpath/tools/Makefile.in	(working copy)
+@@ -232,6 +232,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/configure.ac
+===================================================================
+--- libjava/classpath/configure.ac	(revision 137051)
++++ libjava/classpath/configure.ac	(working copy)
+@@ -503,6 +503,12 @@
+     WARNING_CFLAGS='-W -Wall -Wmissing-declarations -Wwrite-strings -Wmissing-prototypes -Wno-long-long'
+     AC_SUBST(WARNING_CFLAGS)
+ 
++    dnl CFLAGS that are used for all native code.  We want to compile
++    dnl everything with unwinder data so that backtrace() will always
++    dnl work.
++    EXTRA_CFLAGS='-fexceptions -fasynchronous-unwind-tables'
++    AC_SUBST(EXTRA_CFLAGS)
++
+     dnl Strict warning flags which not every module uses.
+     dnl Should probably be configurable.
+     STRICT_WARNING_CFLAGS='-Wstrict-prototypes -pedantic'
+Index: libjava/classpath/doc/Makefile.in
+===================================================================
+--- libjava/classpath/doc/Makefile.in	(revision 137051)
++++ libjava/classpath/doc/Makefile.in	(working copy)
+@@ -154,6 +154,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/doc/api/Makefile.in
+===================================================================
+--- libjava/classpath/doc/api/Makefile.in	(revision 137051)
++++ libjava/classpath/doc/api/Makefile.in	(working copy)
+@@ -131,6 +131,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/lib/Makefile.in
+===================================================================
+--- libjava/classpath/lib/Makefile.in	(revision 137051)
++++ libjava/classpath/lib/Makefile.in	(working copy)
+@@ -134,6 +134,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+@@ -541,7 +542,7 @@
+           if ! test -d "$$dirname"; then mkdir -p "$$dirname"; fi; \
+ 	  cp $(top_srcdir)/resource/$$p $$p; \
+ 	done
+-	@list=`cd $(top_srcdir)/resource && $(FIND) META-INF -name CVS -prune -o -name \*\.in -prune -o -type f -print`; for p in $$list; do \
++	@list=`cd $(top_srcdir)/resource && $(FIND) META-INF -name CVS -prune -o -name .svn -prune -o -name \*\.in -prune -o -type f -print`; for p in $$list; do \
+           dirname=`dirname $$p`; \
+           if ! test -d "$$dirname"; then mkdir -p "$$dirname"; fi; \
+ 	  cp $(top_srcdir)/resource/$$p $$p; \
+Index: libjava/classpath/lib/Makefile.am
+===================================================================
+--- libjava/classpath/lib/Makefile.am	(revision 137051)
++++ libjava/classpath/lib/Makefile.am	(working copy)
+@@ -96,7 +96,7 @@
+           if ! test -d "$$dirname"; then mkdir -p "$$dirname"; fi; \
+ 	  cp $(top_srcdir)/resource/$$p $$p; \
+ 	done
+-	@list=`cd $(top_srcdir)/resource && $(FIND) META-INF -name CVS -prune -o -name \*\.in -prune -o -type f -print`; for p in $$list; do \
++	@list=`cd $(top_srcdir)/resource && $(FIND) META-INF -name CVS -prune -o -name .svn -prune -o -name \*\.in -prune -o -type f -print`; for p in $$list; do \
+           dirname=`dirname $$p`; \
+           if ! test -d "$$dirname"; then mkdir -p "$$dirname"; fi; \
+ 	  cp $(top_srcdir)/resource/$$p $$p; \
+Index: libjava/classpath/external/Makefile.in
+===================================================================
+--- libjava/classpath/external/Makefile.in	(revision 137051)
++++ libjava/classpath/external/Makefile.in	(working copy)
+@@ -138,6 +138,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/external/jsr166/Makefile.in
+===================================================================
+--- libjava/classpath/external/jsr166/Makefile.in	(revision 137051)
++++ libjava/classpath/external/jsr166/Makefile.in	(working copy)
+@@ -129,6 +129,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/external/sax/Makefile.in
+===================================================================
+--- libjava/classpath/external/sax/Makefile.in	(revision 137051)
++++ libjava/classpath/external/sax/Makefile.in	(working copy)
+@@ -129,6 +129,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/external/w3c_dom/Makefile.in
+===================================================================
+--- libjava/classpath/external/w3c_dom/Makefile.in	(revision 137051)
++++ libjava/classpath/external/w3c_dom/Makefile.in	(working copy)
+@@ -129,6 +129,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/external/relaxngDatatype/Makefile.in
+===================================================================
+--- libjava/classpath/external/relaxngDatatype/Makefile.in	(revision 137051)
++++ libjava/classpath/external/relaxngDatatype/Makefile.in	(working copy)
+@@ -129,6 +129,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/include/Makefile.in
+===================================================================
+--- libjava/classpath/include/Makefile.in	(revision 137051)
++++ libjava/classpath/include/Makefile.in	(working copy)
+@@ -130,6 +130,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@
+Index: libjava/classpath/examples/Makefile.in
+===================================================================
+--- libjava/classpath/examples/Makefile.in	(revision 137051)
++++ libjava/classpath/examples/Makefile.in	(working copy)
+@@ -140,6 +140,7 @@
+ ERROR_CFLAGS = @ERROR_CFLAGS@
+ EXAMPLESDIR = @EXAMPLESDIR@
+ EXEEXT = @EXEEXT@
++EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FASTJAR = @FASTJAR@
+ FIND = @FIND@
+ FOUND_ECJ_FALSE = @FOUND_ECJ_FALSE@

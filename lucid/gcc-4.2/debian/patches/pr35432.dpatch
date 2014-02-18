@@ -1,0 +1,69 @@
+#! /bin/sh -e
+
+# DP: Fix PR middle-end/35432, taken from the gcc-4_2-branch.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+gcc/
+
+2008-08-06  Aldy Hernandez  <aldyh@redhat.com>
+
+	PR middle-end/35432
+	* gimplify.c (gimplify_modify_expr): Do not optimize
+	zero-sized types if want_value.
+
+gcc/testsuite/
+
+2008-08-06  Aldy Hernandez  <aldyh@redhat.com>
+
+	PR middle-end/35432
+	* gcc.c-torture/compile/pr35432.c: New file.
+
+Index: gcc/testsuite/gcc.c-torture/compile/pr35432.c
+===================================================================
+--- gcc/testsuite/gcc.c-torture/compile/pr35432.c	(Revision 0)
++++ gcc/testsuite/gcc.c-torture/compile/pr35432.c	(Revision 138796)
+@@ -0,0 +1,11 @@
++/* PR middle-end/35432 */
++
++struct A
++{
++  char c[0];
++};
++
++void foo(struct A a)
++{
++  (a = a).c;
++}
+Index: gcc/gimplify.c
+===================================================================
+--- gcc/gimplify.c	(Revision 138795)
++++ gcc/gimplify.c	(Revision 138796)
+@@ -3540,7 +3540,7 @@
+      side as statements and throw away the assignment.  Do this after
+      gimplify_modify_expr_rhs so we handle TARGET_EXPRs of addressable
+      types properly.  */
+-  if (zero_sized_type (TREE_TYPE (*from_p)))
++  if (zero_sized_type (TREE_TYPE (*from_p)) && !want_value)
+     {
+       gimplify_stmt (from_p);
+       gimplify_stmt (to_p);

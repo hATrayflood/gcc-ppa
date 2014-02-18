@@ -1,0 +1,3282 @@
+#! /bin/sh -e
+
+# DP: GPC updates for GCC 4.1.2
+
+dir=gcc/
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3/gcc"
+    dir="$3/gcc/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        #cd ${dir}gcc && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/ChangeLog gpc/p/ChangeLog
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/ChangeLog	2006-03-24 02:47:15.000000000 +0100
++++ gpc/p/ChangeLog	2006-04-06 02:11:56.000000000 +0200
+@@ -1,5 +1,16 @@
+ ChangeLog -- Edit History for GPC, the GNU Pascal Compiler, since version 2.1
+ =============================================================================
++2006-03-24  Waldek Hebisch  <hebisch@math.uni.wroc.pl>
++
++        * Make-lang.in, config-lang.in, declarations.c, expressions.c,
++          gbe.h, gpc-lex.c, gpc.c, gpc.h, lang.c, module.c, objects.c,
++          options.c, opts.sum, p-tree.def, parse.y, pascal-lex.l,
++          predef.c, statements.c, typecheck.c, types.c, utils/Makefile
++          utils/gpidump.pas, utils/mk-t-inc: adapted to gcc-4.0,
++          schema changed to use placeholders
++          plant.c, plant.h, diffs/gcc-4.0.2.diff, diffs/gcc-4.0.3.diff:
++          new files
++ 
+ 2006-03-09  Waldek Hebisch  <hebisch@math.uni.wroc.pl>
+ 
+         * predef.c: build_predef_call (): handle named exit from a method
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/FAQ gpc/p/FAQ
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/FAQ	2006-02-18 14:37:53.000000000 +0100
++++ gpc/p/FAQ	2006-04-04 19:39:50.000000000 +0200
+@@ -62,7 +62,7 @@
+ What is the current version?
+ ============================
+ 
+-The current version is 20060215.
++The current version is 20060325.
+ 
+    Releases are available as a source archive and precompiled binaries
+ for several common platforms from the GPC web site,
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/Make-lang.in gpc/p/Make-lang.in
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/Make-lang.in	2006-03-25 04:33:50.000000000 +0100
++++ gpc/p/Make-lang.in	2006-04-06 02:11:56.000000000 +0200
+@@ -56,6 +56,7 @@
+ # `40' for gcc-4.x
+ GPC_GCC_2_=2
+ GPC_GCC_28_=8
++GPC_GCC_28_PPQ=$(GPC_GCC_28_$(gcc_version)$(BACKEND)
+ GPC_GCC_34_PPQ_=foo
+ GPC_GCC_34_PPP=$(GPC_GCC_34_PPQ_$(target_noncanonical))
+ GPC_GCC_34_PP_=34
+@@ -65,7 +66,7 @@
+ GPC_GCC_40_PP_=40
+ GPC_GCC_40_PP_fallback_to_34=$(GPC_GCC_34_)
+ GPC_GCC_40_=$(GPC_GCC_40_PP_$(GPC_GCC_40_PPP))
+-GCC_VERSION_FOR_GPC=$(GPC_GCC_2_$(BACKEND))$(GPC_GCC_28_$(gcc_version))
++GCC_VERSION_FOR_GPC=$(GPC_GCC_2_$(BACKEND))$(GPC_GCC_28_PPQ)
+ GCC_VERSION_FOR_GPC34=$(GCC_VERSION_FOR_GPC)$(GPC_GCC_34_)
+ GCC_VERSION_FOR_GPC40=$(GCC_VERSION_FOR_GPC)$(GPC_GCC_40_)
+ GPC_GCC_VERSION_28=$(version)
+@@ -733,7 +734,9 @@
+ 	$(CC) -o $@ -c $(ALL_GPC_GBE_FLAGS) $<
+ 
+ p/version.o: version.c $(GPC_BE_H)
+-	$(CC) -o $@ -c $(ALL_GPC_GBE_FLAGS) $<
++	$(CC) -o $@ -c $(ALL_GPC_GBE_FLAGS) \
++	 -DBASEVER=$(BASEVER_s) -DDATESTAMP=$(DATESTAMP_s) \
++	 -DDEVPHASE=$(DEVPHASE_s) $<
+ 
+ $(srcdir)/p/pascal-lex.c: $(srcdir)/p/pascal-lex.l
+ 	if $(GPC_LEX) --version | grep -q '2\.5\.4'; then \
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/config-lang.in gpc/p/config-lang.in
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/config-lang.in	2006-03-25 03:50:32.000000000 +0100
++++ gpc/p/config-lang.in	2006-04-04 18:44:47.000000000 +0200
+@@ -93,7 +93,7 @@
+           echo "***" >&2
+           echo "*** Press ENTER to continue, Ctrl-C to abort." >&2
+           echo "***" >&2
+-          read junk
++#          read junk
+         fi
+       fi
+     fi
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/declarations.c gpc/p/declarations.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/declarations.c	2006-03-13 01:33:16.000000000 +0100
++++ gpc/p/declarations.c	2006-04-09 21:55:21.000000000 +0200
+@@ -437,7 +437,11 @@
+   /* Clear out the local identifier meanings of this level. */
+   for (t = decls; t; t = TREE_CHAIN (t))
+     if (DECL_NAME (t))
+-      IDENTIFIER_VALUE (DECL_NAME (t)) = NULL_TREE;
++      {
++        if (DECL_EXTERNAL (t) && TREE_ADDRESSABLE (t))
++          TREE_ADDRESSABLE (DECL_ASSEMBLER_NAME (t)) = 1;
++        IDENTIFIER_VALUE (DECL_NAME (t)) = NULL_TREE;
++      }
+   restore_identifiers (level->shadowed);
+ 
+   /* Not sure if this is a fix or work-around: Remove local external
+@@ -527,7 +531,7 @@
+       if (co->pascal_dialect & C_E_O_PASCAL)
+         error (msg2, IDENTIFIER_NAME (name));
+       else
+-        warning (msg2, IDENTIFIER_NAME (name));
++        gpc_warning (msg2, IDENTIFIER_NAME (name));
+     }
+   check_id_redeclaration (name, msg1);
+ }
+@@ -903,7 +907,7 @@
+             if (TYPE_LANG_CODE_TEST (inner_type, PASCAL_LANG_ABSTRACT_OBJECT))
+               error ("abstract object type declared as value parameter");
+             else if (co->warn_object_assignment)
+-              warning ("object type declared as value parameter");
++              gpc_warning ("object type declared as value parameter");
+           }
+       }
+   for (decl = parms; decl; decl = TREE_CHAIN (decl))
+@@ -988,10 +992,11 @@
+       && TREE_STRING_LENGTH (x) == TREE_STRING_LENGTH (y)
+       && !memcmp (TREE_STRING_POINTER (x), TREE_STRING_POINTER (y), TREE_STRING_LENGTH (x)))
+     return 1;
+-  if (TREE_CODE (x) == CONSTRUCTOR
++  if (TREE_CODE (x) == PASCAL_SET_CONSTRUCTOR
+       && TREE_CODE (TREE_TYPE (x)) == SET_TYPE && TREE_CODE (TREE_TYPE (x)) == SET_TYPE
+       && comptypes (TREE_TYPE (x), TREE_TYPE (y))
+-      && const_set_constructor_binary_op (EQ_EXPR, CONSTRUCTOR_ELTS (x), CONSTRUCTOR_ELTS (y)) == boolean_true_node)
++      && const_set_constructor_binary_op (EQ_EXPR, SET_CONSTRUCTOR_ELTS (x),
++                SET_CONSTRUCTOR_ELTS (y)) == boolean_true_node)
+     return 1;
+ 
+   return 0;
+@@ -1055,7 +1060,7 @@
+     DECL_CONTEXT (x) = NULL_TREE;
+ 
+   if (co->warn_local_external && DECL_EXTERNAL (x) && !DECL_ARTIFICIAL (x) && !pascal_global_bindings_p ())
+-    warning ("local external declaration of `%s'", IDENTIFIER_NAME (name));
++    gpc_warning ("local external declaration of `%s'", IDENTIFIER_NAME (name));
+ 
+   t = lookup_name_current_level (name);
+   /* Overloading an operator is ok. The decl is a dummy placeholder.
+@@ -1126,10 +1131,18 @@
+         }
+ 
+       DECL_UID (x) = DECL_UID (t);
++      gcc_assert (TREE_CODE (x) == FUNCTION_DECL &&
++                  TREE_CODE (t) == FUNCTION_DECL);
++#ifndef GCC_4_1
+       /* Copy decl-specific fields of x into t. */
+       memcpy ((char *) t + sizeof (struct tree_common),
+               (char *) x + sizeof (struct tree_common),
+               sizeof (struct tree_decl) - sizeof (struct tree_common));
++#else
++      memcpy ((char *) t + sizeof (struct tree_common),
++              (char *) x + sizeof (struct tree_common),
++              tree_size (t) - sizeof (struct tree_common));
++#endif
+       return t;
+     }
+ 
+@@ -1173,7 +1186,7 @@
+ 
+   /* Maybe warn if shadowing something else (not for vars made for inlining). */
+   if (!weak && t && warn_shadow && !DECL_FROM_INLINE (x))
+-    warning ("declaration of `%s' shadows an outer declaration", IDENTIFIER_NAME (name));
++    gpc_warning ("declaration of `%s' shadows an outer declaration", IDENTIFIER_NAME (name));
+ 
+   /* Record a shadowed declaration for later restoration. */
+   if (!weak && t)
+@@ -1384,6 +1397,7 @@
+       expand_expr_stmt (build_routine_call (longjmp_routine_node,
+         tree_cons (NULL_TREE, build_unary_op (ADDR_EXPR, DECL_LANG_LABEL_JMPBUF (decl), 0),
+           build_tree_list (NULL_TREE, integer_one_node))));
++      TREE_USED (DECL_LANG_LABEL_JMPBUF (decl)) = 1;
+ #ifndef GCC_3_3
+       /* @@ Work-around: `function_cannot_inline_p' should check `current_function_calls_longjmp'. */
+       current_function_has_nonlocal_goto = 1;
+@@ -1433,9 +1447,9 @@
+ #endif
+         /* Avoid calling `setjmp' for labels that are only used locally */
+         if (DECL_LANG_LABEL_JMPBUF (d) 
+-#ifndef GCC_4_0
++// #ifndef GCC_4_0
+             && TREE_USED (DECL_LANG_LABEL_JMPBUF (d))
+-#endif
++// #endif
+            )
+           {
+             expand_start_cond (build_routine_call (setjmp_routine_node,
+@@ -1580,10 +1594,10 @@
+           location_t loc_aux;
+           loc_aux.file = filename;
+           loc_aux.line = line;
+-          warning ("%Hcapitalisation of identifier `%s' doesn't match", &loc_aux, spelling);
++          gpc_warning ("%Hcapitalisation of identifier `%s' doesn't match", &loc_aux, spelling);
+           loc_aux.file = IDENTIFIER_SPELLING_FILE (id);
+           loc_aux.line = IDENTIFIER_SPELLING_LINENO (id);
+-          warning ("%H previous capitalisation `%s'", &loc_aux, IDENTIFIER_SPELLING (id));
++          gpc_warning ("%H previous capitalisation `%s'", &loc_aux, IDENTIFIER_SPELLING (id));
+ #endif
+         }
+     }
+@@ -2306,7 +2320,7 @@
+       if (co->pascal_dialect & C_E_O_PASCAL)
+         error (msg, IDENTIFIER_NAME (name));
+       else
+-        warning (msg, IDENTIFIER_NAME (name));
++        gpc_warning (msg, IDENTIFIER_NAME (name));
+     }
+ }
+ 
+@@ -2562,7 +2576,7 @@
+         if (TREE_VALUE (*tt))
+           error ("spurious argument to `%s' attribute", IDENTIFIER_NAME (TREE_PURPOSE (*tt)));
+         if (TREE_CODE (TREE_TYPE (t)) == VOID_TYPE)
+-          warning ("`%s' is meaningless for a procedure", IDENTIFIER_NAME (TREE_PURPOSE (*tt)));
++          gpc_warning ("`%s' is meaningless for a procedure", IDENTIFIER_NAME (TREE_PURPOSE (*tt)));
+         else
+           PASCAL_TREE_IGNORABLE (t) = 1;
+         *tt = TREE_CHAIN (*tt);
+@@ -2576,7 +2590,7 @@
+         if (TREE_VALUE (*tt))
+           error ("spurious argument to `%s' attribute", IDENTIFIER_NAME (TREE_PURPOSE (*tt)));
+         if (!last || TREE_CODE (TREE_VALUE (last)) != VOID_TYPE)
+-          warning ("inline declaration ignored for routine with `...'");
++          gpc_warning ("inline declaration ignored for routine with `...'");
+         else if (!flag_no_inline && optimize > 0)
+           /* Assume that otherwise the function can be inlined. */
+           DECL_INLINE (*d) = 1;
+@@ -2646,7 +2660,7 @@
+       }
+     else if (IDENTIFIER_IS_BUILT_IN (TREE_VALUE (dir), p_asmname))
+       {
+-        warning ("`%s' is deprecated; use `external name' or `attribute (name = ...)' instead",
++        gpc_warning ("`%s' is deprecated; use `external name' or `attribute (name = ...)' instead",
+                  IDENTIFIER_NAME (TREE_VALUE (dir)));
+         assembler_name = TREE_PURPOSE (dir);
+         any_dir = 1;
+@@ -2654,7 +2668,7 @@
+     else if (IDENTIFIER_IS_BUILT_IN (TREE_VALUE (dir), p_c)
+              || IDENTIFIER_IS_BUILT_IN (TREE_VALUE (dir), p_c_language))
+       {
+-        warning ("`%s' is deprecated; use `external' instead",
++        gpc_warning ("`%s' is deprecated; use `external' instead",
+                  IDENTIFIER_NAME (TREE_VALUE (dir)));
+         any_dir = c_dir = is_public = 1;
+       }
+@@ -2662,7 +2676,7 @@
+       {
+         is_external = is_public = 1;
+         if (TREE_PURPOSE (dir))
+-          warning ("library name in `external' is ignored");
++          gpc_warning ("library name in `external' is ignored");
+       }
+     else if (IDENTIFIER_IS_BUILT_IN (TREE_VALUE (dir), p_forward))
+       any_dir = is_forward = 1;
+@@ -2675,15 +2689,15 @@
+              || IDENTIFIER_IS_BUILT_IN (TREE_VALUE (dir), p_far))
+       {
+         if (co->warn_near_far)
+-          warning ("`%s' directive ignored because of flat memory model", IDENTIFIER_NAME (TREE_VALUE (dir)));
++          gpc_warning ("`%s' directive ignored because of flat memory model", IDENTIFIER_NAME (TREE_VALUE (dir)));
+       }
+     else
+       error ("unknown directive `%s'", IDENTIFIER_NAME (TREE_VALUE (dir)));
+ 
+   if (is_external && !assembler_name)
+     {
+-      warning ("`external' without `name' has a different default now");
+-      warning (" (This warning will disappear in a future version)");
++      gpc_warning ("`external' without `name' has a different default now");
++      gpc_warning (" (This gpc_warning will disappear in a future version)");
+     }
+ 
+   is_external |= c_dir;
+@@ -3016,7 +3030,7 @@
+         || IDENTIFIER_IS_BUILT_IN (TREE_VALUE (dir), p_far))
+       {
+         if (co->warn_near_far)
+-          warning ("`%s' directive ignored because of flat memory model", IDENTIFIER_NAME (TREE_VALUE (dir)));
++          gpc_warning ("`%s' directive ignored because of flat memory model", IDENTIFIER_NAME (TREE_VALUE (dir)));
+       }
+     else
+       {
+@@ -3301,14 +3315,18 @@
+ #ifndef EGCS97
+   /* So we can tell if jump_optimize sets it to 1. */
+   can_reach_end = 0;
+-#else
+-  ggc_push_context ();
+ #endif
+ 
+-
+-  /* Run the optimizers and output the assembler code for this function. */
+ #ifndef GCC_4_0
++#ifdef EGCS97
++  ggc_push_context ();
++#endif
++  /* Run the optimizers and output the assembler code for this function. */
+   rest_of_compilation (fndecl);
++
++#ifdef EGCS97
++  ggc_pop_context ();
++#endif
+ #endif
+ 
+   if (DECL_LANG_RESULT_VARIABLE (fndecl))
+@@ -3316,11 +3334,9 @@
+ 
+ #ifndef EGCS97
+   if (TREE_THIS_VOLATILE (fndecl) && can_reach_end)
+-    warning ("routine declared `noreturn' returns");
++    gpc_warning ("routine declared `noreturn' returns");
+   if (!outer_function_chain)
+     permanent_allocation (1);
+-#else
+-  ggc_pop_context ();
+ #endif
+ 
+ #ifndef GCC_4_0
+@@ -3581,7 +3597,8 @@
+   if (!EM (TREE_TYPE (element))
+       && TREE_CODE (element) != VAR_DECL
+       && TREE_CODE (element) != PARM_DECL
+-      && TREE_CODE (element) != CONSTRUCTOR)
++      && TREE_CODE (element) != CONSTRUCTOR
++/*      && TREE_CODE (element) != PASCAL_SET_CONSTRUCTOR */)
+     {
+       tree elem_type = TREE_TYPE (element), rec_addr;
+       if (TREE_READONLY (element))
+@@ -3700,13 +3717,13 @@
+         {
+           qualifiers |= VQ_EXTERNAL;
+           if (arg)
+-            warning ("library name in `external' is ignored");
++            gpc_warning ("library name in `external' is ignored");
+         }
+       else if (arg && IDENTIFIER_IS_BUILT_IN (id, p_name))
+         assembler_name = arg;
+       else if (arg && IDENTIFIER_IS_BUILT_IN (id, p_asmname))
+         {
+-          warning ("`%s' is deprecated; use `external name' or `attribute (name = ...)' instead",
++          gpc_warning ("`%s' is deprecated; use `external name' or `attribute (name = ...)' instead",
+                    IDENTIFIER_NAME (id));
+           assembler_name = arg;
+         }
+@@ -3720,8 +3737,8 @@
+ 
+   if ((qualifiers & VQ_EXTERNAL) && !(qualifiers & VQ_IMPLICIT) && !assembler_name)
+     {
+-      warning ("`external' without `name' has a different default now");
+-      warning (" (This warning will disappear in a future version.)");
++      gpc_warning ("`external' without `name' has a different default now");
++      gpc_warning (" (This gpc_warning will disappear in a future version.)");
+     }
+ 
+   if (init && PASCAL_ABSOLUTE_CLAUSE (init))
+@@ -3744,7 +3761,7 @@
+               return NULL_TREE;
+             }
+           if (co->warn_absolute)
+-            warning ("variables at absolute adresses may cause problems");
++            gpc_warning ("variables at absolute adresses may cause problems");
+         }
+       else
+         {
+@@ -3756,7 +3773,7 @@
+               && TREE_CODE (TREE_TYPE (init)) != VOID_TYPE
+               && TREE_CODE (TREE_TYPE (init)) != FUNCTION_TYPE
+               && TYPE_ALIGN (type) > TYPE_ALIGN (TREE_TYPE (init)))
+-            warning ("`absolute' declaration increases required alignment");
++            gpc_warning ("`absolute' declaration increases required alignment");
+           while (TREE_CODE (init) == NOP_EXPR
+                  || TREE_CODE (init) == NON_LVALUE_EXPR
+                  || TREE_CODE (init) == CONVERT_EXPR
+@@ -3770,7 +3787,7 @@
+                    || (indirect == 0 && TREE_CODE (init) == PARM_DECL)
+                    || (indirect == 1 && TREE_CODE (init) == PARM_DECL
+                        && TREE_CODE (TREE_TYPE (init)) == REFERENCE_TYPE)))
+-            warning ("`absolute' variable has non-constant address");
++            gpc_warning ("`absolute' variable has non-constant address");
+           TREE_USED (init) = 1;
+           init = address;
+         }
+@@ -3982,7 +3999,15 @@
+         DECL_CONTEXT (d) = NULL_TREE;  /* for deferred initializers */
+ 
+       /* Output the assembler code and/or RTL code. */
+-#ifndef GCC_4_0
++#ifdef GCC_4_0
++      if (pascal_global_bindings_p () && current_module
++          && current_module->implementation)
++        {
++          if (!DECL_INITIAL (d))
++            DECL_DEFER_OUTPUT (d) = 1;
++          rest_of_decl_compilation (d, true, 0);
++        }
++#else
+       rest_of_decl_compilation (d, NULL, !DECL_CONTEXT (d), 1 /* for GPC */);
+ #endif
+ 
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/expressions.c gpc/p/expressions.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/expressions.c	2006-03-24 02:47:15.000000000 +0100
++++ gpc/p/expressions.c	2006-04-09 02:28:59.000000000 +0200
+@@ -36,7 +36,7 @@
+ static int implicit_comparison = 0;
+ int operators_defined = 0;
+ 
+-static void set_string_length (tree, int, int);
++// static void set_string_length (tree, int, int);
+ static void warn_operands (enum tree_code, tree, int);
+ static tree shorten_compare (tree *, tree *, tree *, enum tree_code *);
+ static const char *get_op_name (enum tree_code);
+@@ -56,7 +56,7 @@
+    Note: TREE_STRING_LENGTH includes a trailing #0 (to output C-compatible
+    strings and to avoid changing the backend's output code), but the domain
+    doesn't (so the #0 doesn't appear in Pascal string usage). */
+-static void
++void
+ set_string_length (tree value, int wide_flag, int length)
+ {
+   gcc_assert (length >= 0);
+@@ -282,7 +282,7 @@
+ {
+   if (co->pascal_dialect & C_E_O_PASCAL)
+     {
+-      warning(msg);
++      gpc_warning (msg);
+       return build (COMPOUND_EXPR, TREE_TYPE (min), 
+                build_predef_call (p_RangeCheckError, NULL_TREE), min);
+     }
+@@ -653,7 +653,7 @@
+       enum tree_code inner = EXP_ORIGINAL_CODE (exp_inner);
+       if ((AND_OP (inner) && OR_OP (outer))
+           || ((OR_OP (inner) || AND_OP (inner) || (!rhs && inner == TRUTH_NOT_EXPR)) && REL_OP (outer)))
+-        warning ("suggest parentheses around `%s' in operand of `%s'",
++        gpc_warning ("suggest parentheses around `%s' in operand of `%s'",
+                  get_op_name (inner), get_op_name (outer));
+     }
+ }
+@@ -783,7 +783,6 @@
+          and are already no lvalues (WRT ISO parentheses). */
+       gcc_assert (TREE_CODE (t) != STRING_CST);
+       gcc_assert (TREE_CODE (t) != CONSTRUCTOR);
+-      gcc_assert (code == NOP_EXPR || !lvalue_p (t));
+       t = build1 (NON_LVALUE_EXPR, TREE_TYPE (old), old);
+       TREE_CONSTANT (t) = TREE_CONSTANT (old);
+       TREE_OVERFLOW (t) = TREE_OVERFLOW (old);
+@@ -1124,9 +1123,11 @@
+     }
+ 
+   /* Convert set constructors to sets. */
+-  if (t1 == CONSTRUCTOR && TREE_CODE (TREE_TYPE (exp1)) == SET_TYPE)
++  if (t1 == PASCAL_SET_CONSTRUCTOR
++      && TREE_CODE (TREE_TYPE (exp1)) == SET_TYPE)
+     exp1 = construct_set (exp1, NULL_TREE, 1);
+-  if (t2 == CONSTRUCTOR && TREE_CODE (TREE_TYPE (exp2)) == SET_TYPE && code != IN_EXPR)
++  if (t2 == PASCAL_SET_CONSTRUCTOR
++      && TREE_CODE (TREE_TYPE (exp2)) == SET_TYPE && code != IN_EXPR)
+     exp2 = construct_set (exp2, NULL_TREE, 1);
+ 
+   CHK_EM (TREE_TYPE (exp1));
+@@ -1249,17 +1250,18 @@
+           return error_mark_node;
+         }
+ 
+-      if (TREE_CODE (exp2) == CONSTRUCTOR)
++      if (TREE_CODE (exp2) == PASCAL_SET_CONSTRUCTOR)
+         {
+           /* Optimize `foo in [a, b .. c]' to become
+              `(foo = a) or ((foo >= b) and (foo <= c))'
+              (where foo is evaluated only once). */
+-          tree elem = CONSTRUCTOR_ELTS (exp2), result = NULL_TREE, exp = save_expr (exp1);
++          tree elem = SET_CONSTRUCTOR_ELTS (exp2),
++               result = NULL_TREE, exp = save_expr (exp1);
+           if (!elem)
+             {
+-              warning ("`... in []' (empty set) is always `False'.");
++              gpc_warning ("`... in []' (empty set) is always `False'.");
+               if (TREE_SIDE_EFFECTS (exp1))
+-                warning (" Operand with side-effects is not evaluated.");
++                gpc_warning (" Operand with side-effects is not evaluated.");
+               return boolean_false_node;
+             }
+           for (; elem; elem = TREE_CHAIN (elem))
+@@ -1333,12 +1335,18 @@
+       if (code == SYMDIFF_EXPR)
+         chk_dialect ("symmetric set difference is", E_O_PASCAL);
+ 
+-      if (TREE_CODE (exp1) == CONSTRUCTOR && TREE_CODE (exp2) == CONSTRUCTOR)
++      if (TREE_CODE (exp1) == PASCAL_SET_CONSTRUCTOR 
++          && TREE_CODE (exp2) == PASCAL_SET_CONSTRUCTOR)
+         {
+           if (code == PLUS_EXPR)
+-            return build_set_constructor (chainon (copy_list (CONSTRUCTOR_ELTS (exp1)), copy_list (CONSTRUCTOR_ELTS (exp2))));
+-          else if (PASCAL_CONSTRUCTOR_INT_CST (exp1) && PASCAL_CONSTRUCTOR_INT_CST (exp2))
+-            return const_set_constructor_binary_op (code, CONSTRUCTOR_ELTS (exp1), CONSTRUCTOR_ELTS (exp2));
++            return build_set_constructor (chainon (
++                     copy_list (SET_CONSTRUCTOR_ELTS (exp1)),
++                     copy_list (SET_CONSTRUCTOR_ELTS (exp2))));
++          else if (PASCAL_CONSTRUCTOR_INT_CST (exp1)
++                   && PASCAL_CONSTRUCTOR_INT_CST (exp2))
++            return const_set_constructor_binary_op (code, 
++                     SET_CONSTRUCTOR_ELTS (exp1),
++                     SET_CONSTRUCTOR_ELTS (exp2));
+         }
+ 
+       result = NULL_TREE;
+@@ -1351,19 +1359,19 @@
+         {
+           case PLUS_EXPR:
+           case SYMDIFF_EXPR:
+-            warning ("Set operation has no effect.");
++            gpc_warning ("Set operation has no effect.");
+             return exp2;
+           case MINUS_EXPR:
+           case MULT_EXPR:
+-            warning ("Set operation always yields the empty set.");
++            gpc_warning ("Set operation always yields the empty set.");
+             result = build_set_constructor (NULL_TREE);
+             break;
+           case GT_EXPR:
+-            warning ("`>' comparison of the empty set is always false.");
++            gpc_warning ("`>' comparison of the empty set is always false.");
+             result = boolean_false_node;
+             break;
+           case LE_EXPR:
+-            warning ("`<=' comparison of the empty set is always true.");
++            gpc_warning ("`<=' comparison of the empty set is always true.");
+             result = boolean_true_node;
+             break;
+           case EQ_EXPR:
+@@ -1389,18 +1397,18 @@
+           case PLUS_EXPR:
+           case MINUS_EXPR:
+           case SYMDIFF_EXPR:
+-            warning ("Set operation has no effect.");
++            gpc_warning ("Set operation has no effect.");
+             return exp1;
+           case MULT_EXPR:
+-            warning ("Set operation always yields the empty set.");
++            gpc_warning ("Set operation always yields the empty set.");
+             result = build_set_constructor (NULL_TREE);
+             break;
+           case LT_EXPR:
+-            warning ("`<' comparison against the empty set is always false.");
++            gpc_warning ("`<' comparison against the empty set is always false.");
+             result = boolean_false_node;
+             break;
+           case GE_EXPR:
+-            warning ("`>=' comparison against the empty set is always true.");
++            gpc_warning ("`>=' comparison against the empty set is always true.");
+             result = boolean_true_node;
+             break;
+           case EQ_EXPR:
+@@ -1417,7 +1425,7 @@
+       if (result)
+         {
+           if (TREE_SIDE_EFFECTS (empty1 ? exp2 : exp1))
+-            warning (" Operand with side-effects is not evaluated.");
++            gpc_warning (" Operand with side-effects is not evaluated.");
+           return result;
+         }
+       if (!r_num)
+@@ -1827,7 +1835,8 @@
+   /* build_unary_op accepts CONSTRUCTORs (for parameters), but the backend
+      would later crash. Maybe it should be checked elsewhere, but it
+      seems to work here. -- Frank */
+-  if (TREE_CODE (factor) == CONSTRUCTOR)
++  if (TREE_CODE (factor) == CONSTRUCTOR
++      || TREE_CODE (factor) == PASCAL_SET_CONSTRUCTOR)
+     {
+       error ("reference expected, value given");
+       return error_mark_node;
+@@ -1841,6 +1850,7 @@
+   else
+     {
+       tree t;
++      tree string_cst_type = NULL_TREE;
+ 
+       if (TREE_CODE (factor) == STRING_CST)
+         {
+@@ -1850,13 +1860,25 @@
+           tree capf = TYPE_FIELDS (st);
+           tree lenf = TREE_CHAIN (capf);
+           tree schf = TREE_CHAIN (lenf);
++#ifndef GCC_4_1
++          tree inilist = tree_cons (capf, length, 
++                           tree_cons (lenf, length,
++                           build_tree_list (schf, factor)));
++#else
++          VEC(constructor_elt,gc) * inilist = 0;
++          CONSTRUCTOR_APPEND_ELT (inilist, capf, length);
++          CONSTRUCTOR_APPEND_ELT (inilist, lenf, length);
++          CONSTRUCTOR_APPEND_ELT (inilist, schf, factor);
++#endif
+           factor = build_constructor (build_pascal_string_schema (length),
+-                     tree_cons (capf, length,
+-                     tree_cons (lenf, length,
+-                     build_tree_list (schf, factor))));
++                                      inilist);
+           /* Make this a valid lvalue for taking addresses. */
+           TREE_CONSTANT (factor) = 1;
+           TREE_STATIC (factor) = 1;
++          string_cst_type = TREE_TYPE (factor);
++          factor = declare_variable (get_unique_identifier ("const_string"),
++                     TREE_TYPE (factor), build_tree_list (NULL_TREE, factor),
++                     VQ_IMPLICIT | VQ_CONST | VQ_STATIC);
+         }
+ 
+       t = factor;
+@@ -1883,6 +1905,12 @@
+           && (!DECL_CONTEXT (factor)
+               || (TREE_CODE (factor) == FUNCTION_DECL && DECL_NO_STATIC_CHAIN (factor))))
+         TREE_CONSTANT (result) = 1;
++#if 0
++      if (string_cst_type)
++        {
++          result = convert (build_pointer_type (string_cst_type), result);
++        }
++#endif
+     }
+ 
+   if (untyped)
+@@ -2119,22 +2147,22 @@
+       if (!implicit_comparison && !max_gt && !unsignedp0 && TREE_CODE (primop0) != INTEGER_CST)
+         {
+           if (val == boolean_false_node)
+-            warning ("Comparison always yields `False' due to limited range of data type.");
++            gpc_warning ("Comparison always yields `False' due to limited range of data type.");
+           if (val == boolean_true_node)
+-            warning ("Comparison always yields `True' due to limited range of data type.");
++            gpc_warning ("Comparison always yields `True' due to limited range of data type.");
+         }
+       if (!implicit_comparison && !min_lt && unsignedp0 && TREE_CODE (primop0) != INTEGER_CST)
+         {
+           if (val == boolean_false_node)
+-            warning ("Comparison always yields `False' due to limited range of data type.");
++            gpc_warning ("Comparison always yields `False' due to limited range of data type.");
+           if (val == boolean_true_node)
+-            warning ("Comparison always yields `True' due to limited range of data type.");
++            gpc_warning ("Comparison always yields `True' due to limited range of data type.");
+         }
+ 
+       if (val)
+         {
+           if (TREE_SIDE_EFFECTS (primop0))
+-            warning (" Operand with side-effects is not evaluated.");
++            gpc_warning (" Operand with side-effects is not evaluated.");
+           return val;
+         }
+ 
+@@ -2184,13 +2212,13 @@
+                  the signedness of the comparison isn't an issue, so suppress
+                  the warning. */
+               if (!implicit_comparison && TREE_CODE (primop0) != INTEGER_CST)
+-                warning ("Comparison `unsigned value >= 0' always yields `True'.");
++                gpc_warning ("Comparison `unsigned value >= 0' always yields `True'.");
+               value = boolean_true_node;
+               break;
+ 
+             case LT_EXPR:
+               if (!implicit_comparison && TREE_CODE (primop0) != INTEGER_CST)
+-                warning ("Comparison `unsigned value < 0' always yields `False'.");
++                gpc_warning ("Comparison `unsigned value < 0' always yields `False'.");
+               value = boolean_false_node;
+               break;
+ 
+@@ -2201,7 +2229,7 @@
+           if (value)
+             {
+               if (TREE_SIDE_EFFECTS (primop0))
+-                warning (" Operand with side-effects is not evaluated.");
++                gpc_warning (" Operand with side-effects is not evaluated.");
+               return value;
+             }
+         }
+@@ -2564,14 +2592,14 @@
+           if (TREE_CODE (op1) == INTEGER_CST)
+             {
+               if (tree_int_cst_sgn (op1) < 0)
+-                warning ("right shift count is negative");
++                gpc_warning ("right shift count is negative");
+               else
+                 {
+                   if (TREE_INT_CST_LOW (op1) | TREE_INT_CST_HIGH (op1))
+                     short_shift = 1;
+                   if (TREE_INT_CST_HIGH (op1) != 0
+                       || ((unsigned HOST_WIDE_INT) TREE_INT_CST_LOW (op1) >= TYPE_PRECISION (type0)))
+-                    warning ("right shift count >= width of type");
++                    gpc_warning ("right shift count >= width of type");
+                 }
+             }
+           /* Use the type of the value to be shifted for the result. */
+@@ -2591,10 +2619,10 @@
+           if (TREE_CODE (op1) == INTEGER_CST)
+             {
+               if (tree_int_cst_sgn (op1) < 0)
+-                warning ("left shift count is negative");
++                gpc_warning ("left shift count is negative");
+               else if (TREE_INT_CST_HIGH (op1) != 0
+                        || ((unsigned HOST_WIDE_INT) TREE_INT_CST_LOW (op1) >= TYPE_PRECISION (result_type)))
+-                warning ("left shift count >= width of type");
++                gpc_warning ("left shift count >= width of type");
+             }
+           if (TYPE_MAIN_VARIANT (TREE_TYPE (op1)) != pascal_integer_type_node)
+             op1 = convert (pascal_integer_type_node, op1);
+@@ -2606,7 +2634,7 @@
+     case EQ_EXPR:
+     case NE_EXPR:
+       if (co->warn_float_equal && (code0 == REAL_TYPE || code1 == REAL_TYPE))
+-        warning ("comparing real numbers with `=' or `<>' is unsafe");
++        gpc_warning ("comparing real numbers with `=' or `<>' is unsafe");
+       /* Result of comparison is always Boolean, but don't convert the args to Boolean. */
+       build_type = boolean_type_node;
+       if (ORDINAL_REAL_OR_COMPLEX_TYPE (code0) && compatible_relop_p (type0, type1))
+@@ -2658,7 +2686,7 @@
+             {
+               result_type = common_type (type0, type1);
+               if (TREE_CODE (TREE_TYPE (type0)) == FUNCTION_TYPE)
+-                warning ("ordered comparisons of pointers to routines");
++                gpc_warning ("ordered comparisons of pointers to routines");
+             }
+           else if (!comp_object_or_schema_pointer_types (TREE_TYPE (type0), TREE_TYPE (type1), 0)
+                    && !comp_object_or_schema_pointer_types (TREE_TYPE (type1), TREE_TYPE (type0), 0))
+@@ -2688,7 +2716,7 @@
+                   != COMPLETE_OR_VOID_TYPE_P (TREE_TYPE (type1)))
+                 pedwarn ("comparison of complete and incomplete pointers");
+               else if (pedantic && TREE_CODE (TREE_TYPE (type0)) == FUNCTION_TYPE)
+-                warning ("ordered comparision of pointers to routines");
++                gpc_warning ("ordered comparision of pointers to routines");
+             }
+           else
+             {
+@@ -2895,13 +2923,13 @@
+                     {
+                       mask = (~0L) << bits;
+                       if ((mask & constant) != mask)
+-                        warning ("comparison of promoted `not' unsigned with constant");
++                        gpc_warning ("comparison of promoted `not' unsigned with constant");
+                     }
+                 }
+               else if (unsignedp0 && unsignedp1
+                        && (TYPE_PRECISION (TREE_TYPE (primop0)) < TYPE_PRECISION (result_type))
+                        && (TYPE_PRECISION (TREE_TYPE (primop1)) < TYPE_PRECISION (result_type)))
+-                warning ("comparison of promoted `not' unsigned with unsigned");
++                gpc_warning ("comparison of promoted `not' unsigned with unsigned");
+             }
+         }
+     }
+@@ -2986,9 +3014,9 @@
+   /* The result is a pointer of the same type that is being added. */
+   tree result_type = TREE_TYPE (ptrop), size_exp = integer_one_node, result, folded;
+   if (TREE_CODE (TREE_TYPE (result_type)) == VOID_TYPE)
+-    warning ("untyped pointer used in arithmetic");
++    gpc_warning ("untyped pointer used in arithmetic");
+   else if (TREE_CODE (TREE_TYPE (result_type)) == FUNCTION_TYPE)
+-    warning ("pointer to a routine used in arithmetic");
++    gpc_warning ("pointer to a routine used in arithmetic");
+   else
+     size_exp = c_size_in_bytes (TREE_TYPE (result_type));
+   /* Replace the integer argument with a suitable product by the object size. */
+@@ -3010,9 +3038,9 @@
+   tree result, folded, restype = ptrdiff_type_node;
+   tree target_type = TREE_TYPE (TREE_TYPE (op0));
+   if (TREE_CODE (target_type) == VOID_TYPE)
+-    warning ("untyped pointer used in pointer difference");
++    gpc_warning ("untyped pointer used in pointer difference");
+   if (TREE_CODE (target_type) == FUNCTION_TYPE)
+-    warning ("pointer to a routine used in pointer difference");
++    gpc_warning ("pointer to a routine used in pointer difference");
+   /* First do the subtraction as integers, then divide. */
+   op0 = build_pascal_binary_op (MINUS_EXPR, convert (restype, op0), convert (restype, op1));
+   /* This generates an error if op1 is pointer to incomplete type. */
+@@ -3170,7 +3198,8 @@
+         }
+ 
+       /* Addresses of constructors are needed for parameters. */
+-      if (TREE_CODE (arg) == CONSTRUCTOR)
++      if (TREE_CODE (arg) == CONSTRUCTOR 
++          || TREE_CODE (arg) == PASCAL_SET_CONSTRUCTOR)
+         {
+           if (!TREE_CONSTANT (arg))
+             {
+@@ -3321,15 +3350,15 @@
+       && TREE_CODE (TREE_TYPE (otype)) != VOID_TYPE
+       && TREE_CODE (TREE_TYPE (otype)) != FUNCTION_TYPE
+       && TYPE_ALIGN (TREE_TYPE (type)) > TYPE_ALIGN (TREE_TYPE (otype)))
+-    warning ("cast increases required alignment of target type");
++    gpc_warning ("cast increases required alignment of target type");
+ 
+   if (TYPE_PRECISION (type) != TYPE_PRECISION (otype) && !TREE_CONSTANT (value))
+     {
+       if (TREE_CODE (type) == INTEGER_TYPE && TREE_CODE (otype) == POINTER_TYPE)
+-        warning ("cast from pointer to integer of different size");
++        gpc_warning ("cast from pointer to integer of different size");
+       if (TREE_CODE (type) == POINTER_TYPE && TREE_CODE (otype) == INTEGER_TYPE
+           && TREE_CODE (value) != PLUS_EXPR && TREE_CODE (value) != MINUS_EXPR)
+-        warning ("cast to pointer from integer of different size");
++        gpc_warning ("cast to pointer from integer of different size");
+     }
+ 
+   ovalue = value;
+@@ -3372,7 +3401,7 @@
+       if (TREE_CODE (otype) != VOID_TYPE
+           && TREE_CODE (type) != VOID_TYPE
+           && !tree_int_cst_equal (TYPE_SIZE (otype), TYPE_SIZE (type)))
+-        warning ("cast to type of different size");
++        gpc_warning ("cast to type of different size");
+       /* @@ GPC allows `@'...'' as an extension, but we don't want that here. */
+       if (TREE_CODE (value) == STRING_CST)
+         error ("reference expected, value given");
+@@ -3784,7 +3813,7 @@
+           return error_mark_node;
+         }
+       if (co->warn_object_assignment)
+-        warning ("assignment between objects");
++        gpc_warning ("assignment between objects");
+ 
+       while (TREE_CODE (l) == NOP_EXPR
+              || TREE_CODE (l) == CONVERT_EXPR
+@@ -3794,7 +3823,7 @@
+           && TREE_CODE (l) != PARM_DECL
+           && TREE_CODE (l) != COMPONENT_REF
+           && TREE_CODE (l) != ARRAY_REF)
+-        warning ("left-hand side of object assignment is polymorphic");
++        gpc_warning ("left-hand side of object assignment is polymorphic");
+ 
+       /* The following code assumes that the VMT pointer is the first field.
+          This is always the case in GPC. If this ever changes, the code must
+@@ -3811,7 +3840,7 @@
+       if (!field)
+         {
+           if (!is_init)
+-            warning ("assignment of object with no fields has no effect");
++            gpc_warning ("assignment of object with no fields has no effect");
+           return error_mark_node;
+         }
+       lastfield = tree_last (field);
+@@ -3940,7 +3969,7 @@
+           && TREE_CODE (TREE_TYPE (TREE_TYPE (lhs))) != VOID_TYPE
+           && TREE_CODE (TREE_TYPE (TREE_TYPE (lhs))) != FUNCTION_TYPE
+           && TYPE_ALIGN (TREE_TYPE (TREE_TYPE (inner_lhs))) > TYPE_ALIGN (TREE_TYPE (TREE_TYPE (lhs))))
+-        warning ("lhs cast decreases required alignment of target type");
++        gpc_warning ("lhs cast decreases required alignment of target type");
+ 
+       return build_modify_expr (inner_lhs, NOP_EXPR, convert (TREE_TYPE (inner_lhs), newrhs));
+     }
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/gbe.h gpc/p/gbe.h
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/gbe.h	2006-03-03 20:14:31.000000000 +0100
++++ gpc/p/gbe.h	2006-04-06 03:35:49.000000000 +0200
+@@ -119,7 +119,7 @@
+ #define CONCAT2(a,b) a##b
+ #define STRINGX(s) #s
+ #define lineno input_line
+-#define warning_with_decl(x, y) (warning ("%H" y, &DECL_SOURCE_LOCATION (x), \
++#define warning_with_decl(x, y) (gpc_warning ("%H" y, &DECL_SOURCE_LOCATION (x), \
+         DECL_NAME (x) ? IDENTIFIER_POINTER (DECL_NAME (x)) : NULL))
+ #define error_with_decl(x, y) (error ("%H" y, &DECL_SOURCE_LOCATION (x), \
+         DECL_NAME (x) ? IDENTIFIER_POINTER (DECL_NAME (x)) : NULL))
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/gpc-lex.c gpc/p/gpc-lex.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/gpc-lex.c	2006-03-03 20:14:31.000000000 +0100
++++ gpc/p/gpc-lex.c	2006-04-06 03:35:49.000000000 +0200
+@@ -172,19 +172,19 @@
+         return 0;
+       else if (Message && co->warn_mixed_comments)
+         {
+-          warning ("comments starting with `(*' and ending with `}' or starting with");
+-          warning (" `{' and ending with `*)' are an obscure ISO Pascal feature");
++          gpc_warning ("comments starting with `(*' and ending with `}' or starting with");
++          gpc_warning (" `{' and ending with `*)' are an obscure ISO Pascal feature");
+         }
+       break;
+     case NestedComments:
+       if (!co->nested_comments)
+         {
+           if (co->warn_nested_comments)
+-            warning ("comment opener found within a comment");
++            gpc_warning ("comment opener found within a comment");
+           return 0;
+         }
+       else if (Message && co->warn_nested_comments)
+-        warning ("nested comments are a GPC extension");
++        gpc_warning ("nested comments are a GPC extension");
+       break;
+     case DelphiComments:
+       if (!co->delphi_comments)
+@@ -268,7 +268,7 @@
+         }
+     }
+   if (in_string)
+-    warning ("unterminated string in compiler directive");
++    gpc_warning ("unterminated string in compiler directive");
+   *q = 0;
+   process_pascal_directive (s, q - s);
+ }
+@@ -673,9 +673,9 @@
+   if (value == ';' && co->warn_semicolon)
+     switch (last_token)
+     {
+-      case p_then: warning ("`;' after `then'"); break;
+-      case p_else: warning ("`;' after `else'"); break;
+-      case p_do:   warning ("`;' after `do'");   break;
++      case p_then: gpc_warning ("`;' after `then'"); break;
++      case p_else: gpc_warning ("`;' after `else'"); break;
++      case p_do:   gpc_warning ("`;' after `do'");   break;
+     }
+   last_token = value;
+ 
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/gpc.h gpc/p/gpc.h
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/gpc.h	2006-03-11 00:40:51.000000000 +0100
++++ gpc/p/gpc.h	2006-04-09 03:21:18.000000000 +0200
+@@ -43,11 +43,24 @@
+ 
+ #undef USE_CPPLIB          /* Not suitable for Pascal */
+ 
++#include "gbe.h"
++
+ #ifndef GCC_3_3
+ #define GTY(x)
+ #endif
+ 
+-#include "gbe.h"
++#ifdef GCC_4_1
++#define gpc_warning warning0
++#define SET_CONSTRUCTOR_ELTS(t) TREE_OPERAND (t, 0)
++#else
++#define gpc_warning warning
++#define PASCAL_SET_CONSTRUCTOR CONSTRUCTOR
++#define SET_CONSTRUCTOR_ELTS(t) CONSTRUCTOR_ELTS (t)
++#define CONSTRUCTOR_APPEND_ELT(C, I, V) do \
++  {\
++    (C) = tree_cons ((I), (V), (C));\
++  } while (0)
++#endif
+ 
+ #ifdef GCC_4_0
+ extern tree xnon_lvalue (tree x);
+@@ -382,7 +395,9 @@
+ /* IS_EXPR_CODE_CLASS ought to work, but for CONSTRUCTORS the backend overwrites
+    this field via TREE_CST_RTL. @@@@@@@@@@ Severe backend bug! This is no fix. */
+ #define HAS_EXP_ORIGINAL_CODE_FIELD(exp) \
+-  (IS_EXPR_CODE_CLASS (TREE_CODE_CLASS (TREE_CODE (exp))) && TREE_CODE (exp) != CONSTRUCTOR)
++  (IS_EXPR_CODE_CLASS (TREE_CODE_CLASS (TREE_CODE (exp))) \
++   && TREE_CODE (exp) != CONSTRUCTOR \
++   && TREE_CODE (exp) != PASCAL_SET_CONSTRUCTOR)
+ 
+ #define IS_EXPR_OR_REF_CODE_CLASS(c) (IS_EXPR_CODE_CLASS (c) || \
+                                       c == tcc_reference)
+@@ -1374,6 +1389,7 @@
+ extern void un_initialize_block (tree, int, int);
+ extern void expand_call_statement (tree);
+ extern void expand_pascal_assignment (tree, tree);
++extern void expand_pascal_assignment2 (tree, tree, int);
+ extern tree assign_set (tree, tree);
+ extern tree assign_string (tree, const tree);
+ extern void start_main_program (void);
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/gpcpp.c gpc/p/gpcpp.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/gpcpp.c	2006-02-18 14:22:58.000000000 +0100
++++ gpc/p/gpcpp.c	2006-04-06 03:35:49.000000000 +0200
+@@ -566,7 +566,7 @@
+ static U_CHAR *macarg1 (U_CHAR *, U_CHAR *, int *, int *, int *, int);
+ static int discard_comments (U_CHAR *, int, int);
+ static int change_newlines (U_CHAR *, int);
+-static void warning (const char *, ...) ATTRIBUTE_PRINTF_1;
++static void gpc_warning (const char *, ...) ATTRIBUTE_PRINTF_1;
+ static void error (const char *, ...) ATTRIBUTE_PRINTF_1;
+ static void verror (const char *, va_list);
+ static void error_from_errno (const char *);
+@@ -1348,8 +1348,8 @@
+ {
+   if (warn_mixed_comments && !inhibit_warnings)
+     {
+-      warning ("comments starting with `(*' and ending with `}' or starting with");
+-      warning (" `{' and ending with `*)' are an obscure ISO Pascal feature");
++      gpc_warning ("comments starting with `(*' and ending with `}' or starting with");
++      gpc_warning (" `{' and ending with `*)' are an obscure ISO Pascal feature");
+     }
+ }
+ 
+@@ -1357,7 +1357,7 @@
+ warn_nested_comment (void)
+ {
+   if (warn_nested_comments && !inhibit_warnings)
+-    warning (nested_comments ? "nested comments are a GPC extension" : "comment opener found within comment");
++    gpc_warning (nested_comments ? "nested comments are a GPC extension" : "comment opener found within comment");
+ }
+ 
+ /* Skip the (non-`//') comment starting at bp, handling C, Pascal,
+@@ -1550,7 +1550,7 @@
+       if (!ip->fname) {
+             /* note BP character constants */
+         if (ip->buf != beg_of_line && ((*ibp < '0' || *ibp > '9') && *ibp != '$'))
+-          warning ("preprocessing directive not recognized within macro arg");
++          gpc_warning ("preprocessing directive not recognized within macro arg");
+         goto randomchar;
+       }
+       if (ident_length)
+@@ -2438,14 +2438,14 @@
+       bp++;
+     } else if (*bp == '{') {
+       if (bp[1] == '$')
+-        warning ("ignoring Pascal style directive within C style directive");
++        gpc_warning ("ignoring Pascal style directive within C style directive");
+       ip->bufp = bp + 1;
+       skip_to_end_of_comment (ip, &ip->lineno, '}');
+       bp = ip->bufp;
+     } else if ((*bp == '\\') && bp[1] == '\n') {
+     } else if (IS_COMMENT_START (bp)) {
+       if (bp[1] == '*' && bp[2] == '$')
+-        warning ("ignoring Pascal style directive within C style directive");
++        gpc_warning ("ignoring Pascal style directive within C style directive");
+       ip->bufp = bp + 2;
+       skip_to_end_of_comment (ip, &ip->lineno, 0);
+       bp = ip->bufp;
+@@ -2567,7 +2567,7 @@
+             U_CHAR *obp = bp - 1;
+             if (*bp == '$')
+               {
+-                warning ("ignoring Pascal style directive within C style directive");
++                gpc_warning ("ignoring Pascal style directive within C style directive");
+                 *bp = ' ';
+               }
+             ip->bufp = bp;
+@@ -2591,7 +2591,7 @@
+             U_CHAR *obp = bp - 1;
+             if (*bp == '*' && bp[1] == '$')
+               {
+-                warning ("ignoring Pascal style directive within C style directive");
++                gpc_warning ("ignoring Pascal style directive within C style directive");
+                 bp[1] = ' ';
+               }
+             ip->bufp = bp + 1;
+@@ -2751,12 +2751,12 @@
+          conditionals. So, just don't allow such things ... */
+       if (*p == '{' && p[1] == '$')
+         {
+-          warning ("ignoring compiler directive within another directive");
++          gpc_warning ("ignoring compiler directive within another directive");
+           p[1] = ' ';
+         }
+       if (*p == '(' && p[1] == '*' && p[2] == '$')
+         {
+-          warning ("ignoring compiler directive within another directive");
++          gpc_warning ("ignoring compiler directive within another directive");
+           p[2] = ' ';
+         }
+       if (IS_COMMENT_START2 (p))
+@@ -3353,7 +3353,7 @@
+       f = open (fname, O_RDONLY, 0666);
+ #ifdef EACCES
+       if (f == -1 && errno == EACCES)
+-        warning ("header file %s exists, but is not readable", fname);
++        gpc_warning ("header file %s exists, but is not readable", fname);
+ #endif
+       if (f >= 0)
+         break;
+@@ -3540,7 +3540,7 @@
+           bp++;
+           SKIP_WHITE_SPACE (bp);
+         } else
+-          warning ("missing white space after `$define %.*s'",
++          gpc_warning ("missing white space after `$define %.*s'",
+                    sym_length, symname);
+       }
+     /* Now everything from bp before limit is the definition. */
+@@ -3992,7 +3992,7 @@
+     /* If we are generating additional info for debugging (with -g) we
+        need to pass through all effective #undef directives. */
+     if (hp->type != T_MACRO)
+-      warning ("undefining `%s'", hp->name);
++      gpc_warning ("undefining `%s'", hp->name);
+     delete_macro (hp);
+   }
+   if (pedantic) {
+@@ -4030,7 +4030,7 @@
+   memcpy ((char *) copy, (char *) buf, length);
+   copy[length] = 0;
+   SKIP_WHITE_SPACE (copy);
+-  warning ("#warning %s", copy);
++  gpc_warning ("#gpc_warning %s", copy);
+   return 0;
+ }
+ 
+@@ -5711,7 +5711,7 @@
+ 
+ /* Print warning. */
+ static void
+-warning (const char *msg, ...)
++gpc_warning (const char *msg, ...)
+ {
+   va_list args;
+   va_start (args, msg);
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/lang.c gpc/p/lang.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/lang.c	2006-03-24 02:47:15.000000000 +0100
++++ gpc/p/lang.c	2006-04-06 03:35:49.000000000 +0200
+@@ -178,7 +178,7 @@
+         res = build (COMPOUND_EXPR, TREE_TYPE (res),
+                        current_statement_list, res);
+         current_statement_list = save_statement_list;
+-        unshare_all_trees (res);
++        res = unshare_expr (res);
+       }
+       break;
+ 
+@@ -200,15 +200,16 @@
+           DECL_INITIAL (new_var) = TREE_OPERAND (t, 0);
+ 
+           TREE_OPERAND (t, 0) = new_var;
++          recompute_tree_invarant_for_addr_expr (t);
+           return GS_ALL_DONE;
+         }
+       return GS_UNHANDLED;
+ 
+-    case CONSTRUCTOR:
++    case PASCAL_SET_CONSTRUCTOR:
+       if (TREE_CODE (TREE_TYPE (t)) == SET_TYPE)
+         {
+           tree type = TREE_TYPE (t);
+-          tree elt = CONSTRUCTOR_ELTS (t);
++          tree elt = SET_CONSTRUCTOR_ELTS (t);
+           tree domain = TYPE_DOMAIN (type);
+           tree domain_min = convert (sbitsizetype, TYPE_MIN_VALUE (domain));
+           tree domain_max = convert (sbitsizetype, TYPE_MAX_VALUE (domain));
+@@ -690,6 +691,7 @@
+ #define flag_objc 0
+ #define flag_isoc99 0
+ #define rs6000_cpu_cpp_builtins(foo)
++#define darwin_cpp_builtins(foo)
+ #endif
+ 
+ #ifdef GCC_3_4
+@@ -1204,7 +1206,7 @@
+     DECL_COMMON (*node) = 0;
+   else
+     {
+-      warning ("`%s' attribute ignored", IDENTIFIER_POINTER (name));
++      gpc_warning ("`%s' attribute ignored", IDENTIFIER_POINTER (name));
+       *no_add_attrs = true;
+     }
+ 
+@@ -1221,7 +1223,7 @@
+     DECL_COMMON (*node) = 1;
+   else
+     {
+-      warning ("`%s' attribute ignored", IDENTIFIER_POINTER (name));
++      gpc_warning ("`%s' attribute ignored", IDENTIFIER_POINTER (name));
+       *no_add_attrs = true;
+     }
+ 
+@@ -1247,7 +1249,7 @@
+                              TREE_READONLY (TREE_TYPE (type)), 1));
+   else
+     {
+-      warning ("`%s' attribute ignored", IDENTIFIER_POINTER (name));
++      gpc_warning ("`%s' attribute ignored", IDENTIFIER_POINTER (name));
+       *no_add_attrs = true;
+     }
+ 
+@@ -1272,7 +1274,7 @@
+         TREE_USED (decl) = 1;
+       else
+         {
+-          warning ("`%s' attribute ignored", IDENTIFIER_POINTER (name));
++          gpc_warning ("`%s' attribute ignored", IDENTIFIER_POINTER (name));
+           *no_add_attrs = true;
+         }
+     }
+@@ -1305,7 +1307,7 @@
+                              TREE_THIS_VOLATILE (TREE_TYPE (type))));
+   else
+     {
+-      warning ("`%s' attribute ignored", IDENTIFIER_POINTER (name));
++      gpc_warning ("`%s' attribute ignored", IDENTIFIER_POINTER (name));
+       *no_add_attrs = true;
+     }
+ 
+@@ -1491,7 +1493,7 @@
+     }
+   else
+     {
+-      warning ("`%s' attribute ignored", IDENTIFIER_POINTER (name));
++      gpc_warning ("`%s' attribute ignored", IDENTIFIER_POINTER (name));
+       *no_add_attrs = true;
+     }
+ 
+@@ -1563,7 +1565,10 @@
+ #define LANG_HOOKS_TYPE_FOR_MODE type_for_mode
+ 
+ #define LANG_HOOKS_MARK_ADDRESSABLE pascal_mark_addressable
++
++#ifndef GCC_4_1
+ #define LANG_HOOKS_TRUTHVALUE_CONVERSION truthvalue_conversion
++#endif
+ 
+ #undef LANG_HOOKS_DUP_LANG_SPECIFIC_DECL
+ #define LANG_HOOKS_DUP_LANG_SPECIFIC_DECL copy_decl_lang_specific
+@@ -1588,6 +1593,44 @@
+ #undef LANG_HOOKS_TYPES_COMPATIBLE_P
+ #define LANG_HOOKS_TYPES_COMPATIBLE_P pascal_types_compatible_p
+ 
++#ifdef GCC_4_1
++#undef LANG_HOOKS_INIT_TS
++#define LANG_HOOKS_INIT_TS pascal_init_ts
++#undef LANG_HOOKS_EXPAND_CONSTANT
++#define LANG_HOOKS_EXPAND_CONSTANT pascal_expand_constant
++
++static tree
++pascal_expand_constant (tree t)
++{
++  tree nt;
++  if (TREE_CODE (t) == PASCAL_SET_CONSTRUCTOR)
++    {
++      HOST_WIDE_INT len = int_size_in_bytes (TREE_TYPE (t));
++      char *tmp = xmalloc (len);
++      if (!get_set_constructor_bytes (t, (unsigned char *) tmp, len))
++        {
++          nt = build_string (len, tmp);
++          gcc_assert (TREE_INT_CST_LOW (TYPE_SIZE (char_type_node)) == 8);
++          TREE_TYPE (nt) = build_simple_array_type (char_type_node,
++                              build_index_type (build_int_2 (len, 0)));
++          t = build1 (VIEW_CONVERT_EXPR, TREE_TYPE (t), nt);
++        }
++    }
++  return t;
++}
++
++static void
++pascal_init_ts (void)
++{
++  tree_contains_struct[NAMESPACE_DECL][TS_DECL_COMMON] = 1;
++  tree_contains_struct[OPERATOR_DECL][TS_DECL_COMMON] = 1;
++  tree_contains_struct[NAMESPACE_DECL][TS_DECL_MINIMAL] = 1;
++  tree_contains_struct[OPERATOR_DECL][TS_DECL_MINIMAL] = 1;
++}
++
++#endif
++
++
+ int 
+ pascal_types_compatible_p (tree t1, tree t2)
+ {
+@@ -1763,14 +1806,14 @@
+           if (TYPE_P (node))
+             *anode = type = build_type_copy (type);
+           if (!valid_machine_attribute (name, args, decl, type))
+-            warning ("`%s' attribute directive ignored", IDENTIFIER_NAME (name));
++            gpc_warning ("`%s' attribute directive ignored", IDENTIFIER_NAME (name));
+           else if (decl)
+             type = TREE_TYPE (decl);
+           continue;
+         }
+       else if (attrtab[i].decl_req && !decl)
+         {
+-          warning ("`%s' attribute does not apply to types", IDENTIFIER_NAME (name));
++          gpc_warning ("`%s' attribute does not apply to types", IDENTIFIER_NAME (name));
+           continue;
+         }
+       else if (list_length (args) < attrtab[i].min || list_length (args) > attrtab[i].max)
+@@ -1787,14 +1830,14 @@
+           if (TREE_CODE (decl) == VAR_DECL)
+             DECL_COMMON (decl) = 0;
+           else
+-            warning ("`%s' attribute ignored", IDENTIFIER_NAME (name));
++            gpc_warning ("`%s' attribute ignored", IDENTIFIER_NAME (name));
+           break;
+ 
+         case A_COMMON:
+           if (TREE_CODE (decl) == VAR_DECL)
+             DECL_COMMON (decl) = 1;
+           else
+-            warning ("`%s' attribute ignored", IDENTIFIER_NAME (name));
++            gpc_warning ("`%s' attribute ignored", IDENTIFIER_NAME (name));
+           break;
+ 
+         case A_NORETURN:
+@@ -1804,7 +1847,7 @@
+             TREE_TYPE (decl) = type = build_pointer_type (p_build_type_variant (TREE_TYPE (type),
+               TREE_READONLY (TREE_TYPE (type)), 1));
+           else
+-            warning ("`%s' attribute ignored", IDENTIFIER_NAME (name));
++            gpc_warning ("`%s' attribute ignored", IDENTIFIER_NAME (name));
+           break;
+ 
+         case A_UNUSED:
+@@ -1817,7 +1860,7 @@
+                    || TREE_CODE (decl) == FUNCTION_DECL)
+             TREE_USED (decl) = 1;
+           else
+-            warning ("`%s' attribute ignored", IDENTIFIER_NAME (name));
++            gpc_warning ("`%s' attribute ignored", IDENTIFIER_NAME (name));
+           break;
+ 
+         case A_CONST:
+@@ -1827,7 +1870,7 @@
+             TREE_TYPE (decl) = type = build_pointer_type (p_build_type_variant (TREE_TYPE (type),
+               1, TREE_THIS_VOLATILE (TREE_TYPE (type))));
+           else
+-            warning ("`%s' attribute ignored", IDENTIFIER_NAME (name));
++            gpc_warning ("`%s' attribute ignored", IDENTIFIER_NAME (name));
+           break;
+ 
+         case A_SECTION:
+@@ -1905,7 +1948,7 @@
+               assemble_alias (decl, id);
+             }
+           else
+-            warning ("`%s' attribute ignored", IDENTIFIER_NAME (name));
++            gpc_warning ("`%s' attribute ignored", IDENTIFIER_NAME (name));
+           break;
+       }
+     }
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/module.c gpc/p/module.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/module.c	2006-03-24 20:09:49.000000000 +0100
++++ gpc/p/module.c	2006-04-11 01:27:35.459338992 +0200
+@@ -38,6 +38,12 @@
+ #define HOST_PTR_PRINTF_CAST_TYPE HOST_WIDE_INT
+ #endif
+ 
++#ifdef GCC_4_1
++#define GPC_HOST_PTR_PRINTF "%p"
++#else
++#define GPC_HOST_PTR_PRINTF HOST_PTR_PRINTF
++#endif
++
+ #ifdef EGCS97
+ 
+ /* By default there is no special suffix for target executables.  */
+@@ -92,7 +98,7 @@
+ 
+ #endif
+ 
+-typedef struct
++typedef struct MEMFILE
+ {
+   char *filename;
+   size_t size, curpos;
+@@ -283,6 +289,8 @@
+ /* Options to pass to child gpc processes in automake. */
+ static char *automake_gpc_options = NULL;
+ 
++enum itab_state { ITAB_LOADING, ITAB_COMPLETE };
++
+ /* A table holding the nodes imported from all GPI files
+    together with their UIDs, so duplicates can be identified. */
+ struct interface_table_t GTY(())
+@@ -294,6 +302,9 @@
+   tree initializers;  /* Same as in module_t. Predefined interfaces
+                          (StandardInput etc.) have no initializer. */
+   int count;
++  struct MEMFILE * GTY((skip(""))) infile; /* Input file during reading */
++  gpi_int * GTY((skip(""))) offsets; /* Offsets of node data during reading */
++  enum itab_state state;
+   tree * GTY((length ("%h.count"))) nodes;
+   int * GTY((length ("%h.count"))) hashlist_next;
+   int hash_table[MAX_HASH_TABLE];
+@@ -393,7 +404,7 @@
+                        IDENTIFIER_NAME (id),
+                        current_module->main_program ? "program" : "module");
+             else
+-              warning (
++              gpc_warning (
+                 "identifier `%s' in %s heading is not a variable of file type",
+                 IDENTIFIER_NAME (id),
+                 current_module->main_program ? "program" : "module");
+@@ -467,7 +478,7 @@
+   if (!id)
+     {
+       if (!co->pascal_dialect)
+-        warning ("missing program header");
++        gpc_warning ("missing program header");
+       else  /* BP does not even warn */
+         chk_dialect ("programs without program header are", B_D_PASCAL);
+       id = get_identifier ("noname");
+@@ -544,8 +555,8 @@
+     create_gpi_files ();
+   if (co->interface_only)
+     exit_compilation ();
+-  if (co->implementation_only)
+-    {
++//  if (co->implementation_only)
++//    {
+       /* Make sure that interface nodes keep their identity by reloading the
+          GPI files previously created (presumably) with `--interface_only'. This
+          is the same as with separate interface and implementation modules. */
+@@ -555,7 +566,7 @@
+       current_module = m;
+       pushlevel (0);
+       load_own_interface (0);
+-    }
++//    }
+   current_module->implementation = 1;
+ }
+ 
+@@ -563,7 +574,7 @@
+ finalize_module (int implementation_follows)
+ {
+   if (co->implementation_only && co->automake_level)
+-    warning ("`--automake' together with `--implementation-only' can cause problems");
++    gpc_warning ("`--automake' together with `--implementation-only' can cause problems");
+   if (errorcount || sorrycount)
+     exit_compilation ();
+   if (!implementation_follows /* && !co->implementation_only */)
+@@ -742,7 +753,7 @@
+           if (*p == ')')
+             p++;
+           else
+-            warning ("missing `)' in `--uses' parameter");
++            gpc_warning ("missing `)' in `--uses' parameter");
+           file_name = build_string_constant (buffer, q - buffer, 0);
+         }
+       else
+@@ -755,7 +766,7 @@
+                   || (*p == '_')))
+         {
+           if (*p != ',')
+-            warning ("missing `,' in `--uses' parameter");
++            gpc_warning ("missing `,' in `--uses' parameter");
+           p++;
+         }
+     }
+@@ -1862,9 +1873,11 @@
+     {
+       tree t = rb.nodes[n];
+       if (t && (TREE_CODE (t) == FUNCTION_DECL || (TREE_CODE (t) == VAR_DECL))
+-/* #ifndef GCC_4_0 */
++#ifndef GCC_4_0 
+           && !DECL_RTL_SET_P (t)
+-/* #endif */
++#else
++          && !PASCAL_DECL_IMPORTED (t)
++#endif
+           )
+         {
+           if (!module_interface)
+@@ -1878,26 +1891,19 @@
+                 DECL_INITIAL (t) = NULL_TREE;
+ #endif
+             }
+-#if 0
++#ifdef GCC_4_0
+           else
+             {
+-              mark_decl_referenced (t);
++              if (TREE_CODE (t) == VAR_DECL)
++                rest_of_decl_compilation (t, 1, 0);
++//              mark_decl_referenced (t);
+             }
+ #endif
+           PASCAL_DECL_WEAK (t) = 0;
+           PASCAL_DECL_IMPORTED (t) = 1;
+-          if (module_interface && TREE_CODE (t) == VAR_DECL
+-              && DECL_INITIAL (t))
+-            {
+-#if 0
+-              fprintf (stderr, "DECL_INITIAL (%p)\n", t);
+-              debug_tree (t);
+-              debug_tree (DECL_INITIAL (t));
+-#endif
+-            }
+ #ifdef GCC_4_0
+           /* @@@@@@@ Otherwise we have problems with vmt */
+-          rest_of_decl_compilation (t, 1, 0);
++//          rest_of_decl_compilation (t, 1, 0);
+ #else
+           rest_of_decl_compilation (t, NULL, 1, 1);
+ #endif
+@@ -1968,8 +1974,12 @@
+ #else
+ #define DECL_FLAGS_SIZE 6
+ #endif
++#ifndef GCC_4_1
+ #define DECL_EXTRA_STORED(t) (t->decl.u1.i)
+ #else
++#define DECL_EXTRA_STORED(t) (t->decl_common.u1.i)
++#endif
++#else
+ #ifdef EGCS
+ #define DECL_FLAGS_SIZE 5
+ #else
+@@ -2049,7 +2059,7 @@
+       if (code == INTERFACE_NAME_NODE)
+         {
+           fprintf (stderr, " <interface_name_node ");
+-          fprintf (stderr, HOST_PTR_PRINTF, (HOST_PTR_PRINTF_CAST_TYPE) t);
++          fprintf (stderr, GPC_HOST_PTR_PRINTF, (HOST_PTR_PRINTF_CAST_TYPE) t);
+           fprintf (stderr, " %s module %s checksum %lu>\n",
+                    IDENTIFIER_NAME (INTERFACE_TABLE (t)->interface_name),
+                    IDENTIFIER_NAME (INTERFACE_TABLE (t)->module_name),
+@@ -2078,7 +2088,10 @@
+         gpi_int n;
+         store_length ((&DECL_SIZE (t)) + 1, DECL_FLAGS_SIZE);
+         STORE_ANY (DECL_EXTRA_STORED (t));
+-        store_node (DECL_NAME (t));
++#ifdef  GCC_4_1
++        if (CODE_CONTAINS_STRUCT (code, TS_DECL_MINIMAL))
++#endif
++          store_node (DECL_NAME (t));
+         store_string (DECL_SOURCE_FILE (t));
+         n = DECL_SOURCE_LINE (t);
+         STORE_ANY (n);
+@@ -2088,8 +2101,13 @@
+ #ifdef EGCS97
+         store_node (DECL_SIZE_UNIT (t));
+ #endif
+-        n = DECL_ALIGN (t);
+-        STORE_ANY (n);
++#ifdef GCC_4_1
++        if (code != FUNCTION_DECL)
++#endif
++          {
++            n = DECL_ALIGN (t);
++            STORE_ANY (n);
++          }
+         break;
+       }
+     case tcc_constant:
+@@ -2343,6 +2361,24 @@
+       store_node (TREE_TYPE (t));
+       break;
+ 
++#ifdef GCC_4_1
++    case CONSTRUCTOR:
++      {
++        VEC(constructor_elt,gc) *elts = CONSTRUCTOR_ELTS (t);
++        tree index, value;
++        unsigned HOST_WIDE_INT ix;
++        store_node (TREE_TYPE (t));
++        ix = VEC_length (constructor_elt, elts);
++        STORE_ANY (ix);
++        FOR_EACH_CONSTRUCTOR_ELT (elts, ix, index, value)
++          {
++            store_node (index);
++            store_node (value);
++          }
++      }
++      break;
++#endif
++      
+     default:
+ #ifdef GCC_4_0
+       gcc_assert (class_done);
+@@ -2590,7 +2626,10 @@
+         char *s;
+         LOAD_LENGTH ((&DECL_SIZE (t)) + 1, DECL_FLAGS_SIZE);
+         LOAD_ANY (DECL_EXTRA_STORED (t));
+-        DECL_NAME (t) = load_node ();
++#ifdef  GCC_4_1
++        if (CODE_CONTAINS_STRUCT (code, TS_DECL_MINIMAL))
++#endif
++          DECL_NAME (t) = load_node ();
+         s = load_string (rb.infile);
+         DECL_SOURCE_FILE (t) = PERMANENT_STRING (s);
+         free (s);
+@@ -2602,9 +2641,17 @@
+ #ifdef EGCS97
+         DECL_SIZE_UNIT (t) = load_node ();
+ #endif
+-        LOAD_ANY (n);
+-        DECL_ALIGN (t) = n;
+-        DECL_IN_SYSTEM_HEADER (t) = 1;
++#ifdef GCC_4_1
++        if (code != FUNCTION_DECL)
++#endif
++          {
++            LOAD_ANY (n);
++            DECL_ALIGN (t) = n;
++          }
++#ifdef GCC_4_1
++        if (CODE_CONTAINS_STRUCT (code, TS_DECL_WITH_VIS))
++#endif
++          DECL_IN_SYSTEM_HEADER (t) = 1;
+         break;
+       }
+     case tcc_constant:
+@@ -2649,7 +2696,7 @@
+         if (co->debug_gpi)
+           {
+             fprintf (stderr, "GPI loaded <%i>:\n <interface_name_node ", (int) uid);
+-            fprintf (stderr, HOST_PTR_PRINTF, (HOST_PTR_PRINTF_CAST_TYPE) t);
++            fprintf (stderr, GPC_HOST_PTR_PRINTF, (HOST_PTR_PRINTF_CAST_TYPE) t);
+             fprintf (stderr, " %s module %s checksum %lu>\n",
+                      IDENTIFIER_NAME (i),
+                      IDENTIFIER_NAME (m),
+@@ -2832,7 +2879,9 @@
+       TREE_TYPE (t) = load_node ();
+       DECL_ARG_TYPE (t) = load_node ();
+       DECL_CONTEXT (t) = load_node ();
++#ifndef GCC_4_1
+       SET_DECL_ASSEMBLER_NAME (t, DECL_NAME (t));
++#endif
+       break;
+ 
+     case FIELD_DECL:
+@@ -2895,6 +2944,27 @@
+       TREE_TYPE (t) = load_node ();
+       break;
+ 
++#ifdef GCC_4_1
++    case CONSTRUCTOR:
++      {
++        VEC(constructor_elt,gc) *elts = 0;
++        tree index, value;
++        unsigned HOST_WIDE_INT ix;
++        TREE_TYPE (t) = load_node ();
++        LOAD_ANY (ix);
++        while (ix > 0)
++          {
++            index = load_node ();
++            value = load_node ();
++            CONSTRUCTOR_APPEND_ELT (elts, index, value);
++            ix--;
++          }
++        CONSTRUCTOR_ELTS (t) = elts;
++      }
++      break;
++#endif
++
++
+     default:
+       break;
+   }
+@@ -2962,7 +3032,7 @@
+           for (q = n; *q; q++)
+             *q = TOLOWER (*q);
+           if (strcmp (f, n) && strcmp (n + strlen (n) - 4, "-all"))
+-            warning ("interface `%s' in file name `%s'", IDENTIFIER_NAME (name), plain_input_filename);
++            gpc_warning ("interface `%s' in file name `%s'", IDENTIFIER_NAME (name), plain_input_filename);
+         }
+ 
+       /* Store names of interfaces imported by this module */
+@@ -3207,7 +3277,7 @@
+                     if (!itab_check_gpi_checksum (interface, checksum, 0))
+                       {
+                         if (co->debug_automake)
+-                          warning ("`%s' must be recompiled because of checksum mismatch in %s", name, str);
++                          gpc_warning ("`%s' must be recompiled because of checksum mismatch in %s", name, str);
+                         must_recompile = 1;
+                       }
+                     for (imported = current_module->imports; imported; imported = TREE_CHAIN (imported))
+@@ -3278,7 +3348,7 @@
+                     }
+ #if 0
+                   else if (implementation_flag)
+-                    warning ("duplicate implementation flag in GPI file `%s'", name);
++                    gpc_warning ("duplicate implementation flag in GPI file `%s'", name);
+ #endif
+                   implementation_flag = 1;
+                   break;
+@@ -3335,7 +3405,7 @@
+         }
+       if (errstr)
+         {
+-          warning (errstr, name);
++          gpc_warning (errstr, name);
+           module_filename = NULL;
+           must_recompile = 1;
+         }
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/objects.c gpc/p/objects.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/objects.c	2006-03-24 06:03:26.000000000 +0100
++++ gpc/p/objects.c	2006-04-09 21:28:12.000000000 +0200
+@@ -455,7 +455,7 @@
+             if (IDENTIFIER_IS_BUILT_IN (TREE_VALUE (cp), p_virtual))
+               {
+                 if (co->methods_always_virtual)
+-                  warning ("explicit `virtual' given with `--methods-always-virtual'");
++                  gpc_warning ("explicit `virtual' given with `--methods-always-virtual'");
+                 virtual = 1;
+                 nv++;
+                 if (TREE_PURPOSE (cp))
+@@ -568,7 +568,7 @@
+             if (PEDANTIC (B_D_PASCAL))  /* forbidden by OOE */
+               error ("%s `%s' conflicts with ancestor type name", i ? "method" : "field", IDENTIFIER_NAME (DECL_NAME (field)));
+             else
+-              warning ("%s `%s' conflicts with ancestor type name", i ? "method" : "field", IDENTIFIER_NAME (DECL_NAME (field)));
++              gpc_warning ("%s `%s' conflicts with ancestor type name", i ? "method" : "field", IDENTIFIER_NAME (DECL_NAME (field)));
+           }
+       }
+ 
+@@ -637,7 +637,7 @@
+                       if (pedantic || !(co->pascal_dialect & B_D_PASCAL))
+                         error ("%s method `%s', overrides %s method", descr[p2], IDENTIFIER_NAME (DECL_NAME (*dm)), descr[p1]);
+                       else
+-                        warning ("%s method `%s', overrides %s method", descr[p2], IDENTIFIER_NAME (DECL_NAME (*dm)), descr[p1]);
++                        gpc_warning ("%s method `%s', overrides %s method", descr[p2], IDENTIFIER_NAME (DECL_NAME (*dm)), descr[p1]);
+                     }
+                   if (PASCAL_VIRTUAL_METHOD (*pm))
+                     {
+@@ -648,12 +648,12 @@
+                         }
+                       if (PASCAL_TYPE_IOCRITICAL (TREE_TYPE (*dm))
+                           && !PASCAL_TYPE_IOCRITICAL (TREE_TYPE (*pm)))
+-                        warning ("iocritical virtual method overrides non-iocritical one");
++                        gpc_warning ("iocritical virtual method overrides non-iocritical one");
+                     }
+                   if (PASCAL_VIRTUAL_METHOD (*pm) && !PASCAL_VIRTUAL_METHOD (*dm))
+                     {
+                       /* Overridden virtual methods must be virtual. */
+-                      warning ("method `%s' is virtual", IDENTIFIER_NAME (DECL_NAME (*dm)));
++                      gpc_warning ("method `%s' is virtual", IDENTIFIER_NAME (DECL_NAME (*dm)));
+                       PASCAL_VIRTUAL_METHOD (*dm) = 1;
+                     }
+                   /* If a virtual method overrides a non-virtual one, we must
+@@ -662,7 +662,7 @@
+                   if (!PASCAL_VIRTUAL_METHOD (*pm) && PASCAL_VIRTUAL_METHOD (*dm))
+                     {
+                       if (PEDANTIC (B_D_PASCAL) || co->pascal_dialect == 0)
+-                        warning ("virtual method overrides non-virtual one");
++                        gpc_warning ("virtual method overrides non-virtual one");
+                       *pm = TREE_CHAIN (*pm);
+                       continue;
+                     }
+@@ -782,8 +782,8 @@
+                   TYPE_LANG_CODE (type) = PASCAL_LANG_ABSTRACT_OBJECT;
+                   if (co->warn_implicit_abstract)
+                     {
+-                      warning ("object type `%s' is implicitly abstract because", object_name);
+-                      warning (" it contains abstract method `%s'", IDENTIFIER_NAME (DECL_NAME (field)));
++                      gpc_warning ("object type `%s' is implicitly abstract because", object_name);
++                      gpc_warning (" it contains abstract method `%s'", IDENTIFIER_NAME (DECL_NAME (field)));
+                     }
+                 }
+               method = convert (ptr_type_node, integer_zero_node);
+@@ -800,12 +800,12 @@
+       /* Set `Size' and `NegatedSize' to 0 for abstract objects */
+       TREE_VALUE (vmt_entry) = TREE_VALUE (TREE_CHAIN (vmt_entry)) = size_zero_node;
+       if (co->warn_inherited_abstract && parent && TYPE_LANG_CODE (parent) != PASCAL_LANG_ABSTRACT_OBJECT)
+-        warning ("abstract object type `%s' inherits from non-abstract type `%s'",
++        gpc_warning ("abstract object type `%s' inherits from non-abstract type `%s'",
+                  object_name, IDENTIFIER_NAME (DECL_NAME (TYPE_NAME (parent))));
+     }
+   else if (has_virtual_method && !has_constructor && !is_class
+            /* && (co->pascal_dialect & B_D_PASCAL) */)
+-    warning ("object type has virtual method, but no constructor");
++    gpc_warning ("object type has virtual method, but no constructor");
+ 
+   /* Now create a global var declaration (also for abstract types,
+      for `is', `as' and explicit parent type access via VMT).
+@@ -816,13 +816,14 @@
+     build_tree_list (NULL_TREE, vmt_entry), VQ_IMPLICIT | VQ_CONST |
+       (current_module->implementation ? VQ_STATIC : 0));
+ 
+-#ifdef GCC_4_0
++#if 0 /* def GCC_4_0 */
+   if (current_module->implementation || !(co->interface_only))
+     {
+       mark_decl_referenced (TYPE_LANG_VMT_VAR (type));
+       make_decl_rtl (TYPE_LANG_VMT_VAR (type));
+     }
+ #endif
++
+   /* Attach VMT_TYPE to the implicit VMT field of the object.
+      (Until here it still has the inherited type or ^void type.)
+      We also need this for abstract types because their methods
+@@ -977,16 +978,16 @@
+         {
+           if (op == p_is)
+             {
+-              warning ("`is' always yields `True' if the right operand");
+-              warning (" is the declared type of the left operand.");
++              gpc_warning ("`is' always yields `True' if the right operand");
++              gpc_warning (" is the declared type of the left operand.");
+               if (TREE_SIDE_EFFECTS (left))
+-                warning (" Operand with side-effects is not evaluated.");
++                gpc_warning (" Operand with side-effects is not evaluated.");
+               return boolean_true_node;
+             }
+           else
+             {
+-              warning ("`as' has no effect if the right operand is");
+-              warning (" the declared type of the left operand");
++              gpc_warning ("`as' has no effect if the right operand is");
++              gpc_warning (" the declared type of the left operand");
+               return oleft;
+             }
+         }
+@@ -999,10 +1000,10 @@
+         {
+           if (op == p_is)
+             {
+-              warning ("`is' always yields `False' if the left operand is not");
+-              warning (" polymorphic and the right operand is not its type");
++              gpc_warning ("`is' always yields `False' if the left operand is not");
++              gpc_warning (" polymorphic and the right operand is not its type");
+               if (TREE_SIDE_EFFECTS (left))
+-                warning (" Operand with side-effects is not evaluated.");
++                gpc_warning (" Operand with side-effects is not evaluated.");
+               return boolean_false_node;
+             }
+           else
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/options.c gpc/p/options.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/options.c	2006-03-03 20:14:31.000000000 +0100
++++ gpc/p/options.c	2006-04-06 06:58:40.000000000 +0200
+@@ -308,7 +308,7 @@
+     }
+   else if (OPT ("-fdisable-debug-info"))
+     {
+-      warning ("`--disable-debug-info' is a temporary work-around; it may disappear in the future");
++      gpc_warning ("`--disable-debug-info' is a temporary work-around; it may disappear in the future");
+       if (write_symbols == SDB_DEBUG)  /* Not all debug formats like to be reset */
+         write_symbols = NO_DEBUG;
+       debug_info_level = DINFO_LEVEL_NONE;
+@@ -454,7 +454,7 @@
+     {
+       int limit = strtoint (arg, strlen (arg));
+       if (limit <= 0)
+-        warning ("invalid specified set limit %s.", arg);
++        gpc_warning ("invalid specified set limit %s.", arg);
+       else
+         co->set_limit = limit;
+     }
+@@ -682,7 +682,7 @@
+     name[--length] = 0;
+   if (length == 0)
+     {
+-      warning ("empty Pascal compiler directive");
++      gpc_warning ("empty Pascal compiler directive");
+       return 1;
+     }
+   if (length == 2 && (name[1] == '+' || name[1] == '-'))
+@@ -700,12 +700,12 @@
+           else
+             long_name = short_option->inverted_long_name;
+           if (long_name[1] == '#')
+-            warning ("directive `{$%s}' not yet implemented", name);
++            gpc_warning ("directive `{$%s}' not yet implemented", name);
+           else if (long_name[1] == '!')
+             {
+               /* BP-style directive. In BP mode, ignore it for compatibility. */
+               if (pedantic || !(co->pascal_dialect & U_B_D_PASCAL))
+-                warning ("ignoring BP directive `{$%s}' which is unnecessary in GPC", name);
++                gpc_warning ("ignoring BP directive `{$%s}' which is unnecessary in GPC", name);
+             }
+           else if (!pascal_decode_option (1, &long_name))
+             error ("internal problem: unknown short option expansion `%s'", long_name);
+@@ -808,7 +808,7 @@
+       case 'o':
+       case 's':
+         if (pedantic || !(co->pascal_dialect & U_B_D_PASCAL))
+-          warning ("ignoring BP directive `{$%s}' which is unnecessary in GPC", name);
++          gpc_warning ("ignoring BP directive `{$%s}' which is unnecessary in GPC", name);
+         return 1;
+       /* One-letter directive already handled by the preprocessor */
+       case 'i':
+@@ -929,7 +929,7 @@
+           }
+         return 1;
+     }
+-  warning ("unknown compiler directive `%s'", name);
++  gpc_warning ("unknown compiler directive `%s'", name);
+   return 1;
+ }
+ 
+@@ -1026,14 +1026,14 @@
+       if (error_flag)
+         error ("%s", buf);
+       else
+-        warning ("%s", buf);
++        gpc_warning ("%s", buf);
+       *p = ' ';
+       buf = p;  /* including the leading space */
+     }
+   if (error_flag)
+     error ("%s", buf);
+   else
+-    warning ("%s", buf);
++    gpc_warning ("%s", buf);
+ }
+ 
+ void
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/p-tree.def gpc/p/p-tree.def
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/p-tree.def	2006-03-03 20:14:31.000000000 +0100
++++ gpc/p/p-tree.def	2006-04-06 06:58:40.000000000 +0200
+@@ -36,6 +36,9 @@
+ DEFTREECODE (RANGE_CHECK_EXPR, "range_check_expr", tcc_expression, 3)
+ DEFTREECODE (IO_RANGE_CHECK_EXPR, "io_range_check_expr", tcc_expression, 3)
+ DEFTREECODE (IN_EXPR, "in_expr", tcc_binary, 2)
++#ifdef GCC_4_1
++DEFTREECODE (PASCAL_SET_CONSTRUCTOR, "pascal_set_constructor", tcc_expression, 1)
++#endif
+ #else
+ #ifdef EGCS
+ DEFTREECODE (OPERATOR_DECL, "operator_decl", 'd', 0)
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/parse.c gpc/p/parse.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/parse.c	2006-03-24 02:52:27.000000000 +0100
++++ gpc/p/parse.c	2006-04-06 05:37:44.000000000 +0200
+@@ -5214,7 +5214,7 @@
+ 
+   case 60:
+ #line 378 "parse.y"
+-    { warning ("missing semicolon"); yyerrok; ;}
++    { gpc_warning ("missing semicolon"); yyerrok; ;}
+     break;
+ 
+   case 61:
+@@ -5284,7 +5284,7 @@
+ 
+   case 81:
+ #line 436 "parse.y"
+-    { warning ("missing semicolon"); yyerrok; ;}
++    { gpc_warning ("missing semicolon"); yyerrok; ;}
+     break;
+ 
+   case 82:
+@@ -5419,7 +5419,7 @@
+ 
+   case 120:
+ #line 548 "parse.y"
+-    { warning ("missing comma"); yyerrok; ;}
++    { gpc_warning ("missing comma"); yyerrok; ;}
+     break;
+ 
+   case 121:
+@@ -5731,7 +5731,7 @@
+         tree t = build_pascal_pointer_type (make_node (LANG_TYPE));
+         PASCAL_TYPE_CLASS (t) = 1;
+         build_type_decl ((((yyGLRStackItem const *)yyvsp)[YYFILL (-4)].yystate.yysemantics.yysval.ttype), t, NULL_TREE);
+-        warning("ignored parent in Delphi forward class declaration");
++        gpc_warning ("ignored parent in Delphi forward class declaration");
+       ;}
+     break;
+ 
+@@ -6710,7 +6710,7 @@
+ #line 1528 "parse.y"
+     {
+         if (!(((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.itype) && extra_warnings)
+-          warning ("empty statement after `else'");
++          gpc_warning ("empty statement after `else'");
+         expand_end_cond ();
+       ;}
+     break;
+@@ -6849,7 +6849,7 @@
+ #line 1608 "parse.y"
+     {
+         if (!(((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.itype) && extra_warnings)
+-          warning ("empty statement after `then'");
++          gpc_warning ("empty statement after `then'");
+       ;}
+     break;
+ 
+@@ -7988,7 +7988,7 @@
+ 
+   case 795:
+ #line 2396 "parse.y"
+-    { warning ("missing `.' at the end of program/unit/module"); ;}
++    { gpc_warning ("missing `.' at the end of program/unit/module"); ;}
+     break;
+ 
+   case 796:
+@@ -9544,7 +9544,7 @@
+ #if YYDEBUG != 0
+   yydebug = value;
+ #else
+-  warning ("YYDEBUG not defined.");
++  gpc_warning ("YYDEBUG not defined.");
+ #endif
+ }
+ 
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/parse.y gpc/p/parse.y
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/parse.y	2006-03-24 02:47:15.000000000 +0100
++++ gpc/p/parse.y	2006-04-06 03:35:49.000000000 +0200
+@@ -375,7 +375,7 @@
+   | error
+       { error ("module specifications need an export part"); }
+   | export_part_list error export_part
+-      { warning ("missing semicolon"); yyerrok; }
++      { gpc_warning ("missing semicolon"); yyerrok; }
+   | export_part_list ';' error
+       { error ("extra semicolon"); }
+   ;
+@@ -433,7 +433,7 @@
+     import_specification
+   | import_specification_list ';' import_specification
+   | import_specification_list error import_specification
+-      { warning ("missing semicolon"); yyerrok; }
++      { gpc_warning ("missing semicolon"); yyerrok; }
+   ;
+ 
+ import_specification:
+@@ -545,7 +545,7 @@
+     uses_specification
+   | uses_list ',' uses_specification
+   | uses_list error uses_specification
+-      { warning ("missing comma"); yyerrok; }
++      { gpc_warning ("missing comma"); yyerrok; }
+   ;
+ 
+ uses_specification:
+@@ -786,7 +786,7 @@
+         tree t = build_pascal_pointer_type (make_node (LANG_TYPE));
+         PASCAL_TYPE_CLASS (t) = 1;
+         build_type_decl ($1, t, NULL_TREE);
+-        warning("ignored parent in Delphi forward class declaration");
++        gpc_warning ("ignored parent in Delphi forward class declaration");
+       }
+   | new_identifier enable_lce equals p_class LEX_RANGE p_end
+       {
+@@ -1527,7 +1527,7 @@
+     pushlevel optional_statement poplevel
+       {
+         if (!$5 && extra_warnings)
+-          warning ("empty statement after `else'");
++          gpc_warning ("empty statement after `else'");
+         expand_end_cond ();
+       }
+   | p_case expression p_of
+@@ -1607,7 +1607,7 @@
+     pushlevel optional_statement poplevel
+       {
+         if (!$6 && extra_warnings)
+-          warning ("empty statement after `then'");
++          gpc_warning ("empty statement after `then'");
+       }
+   ;
+ 
+@@ -2393,7 +2393,7 @@
+ dot_or_error:
+     '.'
+   | error
+-      { warning ("missing `.' at the end of program/unit/module"); }
++      { gpc_warning ("missing `.' at the end of program/unit/module"); }
+   ;
+ 
+ null:
+@@ -2487,7 +2487,7 @@
+ #if YYDEBUG != 0
+   yydebug = value;
+ #else
+-  warning ("YYDEBUG not defined.");
++  gpc_warning ("YYDEBUG not defined.");
+ #endif
+ }
+ 
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/plant.c gpc/p/plant.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/plant.c	2006-03-24 00:51:09.000000000 +0100
++++ gpc/p/plant.c	2006-04-08 05:42:12.000000000 +0200
+@@ -285,7 +285,9 @@
+   current_function_decl = DECL_CONTEXT (the_fun);
+   cfun = NULL;
+ 
+-  if (!DECL_CONTEXT (the_fun) || PASCAL_METHOD (the_fun))
++  if (!DECL_CONTEXT (the_fun)
++      || TREE_CODE (DECL_CONTEXT (the_fun)) != FUNCTION_DECL
++         /* PASCAL_METHOD (the_fun) */)
+     {
+ //      current_function_decl = NULL_TREE;
+       current_function_decl = the_fun;
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/predef.c gpc/p/predef.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/predef.c	2006-03-24 02:47:15.000000000 +0100
++++ gpc/p/predef.c	2006-04-07 02:01:03.000000000 +0200
+@@ -1185,7 +1185,15 @@
+     case 't': if (TYPE_MAIN_VARIANT (type) != gpc_type_TimeStamp)       errstr = "argument %d to `%s' must be of type `TimeStamp'"; break;
+     case 'a': if (TYPE_MAIN_VARIANT (type) != gpc_type_BindingType)     errstr = "argument %d to `%s' must be of type `BindingType'"; break;
+     case 'x': break;  /* Untyped parameter */
+-    case '#': if (TREE_CONSTANT (val) && (TREE_CODE (val) != CONSTRUCTOR || type == empty_set_type_node)) { error ("`%s' applied to a constant", r_name); return error_mark_node; } break;  /* expression or type allowed */
++    case '#': if (TREE_CONSTANT (val)
++                  && ((TREE_CODE (val) != CONSTRUCTOR
++                       && TREE_CODE (val) != PASCAL_SET_CONSTRUCTOR)
++                      || type == empty_set_type_node))
++                {
++                  error ("`%s' applied to a constant", r_name);
++                  return error_mark_node;
++                }
++              break;  /* expression or type allowed */
+     default: gcc_unreachable ();
+   }
+   if (ISUPPER ((unsigned char) argtype))
+@@ -1552,11 +1560,12 @@
+     return NULL_TREE;
+ 
+   case p_Card:
+-    if (TREE_CODE (val) == CONSTRUCTOR && PASCAL_CONSTRUCTOR_INT_CST (val))
++    if (TREE_CODE (val) == PASCAL_SET_CONSTRUCTOR 
++        && PASCAL_CONSTRUCTOR_INT_CST (val))
+       {
+         tree e;
+         retval = integer_zero_node;
+-        for (e = CONSTRUCTOR_ELTS (val); e; e = TREE_CHAIN (e))
++        for (e = SET_CONSTRUCTOR_ELTS (val); e; e = TREE_CHAIN (e))
+           {
+             tree l = TREE_PURPOSE (e), u = TREE_VALUE (e);
+             gcc_assert (TREE_CODE (l) == INTEGER_CST && TREE_CODE (u) == INTEGER_CST);
+@@ -1568,7 +1577,8 @@
+         gcc_assert (TREE_CODE (retval) == INTEGER_CST);
+         break;
+       }
+-    if (TREE_CODE (val) == CONSTRUCTOR && TREE_CODE (TREE_TYPE (val)) == SET_TYPE)
++    if (TREE_CODE (val) == PASCAL_SET_CONSTRUCTOR
++        && TREE_CODE (TREE_TYPE (val)) == SET_TYPE)
+       {
+         val = construct_set (val, NULL_TREE, 1);
+         CHK_EM (val);
+@@ -1590,7 +1600,7 @@
+         if (co->pascal_dialect & C_E_O_PASCAL)
+           error ("argument to `%s' must be of real type", r_name);
+         else
+-          warning ("`%s' applied to integers has no effect", r_name);
++          gpc_warning ("`%s' applied to integers has no effect", r_name);
+         retval = val;
+       }
+     else
+@@ -1667,7 +1677,7 @@
+     {
+       tree arg;
+       if (argcount == 1)
+-        warning ("`%s' with only one argument has no effect", r_name);
++        gpc_warning ("`%s' with only one argument has no effect", r_name);
+       for (arg = apar; arg; arg = TREE_CHAIN (arg))
+         if (!is_string_compatible_type (TREE_VALUE (arg), 1))
+           errstr = "arguments to `%s' must be strings or chars";
+@@ -1706,7 +1716,7 @@
+   case p_Ord:
+     if (code == INTEGER_TYPE)
+       {
+-        warning ("`%s' applied to integers has no effect", r_name);
++        gpc_warning ("`%s' applied to integers has no effect", r_name);
+         retval = val;
+       }
+     else
+@@ -1739,9 +1749,9 @@
+       else if (pedantic && !contains_auto_initialized_part (type, r_num == p_Finalize))
+         {
+           if (r_num == p_Finalize)
+-            warning ("variable does not need any finalization");
++            gpc_warning ("variable does not need any finalization");
+           else
+-            warning ("variable does not need any initialization");
++            gpc_warning ("variable does not need any initialization");
+         }
+       init_any (val, r_num == p_Finalize, 0);
+       retval = error_mark_node;  /* nothing to expand anymore -- init_any does it already */
+@@ -1823,9 +1833,12 @@
+ 
+         /* (val = nil) ? 0 : strlen|Length (val) */
+         if (TYPE_MAIN_VARIANT (type) == cstring_type_node)
+-          strlength = build (COND_EXPR, integer_type_node,
+-            build_pascal_binary_op (EQ_EXPR, val, null_pointer_node), integer_zero_node,
+-            build_routine_call (strlen_routine_node, build_tree_list (NULL_TREE, val)));
++          strlength = build (COND_EXPR, pascal_integer_type_node,
++            build_pascal_binary_op (EQ_EXPR, val, null_pointer_node),
++            convert (pascal_integer_type_node, integer_zero_node),
++            convert (pascal_integer_type_node,
++              build_routine_call (strlen_routine_node, 
++                build_tree_list (NULL_TREE, val))));
+         else
+           strlength = PASCAL_STRING_LENGTH (val);
+         retval = make_new_variable ("cstring2string", build_pascal_string_schema (save_expr (strlength)));
+@@ -1860,7 +1873,7 @@
+   case p_Conjugate:
+     if (INT_REAL (code))
+       {
+-        warning ("`%s' applied to real numbers has no effect", r_name);
++        gpc_warning ("`%s' applied to real numbers has no effect", r_name);
+         retval = val;
+       }
+     else if (r_num == p_Re)
+@@ -1872,9 +1885,9 @@
+   case p_Im:
+     if (INT_REAL (code))
+       {
+-        warning ("`%s' applied to real numbers always yields 0.", r_name);
++        gpc_warning ("`%s' applied to real numbers always yields 0.", r_name);
+         if (TREE_SIDE_EFFECTS (val))
+-          warning (" Argument with side-effects is not evaluated.");
++          gpc_warning (" Argument with side-effects is not evaluated.");
+         retval = real_zero_node;
+       }
+     else
+@@ -1923,7 +1936,8 @@
+     }
+ 
+   case p_Assigned:
+-    retval = build (NE_EXPR, boolean_type_node, val, integer_zero_node);
++    retval = build (NE_EXPR, boolean_type_node, val,
++                      convert (TREE_TYPE (val), integer_zero_node));
+     break;
+ 
+   case p_GetMem:
+@@ -1956,7 +1970,7 @@
+       CHK_EM (ptype);
+ 
+       if (TREE_CODE (ptype) == VOID_TYPE && !(co->pascal_dialect & B_D_PASCAL))
+-        warning ("argument to `%s' should not be an untyped pointer", r_name);
++        gpc_warning ("argument to `%s' should not be an untyped pointer", r_name);
+       if (PASCAL_TYPE_ANYFILE (ptype))
+         error ("`AnyFile' pointers cannot be allocated with `%s'", r_name);
+ 
+@@ -2064,8 +2078,12 @@
+           int save_warn_object_assignment = co->warn_object_assignment;
+           co->warn_object_assignment = 0;
+ #endif
++
++
+           expand_expr_stmt (build_modify_expr (res_deref, NOP_EXPR,
+             build_pascal_initializer (TREE_TYPE (type), init, "type in `New'", 0)));
++
++
+ #if 0
+           co->warn_object_assignment = save_warn_object_assignment;
+ #endif
+@@ -2125,7 +2143,8 @@
+         argcount = 1;
+         TREE_CHAIN (apar) = NULL_TREE;
+       }
+-    expand_start_cond (build (NE_EXPR, boolean_type_node, val, integer_zero_node), 0);
++    expand_start_cond (build (NE_EXPR, boolean_type_node, val, 
++                        convert (TREE_TYPE (val), integer_zero_node)), 0);
+     init_any (build_indirect_ref (val, NULL), 1, 1);
+     if (co->pascal_dialect & C_E_O_PASCAL)
+       {
+@@ -2140,12 +2159,12 @@
+         if (co->pascal_dialect & C_E_O_PASCAL)
+           error ("standard Pascal forbids `%s (nil)'", r_name);
+         else
+-          warning ("`%s (nil)' has no effect", r_name);
++          gpc_warning ("`%s (nil)' has no effect", r_name);
+       }
+     if (argcount > 1)
+       {
+         if (PEDANTIC (GNU_PASCAL))
+-          warning (r_num == p_Dispose
++          gpc_warning (r_num == p_Dispose
+                    ? "tag fields ignored in `%s'"
+                    : "second parameter ignored in `%s'", r_name);
+         /* @@ Perhaps we should do a run-time check ? */
+@@ -2222,7 +2241,7 @@
+   case p_Int:
+     if (code == INTEGER_TYPE)
+       {
+-        warning ("`%s' applied to integers has no effect", r_name);
++        gpc_warning ("`%s' applied to integers has no effect", r_name);
+         retval = val;
+       }
+     break;
+@@ -2230,9 +2249,9 @@
+   case p_Frac:
+     if (code == INTEGER_TYPE)
+       {
+-        warning ("`%s' applied to integers always yields 0.", r_name);
++        gpc_warning ("`%s' applied to integers always yields 0.", r_name);
+         if (TREE_SIDE_EFFECTS (val))
+-          warning (" Argument with side-effects is not evaluated.");
++          gpc_warning (" Argument with side-effects is not evaluated.");
+         retval = integer_zero_node;
+       }
+     break;
+@@ -2294,7 +2313,7 @@
+             }
+           else if (co->pascal_dialect & U_B_D_M_PASCAL)
+             {
+-              warning ("unspecified buffer size for untyped file defaults to 128 in `%s'", r_name);
++              gpc_warning ("unspecified buffer size for untyped file defaults to 128 in `%s'", r_name);
+               buffer_size = build_int_2 (128, 0);
+             }
+           else
+@@ -2544,7 +2563,7 @@
+                 errstr = "left argument of `pow' is 0 while right argument is <= 0";
+                 if (!pedantic && (co->pascal_dialect & C_E_O_PASCAL))
+                   {
+-                    warning (errstr);
++                    gpc_warning (errstr);
+                     errstr = NULL;
+                   }
+               }
+@@ -2653,11 +2672,11 @@
+               if (r_num == p_LT)  /* s < '' is impossible */
+                 {
+                   if (invert_result)
+-                    warning ("`>=' comparison against the empty string is always `True'.");
++                    gpc_warning ("`>=' comparison against the empty string is always `True'.");
+                   else
+-                    warning ("`<' comparison against the empty string is always `False'.");
++                    gpc_warning ("`<' comparison against the empty string is always `False'.");
+                   if (TREE_SIDE_EFFECTS (val))
+-                    warning (" Operand with side-effects is not evaluated.");
++                    gpc_warning (" Operand with side-effects is not evaluated.");
+                   return invert_result ? boolean_true_node : boolean_false_node;
+                 }
+               comp_empty = val;
+@@ -2996,7 +3015,7 @@
+ get_standard_input (void)
+ {
+   if (co->warn_implicit_io)
+-    warning ("implicit use of `Input'");
++    gpc_warning ("implicit use of `Input'");
+   if (!current_module->input_available)
+     {
+       current_module->input_available = 1;
+@@ -3009,7 +3028,7 @@
+ get_standard_output (void)
+ {
+   if (co->warn_implicit_io)
+-    warning ("implicit use of `Output'");
++    gpc_warning ("implicit use of `Output'");
+   if (!current_module->output_available)
+     {
+       current_module->output_available = 1;
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/statements.c gpc/p/statements.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/statements.c	2006-03-24 03:47:15.000000000 +0100
++++ gpc/p/statements.c	2006-04-07 19:28:45.000000000 +0200
+@@ -73,7 +73,7 @@
+   if (PEDANTIC (GNU_PASCAL))
+     {
+       if (co->pascal_dialect & B_D_M_PASCAL)
+-        warning ("GPC and Borland Pascal have different `asm' syntax");
++        gpc_warning ("GPC and Borland Pascal have different `asm' syntax");
+       else
+         chk_dialect ("`asm' is", B_D_M_PASCAL);
+     }
+@@ -203,7 +203,7 @@
+   else if (TREE_CODE (t) == VAR_DECL && PASCAL_FOR_LOOP_COUNTER (t))
+     {
+       if (co->pascal_dialect & B_D_M_PASCAL)
+-        warning ("%s of `for' loop counter", description);
++        gpc_warning ("%s of `for' loop counter", description);
+       else
+         {
+           error ("%s of `for' loop counter", description);
+@@ -245,11 +245,11 @@
+               return 0;
+             }
+           else
+-            warning ("%s: typed const misused as initialized variable", description);
++            gpc_warning ("%s: typed const misused as initialized variable", description);
+           if (!informed)
+             {
+-              warning (" (Better use ISO 10206 Extended Pascal initialized");
+-              warning (" types and variables: `var foo: integer value 7'.)");
++              gpc_warning (" (Better use ISO 10206 Extended Pascal initialized");
++              gpc_warning (" types and variables: `var foo: integer value 7'.)");
+               informed = 1;
+             }
+         }
+@@ -284,7 +284,7 @@
+ {
+   tree valtype = TREE_TYPE (TREE_TYPE (current_function_decl));
+   if (TREE_THIS_VOLATILE (current_function_decl))
+-    warning ("routine declared `noreturn' returns");
++    gpc_warning ("routine declared `noreturn' returns");
+   /* This must be done before returning, otherwise it would jump over it. */
+   cleanup_routine ();
+   if (!retval)
+@@ -396,9 +396,9 @@
+                       if (const_lt (chi, hi))
+                         nlo = fold (build (PLUS_EXPR, TREE_TYPE (chi), (ehi = chi), convert (TREE_TYPE (chi), integer_one_node)));
+                       if (tree_int_cst_equal (elo, ehi))
+-                        warning ("duplicate `case' element %ld", (long) TREE_INT_CST_LOW (elo));
++                        gpc_warning ("duplicate `case' element %ld", (long) TREE_INT_CST_LOW (elo));
+                       else
+-                        warning ("duplicate `case' range %ld .. %ld", (long) TREE_INT_CST_LOW (elo), (long) TREE_INT_CST_LOW (ehi));
++                        gpc_warning ("duplicate `case' range %ld .. %ld", (long) TREE_INT_CST_LOW (elo), (long) TREE_INT_CST_LOW (ehi));
+                       if (!nlo && !nhi)
+                         lo = hi = NULL_TREE;
+                       else
+@@ -591,7 +591,8 @@
+   CHK_EM (counter);
+ 
+   /* Make a set out of a set constructor */
+-  if (TREE_CODE (expr) == CONSTRUCTOR && TREE_CODE (TREE_TYPE (expr)) == SET_TYPE)
++  if (TREE_CODE (expr) == PASCAL_SET_CONSTRUCTOR
++      && TREE_CODE (TREE_TYPE (expr)) == SET_TYPE)
+     expr = construct_set (expr, NULL_TREE, 0);
+   if (TREE_CODE (TREE_TYPE (expr)) != SET_TYPE)
+     {
+@@ -600,7 +601,7 @@
+     }
+   else if (TREE_TYPE (expr) == empty_set_type_node)
+     {
+-      warning ("`for ... in []' (empty set) has no effect");
++      gpc_warning ("`for ... in []' (empty set) has no effect");
+       /* Be as silent as possible to give the optimizer a chance to remove the whole loop. */
+       empty_set = 1;
+     }
+@@ -916,7 +917,7 @@
+               || TREE_READONLY (t)
+               || TYPE_READONLY (TREE_TYPE (t))
+               || (TREE_CODE (t) == VAR_DECL && PASCAL_DECL_TYPED_CONST (t)))
+-            warning ("constant file variables are pointless");
++            gpc_warning ("constant file variables are pointless");
+ 
+           /* Always pass the internal name to the RTS, not only for external files. */
+           if (TREE_CODE (thing) == VAR_DECL)
+@@ -929,7 +930,7 @@
+           fname = build_string_constant (temp, strlen (temp), 0);
+ 
+           if (pedantic && PASCAL_TYPE_PACKED (type))
+-            warning ("`packed' has no effect on the external file format");
++            gpc_warning ("`packed' has no effect on the external file format");
+ 
+           /* Pass the size of the file buffer. */
+           file_size = (TREE_CODE (component_type) == VOID_TYPE) ? size_one_node : size_in_bytes (component_type);
+@@ -1053,10 +1054,16 @@
+       {
+         if (!TREE_VALUE (decl))
+           expand_expr_stmt (TREE_PURPOSE (decl));
+-        else if (!TREE_PURPOSE (decl))
+-          init_any (TREE_VALUE (decl), the_end, 1);
+         else
++          {
++            init_any (TREE_VALUE (decl), the_end, 1);
++            if (TREE_PURPOSE (decl))
++              expand_pascal_assignment2 (TREE_VALUE (decl),
++                                         TREE_PURPOSE (decl), 1);
++#if 0
+           expand_expr_stmt (build_modify_expr (TREE_VALUE (decl), INIT_EXPR, TREE_PURPOSE (decl)));
++#endif
++          }
+       }
+   for (decl = names; decl; decl = TREE_CHAIN (decl))
+     {
+@@ -1146,10 +1153,10 @@
+ }
+ 
+ void
+-expand_pascal_assignment (tree target, tree source)
++expand_pascal_assignment2 (tree target, tree source, int is_init)
+ {
+   tree stmt, schema_source, schema_target;
+-  int allow_restricted_target = 0, allow_restricted_source = 0;
++  int allow_restricted_target = is_init, allow_restricted_source = is_init;
+   if (EM (TREE_TYPE (source)) || EM (TREE_TYPE (target)))
+     return;
+ 
+@@ -1206,7 +1213,7 @@
+       allow_restricted_target = 1;
+     }
+ 
+-  if (!mark_lvalue (target, "assignment", 1))
++  if (!mark_lvalue (target, is_init? "initialization" : "assignment", !is_init))
+     return;
+ 
+   schema_source = undo_schema_dereference (source);
+@@ -1250,7 +1257,9 @@
+       tree schema_check = check_discriminants (schema_target, schema_source);
+       if (!EM (schema_check))
+         {
+-          if (!lvalue_or_else (schema_target, "assignment") || !mark_lvalue (schema_target, "assignment", 1))
++          if (!lvalue_or_else (schema_target, "assignment")
++              || !mark_lvalue (schema_target, is_init ? "initialization" 
++                                                : "assignment", is_init))
+             return;
+           stmt = build (MODIFY_EXPR, TREE_TYPE (schema_target),
+                           schema_target, schema_source);
+@@ -1259,12 +1268,19 @@
+             stmt = build (COMPOUND_EXPR, TREE_TYPE (stmt), schema_check, stmt);
+         }
+       else
+-        stmt = build_modify_expr (target, NOP_EXPR, source);
++        stmt = build_modify_expr (target,
++                 is_init ? INIT_EXPR : NOP_EXPR, source);
+     }
+   if (stmt && !EM (stmt))
+     expand_expr_stmt (stmt);
+ }
+ 
++void
++expand_pascal_assignment (tree target, tree source)
++{
++  expand_pascal_assignment2 (target, source, 0);
++}
++
+ tree
+ assign_set (tree target, tree source)
+ {
+@@ -1273,7 +1289,8 @@
+     return error_mark_node;
+   /* @@ Test new constructor code without this.
+         Construct a set directly to the set variable. */
+-  if (TREE_CODE (source) == CONSTRUCTOR && TREE_CODE (TREE_TYPE (source)) == SET_TYPE)
++  if (TREE_CODE (source) == PASCAL_SET_CONSTRUCTOR
++      && TREE_CODE (TREE_TYPE (source)) == SET_TYPE)
+     {
+       source = construct_set (source, target, 0);
+       if (!source)
+@@ -1310,7 +1327,7 @@
+    Each string may be either a fixed or variable length string.
+    @@@ No sophisticated checks are made for capacity violations. */
+ tree
+-assign_string (tree target, tree source)
++assign_string2 (tree target, tree source, int is_init)
+ {
+   tree length = NULL_TREE;
+   tree t_type = base_type (TREE_TYPE (target));
+@@ -1334,7 +1351,7 @@
+           if (TREE_CODE (t_type) == CHAR_TYPE)
+             {
+               if (pedantic || !(co->pascal_dialect & E_O_PASCAL))
+-                warning ("assignment of string value to char variable");
++                gpc_warning ("assignment of string value to char variable");
+               expr1 = PASCAL_STRING_VALUE (source);
+               expr1 = build_modify_expr (target, NOP_EXPR, build_array_ref (expr1,
+                 TYPE_MIN_VALUE (TYPE_DOMAIN (TREE_TYPE (expr1)))));
+@@ -1431,6 +1448,12 @@
+   return expr;
+ }
+ 
++tree
++assign_string (tree target, tree source)
++{
++  return assign_string2 (target, source, 0);
++}
++
+ /* Main program, module initializers/finalizers. */
+ 
+ static void
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/typecheck.c gpc/p/typecheck.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/typecheck.c	2006-03-24 03:47:15.000000000 +0100
++++ gpc/p/typecheck.c	2006-04-09 03:31:39.000000000 +0200
+@@ -28,6 +28,9 @@
+ 
+ #include "gpc.h"
+ 
++extern void
++set_string_length (tree value, int wide_flag, int length);
++
+ static int compatible_assignment_p (tree, tree);
+ static int check_simple_pascal_initializer (tree, tree);
+ static tree decl_constant_value (tree);
+@@ -47,7 +50,11 @@
+ static void really_start_incremental_init (tree);
+ static void push_init_level (void);
+ static tree build_bitfields_type (tree, int);
++#ifndef GCC_4_1
+ static tree do_build_constructor_rev (tree, tree);
++#else
++static tree do_build_constructor_rev (tree, VEC(constructor_elt,gc) *);
++#endif
+ static tree fill_one_record (tree *, tree, tree, tree *, HOST_WIDE_INT, HOST_WIDE_INT *);
+ static tree fake_packed_array_constructor (void);
+ static tree pop_init_level (void);
+@@ -569,6 +576,7 @@
+       && TREE_CONSTANT (DECL_INITIAL (decl))
+       /* Check for cases where this is sub-optimal, even though valid. */
+       && TREE_CODE (DECL_INITIAL (decl)) != CONSTRUCTOR
++      && TREE_CODE (DECL_INITIAL (decl)) != PASCAL_SET_CONSTRUCTOR
+       && DECL_MODE (decl) != BLKmode)
+     return DECL_INITIAL (decl);
+   return decl;
+@@ -645,7 +653,8 @@
+       return build (COMPOUND_EXPR, TREE_TYPE (op1), TREE_OPERAND (exp, 0), op1);
+     }
+ 
+-  if (!lvalue_p (exp) && !(TREE_CODE (exp) == CONSTRUCTOR && TREE_STATIC (exp))
++  if (!lvalue_p (exp) 
++      && !(TREE_CODE (exp) == CONSTRUCTOR && TREE_STATIC (exp))
+       && !((TREE_CODE (exp) == NOP_EXPR
+ #ifdef EGCS97
+             || TREE_CODE (exp) == VIEW_CONVERT_EXPR
+@@ -921,7 +930,7 @@
+            }
+          else
+         {
+-          if (TREE_CODE (val) == CONSTRUCTOR)
++          if (TREE_CODE (val) == PASCAL_SET_CONSTRUCTOR)
+             /* Convert the set constructor to the corresponding set type */
+ #if 0
+             val = construct_set (val, type, 2);
+@@ -929,7 +938,7 @@
+             /* fjf880.pas */
+             {
+               tree temp = make_new_variable ("set_parameter", partype);
+-              if (!CONSTRUCTOR_ELTS (val))
++              if (!SET_CONSTRUCTOR_ELTS (val))
+                 {
+                   construct_set (val, temp, 0);
+                   val = temp;
+@@ -1058,6 +1067,7 @@
+           && ((TYPE_READONLY (TREE_TYPE (type))
+                && (TREE_CODE (val) == STRING_CST
+                    || TREE_CODE (val) == CONSTRUCTOR
++                   || TREE_CODE (val) == PASCAL_SET_CONSTRUCTOR
+                    || !lvalue_p (val)
+                    || ((PASCAL_TYPE_STRING (TREE_TYPE (type)) || TREE_CODE (TREE_TYPE (type)) == VOID_TYPE)
+                        && (TREE_CODE (TREE_TYPE (val)) == CHAR_TYPE
+@@ -1076,7 +1086,8 @@
+                        TYPE_READONLY (TREE_TYPE (type)),
+                        TYPE_VOLATILE (TREE_TYPE (type))));
+             }
+-          else if (TREE_CODE (val) == CONSTRUCTOR && TREE_CODE (TREE_TYPE (val)) == SET_TYPE)
++          else if (TREE_CODE (val) == PASCAL_SET_CONSTRUCTOR
++                   && TREE_CODE (TREE_TYPE (val)) == SET_TYPE)
+             val = construct_set (val, NULL_TREE, 0);
+           else if (TREE_CODE (val) == FUNCTION_DECL)
+             val = build_routine_call (val, NULL_TREE);
+@@ -1927,8 +1938,11 @@
+           if (integer_zerop (capacity))
+             TREE_VALUE (init) = empty_string_node;
+           else if (TREE_CODE (TREE_VALUE (init)) == STRING_CST)
++            {
+             TREE_VALUE (init) = build_string_constant (TREE_STRING_POINTER (TREE_VALUE (init)),
+               TREE_INT_CST_LOW (capacity), PASCAL_CST_FRESH (TREE_VALUE (init)));
++              set_string_length (TREE_VALUE (init), 0, TREE_INT_CST_LOW (capacity) + 1);
++            }
+           else
+             {
+               /* We can't get here with char constants! */
+@@ -1938,6 +1952,10 @@
+             }
+           string_length = capacity;
+         }
++      else if (TREE_CODE (TREE_VALUE (init)) == STRING_CST)
++        {
++          set_string_length (TREE_VALUE (init), 0, TREE_INT_CST_LOW (capacity) + 1);
++        }
+       else if (TREE_CODE (TREE_TYPE (TREE_VALUE (init))) == CHAR_TYPE)
+         /* convert char to string: [1: char-value; 2 .. Capacity + 1: Chr (0)] */
+         TREE_VALUE (init) = tree_cons (build_tree_list (integer_one_node, NULL_TREE), TREE_VALUE (init),
+@@ -2021,17 +2039,51 @@
+           return 0;
+         }
+       /* Pointers to strings used as CStrings. */
++#if 1
++      if (TREE_CODE (TREE_VALUE (init)) == ADDR_EXPR)
++        {
++          tree s = TREE_OPERAND (TREE_VALUE (init), 0);
++          if (TREE_CODE (s) == VAR_DECL && TREE_READONLY (s)
++              && DECL_INITIAL (s)
++              && TREE_CODE (DECL_INITIAL (s)) == CONSTRUCTOR
++              && PASCAL_TYPE_DISCRIMINATED_STRING (
++                   TREE_TYPE (DECL_INITIAL (s))))
++            {
++              int constant = TREE_CONSTANT (TREE_VALUE (init));
++#ifndef GCC_4_1
++              tree t = CONSTRUCTOR_ELTS (DECL_INITIAL (s));
++              TREE_VALUE (init) = build1 (ADDR_EXPR, cstring_type_node,
++                  TREE_VALUE (TREE_CHAIN (TREE_CHAIN (t))));
++#else
++              VEC(constructor_elt,gc) *elts = CONSTRUCTOR_ELTS (
++                                                    DECL_INITIAL (s));
++              TREE_VALUE (init) = build1 (ADDR_EXPR, cstring_type_node,
++                  VEC_index (constructor_elt, elts, 2)->value);
++#endif
++              TREE_CONSTANT (TREE_VALUE (init)) = constant;
++              return 0;
++            }
++        }
++#else
+       if (TREE_CODE (TREE_VALUE (init)) == ADDR_EXPR
+           && TREE_CODE (TREE_OPERAND (TREE_VALUE (init), 0)) == CONSTRUCTOR
+           && PASCAL_TYPE_DISCRIMINATED_STRING (TREE_TYPE (TREE_OPERAND (TREE_VALUE (init), 0))))
+         {
+           int constant = TREE_CONSTANT (TREE_VALUE (init));
++#ifndef GCC_4_1
+           tree t = CONSTRUCTOR_ELTS (TREE_OPERAND (TREE_VALUE (init), 0));
+           TREE_VALUE (init) = build1 (ADDR_EXPR, cstring_type_node,
+             TREE_VALUE (TREE_CHAIN (TREE_CHAIN (t))));
++#else
++          VEC(constructor_elt,gc) *elts = CONSTRUCTOR_ELTS (
++                      TREE_OPERAND (TREE_VALUE (init), 0));
++          TREE_VALUE (init) = build1 (ADDR_EXPR, cstring_type_node,
++            VEC_index (constructor_elt, elts, 2)->value);
++#endif
+           TREE_CONSTANT (TREE_VALUE (init)) = constant;
+           return 0;
+         }
++#endif
+     }
+ 
+   /* Procedural variables. (Pointers to routines should cause no problems.) */
+@@ -2049,14 +2101,14 @@
+     }
+ 
+   /* Sets. */
+-  if (TREE_CODE (TREE_VALUE (init)) == CONSTRUCTOR
++  if (TREE_CODE (TREE_VALUE (init)) == PASCAL_SET_CONSTRUCTOR
+       && TREE_CODE (TREE_TYPE (TREE_VALUE (init))) == SET_TYPE
+       && TREE_CODE (type) == SET_TYPE
+       && TREE_TYPE (TREE_VALUE (init)) == empty_set_type_node)
+     {
+       /* The type of the set constructor was not known to the parser.
+          Specify it now, but check it first. */
+-      tree elements = CONSTRUCTOR_ELTS (TREE_VALUE (init));
++      tree elements = SET_CONSTRUCTOR_ELTS (TREE_VALUE (init));
+       if (elements && !comptypes (TYPE_MAIN_VARIANT (TREE_TYPE (TREE_PURPOSE (elements))),
+                                   TYPE_MAIN_VARIANT (TREE_TYPE (type))))
+         return 1;
+@@ -2784,6 +2836,9 @@
+         break;
+ 
+       case CONSTRUCTOR:
++#ifdef GCC_4_1
++      case PASCAL_SET_CONSTRUCTOR:
++#endif
+         TREE_ADDRESSABLE (x) = 1;
+         return 1;
+ 
+@@ -2932,10 +2987,13 @@
+              so the usual warnings are not appropriate. */
+           if (TREE_CODE (ttr) != FUNCTION_TYPE && TREE_CODE (ttl) != FUNCTION_TYPE)
+             {
++#if 0
+               if (!TYPE_READONLY (ttl) && TYPE_READONLY (ttr))
+                 assignment_error_or_warning ("%s discards `const' from pointer target type",
+                                              errtype, fundecl, parmnum, 0);
+-              else if (!TYPE_VOLATILE (ttl) && TYPE_VOLATILE (ttr))
++              else 
++#endif
++              if (!TYPE_VOLATILE (ttl) && TYPE_VOLATILE (ttr))
+                 assignment_error_or_warning ("%s discards `volatile' from pointer target type",
+                                              errtype, fundecl, parmnum, 0);
+               else if (TREE_CODE (ttl) == INTEGER_TYPE && TREE_CODE (ttr) == INTEGER_TYPE)
+@@ -3090,7 +3148,7 @@
+     }
+   else
+     {
+-      warning (msg, opname);
++      gpc_warning (msg, opname);
+       if (name)
+         warning_with_decl (fundecl, " routine declaration");
+     }
+@@ -3516,7 +3574,11 @@
+ /* If we are saving up the elements rather than allocating them,
+    this is the list of elements so far (in reverse order,
+    most recent first). */
++#ifndef GCC_4_1
+ static tree constructor_elements;
++#else
++static VEC(constructor_elt,gc) *constructor_elements;
++#endif
+ 
+ /* 1 if so far this constructor's elements are all compile-time constants. */
+ static int constructor_constant;
+@@ -3550,7 +3612,11 @@
+   tree max_index;
+   tree unfilled_index;
+   tree unfilled_fields;
++#ifndef GCC_4_1
+   tree elements;
++#else
++  VEC(constructor_elt,gc) *elements;
++#endif
+   int offset;
+   tree pending_elts;
+   int depth;
+@@ -3762,7 +3828,11 @@
+     return NULL_TREE;  /* avoid further error messages */
+   gcc_assert (TREE_CODE (init) == TREE_LIST);
+ 
++#ifndef GCC_4_1
+   constructor_elements = NULL_TREE;
++#else
++  constructor_elements = NULL;
++#endif
+   constructor_stack = 0;
+   spelling_base = 0;
+   spelling_size = 0;
+@@ -3881,7 +3951,11 @@
+   constructor_constant = 1;
+   constructor_simple = 1;
+   constructor_depth = SPELLING_DEPTH ();
++#ifndef GCC_4_1
+   constructor_elements = NULL_TREE;
++#else
++  constructor_elements = NULL;
++#endif
+   constructor_pending_elts = NULL_TREE;
+ 
+   /* Don't die if an entire brace-pair level is superfluous in the containing level. */
+@@ -3963,10 +4037,19 @@
+   return type;
+ }
+ 
++#ifndef GCC_4_1
+ static tree
+ do_build_constructor_rev (tree type, tree el)
++#else
++static tree
++do_build_constructor_rev (tree type, VEC(constructor_elt,gc) *el)
++#endif
+ {
++#ifndef GCC_4_1
+   tree constructor = build_constructor (type, nreverse (el));
++#else
++  tree constructor = build_constructor (type, el);
++#endif
+   if (constructor_constant)
+     {
+       TREE_CONSTANT (constructor) = 1;
+@@ -3982,7 +4065,11 @@
+ static tree
+ fill_one_record (tree *pel, tree min, tree ptype, tree *fields, HOST_WIDE_INT maxnr, HOST_WIDE_INT *pnr)
+ {
++#ifndef GCC_4_1
+   tree prl = NULL_TREE;
++#else
++  VEC(constructor_elt,gc) * prl = NULL;
++#endif
+   tree el = *pel;
+   HOST_WIDE_INT oanr = 0;
+   int first = 1;
+@@ -4003,7 +4090,8 @@
+         }
+       if (anr != oanr)
+         break;
+-      prl = tree_cons (fields[nr], TREE_VALUE (el), prl);
++
++      CONSTRUCTOR_APPEND_ELT (prl, fields[nr], TREE_VALUE (el));
+       el = TREE_CHAIN (el);
+       *pel = el;
+     }
+@@ -4013,11 +4101,35 @@
+ static tree
+ fake_packed_array_constructor (void)
+ {
+-  tree rtype = NULL_TREE, rfields = NULL_TREE, rl = NULL_TREE;
+-  tree type = constructor_type, el = nreverse (constructor_elements);
+-  tree tsize = pascal_array_type_nelts (type), orig_el = el;
++  tree rtype = NULL_TREE, rfields = NULL_TREE;
++  tree type = constructor_type;
++#ifndef GCC_4_1
++  tree rl = NULL_TREE;
++  tree el = nreverse (constructor_elements);
++#else
++  VEC(constructor_elt,gc) * rl = NULL;
++  tree el = NULL_TREE;
++#endif
++  tree tsize = pascal_array_type_nelts (type), orig_el;
+   HOST_WIDE_INT size = TREE_INT_CST_LOW (tsize), asize = size / BITS_PER_UNIT;
+   int psize = size % BITS_PER_UNIT;
++
++#ifdef GCC_4_1
++  {
++    VEC(constructor_elt,gc) *elts = constructor_elements;
++    unsigned HOST_WIDE_INT ix;
++    ix = VEC_length (constructor_elt, elts);
++    while (ix > 0)
++      {
++        ix--;
++        el = tree_cons (VEC_index (constructor_elt, elts, ix)->index,
++                VEC_index (constructor_elt, elts, ix)->value, el);
++      }
++  }
++#endif
++
++  orig_el = el;
++
+   if (size <= 0 || TREE_INT_CST_HIGH (tsize))
+     {
+       error ("array too large");
+@@ -4027,7 +4139,12 @@
+     {
+       tree ptype = build_bitfields_type (TREE_TYPE (type), BITS_PER_UNIT);
+       tree fields[BITS_PER_UNIT];
+-      tree atype, arfield, al = NULL_TREE, t;
++      tree atype, arfield, t;
++#ifndef GCC_4_1
++      tree al = NULL_TREE;
++#else
++      VEC(constructor_elt,gc) * al = NULL;
++#endif
+       int i;
+       for (i = 0, t = TYPE_FIELDS (ptype); i < BITS_PER_UNIT; i++, t = TREE_CHAIN (t))
+         fields[i] = t;
+@@ -4040,10 +4157,12 @@
+           tree br = fill_one_record (&el, TYPE_MIN_VALUE (TYPE_DOMAIN (type)), ptype, fields, asize, &anr);
+           if (!br)
+             break;
+-          al = tree_cons (build_int_2 (anr, 0), br, al);
++
++          CONSTRUCTOR_APPEND_ELT (al, build_int_2 (anr, 0), br);
+         }
+       if (al)
+-        rl = build_tree_list (arfield, do_build_constructor_rev (atype, al));
++        CONSTRUCTOR_APPEND_ELT (rl, arfield,
++           do_build_constructor_rev (atype, al));
+     }
+   if (psize)
+     {
+@@ -4063,7 +4182,7 @@
+           HOST_WIDE_INT anr;
+           tree pr1 = fill_one_record (&el, TYPE_MIN_VALUE (TYPE_DOMAIN (type)), ptype1, fields1, asize + 1, &anr);
+           if (pr1)
+-            rl = tree_cons (prfield, pr1, rl);
++            CONSTRUCTOR_APPEND_ELT (rl, prfield, pr1);
+         }
+     }
+   gcc_assert (!el);
+@@ -4116,8 +4235,12 @@
+     {
+       /* A scalar initializer -- just return the element, after
+          verifying there is just one. */
++#ifndef GCC_4_1
+       gcc_assert (constructor_elements && !TREE_CHAIN (constructor_elements));
+       constructor = TREE_VALUE (constructor_elements);
++#else
++      gcc_unreachable ();
++#endif
+     }
+   else
+     {
+@@ -4139,7 +4262,12 @@
+                && count_bits (TREE_TYPE (constructor_type), NULL))
+             constructor = fake_packed_array_constructor ();
+           else
++#ifndef GCC_4_1
+             constructor = build_constructor (constructor_type, nreverse (constructor_elements));
++#else
++            constructor = build_constructor (constructor_type,
++                                               constructor_elements);
++#endif
+           if (constructor_constant)
+             {
+               TREE_CONSTANT (constructor) = 1;
+@@ -4379,8 +4507,10 @@
+     {
+       /* Otherwise, output this element to constructor_elements. */
+       if (!duplicate)
+-        constructor_elements = tree_cons (field,
+-          digest_init (type, value, require_constant_value), constructor_elements);
++        {
++          value = digest_init (type, value, require_constant_value);
++          CONSTRUCTOR_APPEND_ELT (constructor_elements, field, value);
++        }
+ 
+       /* Advance the variable that indicates sequential elements output. */
+       if (TREE_CODE (constructor_type) == ARRAY_TYPE)
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/types.c gpc/p/types.c
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/types.c	2006-03-24 03:47:15.000000000 +0100
++++ gpc/p/types.c	2006-04-06 05:35:47.000000000 +0200
+@@ -82,7 +82,7 @@
+           if (TYPE_LANG_CODE_TEST (type, PASCAL_LANG_ABSTRACT_OBJECT))
+             error ("abstract object type declared as function result type");
+           else if (co->warn_object_assignment)
+-            warning ("object type declared as function result type");
++            gpc_warning ("object type declared as function result type");
+         }
+       if (!SCALAR_TYPE (TREE_CODE (type)))
+         chk_dialect ("structured function result types are", NOT_CLASSIC_PASCAL);
+@@ -281,7 +281,7 @@
+           && TREE_CODE (upper) == INTEGER_CST
+           && tree_int_cst_lt (upper, lower))
+         {
+-          warning ("set constructor range is empty");
++          gpc_warning ("set constructor range is empty");
+           *pres = TREE_CHAIN (m);
+           continue;
+         }
+@@ -307,8 +307,8 @@
+   /* A single element/range with side-effects should be safe. */
+   if (side_effects && TREE_CHAIN (elements))
+     {
+-      warning ("expressions with side-effects in set constructors are");
+-      warning (" problematic since evaluation is implementation-dependent");
++      gpc_warning ("expressions with side-effects in set constructors are");
++      gpc_warning (" problematic since evaluation is implementation-dependent");
+     }
+   /* Sort and merge constant constructor elements */
+   if (is_intcst && n)
+@@ -338,9 +338,9 @@
+           i = j;
+         }
+     }
+-  t = make_node (CONSTRUCTOR);
++  t = make_node (PASCAL_SET_CONSTRUCTOR);
+   TREE_TYPE (t) = empty_set_type_node;  /* real type not yet known */
+-  CONSTRUCTOR_ELTS (t) = elements;
++  SET_CONSTRUCTOR_ELTS (t) = elements;
+   TREE_CONSTANT (t) = TREE_STATIC (t) = is_constant;
+ #ifdef GCC_4_0
+   TREE_INVARIANT (t) = is_constant;
+@@ -355,10 +355,10 @@
+ limited_set (tree lo)
+ {
+   tree hi = fold (build_pascal_binary_op (PLUS_EXPR, lo, size_int (co->set_limit - 1)));
+-  warning ("constructing limited integer set `%li .. %li';",
++  gpc_warning ("constructing limited integer set `%li .. %li';",
+            (long int) TREE_INT_CST_LOW (lo),
+            (long int) TREE_INT_CST_LOW (hi));
+-  warning (" use `--setlimit=NUMBER' to change the size limit at compile time.");
++  gpc_warning (" use `--setlimit=NUMBER' to change the size limit at compile time.");
+   return hi;
+ }
+ 
+@@ -384,7 +384,7 @@
+   tree elements, elem, set_low, set_high, setsize, this_set_type;
+   tree nelem;
+   CHK_EM (constructor);
+-  elements = CONSTRUCTOR_ELTS (constructor);
++  elements = SET_CONSTRUCTOR_ELTS (constructor);
+   if (!elements && (arg_type == 0 || (arg_type == 1 && !target_or_type)))
+     {
+       if (arg_type == 0 && target_or_type)
+@@ -511,7 +511,7 @@
+       nelem = tree_cons (lo2, hi2, nelem);
+     }
+   nelem = nreverse (nelem);
+-  CONSTRUCTOR_ELTS (constructor) = nelem;
++  SET_CONSTRUCTOR_ELTS (constructor) = nelem;
+   return constructor;
+ }
+ 
+@@ -1485,6 +1485,7 @@
+              are handled differently above, anyway.) */
+           TYPE_PRECISION (type) = ((TREE_INT_CST_LOW (bits) + BITS_PER_UNIT - 1)
+                                    / BITS_PER_UNIT) * BITS_PER_UNIT;
++          TYPE_ALIGN (type) = 0;
+           layout_type (type);
+         }
+     }
+@@ -1800,7 +1801,7 @@
+       if (TREE_CODE (l) != INTEGER_CST || TREE_CODE (h) != INTEGER_CST || const_lt (h, l))
+         {
+           if (co->warn_dynamic_arrays)
+-            warning ("dynamic array");
++            gpc_warning ("dynamic array");
+           if (current_function_decl)  /* @@ otherwise do it in module constructor */
+             expand_expr_stmt (build (COND_EXPR, pascal_integer_type_node,
+               build_implicit_pascal_binary_op (LT_EXPR, hi, lo),
+@@ -1819,7 +1820,7 @@
+   enum tree_code code = TREE_CODE (expr);
+   if (code == VAR_DECL && !PASCAL_INITIALIZED (expr) && !PASCAL_VALUE_ASSIGNED (expr)
+       && !PASCAL_TREE_DISCRIMINANT (expr) && DECL_CONTEXT (expr) == current_function_decl)
+-    warning ("`%s' might be used uninitialized in type definition", IDENTIFIER_NAME (DECL_NAME (expr)));
++    gpc_warning ("`%s' might be used uninitialized in type definition", IDENTIFIER_NAME (DECL_NAME (expr)));
+   else if (IS_EXPR_OR_REF_CODE_CLASS (TREE_CODE_CLASS (code)))
+     {
+       int i, l = NUMBER_OF_OPERANDS (code);
+@@ -2658,6 +2659,7 @@
+     }
+   else if (TREE_CODE (arg1) == INTEGER_CST && TREE_CODE (arg0) == CONSTRUCTOR)
+     {
++#ifndef GCC_4_1
+       tree elts = CONSTRUCTOR_ELTS (arg0);
+       arg1 = range_check (TYPE_DOMAIN (TREE_TYPE (arg0)), arg1);
+       CHK_EM (arg1);
+@@ -2667,6 +2669,17 @@
+             return TREE_VALUE (elts);
+           elts = TREE_CHAIN (elts);
+         }
++#else
++      VEC(constructor_elt,gc) *elts = CONSTRUCTOR_ELTS (arg0);
++      tree index, value;
++      unsigned HOST_WIDE_INT ix;
++      arg1 = range_check (TYPE_DOMAIN (TREE_TYPE (arg0)), arg1);
++      FOR_EACH_CONSTRUCTOR_ELT (elts, ix, index, value)
++        {
++          if (tree_int_cst_equal (arg1, index))
++            return value;
++        }
++#endif
+     }
+   return t;
+ }
+@@ -2953,7 +2966,7 @@
+   int need_new_variant;
+ 
+   if (bindable && !PASCAL_TYPE_FILE (type))
+-    warning ("GPC supports `bindable' only for files");
++    gpc_warning ("GPC supports `bindable' only for files");
+ 
+   CHK_EM (type);
+ 
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/README gpc/p/test/README
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/README	2006-02-18 14:37:53.000000000 +0100
++++ gpc/p/test/README	2006-04-04 19:39:50.000000000 +0200
+@@ -4,7 +4,7 @@
+ Note: This file is the `README' file of the `test' directory in the GPC
+ source distribution, _and_ the file `BUGS' in GPC binary distributions.
+ 
+-GPC 2.1, 20060215
++GPC 2.1, 20060325
+ 
+ 1 The GPC Test Suite
+ ********************
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/c_gpc.pas gpc/p/test/c_gpc.pas
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/c_gpc.pas	2006-02-18 14:23:00.000000000 +0100
++++ gpc/p/test/c_gpc.pas	2006-04-06 05:35:48.000000000 +0200
+@@ -33,14 +33,14 @@
+ { External declarations we use from the C code }
+ 
+ var
+-  CVariable: Integer; external name 'c_variable';
++  CVariable: CInteger; external name 'c_variable';
+ 
+ procedure CRoutine; external name 'c_routine';
+ 
+ { Pascal code }
+ 
+ var
+-  PascalProgramVariable: Integer = 17; attribute (name = 'pascal_program_variable');
++  PascalProgramVariable: CInteger = 17; attribute (name = 'pascal_program_variable');
+ 
+ procedure PascalProgramRoutine; attribute (name = 'pascal_program_routine');
+ begin
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/chief40.pas gpc/p/test/chief40.pas
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/chief40.pas	2002-09-23 09:39:12.000000000 +0200
++++ gpc/p/test/chief40.pas	2006-04-06 05:35:48.000000000 +0200
+@@ -4,12 +4,15 @@
+   a : LongInt;
+   b : Byte;
+ 
++const
++  MaxCInt = High (CInteger);
++
+ begin
+-  a := 2 * MaxInt;
++  a := 2 * MaxCInt;
+   b := 10;
+   a := 2 * a + b;
+-  if (a = 4 * MaxInt + 10) and (a > MaxInt) then
++  if (a = 4 * MaxCInt + 10) and (a > MaxCInt) then
+     WriteLn ('OK')
+   else
+-    WriteLn ('failed ', a, ' ', 4 * MaxInt + 10, ' ', a > MaxInt)
++    WriteLn ('failed ', a, ' ', 4 * MaxCInt + 10, ' ', a > MaxCInt)
+ end.
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/fjf186.pas gpc/p/test/fjf186.pas
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/fjf186.pas	2005-01-19 15:23:19.000000000 +0100
++++ gpc/p/test/fjf186.pas	2006-04-06 06:24:30.000000000 +0200
+@@ -2,7 +2,7 @@
+ var
+   f:text;
+   s:string(100);
+-  n:string(20)=ParamStr (1);  { Idea how to solve this: let init_any() }
++  n:string(520)=ParamStr (1);  { Idea how to solve this: let init_any() }
+ begin                         { generate code to do the initialization }
+   if n = '' then
+     begin
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/fjf327.pas gpc/p/test/fjf327.pas
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/fjf327.pas	2005-02-23 07:09:05.000000000 +0100
++++ gpc/p/test/fjf327.pas	2006-04-06 05:35:48.000000000 +0200
+@@ -1,10 +1,10 @@
+ program fjf327;
+ 
+ var
+-  a : Cardinal = High (Cardinal) - 2;
++  a : CCardinal = High (CCardinal) - 2;
+   c : LongInt;
+ 
+ begin
+   c := - a;
+-  if c = 2 - LongInt (High (Cardinal)) then writeln ('OK') else writeln ('failed ', c)
++  if c = 2 - LongInt (High (CCardinal)) then writeln ('OK') else writeln ('failed ', c)
+ end.
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/fjf526a.pas gpc/p/test/fjf526a.pas
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/fjf526a.pas	2005-01-05 01:56:39.000000000 +0100
++++ gpc/p/test/fjf526a.pas	2006-04-06 05:35:48.000000000 +0200
+@@ -5,7 +5,7 @@
+   a, b: LongInt;
+ 
+ begin
+-  b := 1 shl BitSizeOf (Integer) + 1;
++  b := 1 shl BitSizeOf (CInteger) + 1;
+   Rewrite (f, 1);
+   BlockWrite (f, a, SizeOf (a));
+   Reset (f, 1);
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/fjf526b.pas gpc/p/test/fjf526b.pas
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/fjf526b.pas	2005-01-05 01:56:47.000000000 +0100
++++ gpc/p/test/fjf526b.pas	2006-04-06 05:35:48.000000000 +0200
+@@ -5,7 +5,7 @@
+   a, b: LongInt;
+ 
+ begin
+-  b := 1 shl BitSizeOf (Integer) + 1;
++  b := 1 shl BitSizeOf (CInteger) + 1;
+   Rewrite (f, 1);
+   BlockWrite (f, a, b and $ffffffff);
+   WriteLn ('OK')
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/gpc_c_p.pas gpc/p/test/gpc_c_p.pas
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/gpc_c_p.pas	2006-02-18 14:23:04.000000000 +0100
++++ gpc/p/test/gpc_c_p.pas	2006-04-06 05:35:48.000000000 +0200
+@@ -42,14 +42,14 @@
+ { External declarations we use from the C code }
+ 
+ var
+-  CVariable: Integer; external name 'c_variable';
++  CVariable: CInteger; external name 'c_variable';
+ 
+ procedure CRoutine; external name 'c_routine';
+ 
+ { Pascal code }
+ 
+ var
+-  PascalProgramVariable: Integer = 17; attribute (name = 'pascal_program_variable');
++  PascalProgramVariable: CInteger = 17; attribute (name = 'pascal_program_variable');
+ 
+ procedure PascalProgramRoutine; attribute (name = 'pascal_program_routine');
+ begin
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/gpc_c_u.pas gpc/p/test/gpc_c_u.pas
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/gpc_c_u.pas	2006-02-18 14:23:04.000000000 +0100
++++ gpc/p/test/gpc_c_u.pas	2006-04-06 05:35:48.000000000 +0200
+@@ -30,7 +30,7 @@
+ interface
+ 
+ var
+-  PascalUnitVariable: Integer = 42; attribute (name = 'pascal_unit_variable');
++  PascalUnitVariable: CInteger = 42; attribute (name = 'pascal_unit_variable');
+ 
+ procedure PascalUnitRoutine; attribute (name = 'pascal_unit_routine');
+ 
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/shl.pas gpc/p/test/shl.pas
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/test/shl.pas	2002-09-23 09:39:12.000000000 +0200
++++ gpc/p/test/shl.pas	2006-04-06 05:35:48.000000000 +0200
+@@ -1,14 +1,14 @@
+ program ShlTest;
+ 
+ var
+-  a: Integer = 1;
++  a: CInteger = 1;
+   i: LongestInt;
+ 
+ begin
+ 
+-  i := 1 shl (BitSizeOf (Integer) + 3);
++  i := 1 shl (BitSizeOf (CInteger) + 3);
+   if i <= 0 then begin WriteLn ('failed a1'); Halt end;
+-  if i shr (BitSizeOf (Integer) + 3) <> 1 then begin WriteLn ('failed a2'); Halt end;
++  if i shr (BitSizeOf (CInteger) + 3) <> 1 then begin WriteLn ('failed a2'); Halt end;
+ 
+   i := 1 shl (BitSizeOf (MedInt) - 2);
+   if i <= 0 then begin WriteLn ('failed a3'); Halt end;
+@@ -18,9 +18,9 @@
+   if i <= 0 then begin WriteLn ('failed a5'); Halt end;
+   if i <> $10000000000 then begin WriteLn ('failed a6'); Halt end;
+ 
+-  i := a shl (BitSizeOf (Integer) + 3);
++  i := a shl (BitSizeOf (CInteger) + 3);
+   if i <= 0 then begin WriteLn ('failed b1'); Halt end;
+-  if i shr (BitSizeOf (Integer) + 3) <> 1 then begin WriteLn ('failed b2'); Halt end;
++  if i shr (BitSizeOf (CInteger) + 3) <> 1 then begin WriteLn ('failed b2'); Halt end;
+ 
+   i := a shl (BitSizeOf (MedInt) - 2);
+   if i <= 0 then begin WriteLn ('failed b3'); Halt end;
+diff -u /pom/kompi/gcc/tst45/pom/gpc-20060325/p/utils/gpidump.pas gpc/p/utils/gpidump.pas
+--- /pom/kompi/gcc/tst45/pom/gpc-20060325/p/utils/gpidump.pas	2006-03-24 03:47:16.000000000 +0100
++++ gpc/p/utils/gpidump.pas	2006-04-10 03:51:11.000000000 +0200
+@@ -902,6 +902,9 @@
+              {$ifdef EGCS97}
+              Ref ('size_unit');
+              {$endif}
++{$ifdef GCC_4_1}
++             if TreeCode <> FUNCTION_DECL then
++{$endif}
+              Write (', align ', Number (GetNumber (Pos1), 0))
+            end;
+       'c': Ref ('type');
+@@ -1166,6 +1169,18 @@
+       OPERATOR_DECL:    ;
+       PLACEHOLDER_EXPR: Ref ('type');
+       NON_LVALUE_EXPR:  if IsPackedAccess then Ref ('packed_info');
++{$ifdef GCC_4_1}
++      CONSTRUCTOR:    begin
++                          var j, k : GPIInt;
++                          Ref ('type');
++                          k := GetNumber (Pos1);
++                          for j := 1 to k do begin
++                            Ref('index');
++                            Ref('value')
++                          end;
++                        end;
++
++{$endif}
+       else              if not ClassDone 
+                            {$ifndef GCC_4_0} or (TreeCode = RTL_EXPR) {$endif}
+                           then Error ('unknown tree code')
+@@ -1232,7 +1247,7 @@
+         GPI_CHUNK_VERSION:        begin
+                                     WriteLn;
+                                     DumpChars (' ', 0, ChunkLength - 1);
+-                                    if (ChunkLength = 0) or not IsSuffix (GCC_VERSION, Buf^.Chars[0 .. ChunkLength - 1]) then
++                                    if (ChunkLength = 0)  { or not IsSuffix (GCC_VERSION, Buf^.Chars[0 .. ChunkLength - 1]) } then
+                                       begin
+                                         WriteLn;
+                                         Error ('backend version in GPI file does not match (rebuild GPIDump for your compiler version)')

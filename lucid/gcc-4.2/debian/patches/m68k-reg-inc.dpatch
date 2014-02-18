@@ -1,0 +1,90 @@
+#! /bin/sh -e
+
+# All lines beginning with `# DPATCH:' are a description of the patch.
+# DP: reinsert REG_INC notes after splitting an instruction
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        #cd ${dir}gcc && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+---
+ gcc/emit-rtl.c |   40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+
+Index: gcc-4.2/gcc/emit-rtl.c
+===================================================================
+--- gcc-4.2.orig/gcc/emit-rtl.c
++++ gcc-4.2/gcc/emit-rtl.c
+@@ -3064,6 +3064,34 @@ prev_cc0_setter (rtx insn)
+ }
+ #endif
+ 
++#ifdef AUTO_INC_DEC
++static int
++find_auto_inc (rtx *xp, void *data)
++{
++  rtx x = *xp;
++  rtx reg = data;
++
++  if (GET_RTX_CLASS (GET_CODE (x)) != RTX_AUTOINC)
++    return 0;
++
++  switch (GET_CODE (x)) {
++  case PRE_DEC:
++  case PRE_INC:
++  case POST_DEC:
++  case POST_INC:
++  case PRE_MODIFY:
++  case POST_MODIFY:
++    if (rtx_equal_p (reg, XEXP (x, 0)))
++      return 1;
++    break;
++
++  default:
++    gcc_unreachable ();
++  }
++  return -1;
++}
++#endif
++
+ /* Increment the label uses for all labels present in rtx.  */
+ 
+ static void
+@@ -3229,6 +3257,18 @@ try_split (rtx pat, rtx trial, int last)
+ 	    }
+ 	  break;
+ 
++#ifdef AUTO_INC_DEC
++	case REG_INC:
++	  for (insn = insn_last; insn; insn = PREV_INSN (insn))
++	    {
++	      rtx reg = XEXP (note, 0);
++	      if (for_each_rtx (&PATTERN (insn), find_auto_inc, reg) > 0)
++		REG_NOTES (insn) = gen_rtx_EXPR_LIST (REG_INC, reg,
++						      REG_NOTES (insn));
++	    }
++	  break;
++#endif
++
+ 	default:
+ 	  break;
+ 	}

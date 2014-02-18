@@ -1,0 +1,76 @@
+#! /bin/sh -e
+
+# DP: Add --enable-libffi option to toplevel configure script
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- ./configure.in.orig	2006-12-11 11:53:58.776229000 +0100
++++ ./configure.in	2006-12-11 11:54:18.956229000 +0100
+@@ -312,6 +312,16 @@
+ ENABLE_LIBSSP=$enableval,
+ ENABLE_LIBSSP=yes)
+ 
++AC_ARG_ENABLE(libffi,
++[  --enable-libffi        Builds libffi directory],
++ENABLE_LIBFFI=$enableval,
++ENABLE_LIBFFI=yes)
++if test "${ENABLE_LIBFFI}" != "yes" ; then
++  noconfigdirs="$noconfigdirs target-libffi"
++else
++  libgcj="`echo $libgcj | sed 's/target-libffi *//'`"
++fi
++
+ # Save it here so that, even in case of --enable-libgcj, if the Java
+ # front-end isn't enabled, we still get libgcj disabled.
+ libgcj_saved=$libgcj
+--- ./configure.orig	2006-12-11 11:53:58.776229000 +0100
++++ ./configure	2006-12-11 11:55:27.416229000 +0100
+@@ -18,6 +18,8 @@
+ ac_help="$ac_help
+   --enable-libssp        Builds libssp directory"
+ ac_help="$ac_help
++  --enable-libffi        Builds libffi directory"
++ac_help="$ac_help
+   --with-mpfr-dir=PATH    This option has been REMOVED"
+ ac_help="$ac_help
+   --with-mpfr=PATH        Specify prefix directory for installed MPFR package
+@@ -1149,6 +1151,20 @@
+ fi
+ 
+ 
++# Check whether --enable-libffi or --disable-libffi was given.
++if test "${enable_libffi+set}" = set; then
++  enableval="$enable_libffi"
++  ENABLE_LIBFFI=$enableval
++else
++  ENABLE_LIBFFI=yes
++fi
++
++if test "${ENABLE_LIBFFI}" != "yes" ; then
++  noconfigdirs="$noconfigdirs target-libffi"
++else
++  libgcj="`echo $libgcj | sed 's/target-libffi *//'`"
++fi
++
+ # Save it here so that, even in case of --enable-libgcj, if the Java
+ # front-end isn't enabled, we still get libgcj disabled.
+ libgcj_saved=$libgcj

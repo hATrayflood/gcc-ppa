@@ -1,0 +1,69 @@
+#! /bin/sh -e
+
+# DP: mips*-linux: Always imply -lpthread for -pthread
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+
+2007-06-13  Thiemo Seufer  <ths@networkno.de>
+
+	* config/mips/linux.h, config/mips/linux64.h (LIB_SPEC): Always
+	imply -lpthread for -pthread.
+
+
+Index: gcc/config/mips/linux.h
+===================================================================
+--- gcc/config/mips/linux.h	(revision 125681)
++++ gcc/config/mips/linux.h	(working copy)
+@@ -174,9 +174,10 @@
+ 
+ #undef LIB_SPEC
+ #define LIB_SPEC "\
+-%{shared: -lc} \
+-%{!shared: %{pthread:-lpthread} \
+-  %{profile:-lc_p} %{!profile: -lc}}"
++%{pthread:-lpthread} \
++%{shared:-lc} \
++%{!shared: \
++  %{profile:-lc_p} %{!profile:-lc}}"
+ 
+ #define MD_UNWIND_SUPPORT "config/mips/linux-unwind.h"
+ 
+Index: gcc/config/mips/linux64.h
+===================================================================
+--- gcc/config/mips/linux64.h	(revision 125681)
++++ gcc/config/mips/linux64.h	(working copy)
+@@ -34,9 +34,10 @@
+ 
+ #undef LIB_SPEC
+ #define LIB_SPEC "\
+-%{shared: -lc} \
+-%{!shared: %{pthread:-lpthread} \
+-  %{profile:-lc_p} %{!profile: -lc}}"
++%{pthread:-lpthread} \
++%{shared:-lc} \
++%{!shared: \
++  %{profile:-lc_p} %{!profile:-lc}}"
+ 
+ #define GLIBC_DYNAMIC_LINKER32 "/lib/ld.so.1"
+ #define GLIBC_DYNAMIC_LINKER64 "/lib64/ld.so.1"
+

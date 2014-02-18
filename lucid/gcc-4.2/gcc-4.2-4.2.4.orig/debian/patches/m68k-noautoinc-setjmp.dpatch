@@ -1,0 +1,47 @@
+#! /bin/sh -e
+
+# All lines beginning with `# DPATCH:' are a description of the patch.
+# DP: don't attempt autoinc in a function using setjmp
+# DP: (otherwise it might modify a variable expected to be unmodified)
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        #cd ${dir}gcc && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+---
+
+ gcc/flow.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: gcc-4.2/gcc/flow.c
+===================================================================
+--- gcc-4.2.orig/gcc/flow.c
++++ gcc-4.2/gcc/flow.c
+@@ -3675,7 +3675,7 @@ find_auto_inc (struct propagate_block_in
+   int regno;
+   int size = GET_MODE_SIZE (GET_MODE (x));
+ 
+-  if (JUMP_P (insn))
++  if (JUMP_P (insn) || current_function_calls_setjmp)
+     return;
+ 
+   /* Here we detect use of an index register which might be good for

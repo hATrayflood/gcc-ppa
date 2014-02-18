@@ -1,0 +1,52 @@
+#! /bin/sh -e
+
+# All lines beginning with `# DPATCH:' are a description of the patch.
+# DP: don't set cc_status for fp move without fp register
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        #cd ${dir}gcc && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+---
+
+ gcc/config/m68k/m68k.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+Index: gcc-4.2/gcc/config/m68k/m68k.c
+===================================================================
+--- gcc-4.2.orig/gcc/config/m68k/m68k.c
++++ gcc-4.2/gcc/config/m68k/m68k.c
+@@ -2644,10 +2644,12 @@ notice_update_cc (rtx exp, rtx insn)
+ 		   || GET_CODE (SET_SRC (exp)) == FLOAT_TRUNCATE
+ 		   || GET_CODE (SET_SRC (exp)) == FLOAT_EXTEND))
+ 	CC_STATUS_INIT; 
+-      /* A pair of move insns doesn't produce a useful overall cc.  */
++      /* A pair of move insns or a fp move without fp register
++         doesn't produce a useful overall cc.  */
+       else if (!FP_REG_P (SET_DEST (exp))
+ 	       && !FP_REG_P (SET_SRC (exp))
+-	       && GET_MODE_SIZE (GET_MODE (SET_SRC (exp))) > 4
++	       && (GET_MODE_SIZE (GET_MODE (SET_SRC (exp))) > 4
++		   || GET_MODE_CLASS (GET_MODE (SET_SRC (exp))) == MODE_FLOAT)
+ 	       && (GET_CODE (SET_SRC (exp)) == REG
+ 		   || GET_CODE (SET_SRC (exp)) == MEM
+ 		   || GET_CODE (SET_SRC (exp)) == CONST_DOUBLE))

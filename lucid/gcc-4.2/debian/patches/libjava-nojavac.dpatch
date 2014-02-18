@@ -1,0 +1,53 @@
+#! /bin/sh -e
+
+# DP: libjava/classpath: Don't require javac without java maintainer mode.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}libjava/classpath && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm -f ${dir}libjava/classpath/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+diff -ur libjava/classpath.orig/m4/acinclude.m4 libjava/classpath/m4/acinclude.m4
+--- libjava/classpath.orig/m4/acinclude.m4	2007-08-05 12:19:49.920620546 +0200
++++ libjava/classpath/m4/acinclude.m4	2007-08-05 12:16:02.847195195 +0200
+@@ -25,7 +25,8 @@
+   AM_CONDITIONAL(FOUND_KJC, test "x${user_specified_javac}" = xkjc)
+ 
+   ## GCJ LOCAL
+-  if test "x${GCJ}" = x && test "x${JIKES}" = x && test "x${ECJ}" = x \
++  if test "x$enable_java_maintainer_mode" = xyes \
++     && test "x${GCJ}" = x && test "x${JIKES}" = x && test "x${ECJ}" = x \
+      && test "x${JAVAC}" = x && test "x${user_specified_javac}" != xkjc
+   then
+       AC_MSG_ERROR([cannot find javac, try --with-ecj])
+diff -ur libjava/classpath.orig/configure libjava/classpath/configure
+--- libjava/classpath.orig/configure	2007-08-05 12:05:58.418077000 +0200
++++ libjava/classpath/configure	2007-08-05 12:17:22.888402599 +0200
+@@ -17234,7 +17234,8 @@
+ 
+ 
+   ## GCJ LOCAL
+-  if test "x${GCJ}" = x && test "x${JIKES}" = x && test "x${ECJ}" = x \
++  if test "x$enable_java_maintainer_mode" = xyes \
++     && test "x${GCJ}" = x && test "x${JIKES}" = x && test "x${ECJ}" = x \
+      && test "x${JAVAC}" = x && test "x${user_specified_javac}" != xkjc
+   then
+       { { echo "$as_me:$LINENO: error: cannot find javac, try --with-ecj" >&5

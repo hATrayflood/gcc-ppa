@@ -1,0 +1,146 @@
+#! /bin/sh -e
+
+# DP: Fix PR target/37101 (wrong code), taken from the gcc-4_2-branch.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+gcc/
+
+2008-08-29  Uros Bizjak  <ubizjak@gmail.com>
+
+	Backport from mainline:
+	2008-08-14  Christophe Saout  <christophe@saout.de>
+		    Uros Bizjak  <ubizjak@gmail.com>
+
+	PR target/37101
+	* config/i386/sse.md (vec_concatv2di): Remove movlps alternative.
+
+gcc/testsuite/
+
+2008-08-29  Uros Bizjak  <ubizjak@gmail.com>
+
+	Backport from mainline:
+	2008-08-14  Uros Bizjak  <ubizjak@gmail.com>
+
+	PR target/37101
+	* gcc.target/i386/pr37101.c: New test.
+
+Index: gcc/testsuite/gcc.target/i386/pr37101.c
+===================================================================
+--- gcc/testsuite/gcc.target/i386/pr37101.c	(Revision 0)
++++ gcc/testsuite/gcc.target/i386/pr37101.c	(Revision 139758)
+@@ -0,0 +1,64 @@
++/* { dg-do compile } */
++/* { dg-options "-O2 -msse2 -ftree-vectorize -march=nocona" } */
++
++typedef __SIZE_TYPE__ size_t;
++extern void *malloc (size_t);
++extern void free (void *);
++
++typedef struct _Resource
++{
++  struct _Resource *next;
++  unsigned int id;
++} ResourceRec, *ResourcePtr;
++
++typedef struct _ClientResource
++{
++  ResourcePtr *resources;
++  int elements;
++  int buckets;
++  int hashsize;
++} ClientResourceRec;
++
++static ClientResourceRec clientTable[256];
++
++void
++RebuildTable (int client)
++{
++  int j;
++  ResourcePtr res, next;
++  ResourcePtr **tails, *resources;
++  ResourcePtr **tptr, *rptr;
++
++  j = 2 * clientTable[client].buckets;
++
++  tails =
++    (ResourcePtr **) malloc ((unsigned long) (j * sizeof (ResourcePtr *)));
++  resources =
++    (ResourcePtr *) malloc ((unsigned long) (j * sizeof (ResourcePtr)));
++
++  for (rptr = resources, tptr = tails; --j >= 0; rptr++, tptr++)
++    {
++      *rptr = ((ResourcePtr) ((void *) 0));
++      *tptr = rptr;
++    }
++
++  clientTable[client].hashsize++;
++  for (j = clientTable[client].buckets,
++       rptr = clientTable[client].resources; --j >= 0; rptr++)
++    {
++      for (res = *rptr; res; res = next)
++	{
++	  next = res->next;
++	  res->next = ((ResourcePtr) ((void *) 0));
++	  tptr = &tails[Hash (client, res->id)];
++	  **tptr = res;
++	  *tptr = &res->next;
++	}
++    }
++  free ((void *) tails);
++  clientTable[client].buckets *= 2;
++  free ((void *) clientTable[client].resources);
++  clientTable[client].resources = resources;
++}
++
++/* { dg-final { scan-assembler-not "movlps" } } */
+Index: gcc/config/i386/sse.md
+===================================================================
+--- gcc/config/i386/sse.md	(Revision 139757)
++++ gcc/config/i386/sse.md	(Revision 139758)
+@@ -3576,20 +3576,19 @@
+    (set_attr "mode" "TI,V4SF,V2SF")])
+ 
+ (define_insn "*vec_concatv2di"
+-  [(set (match_operand:V2DI 0 "register_operand"     "=Y,?Y,Y,x,x,x")
++  [(set (match_operand:V2DI 0 "register_operand"     "=Y,?Y,Y,x,x")
+ 	(vec_concat:V2DI
+-	  (match_operand:DI 1 "nonimmediate_operand" " m,*y,0,0,0,m")
+-	  (match_operand:DI 2 "vector_move_operand"  " C, C,Y,x,m,0")))]
++	  (match_operand:DI 1 "nonimmediate_operand" " m,*y,0,0,0")
++	  (match_operand:DI 2 "vector_move_operand"  " C, C,Y,x,m")))]
+   "TARGET_SSE"
+   "@
+    movq\t{%1, %0|%0, %1}
+    movq2dq\t{%1, %0|%0, %1}
+    punpcklqdq\t{%2, %0|%0, %2}
+    movlhps\t{%2, %0|%0, %2}
+-   movhps\t{%2, %0|%0, %2}
+-   movlps\t{%1, %0|%0, %1}"
+-  [(set_attr "type" "ssemov,ssemov,sselog,ssemov,ssemov,ssemov")
+-   (set_attr "mode" "TI,TI,TI,V4SF,V2SF,V2SF")])
++   movhps\t{%2, %0|%0, %2}"
++  [(set_attr "type" "ssemov,ssemov,sselog,ssemov,ssemov")
++   (set_attr "mode" "TI,TI,TI,V4SF,V2SF")])
+ 
+ (define_expand "vec_setv2di"
+   [(match_operand:V2DI 0 "register_operand" "")

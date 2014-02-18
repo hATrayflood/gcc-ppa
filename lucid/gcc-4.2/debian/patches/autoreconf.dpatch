@@ -1,0 +1,26 @@
+#! /bin/sh -e
+
+# DP: autoreconf several directories for proper mipsen libtool support
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+	for i in libstdc++-v3 zlib; do
+		(cd ${dir}/${i} ; autoreconf --force)
+	done
+        ;;
+    -unpatch)
+	echo unable to unpatch autoreconf.
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0

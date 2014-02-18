@@ -1,0 +1,189 @@
+#! /bin/sh -e
+
+# All lines beginning with `# DPATCH:' are a description of the patch.
+# DP: add support for unwinding over signal frames
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        #cd ${dir}gcc && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+---
+
+ gcc/config/m68k/linux-unwind.h |  140 +++++++++++++++++++++++++++++++++++++++++
+ gcc/config/m68k/linux.h        |    2 
+ 2 files changed, 142 insertions(+)
+
+Index: gcc-4.2/gcc/config/m68k/linux-unwind.h
+===================================================================
+--- /dev/null
++++ gcc-4.2/gcc/config/m68k/linux-unwind.h
+@@ -0,0 +1,140 @@
++/* DWARF2 EH unwinding support for Linux/m68k.
++   Copyright (C) 2006 Free Software Foundation, Inc.
++
++This file is part of GCC.
++
++GCC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++In addition to the permissions in the GNU General Public License, the
++Free Software Foundation gives you unlimited permission to link the
++compiled version of this file with other programs, and to distribute
++those programs without any restriction coming from the use of this
++file.  (The General Public License restrictions do apply in other
++respects; for example, they cover modification of the file, and
++distribution when not linked into another program.)
++
++GCC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GCC; see the file COPYING.  If not, write to
++the Free Software Foundation, 51 Franklin Street, Fifth Floor,
++Boston, MA 02110-1301, USA.  */
++
++/* Do code reading to identify a signal frame, and set the frame
++   state data appropriately.  See unwind-dw2.c for the structs.
++   Don't use this at all if inhibit_libc is used.  */
++
++#ifndef inhibit_libc
++
++#include <signal.h>
++
++/* <sys/ucontext.h> is unfortunaly broken right now */
++struct uw_ucontext {
++	unsigned long	  uc_flags;
++	struct ucontext  *uc_link;
++	stack_t		  uc_stack;
++	mcontext_t	  uc_mcontext;
++	unsigned long	  uc_filler[80];
++	__sigset_t	  uc_sigmask;
++};
++
++#define MD_FALLBACK_FRAME_STATE_FOR m68k_fallback_frame_state
++
++static _Unwind_Reason_Code
++m68k_fallback_frame_state (struct _Unwind_Context *context,
++			   _Unwind_FrameState *fs)
++{
++  unsigned char *pc = context->ra;
++  long cfa;
++
++  /* moveq #__NR_sigreturn,%d0; trap #0  */
++  if (*(unsigned int *)(pc+0) == 0x70774e40)
++    {
++      struct sigcontext *sc;
++
++      sc = *(struct sigcontext **)(context->cfa + 8);
++
++      cfa = sc->sc_usp;
++      fs->cfa_how = CFA_REG_OFFSET;
++      fs->cfa_reg = 15;
++      fs->cfa_offset = cfa - (long) context->cfa;
++
++      fs->regs.reg[0].how = REG_SAVED_OFFSET;
++      fs->regs.reg[0].loc.offset = (long)&sc->sc_d0 - cfa;
++      fs->regs.reg[1].how = REG_SAVED_OFFSET;
++      fs->regs.reg[1].loc.offset = (long)&sc->sc_d1 - cfa;
++      fs->regs.reg[8].how = REG_SAVED_OFFSET;
++      fs->regs.reg[8].loc.offset = (long)&sc->sc_a0 - cfa;
++      fs->regs.reg[9].how = REG_SAVED_OFFSET;
++      fs->regs.reg[9].loc.offset = (long)&sc->sc_a1 - cfa;
++
++      fs->regs.reg[24].how = REG_SAVED_OFFSET;
++      fs->regs.reg[24].loc.offset = (long)&sc->sc_pc - cfa;
++
++      if (*(int *)sc->sc_fpstate)
++	{
++	  int *fpregs = (int *)sc->sc_fpregs;
++
++	  fs->regs.reg[16].how = REG_SAVED_OFFSET;
++	  fs->regs.reg[16].loc.offset = (long)&fpregs[0] - cfa;
++	  fs->regs.reg[17].how = REG_SAVED_OFFSET;
++	  fs->regs.reg[17].loc.offset = (long)&fpregs[3] - cfa;
++	}
++    }
++  /* moveq #~__NR_rt_sigreturn,%d0; not.b %d0; trap #0 */
++  else if (*(unsigned int *)(pc+0) == 0x70524600
++	   && *(unsigned short *)(pc+4) == 0x4e40)
++    {
++      struct uw_ucontext *uc;
++      greg_t *gregs;
++      int i;
++
++      uc = *(struct uw_ucontext **)(context->cfa + 8);
++
++      gregs = uc->uc_mcontext.gregs;
++      cfa = gregs[15];
++      fs->cfa_how = CFA_REG_OFFSET;
++      fs->cfa_reg = 15;
++      fs->cfa_offset = cfa - (long) context->cfa;
++
++      /* register %d0-%d7/%a0-%a6  */
++      for (i = 0; i <= 14; i++)
++	{
++	  fs->regs.reg[i].how = REG_SAVED_OFFSET;
++	  fs->regs.reg[i].loc.offset = (long)&gregs[i] - cfa;
++	}
++
++      /* return address  */
++      fs->regs.reg[24].how = REG_SAVED_OFFSET;
++      fs->regs.reg[24].loc.offset = (long)&gregs[16] - cfa;
++
++#define uc_fpstate      uc_filler[0]
++
++      if (uc->uc_fpstate)
++	{
++	  int *fpregs = (int *)uc->uc_mcontext.fpregs.f_fpregs;
++
++	  /* register %fp0-%fp7  */
++	  for (i = 16; i <= 23; i++)
++	    {
++	      fs->regs.reg[i].how = REG_SAVED_OFFSET;
++	      fs->regs.reg[i].loc.offset = (long)fpregs - cfa;
++	      fpregs += 3;
++	    }
++	}
++    }
++  else
++    return _URC_END_OF_STACK;
++
++  fs->retaddr_column = 24;
++  fs->signal_frame = 1;
++
++  return _URC_NO_REASON;
++}
++#endif /* ifdef inhibit_libc  */
+Index: gcc-4.2/gcc/config/m68k/linux.h
+===================================================================
+--- gcc-4.2.orig/gcc/config/m68k/linux.h
++++ gcc-4.2/gcc/config/m68k/linux.h
+@@ -291,3 +291,5 @@ do {									\
+ }
+ 
+ #define TARGET_ASM_FILE_END file_end_indicate_exec_stack
++
++#define MD_UNWIND_SUPPORT "config/m68k/linux-unwind.h"

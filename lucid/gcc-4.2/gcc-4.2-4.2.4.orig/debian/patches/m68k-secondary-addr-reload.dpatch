@@ -1,0 +1,94 @@
+#! /bin/sh -e
+
+# All lines beginning with `# DPATCH:' are a description of the patch.
+# DP: add secondary reloads to allow reload to get byte values into addr regs
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        #cd ${dir}gcc && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+---
+ gcc/config/m68k/m68k.c  |    5 +----
+ gcc/config/m68k/m68k.h  |    6 ++++++
+ gcc/config/m68k/m68k.md |   16 ++++++++++++++++
+ 3 files changed, 23 insertions(+), 4 deletions(-)
+
+Index: gcc-4.2/gcc/config/m68k/m68k.c
+===================================================================
+--- gcc-4.2.orig/gcc/config/m68k/m68k.c
++++ gcc-4.2/gcc/config/m68k/m68k.c
+@@ -3660,10 +3660,7 @@ m68k_regno_mode_ok (int regno, enum mach
+     }
+   else if (regno < 16)
+     {
+-      /* Address Registers, can't hold bytes, can hold aggregate if
+-	 fits in.  */
+-      if (GET_MODE_SIZE (mode) == 1)
+-	return false;
++      /* Address Registers, can hold aggregate if fits in.  */
+       if (regno + GET_MODE_SIZE (mode) / 4 <= 16)
+ 	return true;
+     }
+Index: gcc-4.2/gcc/config/m68k/m68k.h
+===================================================================
+--- gcc-4.2.orig/gcc/config/m68k/m68k.h
++++ gcc-4.2/gcc/config/m68k/m68k.h
+@@ -442,6 +442,12 @@ extern enum reg_class regno_reg_class[];
+    ? DATA_REGS					\
+    : (CLASS))
+ 
++/* Reloads of QImode memory subregs into address regs require a
++   secondary reload via a data reg.  */
++#define SECONDARY_RELOAD_CLASS(CLASS, MODE, X) \
++  (((CLASS) == ADDR_REGS && (MODE) == QImode && true_regnum(X) == -1) \
++   ? DATA_REGS : NO_REGS)
++
+ /* On the m68k, this is the size of MODE in words,
+    except in the FP regs, where a single reg is always enough.  */
+ #define CLASS_MAX_NREGS(CLASS, MODE)	\
+Index: gcc-4.2/gcc/config/m68k/m68k.md
+===================================================================
+--- gcc-4.2.orig/gcc/config/m68k/m68k.md
++++ gcc-4.2/gcc/config/m68k/m68k.md
+@@ -806,6 +806,22 @@
+   DONE;
+ })
+ 
++(define_expand "reload_inqi"
++  [(set (match_operand:QI 2 "register_operand" "=&d")
++	(match_operand:QI 1 "general_operand" "g"))
++   (set (match_operand:QI 0 "register_operand" "=a")
++	(match_dup 2))]
++  ""
++  "")
++
++(define_expand "reload_outqi"
++  [(set (match_operand:QI 2 "register_operand" "=&d")
++	(match_operand:QI 1 "register_operand" "=a"))
++   (set (match_operand:QI 0 "general_operand" "g")
++	(match_dup 2))]
++  ""
++  "")
++
+ (define_expand "movsf"
+   [(set (match_operand:SF 0 "nonimmediate_operand" "")
+ 	(match_operand:SF 1 "general_operand" ""))]

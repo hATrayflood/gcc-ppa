@@ -1,0 +1,332 @@
+		The Debian GNU Compiler Collection setup
+		========================================
+
+Please see the README.Debian in /usr/share/doc/gcc, contained in the
+gcc package for a description of the setup of the different compiler
+versions.
+
+For general discussion about the Debian toolchain (GCC, glibc, binutils)
+please use the mailing list debian-toolchain@lists.debian.org; for GCC
+specific things, please use debian-gcc@lists.debian.org.  When in doubt
+use the debian-toolchain ML.
+
+
+Maintainers of these packages
+-----------------------------
+
+Matthias Klose <doko@debian.org>
+Ray Dassen <jdassen@debian.org>
+Jeff Bailey <jbailey@nisa.net>			(hurd-i386)
+Joel Baker <fenton@debian.org>			(netbsd-i386)
+Philip Blundell <pb@debian.org>			(arm-linux)
+Ben Collins <bcollins@debian.org>		(sparc-linux)
+Randolph Chung <tausq@debian.org>		(ia64-linux)
+Falk Hueffner <falk@debian.org>			(alpha-linux)
+Dan Jacobowitz <dan@debian.org>			(powerpc-linux)
+Thiemo Seufer <ths@networkno.de>		(mips*-linux)
+Matt Taggart <taggart@carmen.fc.hp.com>		(hppa-linux)
+Gerhard Tonn <GerhardTonn@swol.de>		(s390-linux)
+Roman Zippel <zippel@linux-m68k.org>		(m68k-linux)
+Ludovic Brenta <ludovic@ludovic-brenta.org>	(gnat)
+Arthur Loiret <arthur.loiret@gmail.com>		(gdc)
+
+===============================================================================
+
+Patches that Ubuntu applied in this version:
+
+rename-info-files:
+  Allow transformations on info file names. Reference the
+  transformed info file names in the texinfo files.
+
+gcc-directives-only-doc:
+  Backport from trunk: -fdirectives-only (when preprocessing,
+  handle directives, but do not expand macros).
+  documentation changes
+
+sparc-niagara2-doc:
+  Add niagara2 optimization support
+
+i386-biarch-doc:
+  biarch patches for i386/x86_64
+
+gcc-version:
+  Add package identification to the gcc version string
+
+gcc-textdomain:
+  Set gettext's domain and textdomain to the versioned package name.
+
+gcc-driver-extra-langs:
+  Add options and specs for languages that are not built from a source
+  (but built from separate sources).
+
+gcc-hash-style-both:
+  Link using --hash-style=both (alpha, amd64, ia64, i386, powerpc, ppc64, s390, sparc)
+
+libstdc++-pic:
+  Build and install libstdc++_pic.a library.
+
+libstdc++-doclink:
+  adjust hrefs to point to the local documentation
+
+libstdc++-doxygen:
+  libstdc++ doxygen docs: Set SHORT_NAMES to YES
+
+libjava-stacktrace:
+  libgcj: Lookup source file name and line number in separated
+  debug files found in /usr/lib/debug
+
+libjava-subdir:
+  - Set the libjava sublibdir to /usr/lib/gcj-4.2
+  - Set the default libgcj database dir to /var/lib/gcj-4.2
+
+libjava-jnipath:
+  - Add /usr/lib/jni to java.library.path.
+  - When running the i386 binaries on amd64, look in
+  - /usr/lib32/gcj-x.y and /usr/lib32/jni instead.
+
+libjava-sjlj:
+  Don't try to use _Unwind_Backtrace on SJLJ targets.
+  See bug #387875, #388505, GCC PR 29206.
+
+libjava-rpath:
+  - Link ecjx and gij with -rpath $(dbexecdir)
+
+libjava-jar:
+  gjar: support @ arguments.
+
+libjava-nojavac:
+  libjava/classpath: Don't require javac without java maintainer mode.
+
+libjava-armel-ldflags:
+  Adjust libjava extra_ldflags for armel.
+
+libjava-xulrunner1.9:
+  Add configure check for xulrunner-1.9.
+
+libjava-extra-cflags:
+  libjava/classpath: Set and use EXTRA_CFLAGS.
+
+libgcj-bc:
+  libgcj_bc
+
+libffi-configure:
+  Add --enable-libffi option to toplevel configure script
+
+pr20218:
+  Backport from mainline for PR middle-end/17982, PR middle-end/20218.
+
+pr20218-mips:
+  Backport from mainline for PR middle-end/20218, mips part.
+
+pr28102:
+  Apply proposed fix for PR target/28102.
+
+pr22244:
+  Improve debug info for packed arrays with constant bounds (PR fortran/22244)
+
+pr30961:
+  Fix PR target/30961.
+
+libgcc-tramp-ppc32:
+  Fix libgcc.a(tramp.o) on ppc32
+
+gcc-directives-only:
+  Backport from trunk: -fdirectives-only (when preprocessing,
+  handle directives, but do not expand macros).
+
+sparc-niagara2:
+  Add niagara2 optimization support
+
+alpha-no-ev4-directive:
+
+boehm-gc-nocheck:
+  Disable running the boehm-gc testsuite. Hangs the buildd at least on hppa.
+
+boehm-gc-getnprocs:
+  boehm-gc/pthread_support.c (GC_get_nprocs): Use sysconf as fallback.
+
+note-gnu-stack:
+  Add .note.GNU-stack sections for gcc's crt files, libffi and boehm-gc
+  Taken from FC.
+
+arm-pr28516:
+  Fix PR28516 on ARM
+
+arm-pr30486:
+  Fix 30486 on ARM
+
+arm-unbreak-eabi-armv4t:
+  Fix armv4t build on ARM
+
+hurd-profiling:
+  Fix profiling on hurd-i386.
+
+hurd-fast-math:
+  Support -ffast-math on hurd-i386.
+
+m68k-fjump:
+  gcc/config/m68k/m68k.md:
+  always use as fjcc pseudo op, we rely heavily on as 
+  to generate the right size for the jump instructions
+  fixes #359281
+
+m68k-save_pic:
+  gcc/config/m68k/m68k.c:
+  correctly save the pic register, when not done by reload()
+  (fixes _Unwind_RaiseException and thus exception handling)
+  fixes 345574
+
+m68k-dwarf:
+  correct the dwarf frame information, but preserve compatibility
+
+m68k-split_shift:
+  use correct predicates for long long shifts and use more splits
+  fixes 381572
+
+m68k-limit_reload:
+  correctly limit reload class
+  fixes 375522
+
+m68k-prevent-qipush:
+  prevent combine from creating a byte push on the stack (invalid on m68k)
+
+m68k-return:
+  don't use single return if fp register have to be restored
+  fixes 386864
+
+m68k-jumptable:
+  Don't force byte offset when accessing the jumptable, gas can
+  generate the correct offset size instead.
+
+m68k-sig-unwind:
+  add support for unwinding over signal frames
+
+m68k-peephole:
+  Convert some text peepholes to rtl peepholes, so the correct
+  DWARF2 information can be generated for stack manipulations.
+  (Keep a few peepholes temporarily disabled.)
+
+m68k-align-code:
+  use "move.l %a4,%a4" to advance within code.
+
+m68k-align-stack:
+  try to keep the stack word aligned
+
+m68k-secondary-addr-reload:
+  add secondary reloads to allow reload to get byte values into addr regs
+
+m68k-notice-move:
+  don't set cc_status for fp move without fp register
+
+m68k-fpcompare:
+  bring fp compare early to its desired form to relieve reload,
+  allow any fp constant during and after reload (even special constants)
+  in case reload can't find a free register for them.
+
+m68k-symbolic-operand:
+  better recognize symbolic operands in addresses
+
+m68k-bitfield-offset:
+  only use constant offset for register bitfields
+  (combine expects shifts, but does a rotate)
+
+mips-libspec:
+  mips*-linux: Always imply -lpthread for -pthread
+
+pr24170:
+  Fix PR libgcj/24170.
+
+pr32889:
+  Proposed patch to fix root cause for PR middle-end/32889.
+
+pr28322:
+  Fix PR other/28322, GCC new warnings and compatibility.
+
+libobjc-gc-link:
+  Link libobjc_gc with libgcjgc_convenience.la.
+
+pr35020:
+  Fix PR libjava/35020, taken from the trunk.
+
+pr36634:
+  Fix PR target/36634.
+
+pr35432:
+  Fix PR middle-end/35432, taken from the gcc-4_2-branch.
+
+pr37101:
+  Fix PR target/37101 (wrong code), taken from the gcc-4_2-branch.
+
+pr28482:
+  Fix PR libgomp/28482, don't link with -Wl,-z,nodlopen even on Linux.
+
+pr35437:
+  Fix PR c/35437 (ice-on-invalid), taken from the gcc-4.3 branch.
+
+pr37544:
+  Fix PR rtl-optimization/37544 (wrong code)
+
+pr36575:
+  Fix PR middle-end/36575 (wrong code).
+
+pr37731:
+  Fix PR middle-end/37731 (wrong code)
+
+pr8995:
+  Fix PR libgcj/8995 (race conditions in interpreter).
+
+libjava-javah-bridge-tgts:
+  libjava: Fix naming of bridge targets in gjavah
+
+gcc-ssp-default:
+  Turn on -fstack-protector by default for C, C++, ObjC, ObjC++.
+  Build libgcc using -fno-stack-protector.
+
+deb-protoize:
+  build protoize/unprotoize binaries
+
+gcc-d-lang:
+  Add D options and specs for the gcc driver.
+
+cpu-default-i486:
+  set default 32bit ix86 architecture to i486
+
+reporting:
+  Add Debian URL for bug reporting instructions.
+
+multiarch-include:
+  biarch-include.dpatch
+  
+  Adds biarch include directories
+  /usr/local/include/<arch>-linux-gnu
+  /usr/include/<arch>-linux-gnu
+  to the system include paths, depending on 32/64 bit mode.
+
+gcc-ice-hack:
+  2004-01-23  Jakub Jelinek  <jakub@redhat.com>
+  
+  	* system.h (ICE_EXIT_CODE): Define.
+  	* gcc.c (execute): Don't free first string early, but at the end
+  	of the function.  Call retry_ice if compiler exited with
+  	ICE_EXIT_CODE.
+  	(retry_ice): New function.
+  	* diagnostic.c (diagnostic_count_diagnostic,
+  	diagnostic_action_after_output, error_recursion): Exit with
+  	ICE_EXIT_CODE instead of FATAL_EXIT_CODE.
+
+libjava-disable-static:
+  Disable building the static libjava.
+
+gcc-ice-apport:
+  Report an ICE to apport (if apport is available
+  and the environment variable GCC_NOAPPORT is not set)
+
+libjava-nobiarch-check:
+  For biarch builds, disable the testsuite for the non-default architecture
+  for runtime libraries, which are not built by default (libjava).
+
+config-ml:
+  disable some biarch libraries for biarch builds
+
+i386-biarch:
+  biarch patches for i386/x86_64

@@ -1,0 +1,494 @@
+  <?xml version="1.0" encoding="ISO-8859-1"?>
+  <!DOCTYPE html
+            PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+            "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+ 
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+     <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  
+  
+   <head>
+ 
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+    <link rev="made" href="mailto:gcc@gcc.gnu.org" />
+    <link rel="shortcut icon" href="http://gcc.gnu.org/favicon.ico" />
+    <link rel="stylesheet" type="text/css" href="/gnu.css" />
+    <link rel="stylesheet" type="text/css" href="http://gcc.gnu.org/gcc.css" />
+  
+ <title>
+GCC 4.2 Release Series &mdash; Changes, New Features, and Fixes
+- GNU Project - Free Software Foundation (FSF)</title>
+   </head>
+ 
+
+<!-- GCC maintainers, please do not hesitate to update/contribute entries
+     concerning those part of GCC you maintain!  2002-03-23, Gerald.
+-->
+
+<body bgcolor="#FFFFFF" text="#000000" link="#1F00FF" alink="#FF0000" vlink="#9900DD">
+
+
+
+<h1 align="center">
+GCC 4.2 Release Series<br />Changes, New Features, and Fixes
+</h1>
+
+<h2>Caveats</h2>
+
+<ul>
+  <li>GCC no longer accepts the <code>-fshared-data</code> option.
+      This option has had no effect in any GCC 4 release; the targets
+      to which the option used to apply had been removed before GCC 4.0.</li>
+</ul>
+
+<h2>General Optimizer Improvements</h2>
+
+<ul>
+  <li><p>New command-line options specify the possible relationships among
+    parameters and between parameters and global data.  For example,
+    <code>-fargument-noalias-anything</code> specifies that arguments
+    do not alias any other storage.</p>
+
+    <p>Each language will automatically use whatever option is required
+    by the language standard.  You should not need to use these options
+    yourself.</p></li>
+</ul>
+
+<h2>New Languages and Language specific improvements</h2>
+
+<ul>
+    <li><a href="../projects/gomp/">OpenMP</a> is now
+        supported for the C, C++ and Fortran compilers.</li>
+
+    <li>New command line options <code>-fstrict-overflow</code> and
+    <code>-Wstrict-overflow</code> have been added.
+    <code>-fstrict-overflow</code> tells the compiler that it may
+    assume that the program follows the strict signed overflow
+    semantics permitted for the language: for C and C++ this means
+    that the compiler may assume that signed overflow does not occur.
+    For example, a loop like
+    <pre>
+      for (i = 1; i > 0; i *= 2)
+    </pre>
+    is presumably intended to continue looping until <code>i</code>
+    overflows.  With <code>-fstrict-overflow</code>, the compiler may
+    assume that signed overflow will not occur, and transform this
+    into an infinite loop.  <code>-fstrict-overflow</code> is turned
+    on by default at <code>-O2</code>, and may be disabled via
+    <code>-fno-strict-overflow</code>.  The
+    <code>-Wstrict-overflow</code> option may be used to warn about
+    cases where the compiler assumes that signed overflow will not
+    occur.  It takes five different levels:
+    <code>-Wstrict-overflow=1</code> to <code>5</code>.  See the
+    <a href="http://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html">
+    documentation</a> for details.  <code>-Wstrict-overflow=1</code>
+    is enabled by <code>-Wall</code>.</li>
+
+    <li>The new command line option <code>-fno-toplevel-reorder</code>
+    directs GCC to emit top-level functions, variables, and
+    <code>asm</code> statements in the same order that they appear in
+    the input file.  This is intended to support existing code which
+    relies on a particular ordering (for example, code which uses
+    top-level <code>asm</code> statements to switch sections).  For
+    new code, it is generally better to use function and variable
+    attributes.  The <code>-fno-toplevel-reorder</code> option may be
+    used for most cases which currently use
+    <code>-fno-unit-at-a-time</code>.  The
+    <code>-fno-unit-at-a-time</code> option will be removed in some
+    future version of GCC.  If you know of a case which requires
+    <code>-fno-unit-at-a-time</code> which is not fixed by
+    <code>-fno-toplevel-reorder</code>, please <a
+    href="http://gcc.gnu.org/bugs.html">open a bug report</a>.</li>
+
+</ul>
+
+<h3>C family</h3>
+
+  <ul>
+    <li>The pragma <code>redefine_extname</code> will now 
+        macro expand its tokens for compatibility with 
+        SunPRO.</li>
+
+    <li>In the next release of GCC, 4.3, <code>-std=c99</code> or
+        <code>-std=gnu99</code> will direct GCC to handle inline
+        functions as specified in the C99 standard.  In preparation
+        for this, GCC 4.2 will warn about any use of non-static inline
+        functions in gnu99 or c99 mode.  This new warning may be
+        disabled with the new <code>gnu_inline</code> function
+        attribute or the new <code>-fgnu89-inline</code> command line
+        option.  Also, GCC 4.2 and later will define one of the
+        preprocessor macros <code>__GNUC_GNU_INLINE__</code> or
+        <code>__GNUC_STDC_INLINE__</code> to indicate the semantics of
+        inline functions in the current compilation.</li>
+
+    <li>A new command line option <code>-Waddress</code> has been
+        added to warn about suspicious uses of memory addresses as,
+        for example, using the address of a function in a conditional
+        expression, and comparisons against the memory address of a
+        string literal.  This warning is enabled by
+        <code>-Wall</code>.</li>
+
+  </ul>
+
+<h3>C++</h3>
+
+  <ul>
+    <li>
+      <p>C++ visibility handling has been overhauled.</p>
+
+      <p>Restricted visiblity is propagated from classes to members, from
+      functions to local statics, and from templates and template arguments
+      to instantiations, unless the latter has explicitly declared visibility.
+      </p>
+
+      <p>The visibility attribute for a class must come between the class-key
+      and the name, not after the closing brace.</p>
+
+      <p>Attributes are now allowed for enums and elaborated-type-specifiers
+      that only declare a type.</p>
+
+      <p>Members of the anonymous namespace are now local to a particular
+      translation unit, along with any other declarations which use them,
+      though they are still treated as having external linkage for language
+      semantics.</p>
+    </li>
+
+    <li>
+     The (undocumented) extension which permitted templates with
+     default arguments to be bound to template template parameters with
+     fewer parameters has been removed.  For example:
+
+      <pre>
+	template &lt;template &lt;typename&gt; class C&gt;
+	void f(C&lt;double&gt;) {}
+
+	template &lt;typename T, typename U = int&gt;
+	struct S {};
+
+	template void f(S&lt;double&gt;);
+      </pre>      
+
+     is no longer accepted by G++.  The reason this code is not
+     accepted is that <code>S</code> is a template with two parameters;
+     therefore, it cannot be bound to <code>C</code> which has only
+     one parameter.
+    </li>
+
+    <li>
+     The <code>&lt;?</code>, <code>&gt;?</code>, <code>&lt;?=</code>,
+     and <code>&gt;?=</code> operators,
+     deprecated in previous GCC releases, have been removed.
+    </li>
+
+    <li>
+     The command line option <code>-fconst-strings</code>, deprecated in
+     previous GCC releases, has been removed.
+    </li>
+
+    <li>
+     The configure variable <code>enable-__cxa_atexit</code> is now enabled by
+     default for more targets.  Enabling this variable is necessary in order for
+     static destructors to be executed in the correct order, but it depends upon
+     the presence of a non-standard C library in the target library in order to
+     work.  The variable is now enabled for more targets which are known to have
+     suitable C libraries.
+     </li>
+     <li>
+     <code>-Wextra</code> will produce warnings for <code>if</code> statements
+     with a semicolon as the only body, to catch code like:
+
+     <pre>
+         if (a);
+            return 1;
+         return 0;
+     </pre>
+
+     To suppress the warning in valid cases, use <code>{ }</code> instead.
+    </li>
+    <li>
+     The C++ frontend now also produces strict aliasing warnings when
+     <code>-fstrict-aliasing -Wstrict-aliasing</code> is in effect.
+    </li>
+  </ul> 
+
+  <h4>Runtime Library (libstdc++)</h4>
+  <ul>
+    <li>Added support for TR1 &lt;random&gt;, &lt;complex&gt;, and C
+    compatibility headers. In addition, a lock-free version of
+    <code>shared_ptr</code> was contributed as part of Phillip
+    Jordan's Google Summer of Code project on lock-free
+    containers. The implementation status for TR1 can be tracked in <a
+    href="http://gcc.gnu.org/onlinedocs/libstdc++/ext/tr1.html">tr1.html</a> 
+   </li>
+   <li>In association with the Summer of Code work on lock-free
+   containers, the interface for atomic builtins was adjusted,
+   creating simpler alternatives for non-threaded code paths. Also,
+   usage was consolidated and all elements were moved from
+   <code>namespace std</code> to
+   <code>namespace__gnu_cxx</code>. Affected interfaces are the
+   functions <code>__exchange_and_add</code>,
+   <code>__atomic_add</code>, and the objects <code>__mutex</code>,
+   <code>__recursive_mutex</code>, and
+   <code>__scoped_lock</code>. </li>
+   <li>Support for versioning weak symbol names via namespace
+   association was added. However, as this changes the names of
+   exported symbols, this is turned off by default in the current
+   ABI. Intrepid users can enable this feature by using 
+   <code>--enable-symvers=gnu-versioned-namespace</code> during configuration.
+   </li>
+   <li>Revised, simplified, and expanded policy-based associative
+   containers, including data types for tree and trie forms
+   (<code>basic_tree</code>, <code>tree</code>, <code>trie</code>),
+   lists (<code>list_update</code>), and both collision-chaining and
+   probing hash-based containers (<code>basic_hash_table</code>,
+   <code>cc_hash_table</code>, <code>gp_hash_table</code>). More details
+   per the <a href="http://gcc.gnu.org/onlinedocs/libstdc++/ext/pb_ds/index.html">documentation.</a>
+   </li>
+   <li>The implementation of the debug mode was modified, whereby the
+   debug namespaces were nested inside of <code>namespace std</code>
+   and <code>namespace __gnu_cxx</code> in order to resolve some long
+   standing corner cases involving name lookup. Debug
+   functionality from the policy-based data structures was
+   consolidated and enabled with the single macro,
+   <code>_GLIBCXX_DEBUG</code>. See PR 26142 for more
+   information.</li>
+   <li> Added extensions for type traits:
+   <code>__conditional_type</code>, <code>__numeric_traits</code>,
+   <code>__add_unsigned</code>, <code>__removed_unsigned</code>,
+   <code>__enable_if</code>. </li>
+   <li> Added a typelist implementation for compile-time
+   meta-programming. Elements for typelist construction and operation can be 
+   found within <code>namespace __gnu_cxx::typelist</code>.</li>
+   <li> Added a new allocator, <code>__gnu_cxx::throw_allocator</code>, for
+testing exception-safety.</li>
+   <li> Enabled library-wide visibility control, allowing
+   <code>-fvisibility</code> to be used.</li>
+   <li> Consolidated all nested namespaces and the
+   conversion of <code>__gnu_internal</code> implementation-private
+   details to anonymous namespaces whenever possible.</li>
+   <li>Implemented LWG resolutions DR 431 and DR 538.</li>
+  </ul>
+
+<h3>Fortran</h3>
+  <ul>
+    <li>Support for allocatable components has been added (TR 15581 and
+        Fortran 2003).</li>
+    <li>Support for the Fortran 2003 streaming IO extension has been
+        added.</li>
+    <li>The GNU Fortran compiler now uses 4-byte record markers by default
+    for unformatted files to be compatible with g77 and most other compilers.
+    The implementation allows for records greater than 2 GB and  is compatible
+    with several other compilers. Older versions of gfortran used 8-byte
+    record markers by default (on most systems). In order to change the length
+    of the record markers, e.g. to read unformatted files created by older
+    gfortran versions, the <code>
+    <a href="http://gcc.gnu.org/onlinedocs/gfortran/Runtime-Options.html"
+    >-frecord-marker=8</a></code> option can be used.</li>
+  </ul>
+
+
+<h3>Java (GCJ)</h3>
+
+  <ul>
+    <li>
+     A new command line option <code>-static-libgcj</code> has been
+     added for targets that use a linker compatible with GNU Binutils.
+     As its name implies, this causes libgcj to be linked statically.
+     In some cases this causes the resulting executable to start
+     faster and use less memory than if the shared version of libgcj
+     were used.  However caution should be used as it can also cause
+     essential parts of the library to be omitted.  Some of these issues are
+     discussed in:
+      <a href="http://gcc.gnu.org/wiki/Statically%20linking%20libgcj">
+	   http://gcc.gnu.org/wiki/Statically%20linking%20libgcj
+      </a>
+    </li>
+
+    <li><code>fastjar</code> is no longer bundled with GCC.  To build
+        libgcj, you will need either InfoZIP (both <code>zip</code>
+        and <code>unzip</code>) or an external <code>jar</code> program.
+        In the former case, the GCC build will install a <code>jar</code>
+        shell script that is based on InfoZIP and provides the same
+	functionality as <code>fastjar</code>.</li>
+  </ul>
+
+
+<h2>New Targets and Target Specific Improvements</h2>
+
+<h3>IA-32/x86-64</h3>
+  <ul>
+    <li><code>-mtune=generic</code> can now be used to generate code running
+        well on common x86 chips. This includes AMD Athlon,
+	AMD Opteron, Intel Pentium-M, Intel Pentium 4 and Intel Core 2.</li>
+    <li><code>-mtune=native</code> and <code>-march=native</code> will produce
+        code optimized for the host architecture as detected using the
+	<code>cpuid</code> instruction.</li>
+    <li>Added a new command line option <code>-fstackrealign</code> and
+        and <code>__attribute__ ((force_align_arg_pointer))</code>
+        to realign the stack at runtime.  This allows functions compiled
+        with a vector-aligned stack to be invoked from legacy objects
+        that keep only word-alignment.</li>
+  </ul>
+
+<h3>SPARC</h3>
+  <ul>
+    <li>The default CPU setting has been changed from V7 to V9 in 32-bit
+	mode on Solaris 7 and above.  This is already the case in 64-bit
+	mode.  It can be overridden by specifying <code>--with-cpu</code>
+	at configure time.</li>
+    <li>Back-end support of built-in functions for atomic memory access
+	has been implemented.</li>
+    <li>Support for the Sun UltraSPARC T1 (Niagara) processor has been
+	added.</li>
+  </ul>
+
+<h3>M32C</h3>
+  <ul>
+    <li>Various bug fixes have made some functions (notably, functions
+        returning structures) incompatible with previous releases.
+        Recompiling all libraries is recommended.  Note that code
+        quality has considerably improved since 4.1, making a
+        recompile even more beneficial.</li>
+  </ul>
+
+<h3>MIPS</h3>
+  <ul>
+    <li>Added support for the Broadcom SB-1A core.</li>
+  </ul>
+
+<h3>IA-64</h3>
+  <ul>
+    <li>Added support for IA-64 data and control speculation.  By default
+        speculation is enabled only during second scheduler pass.  A number of
+        machine flags was introduced to control the usage of speculation for both
+        scheduler passes.</li>
+  </ul>
+
+<h3>HPPA</h3>
+  <ul>
+    <li> Added Java language support (libffi and libjava) for 32-bit
+         HP-UX 11 target.</li>
+  </ul>
+
+
+<h2><a name="obsolete_systems">Obsolete Systems</a></h2>
+
+<h2>Documentation improvements</h2>
+
+<h3>PDF Documentation</h3>
+  <ul>
+    <li><p>A <code>make pdf</code> target has been added to the 
+        top-level makefile, enabling automated production of PDF
+        documentation files.  (Front-ends external to GCC should modify
+        their <code>Make-lang.in</code> file to add a <code>lang.pdf:</code>
+        target.)</p></li>
+  </ul>
+
+<h2>Other significant improvements</h2>
+
+<h3>Build system improvements</h3>
+  <ul>
+    <li><p>All the components of the compiler are now bootstrapped by
+        default.  This improves the resilience to bugs in the system
+        compiler or binary compatibility problems, as well as providing
+        better testing of GCC 4.2 itself.  In addition, if you build
+	the compiler from a combined tree, the assembler, linker, etc.
+	will also be bootstrapped (i.e. built with themselves).</p>
+
+        <p>You can disable this behavior, and go back to
+	the pre-GCC 4.2 set up, by configuring GCC with
+	<code>--disable-bootstrap</code>.</p></li>
+
+    <li><p>The rules that <code>configure</code> follows to find target tools
+        resemble more closely the locations that the built compiler
+        will search.  In addition, you can use the new configure option
+        <code>--with-target-tools</code> to specify where to find the
+        target tools used during the build, without affecting what the
+        built compiler will use.</p>
+
+        <p>This can be especially useful when building packages of
+        GCC.  For example, you may want to build GCC with
+        GNU <code>as</code> or <code>ld</code>, even if the resulting compiler
+        to work with the native assembler and linker.  To do so, you
+        can use <code>--with-target-tools</code> to point to the native
+        tools.</p></li>
+  </ul>
+
+<h3>Incompatible changes to the build system</h3>
+  <ul>
+    <li>Front-ends external to GCC should modify their
+	<code>Make-lang.in</code> file to replace double-colon rules (e.g.
+	<code>dvi::</code>) with normal rules (like <code>lang.dvi:</code>).
+	Front-end makefile hooks do not use double-colon rules anymore.</li>
+
+    <li>Up to GCC 4.1, a popular way to specify the target tools used
+        during the build was to create directories named <code>gas</code>,
+	<code>binutils</code>, etc. in the build tree, and create
+	links to the tools from there.	This does not work any more
+	when the compiler is bootstrapped.  The new configure option
+	<code>--with-target-tools</code> provides a better way to achieve
+	the same effect, and works for all native and cross settings.</li>
+  </ul>
+
+
+
+<!-- ==================================================================== -->
+
+<div class="copyright">
+
+<p>Please send FSF &amp; GNU inquiries &amp; questions to
+<a href="mailto:gnu@gnu.org">gnu@gnu.org</a>.
+There are also <a href="http://www.gnu.org/home.html#ContactInfo">other ways
+to contact</a> the FSF.</p>
+
+<p>These pages are maintained by
+<a href="http://gcc.gnu.org/about.html">the GCC team</a>.</p>
+
+<address>For questions related to the use of GCC, please consult these web
+pages and the <a href="http://gcc.gnu.org/onlinedocs/">GCC manuals</a>. If
+that fails, the <a href="mailto:gcc-help@gcc.gnu.org">gcc-help@gcc.gnu.org</a>
+mailing list might help.<br />
+Please send comments on these web pages and the development of GCC to our
+developer mailing list at <a href="mailto:gcc@gnu.org">gcc@gnu.org</a>
+or <a href="mailto:gcc@gcc.gnu.org">gcc@gcc.gnu.org</a>.  All of our lists
+have <a href="http://gcc.gnu.org/lists.html">public archives</a>.
+</address>
+
+<p>Copyright (C) Free Software Foundation, Inc.,
+51 Franklin St, Fifth Floor, Boston, MA 02110, USA.</p>
+<p>Verbatim copying and distribution of this entire article is
+permitted in any medium, provided this notice is preserved.</p>
+
+<table width="100%" border="0"><tr><td>
+  <!-- IGNORE DIFF -->Last modified 2007-05-12
+</td><td align="right" valign="bottom">
+  <a href="http://validator.w3.org/check/referer">
+      <img src="http://www.w3.org/Icons/valid-xhtml10"
+     alt="Valid XHTML 1.0" border="0" width="88" height="31" />
+   
+  </a>
+</td></tr></table>
+
+</div>
+
+<!-- ==================================================================== -->
+
+</body>
+     </html>
+  
+ 

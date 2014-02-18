@@ -1,0 +1,3 @@
+libstdc++@CXX@-@BV@-doc: extra-license-file
+libstdc++@CXX@-@BV@-doc: manpage-has-bad-whatis-entry
+libstdc++@CXX@-@BV@-doc: hyphen-used-as-minus-sign

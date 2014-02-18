@@ -20,6 +20,9 @@ install:
 
 clean:
 	$(MAKE) -C $(DIR) -f debian/rules clean
+	if test -f debian/README.Debian ; then \
+		cp -p debian/README.Debian $(DIR)/debian ; \
+	fi
 
 debclean:
 	rm -f *.deb

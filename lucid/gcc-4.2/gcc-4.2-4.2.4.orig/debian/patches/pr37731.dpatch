@@ -1,0 +1,105 @@
+#! /bin/sh -e
+
+# DP: Fix PR middle-end/37731 (wrong code)
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+gcc/
+
+2008-10-07  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Backport from mainline:
+	2008-10-07  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR middle-end/37731
+	* expmed.c (expand_mult): Properly check DImode constant in
+	CONST_DOUBLE.
+
+gcc/testsuite/
+
+2008-10-07  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Backport from mainline:
+	2008-10-07  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR middle-end/37731
+	* expmed.c (expand_mult): Properly check DImode constant in
+	CONST_DOUBLE.
+
+Index: gcc/testsuite/gcc.dg/torture/pr37731-1.c
+===================================================================
+--- gcc/testsuite/gcc.dg/torture/pr37731-1.c	(Revision 0)
++++ gcc/testsuite/gcc.dg/torture/pr37731-1.c	(Revision 140950)
+@@ -0,0 +1,17 @@
++/* { dg-do run } */
++
++extern void abort ();
++
++unsigned long long xh = 1;
++
++int
++main ()
++{
++  unsigned long long yh = 0xffffffffull;
++  unsigned long long z = xh * yh;
++
++  if (z != yh)
++    abort ();
++
++  return 0;
++}
+Index: gcc/testsuite/gcc.dg/torture/pr37731-2.c
+===================================================================
+--- gcc/testsuite/gcc.dg/torture/pr37731-2.c	(Revision 0)
++++ gcc/testsuite/gcc.dg/torture/pr37731-2.c	(Revision 140950)
+@@ -0,0 +1,17 @@
++/* { dg-do run } */
++
++extern void abort ();
++
++long long xh = 1;
++
++int
++main ()
++{
++  long long yh = 0xffffffffll;
++  long long z = xh * yh;
++
++  if (z != yh)
++    abort ();
++
++  return 0;
++}
+Index: gcc/expmed.c
+===================================================================
+--- gcc/expmed.c	(Revision 140949)
++++ gcc/expmed.c	(Revision 140950)
+@@ -3163,7 +3163,8 @@
+ 	{
+ 	  /* If we are multiplying in DImode, it may still be a win
+ 	     to try to work with shifts and adds.  */
+-	  if (CONST_DOUBLE_HIGH (op1) == 0)
++	  if (CONST_DOUBLE_HIGH (op1) == 0
++	      && CONST_DOUBLE_LOW (op1) > 0)
+ 	    coeff = CONST_DOUBLE_LOW (op1);
+ 	  else if (CONST_DOUBLE_LOW (op1) == 0
+ 		   && EXACT_POWER_OF_2_OR_ZERO_P (CONST_DOUBLE_HIGH (op1)))

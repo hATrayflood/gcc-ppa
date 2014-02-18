@@ -1,0 +1,47 @@
+#! /bin/sh -e
+
+# All lines beginning with `# DPATCH:' are a description of the patch.
+# DP: don't use single return if fp register have to be restored
+# DP: fixes 386864
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        #cd ${dir}gcc && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+---
+
+ gcc/config/m68k/m68k.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: gcc-4.2/gcc/config/m68k/m68k.c
+===================================================================
+--- gcc-4.2.orig/gcc/config/m68k/m68k.c
++++ gcc-4.2/gcc/config/m68k/m68k.c
+@@ -778,7 +778,7 @@ use_return_insn (void)
+   /* We can output the epilogue as RTL only if no registers need to be
+      restored.  */
+   m68k_compute_frame_layout ();
+-  return current_frame.reg_no ? false : true;
++  return (current_frame.reg_no + current_frame.fpu_no) ? false : true;
+ }
+ 
+ /* This function generates the assembly code for function exit,

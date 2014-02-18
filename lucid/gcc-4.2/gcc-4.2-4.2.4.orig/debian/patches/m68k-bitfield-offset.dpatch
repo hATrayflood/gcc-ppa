@@ -1,0 +1,192 @@
+#! /bin/sh -e
+
+# All lines beginning with `# DPATCH:' are a description of the patch.
+# DP: only use constant offset for register bitfields
+# DP: (combine expects shifts, but does a rotate)
+# test case for invalid use of bitfield inst:
+#
+# #define XINT(v) (((int)(v) << 4) >> 4)
+# #define XUINT(v) (((unsigned)(v) << 4) >> 4)
+# 
+# int f(int v, int s)
+# {
+# 	return (XUINT(v) >> -XINT(s)) & 0x0fffffff;
+# }
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        #cd ${dir}gcc && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+---
+
+ gcc/config/m68k/m68k.md |   62 ++++++++++++++++++++++++------------------------
+ 1 file changed, 31 insertions(+), 31 deletions(-)
+
+Index: gcc-4.2/gcc/config/m68k/m68k.md
+===================================================================
+--- gcc-4.2.orig/gcc/config/m68k/m68k.md
++++ gcc-4.2/gcc/config/m68k/m68k.md
+@@ -5221,34 +5221,34 @@
+ ;; so that its address is reloaded.
+ 
+ (define_expand "extv"
+-  [(set (match_operand:SI 0 "nonimmediate_operand" "")
++  [(set (match_operand:SI 0 "register_operand" "")
+ 	(sign_extract:SI (match_operand:SI 1 "general_operand" "")
+-			 (match_operand:SI 2 "general_operand" "")
+-			 (match_operand:SI 3 "general_operand" "")))]
++			 (match_operand:SI 2 "const_int_operand" "")
++			 (match_operand:SI 3 "const_int_operand" "")))]
+   "TARGET_68020 && TARGET_BITFIELD"
+   "")
+ 
+ (define_insn ""
+-  [(set (match_operand:SI 0 "nonimmediate_operand" "=d")
++  [(set (match_operand:SI 0 "register_operand" "=d")
+ 	(sign_extract:SI (match_operand:QI 1 "memory_operand" "o")
+-			 (match_operand:SI 2 "general_operand" "dn")
+-			 (match_operand:SI 3 "general_operand" "dn")))]
++			 (match_operand:SI 2 "nonmemory_operand" "dn")
++			 (match_operand:SI 3 "nonmemory_operand" "dn")))]
+   "TARGET_68020 && TARGET_BITFIELD"
+   "bfexts %1{%b3:%b2},%0")
+ 
+ (define_expand "extzv"
+-  [(set (match_operand:SI 0 "nonimmediate_operand" "")
++  [(set (match_operand:SI 0 "register_operand" "")
+ 	(zero_extract:SI (match_operand:SI 1 "general_operand" "")
+-			 (match_operand:SI 2 "general_operand" "")
+-			 (match_operand:SI 3 "general_operand" "")))]
++			 (match_operand:SI 2 "const_int_operand" "")
++			 (match_operand:SI 3 "const_int_operand" "")))]
+   "TARGET_68020 && TARGET_BITFIELD"
+   "")
+ 
+ (define_insn ""
+-  [(set (match_operand:SI 0 "nonimmediate_operand" "=d,d")
+-	(zero_extract:SI (match_operand:QI 1 "memory_operand" "o,d")
+-			 (match_operand:SI 2 "general_operand" "dn,dn")
+-			 (match_operand:SI 3 "general_operand" "dn,dn")))]
++  [(set (match_operand:SI 0 "register_operand" "=d")
++	(zero_extract:SI (match_operand:QI 1 "memory_operand" "o")
++			 (match_operand:SI 2 "nonmemory_operand" "dn")
++			 (match_operand:SI 3 "nonmemory_operand" "dn")))]
+   "TARGET_68020 && TARGET_BITFIELD"
+ {
+   if (GET_CODE (operands[2]) == CONST_INT)
+@@ -5265,8 +5265,8 @@
+ 
+ (define_insn ""
+   [(set (zero_extract:SI (match_operand:QI 0 "memory_operand" "+o")
+-			 (match_operand:SI 1 "general_operand" "dn")
+-			 (match_operand:SI 2 "general_operand" "dn"))
++			 (match_operand:SI 1 "nonmemory_operand" "dn")
++			 (match_operand:SI 2 "nonmemory_operand" "dn"))
+         (xor:SI (zero_extract:SI (match_dup 0) (match_dup 1) (match_dup 2))
+ 		(match_operand 3 "const_int_operand" "n")))]
+   "TARGET_68020 && TARGET_BITFIELD
+@@ -5280,8 +5280,8 @@
+ 
+ (define_insn ""
+   [(set (zero_extract:SI (match_operand:QI 0 "memory_operand" "+o")
+-			 (match_operand:SI 1 "general_operand" "dn")
+-			 (match_operand:SI 2 "general_operand" "dn"))
++			 (match_operand:SI 1 "nonmemory_operand" "dn")
++			 (match_operand:SI 2 "nonmemory_operand" "dn"))
+ 	(const_int 0))]
+   "TARGET_68020 && TARGET_BITFIELD"
+ {
+@@ -5302,16 +5302,16 @@
+ 
+ (define_expand "insv"
+   [(set (zero_extract:SI (match_operand:SI 0 "nonimmediate_operand" "")
+-			 (match_operand:SI 1 "general_operand" "")
+-			 (match_operand:SI 2 "general_operand" ""))
++			 (match_operand:SI 1 "const_int_operand" "")
++			 (match_operand:SI 2 "const_int_operand" ""))
+ 	(match_operand:SI 3 "register_operand" ""))]
+   "TARGET_68020 && TARGET_BITFIELD"
+   "")
+ 
+ (define_insn ""
+   [(set (zero_extract:SI (match_operand:QI 0 "memory_operand" "+o")
+-			 (match_operand:SI 1 "general_operand" "dn")
+-			 (match_operand:SI 2 "general_operand" "dn"))
++			 (match_operand:SI 1 "nonmemory_operand" "dn")
++			 (match_operand:SI 2 "nonmemory_operand" "dn"))
+ 	(match_operand:SI 3 "register_operand" "d"))]
+   "TARGET_68020 && TARGET_BITFIELD"
+   "bfins %3,%0{%b2:%b1}")
+@@ -5322,16 +5322,16 @@
+ (define_insn ""
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=d")
+ 	(sign_extract:SI (match_operand:SI 1 "register_operand" "d")
+-			 (match_operand:SI 2 "general_operand" "dn")
+-			 (match_operand:SI 3 "general_operand" "dn")))]
++			 (match_operand:SI 2 "const_int_operand" "n")
++			 (match_operand:SI 3 "const_int_operand" "n")))]
+   "TARGET_68020 && TARGET_BITFIELD"
+   "bfexts %1{%b3:%b2},%0")
+ 
+ (define_insn ""
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=d")
+ 	(zero_extract:SI (match_operand:SI 1 "register_operand" "d")
+-			 (match_operand:SI 2 "general_operand" "dn")
+-			 (match_operand:SI 3 "general_operand" "dn")))]
++			 (match_operand:SI 2 "const_int_operand" "n")
++			 (match_operand:SI 3 "const_int_operand" "n")))]
+   "TARGET_68020 && TARGET_BITFIELD"
+ {
+   if (GET_CODE (operands[2]) == CONST_INT)
+@@ -5348,8 +5348,8 @@
+ 
+ (define_insn ""
+   [(set (zero_extract:SI (match_operand:SI 0 "register_operand" "+d")
+-			 (match_operand:SI 1 "general_operand" "dn")
+-			 (match_operand:SI 2 "general_operand" "dn"))
++			 (match_operand:SI 1 "const_int_operand" "n")
++			 (match_operand:SI 2 "const_int_operand" "n"))
+ 	(const_int 0))]
+   "TARGET_68020 && TARGET_BITFIELD"
+ {
+@@ -5359,8 +5359,8 @@
+ 
+ (define_insn ""
+   [(set (zero_extract:SI (match_operand:SI 0 "register_operand" "+d")
+-			 (match_operand:SI 1 "general_operand" "dn")
+-			 (match_operand:SI 2 "general_operand" "dn"))
++			 (match_operand:SI 1 "const_int_operand" "n")
++			 (match_operand:SI 2 "const_int_operand" "n"))
+ 	(const_int -1))]
+   "TARGET_68020 && TARGET_BITFIELD"
+ {
+@@ -5370,8 +5370,8 @@
+ 
+ (define_insn ""
+   [(set (zero_extract:SI (match_operand:SI 0 "register_operand" "+d")
+-			 (match_operand:SI 1 "general_operand" "dn")
+-			 (match_operand:SI 2 "general_operand" "dn"))
++			 (match_operand:SI 1 "const_int_operand" "n")
++			 (match_operand:SI 2 "const_int_operand" "n"))
+ 	(match_operand:SI 3 "register_operand" "d"))]
+   "TARGET_68020 && TARGET_BITFIELD"
+ {

@@ -1,0 +1,2 @@
+libgomp.so.1 lib64gomp1 #MINVER#
+#include "libgomp1.symbols.common"

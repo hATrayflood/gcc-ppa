@@ -1,0 +1,168 @@
+#! /bin/sh -e
+
+# DP: don't bogusly check if the 64bit binaries also work,
+# DP: which does break on 32bit kernels.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- libmudflap/configure.orig	2007-07-06 20:28:43.000000000 +0200
++++ libmudflap/configure	2007-07-07 14:44:32.899598235 +0200
+@@ -2366,7 +2366,8 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
+-if test "$cross_compiling" != yes; then
++# Check disabled as it doesn't catch 64 bit biarch builds on 32 bit archs.
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+   (eval $ac_try) 2>&5
+--- libiberty/configure.orig	2007-07-06 20:28:51.000000000 +0200
++++ libiberty/configure	2007-07-07 14:44:32.939598839 +0200
+@@ -2177,7 +2177,7 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
+-if test "$cross_compiling" != yes; then
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+   (eval $ac_try) 2>&5
+--- libjava/libltdl/configure.orig	2007-07-06 20:28:59.000000000 +0200
++++ libjava/libltdl/configure	2007-07-07 14:44:32.919598537 +0200
+@@ -2457,7 +2457,7 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
+-if test "$cross_compiling" != yes; then
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+   (eval $ac_try) 2>&5
+--- libjava/configure.orig	2007-07-07 14:42:54.778118095 +0200
++++ libjava/configure	2007-07-07 14:44:32.929598688 +0200
+@@ -2818,7 +2818,7 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6; }
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
+-if test "$cross_compiling" != yes; then
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (case "(($ac_try" in
+   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+--- libobjc/configure.orig	2007-07-06 20:28:33.000000000 +0200
++++ libobjc/configure	2007-07-07 14:44:32.889598084 +0200
+@@ -2101,7 +2101,7 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
+-if test "$cross_compiling" != yes; then
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+   (eval $ac_try) 2>&5
+--- boehm-gc/configure.orig	2007-07-06 20:43:16.000000000 +0200
++++ boehm-gc/configure	2007-07-07 14:44:32.909598386 +0200
+@@ -2354,7 +2354,7 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
+-if test "$cross_compiling" != yes; then
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+   (eval $ac_try) 2>&5
+--- libffi/configure.orig	2007-07-06 20:43:16.000000000 +0200
++++ libffi/configure	2007-07-07 14:44:32.909598386 +0200
+@@ -2319,7 +2319,7 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
+-if test "$cross_compiling" != yes; then
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+   (eval $ac_try) 2>&5
+--- zlib/configure.orig	2007-07-06 20:28:32.000000000 +0200
++++ zlib/configure	2007-07-07 14:44:32.879597934 +0200
+@@ -2397,7 +2397,7 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
+-if test "$cross_compiling" != yes; then
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+   (eval $ac_try) 2>&5
+--- libstdc++-v3/configure.orig	2007-07-06 20:28:28.000000000 +0200
++++ libstdc++-v3/configure	2007-07-07 14:47:06.371913330 +0200
+@@ -2759,7 +2759,7 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
+-if test "$cross_compiling" != yes; then
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+   (eval $ac_try) 2>&5
+@@ -5840,7 +5840,7 @@
+ 
+     if test $enable_clocale = auto; then
+       # Test for bugs early in glibc-2.2.x series
+-      if test "$cross_compiling" = yes; then
++      if false && test "$cross_compiling" = yes; then
+   enable_clocale_flag=generic
+ else
+   cat >conftest.$ac_ext <<_ACEOF
+--- libssp/configure.orig	2007-07-06 20:28:55.000000000 +0200
++++ libssp/configure	2007-07-07 14:44:32.909598386 +0200
+@@ -2406,7 +2406,7 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
+-if test "$cross_compiling" != yes; then
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+   (eval $ac_try) 2>&5
+--- libgfortran/configure.orig	2007-07-06 20:28:42.000000000 +0200
++++ libgfortran/configure	2007-07-07 14:44:32.899598235 +0200
+@@ -2501,7 +2501,7 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
+-if test "$cross_compiling" != yes; then
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+   (eval $ac_try) 2>&5
+--- libgomp/configure~	2007-07-23 20:54:54.000000000 +0200
++++ libgomp/configure	2007-08-17 13:22:23.000000000 +0200
+@@ -2618,7 +2618,7 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
+-if test "$cross_compiling" != yes; then
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+   (eval $ac_try) 2>&5

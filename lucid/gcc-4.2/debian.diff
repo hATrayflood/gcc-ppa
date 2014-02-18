@@ -1,0 +1,580 @@
+diff -urN debian/changelog gcc-4.2-4.2.4.orig/debian/changelog
+--- debian/changelog	2014-02-15 17:39:47.881524702 +0900
++++ gcc-4.2-4.2.4.orig/debian/changelog	2014-02-18 13:59:10.968942491 +0900
+@@ -1,3 +1,9 @@
++gcc-4.2 (4.2.4-1ubuntu4lucid0) lucid; urgency=low
++
++  * ppa for lucid
++
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Mon, 17 Feb 2014 20:20:00 +0900
++
+ gcc-4.2 (4.2.4-1ubuntu4) hardy-proposed; urgency=low
+ 
+   * Fix PR libgomp/28432. LP: #235070, using the patch in intrepid.
+diff -urN debian/control gcc-4.2-4.2.4.orig/debian/control
+--- debian/control	2014-02-15 17:39:47.925486055 +0900
++++ gcc-4.2-4.2.4.orig/debian/control	2014-02-18 14:57:56.736027088 +0900
+@@ -1,12 +1,12 @@
+ Source: gcc-4.2
+ Section: devel
+ Priority: optional
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-XSBC-Original-Maintainer: Debian GCC Maintainers <debian-gcc@lists.debian.org>
+-Uploaders: Matthias Klose <doko@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.7.3
+-Build-Depends: dpkg-dev (>= 1.14.15), debhelper (>= 5.0.62), gcc-multilib [amd64 i386 powerpc ppc64 s390 sparc kfreebsd-amd64], libc6.1-dev (>= 2.5) [alpha ia64] | libc0.3-dev (>= 2.5) [hurd-i386] | libc0.1-dev (>= 2.5) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.5), libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64], lib64gcc1 [i386 powerpc sparc s390], libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], m4, autoconf, autoconf2.13, automake1.9, libtool, autogen, gawk, dejagnu [!hurd-i386], lzma, binutils (>= 2.17cvs20070426) | binutils-multiarch (>= 2.17cvs20070426), binutils-hppa64 (>= 2.17cvs20070426) [hppa], gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, texinfo (>= 4.3), libmpfr-dev (>= 2.3.0~rc1.dfsg.1) [!avr], locales [!hurd-i386 !m68k], procps [!hurd-i386], sharutils, realpath (>= 1.9.12), chrpath, lsb-release, make (>= 3.81)
++Build-Depends: dpkg-dev (>= 1.14.15), debhelper (>= 5.0.62), gcc-multilib [amd64 i386 powerpc ppc64 s390 sparc kfreebsd-amd64], libc6.1-dev (>= 2.5) [alpha ia64] | libc0.3-dev (>= 2.5) [hurd-i386] | libc0.1-dev (>= 2.5) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.5), libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64], lib64gcc1 [i386 powerpc sparc s390], libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.59, autoconf2.13, automake1.9, libtool, autogen, gawk, dejagnu [!hurd-i386], lzma, binutils (>= 2.17cvs20070426) | binutils-multiarch (>= 2.17cvs20070426), binutils-hppa64 (>= 2.17cvs20070426) [hppa], gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, texinfo (>= 4.3), libmpfr-dev (>= 2.3.0~rc1.dfsg.1) [!avr], locales [!hurd-i386 !m68k], procps [!hurd-i386], sharutils, realpath (>= 1.9.12), chrpath, lsb-release, make (>= 3.81)
+ Build-Depends-Indep: doxygen (>= 1.4.2), graphviz (>= 2.2), gsfonts-x11, texlive-latex-base, 
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-lower
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ Package: gcc-4.2-base
+ Architecture: any
+@@ -16,98 +16,6 @@
+  This package contains files common to all languages and libraries
+  contained in the GNU Compiler Collection (GCC).
+ 
+-Package: libgcc1
+-Architecture: any
+-Section: libs
+-Priority: required
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${shlibs:Depends}
+-Description: GCC support library
+- Shared version of the support library, a library of internal subroutines
+- that GCC uses to overcome shortcomings of particular machines, or
+- special needs for some languages.
+-
+-Package: libgcc1-dbg
+-Architecture: any
+-Section: libdevel
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), libgcc1 (= ${gcc:EpochVersion})
+-Description: GCC support library (debug symbols)
+- Debug symbols for the GCC support library.
+-
+-Package: libgcc2
+-Architecture: m68k
+-Section: libs
+-Priority: required
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${shlibs:Depends}
+-Description: GCC support library
+- Shared version of the support library, a library of internal subroutines
+- that GCC uses to overcome shortcomings of particular machines, or
+- special needs for some languages.
+-
+-Package: libgcc2-dbg
+-Architecture: m68k
+-Section: libdevel
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), libgcc2 (= ${gcc:Version})
+-Description: GCC support library (debug symbols)
+- Debug symbols for the GCC support library.
+-
+-Package: libgcc4
+-Architecture: hppa
+-Section: libs
+-Priority: required
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${shlibs:Depends}
+-Description: GCC support library
+- Shared version of the support library, a library of internal subroutines
+- that GCC uses to overcome shortcomings of particular machines, or
+- special needs for some languages.
+-
+-Package: libgcc4-dbg
+-Architecture: hppa
+-Section: libdevel
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), libgcc4 (= ${gcc:Version})
+-Description: GCC support library (debug symbols)
+- Debug symbols for the GCC support library.
+-
+-Package: lib64gcc1
+-Architecture: i386 powerpc sparc s390
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${dep:libcbiarch}
+-Conflicts: libgcc1 (<= 1:3.3-0pre9)
+-Description: GCC support library (64bit)
+- Shared version of the support library, a library of internal subroutines
+- that GCC uses to overcome shortcomings of particular machines, or
+- special needs for some languages.
+-
+-Package: lib64gcc1-dbg
+-Architecture: i386 powerpc sparc s390
+-Section: libdevel
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), lib64gcc1 (= ${gcc:EpochVersion})
+-Description: GCC support library (debug symbols)
+- Debug symbols for the GCC support library.
+-
+-Package: lib32gcc1
+-Architecture: amd64 ppc64 kfreebsd-amd64
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${dep:libcbiarch}
+-Replaces: ia32-libs-openoffice.org (<< 1ubuntu3)
+-Description: GCC support library (32 bit Version)
+- Shared version of the support library, a library of internal subroutines
+- that GCC uses to overcome shortcomings of particular machines, or
+- special needs for some languages.
+-
+-Package: lib32gcc1-dbg
+-Architecture: amd64 ppc64 kfreebsd-amd64
+-Section: libdevel
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), lib32gcc1 (= ${gcc:EpochVersion})
+-Description: GCC support library (debug symbols)
+- Debug symbols for the GCC support library.
+-
+ Package: gcc-4.2
+ Architecture: any
+ Section: devel
+@@ -200,62 +108,6 @@
+  On architectures with multilib support, the package contains files
+  and dependencies for the non-default multilib architecture(s).
+ 
+-Package: libmudflap0
+-Architecture: any
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${shlibs:Depends}
+-Description: GCC mudflap shared support libraries
+- The libmudflap libraries are used by GCC for instrumenting pointer and array
+- dereferencing operations.
+-
+-Package: libmudflap0-dbg
+-Architecture: any
+-Section: libdevel
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), libmudflap0 (= ${gcc:Version})
+-Description: GCC mudflap shared support libraries (debug symbols)
+- The libmudflap libraries are used by GCC for instrumenting pointer and array
+- dereferencing operations.
+-
+-Package: lib32mudflap0
+-Architecture: amd64 ppc64 kfreebsd-amd64
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+-Replaces: libmudflap0 (<< 4.1)
+-Description: GCC mudflap shared support libraries (32bit)
+- The libmudflap libraries are used by GCC for instrumenting pointer and array
+- dereferencing operations.
+-
+-Package: lib32mudflap0-dbg
+-Architecture: any
+-Section: libdevel
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), lib32mudflap0 (= ${gcc:Version})
+-Description: GCC mudflap shared support libraries (32 bit debug symbols)
+- The libmudflap libraries are used by GCC for instrumenting pointer and array
+- dereferencing operations.
+-
+-Package: lib64mudflap0
+-Architecture: i386 powerpc sparc s390
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+-Replaces: libmudflap0 (<< 4.1)
+-Description: GCC mudflap shared support libraries (64bit)
+- The libmudflap libraries are used by GCC for instrumenting pointer and array
+- dereferencing operations.
+-
+-Package: lib64mudflap0-dbg
+-Architecture: any
+-Section: libdevel
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), lib64mudflap0 (= ${gcc:Version})
+-Description: GCC mudflap shared support libraries (64 bit debug symbols)
+- The libmudflap libraries are used by GCC for instrumenting pointer and array
+- dereferencing operations.
+-
+ Package: libmudflap0-4.2-dev
+ Architecture: any
+ Section: libdevel
+@@ -269,70 +121,6 @@
+  .
+  This package contains the headers and the static libraries.
+ 
+-Package: libgomp1
+-Architecture: any
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${shlibs:Depends}
+-Description: GCC OpenMP (GOMP) support library
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran 95 compilers
+- in the GNU Compiler Collection.
+-
+-Package: libgomp1-dbg
+-Architecture: any
+-Section: libdevel
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), libgomp1 (= ${gcc:Version})
+-Description: GCC OpenMP (GOMP) support library (debug symbols)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran 95 compilers
+- in the GNU Compiler Collection.
+-
+-Package: lib32gomp1
+-Architecture: amd64 ppc64 kfreebsd-amd64
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+-Description: GCC OpenMP (GOMP) support library (32bit)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran 95 compilers
+- in the GNU Compiler Collection.
+-
+-Package: lib32gomp1-dbg
+-Architecture: any
+-Section: libdevel
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), lib32gomp1 (= ${gcc:Version})
+-Description: GCC OpenMP (GOMP) support library (32 bit debug symbols)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran 95 compilers
+- in the GNU Compiler Collection.
+-
+-Package: lib64gomp1
+-Architecture: i386 powerpc sparc s390
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+-Description: GCC OpenMP (GOMP) support library (64bit)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran 95 compilers
+- in the GNU Compiler Collection.
+-
+-Package: lib64gomp1-dbg
+-Architecture: any
+-Section: libdevel
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), lib64gomp1 (= ${gcc:Version})
+-Description: GCC OpenMP (GOMP) support library (64bit debug symbols)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran 95 compilers
+- in the GNU Compiler Collection.
+-
+-Package: protoize
+-Architecture: any
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), gcc-4.2 (>= ${gcc:Version}), ${shlibs:Depends}
+-Description: Create/remove ANSI prototypes from C code
+- "protoize" can be used to add prototypes to a program, thus converting
+- the program to ANSI C in one respect.  The companion program "unprotoize"
+- does the reverse: it removes argument types from any prototypes
+- that are found.
+-
+ Package: gobjc++-4.2
+ Architecture: any
+ Priority: optional
+@@ -380,54 +168,6 @@
+  On architectures with multilib support, the package contains files
+  and dependencies for the non-default multilib architecture(s).
+ 
+-Package: libobjc2
+-Section: libs
+-Architecture: any
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${shlibs:Depends}
+-Description: Runtime library for GNU Objective-C applications
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+-Package: libobjc2-dbg
+-Section: libdevel
+-Architecture: any
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), libobjc2 (= ${gcc:Version}), libgcc1-dbg
+-Description: Runtime library for GNU Objective-C applications (debug symbols)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+-Package: lib64objc2
+-Section: libs
+-Architecture: i386 powerpc sparc s390
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+-Description: Runtime library for GNU Objective-C applications (64bit)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+-Package: lib64objc2-dbg
+-Section: libdevel
+-Architecture: any
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), lib64objc2 (= ${gcc:Version}), lib64gcc1-dbg
+-Description: Runtime library for GNU Objective-C applications (64 bit debug symbols)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+-Package: lib32objc2
+-Section: libs
+-Architecture: amd64 ppc64 kfreebsd-amd64
+-Priority: optional
+-Depends: gcc-4.2-base (>= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+-Description: Runtime library for GNU Objective-C applications (32bit)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+-Package: lib32objc2-dbg
+-Section: libdevel
+-Architecture: any
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), lib32objc2 (= ${gcc:Version}), lib32gcc1-dbg
+-Description: Runtime library for GNU Objective-C applications (32 bit debug symbols)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+ Package: gfortran-4.2
+ Architecture: any
+ Priority: optional
+@@ -515,120 +255,6 @@
+  Library needed for GNU Fortran applications linked against the
+  shared library.
+ 
+-Package: libffi4
+-Section: libs
+-Architecture: any
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${shlibs:Depends}
+-Description: Foreign Function Interface library runtime
+- A foreign function interface is the popular name for the interface that
+- allows code written in one language to call code written in another
+- language.
+-
+-Package: libffi4-dbg
+-Section: libdevel
+-Architecture: any
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), libffi4 (= ${gcc:Version})
+-Description: Foreign Function Interface library runtime (debug symbols)
+- A foreign function interface is the popular name for the interface that
+- allows code written in one language to call code written in another
+- language.
+-
+-Package: lib32ffi4
+-Section: libs
+-Architecture: amd64 ppc64 kfreebsd-amd64
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+-Replaces: libffi4 (<< 4.1)
+-Description: Foreign Function Interface library runtime (32bit)
+- A foreign function interface is the popular name for the interface that
+- allows code written in one language to call code written in another
+- language.
+-
+-Package: lib32ffi4-dbg
+-Section: libdevel
+-Architecture: any
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), lib32ffi4 (= ${gcc:Version})
+-Description: Foreign Function Interface library runtime (debug symbols)
+- A foreign function interface is the popular name for the interface that
+- allows code written in one language to call code written in another
+- language.
+-
+-Package: lib64ffi4
+-Section: libs
+-Architecture: i386 powerpc sparc s390
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+-Replaces: libffi4 (<< 4.1)
+-Description: Foreign Function Interface library runtime (64bit)
+- A foreign function interface is the popular name for the interface that
+- allows code written in one language to call code written in another
+- language.
+-
+-Package: lib64ffi4-dbg
+-Section: libdevel
+-Architecture: any
+-Priority: extra
+-Depends: gcc-4.2-base (= ${gcc:Version}), lib64ffi4 (= ${gcc:Version})
+-Description: Foreign Function Interface library runtime (debug symbols)
+- A foreign function interface is the popular name for the interface that
+- allows code written in one language to call code written in another
+- language.
+-
+-Package: libffi4-dev
+-Section: libdevel
+-Architecture: any
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), libffi4 (>= ${gcc:Version})
+-Suggests: ${sug:libffidev}
+-Provides: libffi-dev
+-Conflicts: libffi1-dev, libffi2-dev, libffi3-dev, libffi-dev, libffi
+-Description: Foreign Function Interface library (development files)
+- This package contains the headers and static library files necessary for
+- building programs which use libffi.
+- .
+- A foreign function interface is the popular name for the interface that
+- allows code written in one language to call code written in another
+- language.
+-
+-Package: libstdc++6
+-Architecture: any
+-Section: libs
+-Priority: required
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${shlibs:Depends}
+-Conflicts: scim (<< 1.4.2-1)
+-Description: The GNU Standard C++ Library v3
+- This package contains an additional runtime library for C++ programs
+- built with the GNU compiler.
+- .
+- libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+- was included up to g++-2.95. The first version of libstdc++-v3 appeared
+- in g++-3.0.
+-
+-Package: lib32stdc++6
+-Architecture: amd64 ppc64 kfreebsd-amd64
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), lib32gcc1
+-Description: The GNU Standard C++ Library v3 (32 bit Version)
+- This package contains an additional runtime library for C++ programs
+- built with the GNU compiler.
+-
+-Package: lib64stdc++6
+-Architecture: i386 powerpc sparc s390
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), ${shlibs:Depends}, lib64gcc1
+-Description: The GNU Standard C++ Library v3 (64bit)
+- This package contains an additional runtime library for C++ programs
+- built with the GNU compiler.
+- .
+- libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+- was included up to g++-2.95. The first version of libstdc++-v3 appeared
+- in g++-3.0.
+-
+ Package: libstdc++6-4.2-dev
+ Architecture: any
+ Section: libdevel
+@@ -721,20 +347,6 @@
+  These are versions of basic static libraries such as libgcc.a compiled
+  with the -msoft-float option, for CPUs without a floating-point unit.
+ 
+-Package: fixincludes
+-Architecture: any
+-Priority: optional
+-Depends: gcc-4.2-base (= ${gcc:Version}), gcc-4.2 (= ${gcc:Version}), ${shlibs:Depends}
+-Description: Fix non-ANSI header files
+- FixIncludes was created to fix non-ANSI system header files. Many
+- system manufacturers supply proprietary headers that are not ANSI compliant.
+- The GNU compilers cannot compile non-ANSI headers. Consequently, the
+- FixIncludes shell script was written to fix the header files.
+- .
+- Not all packages with header files are installed on the system, when the
+- package is built, so we make fixincludes available at build time of other
+- packages, such that checking tools like lintian can make use of it.
+-
+ Package: gcc-4.2-doc
+ Architecture: all
+ Section: doc
+diff -urN debian/control.m4 gcc-4.2-4.2.4.orig/debian/control.m4
+--- debian/control.m4	2014-02-15 17:39:47.917531978 +0900
++++ gcc-4.2-4.2.4.orig/debian/control.m4	2014-02-18 14:01:50.831023759 +0900
+@@ -25,33 +25,17 @@
+ Source: SRCNAME
+ Section: devel
+ Priority: PRI(optional)
+-ifelse(DIST,`Ubuntu',`dnl
+-ifelse(regexp(SRCNAME, `gnat\|gpc-|gdc-'),0,`dnl
+-Maintainer: Ubuntu MOTU Developers <ubuntu-motu@lists.ubuntu.com>
+-', `dnl
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-')dnl SRCNAME
+-XSBC-Original-Maintainer: MAINTAINER
+-', `dnl
+-Maintainer: MAINTAINER
+-')dnl DIST
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Uploaders: Ludovic Brenta <lbrenta@debian.org>
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Uploaders: Arthur Loiret <arthur.loiret@gmail.com>
+-', regexp(SRCNAME, `gpc'),0,`dnl
+-Uploaders: Matthias Klose <doko@debian.org>
+-', `dnl
+-Uploaders: Matthias Klose <doko@debian.org>
+-')dnl SRCNAME
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.7.3
+ ifdef(`TARGET',`dnl cross
+-Build-Depends: dpkg-dev (>= 1.13.9), dpkg-cross (>= 1.25.99), LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP LIBUNWIND_BUILD_DEP LIBATOMIC_OPS_BUILD_DEP m4, autoconf, autoconf2.13, automake1.9, libtool, autogen, gawk, lzma, BINUTILS_BUILD_DEP, debhelper (>= 5.0), bison (>= 1:2.3), flex, realpath (>= 1.9.12), lsb-release, make (>= 3.81)
++Build-Depends: dpkg-dev (>= 1.13.9), dpkg-cross (>= 1.25.99), LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP LIBUNWIND_BUILD_DEP LIBATOMIC_OPS_BUILD_DEP m4, autoconf2.59, autoconf2.13, automake1.9, libtool, autogen, gawk, lzma, BINUTILS_BUILD_DEP, debhelper (>= 5.0), bison (>= 1:2.3), flex, realpath (>= 1.9.12), lsb-release, make (>= 3.81)
+ ',`dnl native
+-Build-Depends: dpkg-dev (>= 1.14.15), debhelper (>= 5.0.62), gcc-multilib [amd64 i386 powerpc ppc64 s390 sparc kfreebsd-amd64], LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], m4, autoconf, autoconf2.13, automake1.9, libtool, autogen, gawk, CHECK_BUILD_DEP, lzma, BINUTILS_BUILD_DEP, binutils-hppa64 (>= BINUTILSV) [hppa], gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, texinfo (>= 4.3), FORTRAN_BUILD_DEP locales [locale_no_archs], procps [linux_gnu_archs], sharutils, PASCAL_BUILD_DEP JAVA_BUILD_DEP GNAT_BUILD_DEP GDC_BUILD_DEP realpath (>= 1.9.12), chrpath, lsb-release, make (>= 3.81)
++Build-Depends: dpkg-dev (>= 1.14.15), debhelper (>= 5.0.62), gcc-multilib [amd64 i386 powerpc ppc64 s390 sparc kfreebsd-amd64], LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.59, autoconf2.13, automake1.9, libtool, autogen, gawk, CHECK_BUILD_DEP, lzma, BINUTILS_BUILD_DEP, binutils-hppa64 (>= BINUTILSV) [hppa], gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, texinfo (>= 4.3), FORTRAN_BUILD_DEP locales [locale_no_archs], procps [linux_gnu_archs], sharutils, PASCAL_BUILD_DEP JAVA_BUILD_DEP GNAT_BUILD_DEP GDC_BUILD_DEP realpath (>= 1.9.12), chrpath, lsb-release, make (>= 3.81)
+ Build-Depends-Indep: LIBSTDCXX_BUILD_INDEP JAVA_BUILD_INDEP
+ ')dnl
+ dnl Build-Conflicts: qt3-dev-tools
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-lower
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ ifelse(SRCNAME,gcc-snapshot,`dnl
+ Package: gcc-snapshot
+diff -urN debian/patches/libjava-armel-ldflags.dpatch gcc-4.2-4.2.4.orig/debian/patches/libjava-armel-ldflags.dpatch
+--- debian/patches/libjava-armel-ldflags.dpatch	2014-02-15 17:39:47.978523837 +0900
++++ gcc-4.2-4.2.4.orig/debian/patches/libjava-armel-ldflags.dpatch	2014-02-15 18:17:26.633077418 +0900
+@@ -13,7 +13,7 @@
+ case "$1" in
+     -patch)
+         patch $pdir -f --no-backup-if-mismatch -p0 < $0
+-        cd ${dir}libjava && autoconf
++        cd ${dir}libjava && autoconf2.59
+         ;;
+     -unpatch)
+         patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+diff -urN debian/patches/libobjc-gc-link.dpatch gcc-4.2-4.2.4.orig/debian/patches/libobjc-gc-link.dpatch
+--- debian/patches/libobjc-gc-link.dpatch	2014-02-15 17:39:47.950500477 +0900
++++ gcc-4.2-4.2.4.orig/debian/patches/libobjc-gc-link.dpatch	2014-02-15 18:19:17.173533846 +0900
+@@ -13,7 +13,7 @@
+ case "$1" in
+     -patch)
+         patch $pdir -f --no-backup-if-mismatch -p0 < $0
+-        cd ${dir}libobjc && autoconf
++        cd ${dir}libobjc && autoconf2.59
+         ;;
+     -unpatch)
+         patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+diff -urN debian/patches/pr24170.dpatch gcc-4.2-4.2.4.orig/debian/patches/pr24170.dpatch
+--- debian/patches/pr24170.dpatch	2014-02-15 17:39:47.954503754 +0900
++++ gcc-4.2-4.2.4.orig/debian/patches/pr24170.dpatch	2014-02-15 18:18:27.429496063 +0900
+@@ -13,7 +13,7 @@
+ case "$1" in
+     -patch)
+         patch $pdir -f --no-backup-if-mismatch -p0 < $0
+-        cd ${dir}libjava && autoconf
++        cd ${dir}libjava && autoconf2.59
+         ;;
+     -unpatch)
+         patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+diff -urN debian/rules.defs gcc-4.2-4.2.4.orig/debian/rules.defs
+--- debian/rules.defs	2014-02-15 17:39:47.885526302 +0900
++++ gcc-4.2-4.2.4.orig/debian/rules.defs	2014-02-15 22:45:20.984463645 +0900
+@@ -196,10 +196,6 @@
+ #    with_common_libs := yes
+ #  endif
+ #endif
+-ifeq ($(distribution),Ubuntu)
+-  with_common_pkgs := yes
+-  with_common_libs := yes
+-endif
+ 
+ with_gccbase := yes
+ with_dev := yes
+diff -urN debian/rules.parameters gcc-4.2-4.2.4.orig/debian/rules.parameters
+--- debian/rules.parameters	2014-02-15 17:39:47.913529609 +0900
++++ gcc-4.2-4.2.4.orig/debian/rules.parameters	2014-02-15 19:39:02.671015483 +0900
+@@ -2,9 +2,9 @@
+ GCC_VERSION	:= 4.2.4
+ NEXT_GCC_VERSION	:= 4.2.5
+ BASE_VERSION	:= 4.2
+-SOURCE_VERSION	:= 4.2.4-1ubuntu2~ppa1
+-DEB_VERSION	:= 4.2.4-1ubuntu2~ppa1
+-DEB_EVERSION	:= 1:4.2.4-1ubuntu2~ppa1
++SOURCE_VERSION	:= 4.2.4-1ubuntu4lucid0
++DEB_VERSION	:= 4.2.4-1ubuntu4lucid0
++DEB_EVERSION	:= 1:4.2.4-1ubuntu4lucid0
+ GPC_BASE_VERSION	:= 
+ GDC_BASE_VERSION  := 
+ DEB_GPC_VERSION	:= 
+@@ -12,7 +12,7 @@
+ DEB_SOVERSION	:= 4.2.1
+ DEB_SOEVERSION	:= 1:4.2.1
+ DEB_LIBGCC_SOVERSION	:= 1:4.2.1
+-DEB_LIBGCC_VERSION	:= 1:4.2.4-1ubuntu2~ppa1
++DEB_LIBGCC_VERSION	:= 1:4.2.4-1ubuntu4lucid0
+ DEB_STDCXX_SOVERSION	:= 4.2.1
+ DEB_GCJ_SOVERSION	:= 4.2.1
+ PKG_GCJ_EXT	:= 8

@@ -1,0 +1,4 @@
+libstdc++.so.6 libstdc++6 #MINVER#
+#include "libstdc++6.symbols.32bit"
+ __gxx_personality_sj0@CXXABI_1.3 4.1.1-21
+#include "libstdc++6.symbols.glibcxxmath"

@@ -1,0 +1,1296 @@
+# -*- makefile -*-
+# definitions used in more than one Makefile / rules file
+
+SHELL		= /bin/bash -e	# brace expansion used in rules file
+PWD		:= $(shell pwd)
+srcdir		= $(PWD)/src
+builddir	= $(PWD)/build
+builddir_hppa64	= $(PWD)/build-hppa64
+builddir_ia6432	= $(PWD)/build-ia6432
+stampdir	= stamps
+distribution	:= $(shell lsb_release -is)
+
+# architecture dependent variables
+vafilt = $(subst $(2)=,,$(filter $(2)=%,$(1)))
+
+DPKG_VARS		:= $(shell dpkg-architecture)
+DEB_BUILD_GNU_TYPE	?= $(call vafilt,$(DPKG_VARS),DEB_BUILD_GNU_TYPE)
+DEB_HOST_ARCH		?= $(call vafilt,$(DPKG_VARS),DEB_HOST_ARCH)
+DEB_HOST_GNU_CPU	?= $(call vafilt,$(DPKG_VARS),DEB_HOST_GNU_CPU)
+DEB_HOST_GNU_SYSTEM	?= $(call vafilt,$(DPKG_VARS),DEB_HOST_GNU_SYSTEM)
+DEB_HOST_GNU_TYPE	?= $(call vafilt,$(DPKG_VARS),DEB_HOST_GNU_TYPE)
+
+ifdef DEB_TARGET_GNU_TYPE
+  TARGET_VARS := $(shell dpkg-architecture -f \
+			-t$(DEB_TARGET_GNU_TYPE) 2>/dev/null)
+  DEB_TARGET_ARCH	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_ARCH)
+  DEB_TARGET_ARCH_OS	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_ARCH_OS)
+  DEB_TARGET_ARCH_CPU	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_ARCH_CPU)
+  DEB_TARGET_GNU_CPU	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_GNU_CPU)
+  DEB_TARGET_GNU_TYPE	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_GNU_TYPE)
+  DEB_TARGET_GNU_SYSTEM	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_GNU_SYSTEM)
+else
+
+  # allow debian/target to be used instead of GCC_TARGET - this was requested
+  # by toolchain-source maintainer
+  DEBIAN_TARGET_FILE := $(strip $(if $(wildcard debian/target), \
+				  $(shell cat debian/target 2>/dev/null)))
+
+  ifdef DEB_TARGET_ARCH
+    # empty
+  else ifdef GCC_TARGET
+    DEB_TARGET_ARCH = $(GCC_TARGET)
+  else ifneq ($(DEBIAN_TARGET_FILE),)
+    DEB_TARGET_ARCH := $(DEBIAN_TARGET_FILE)
+  else
+    DEB_TARGET_ARCH = $(DEB_HOST_ARCH)
+  endif
+
+  TARGET_VARS := $(shell dpkg-architecture -f \
+			-a$(DEB_TARGET_ARCH) 2>/dev/null)
+  DEB_TARGET_ARCH	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_ARCH)
+  DEB_TARGET_ARCH_OS	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_ARCH_OS)
+  DEB_TARGET_ARCH_CPU	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_ARCH_CPU)
+  DEB_TARGET_GNU_CPU	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_GNU_CPU)
+  DEB_TARGET_GNU_TYPE	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_GNU_TYPE)
+  DEB_TARGET_GNU_SYSTEM	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_GNU_SYSTEM)
+endif
+
+# ---------------------------------------------------------------------------
+# full canadian
+# typical cross-compiler
+# reverse cross (built to run on the target)
+# native
+#
+# build != host && host == target : reverse cross (REVERSE_CROSS == yes)
+# build == host && host != target : typical cross (DEB_CROSS == yes)
+# build != host && host != target : canadian (DEB_CROSS == yes)
+# build == host && host == target : native
+ifneq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
+ ifneq ($(DEB_HOST_GNU_TYPE), $(DEB_TARGET_GNU_TYPE))
+	DEB_CROSS = yes
+ else
+	REVERSE_CROSS = yes
+ endif
+ else
+ ifneq ($(DEB_HOST_GNU_TYPE), $(DEB_TARGET_GNU_TYPE))
+	DEB_CROSS = yes
+ endif  
+endif
+
+# ---------------------------------------------------------------------------
+# which binary packages are built?
+
+# cross compiler support. If GCC_TARGET is set, then it's the architecture
+# we build for.
+
+ifeq ($(DEB_TARGET_ARCH),)
+$(error GCC_TARGET value "$(GCC_TARGET)" is not a valid Debian architecture)
+endif
+
+ifdef DEB_CROSS
+  # TP: Target Prefix. Used primarily as a prefix for cross tool
+  #     names (e.g. powerpc-linux-gcc).
+  # TS: Target Suffix. Used primarily at the end of cross compiler
+  #     package names (e.g. gcc-powerpc).
+  # LS: Library Suffix. Used primarily at the end of cross compiler
+  #     library package names (e.g. libgcc-powerpc-cross).
+  DEB_TARGET_ALIAS ?= $(DEB_TARGET_GNU_TYPE)
+  TP =  $(subst _,-,$(DEB_TARGET_GNU_TYPE))-
+  TS = -$(subst _,-,$(DEB_TARGET_ALIAS))
+  LS = -$(subst _,-,$(DEB_TARGET_ARCH))-cross
+endif
+
+ifeq ($(DEB_CROSS),yes)
+  TARGET_ALIAS := $(DEB_TARGET_ALIAS)
+else
+  TARGET_ALIAS := $(DEB_TARGET_GNU_TYPE)
+
+  ifeq ($(TARGET_ALIAS),i386-gnu)
+    TARGET_ALIAS := i586-gnu
+  endif
+
+  #ifeq ($(TARGET_ALIAS),i486-linux-gnu)
+  #  TARGET_ALIAS := i686-linux-gnu
+  #endif
+
+  TARGET_ALIAS := $(subst i386,i486,$(TARGET_ALIAS))
+
+  # configure as linux-gnu, not linux
+  #ifeq ($(findstring linux,$(TARGET_ALIAS))/$(findstring linux-gnu,$(TARGET_ALIAS)),linux/)
+  #  TARGET_ALIAS := $(TARGET_ALIAS)-gnu
+  #endif
+
+  # configure as linux, not linux-gnu
+  #TARGET_ALIAS := $(subst linux-gnu,linux,$(TARGET_ALIAS))
+endif
+
+printarch:
+	@echo DEB_TARGET_ARCH: $(DEB_TARGET_ARCH)
+	@echo DEB_TARGET_ARCH_OS: $(DEB_TARGET_ARCH_OS)
+	@echo DEB_TARGET_ARCH_CPU: $(DEB_TARGET_ARCH_CPU)
+	@echo DEB_TARGET_ARCH_CPU: $(DEB_TARGET_ARCH_CPU)
+	@echo DEB_TARGET_GNU_SYSTEM: $(DEB_TARGET_GNU_SYSTEM)
+	@echo TARGET_ALIAS: $(TARGET_ALIAS)
+	@echo TP: $(TP)
+	@echo TS: $(TS)
+
+# The name of the source package
+CHANGELOG_VARS := $(shell dpkg-parsechangelog | sed -n 's/ /_/g;/^[^_]/s/^\([^:]*\):_\(.*\)/\1=\2/p')
+PKGSOURCE := $(call vafilt,$(CHANGELOG_VARS),Source)
+
+ifneq ($(PKGSOURCE),gcc-snapshot)
+  versioned_packages := yes
+endif
+
+ifdef DEB_CROSS
+  cross_bin_arch := -$(subst _,-,$(TARGET_ALIAS))
+  cross_lib_arch := -$(subst _,-,$(DEB_TARGET_ARCH))-cross
+endif
+
+ifndef DEB_CROSS
+  ifneq ($(PKGSOURCE),gcc-snapshot)
+    with_common_gcclibdir := yes
+  endif
+endif
+
+# Don't include docs with GFDL invariant sections --------------------
+GFDL_INVARIANT_FREE := yes
+ifeq ($(distribution),Ubuntu)
+  GFDL_INVARIANT_FREE=no
+endif
+
+# --------------------
+# Configuration of components
+
+COMMA = ,
+SPACE = $(EMPTY) $(EMPTY)
+
+# lang= overwrites all of nolang=, overwrites all of WITHOUT_LANG
+
+DEB_LANG_OPT	:= $(filter lang=%,$(DEB_BUILD_OPTIONS))
+DEB_LANG	:= $(strip $(subst $(COMMA), ,$(patsubst lang=%,%,$(DEB_LANG_OPT))))
+DEB_NOLANG_OPT	:= $(filter nolang=%,$(DEB_BUILD_OPTIONS))
+DEB_NOLANG	:= $(strip $(subst $(COMMA), ,$(patsubst nolang=%,%,$(DEB_NOLANG_OPT))))
+lfilt	= $(strip $(if $(DEB_LANG), \
+		$(if $(filter $(1) $(2),$(DEB_LANG)),yes),$(3)))
+nlfilt	= $(strip $(if $(DEB_NOLANG), \
+		$(if $(filter $(1) $(2),$(DEB_NOLANG)),disabled by $(DEB_NOLANG_OPT),$(3))))
+wlfilt	= $(strip $(if $(filter $(1) $(2), $(subst $(COMMA), ,$(WITHOUT_LANG))), \
+		disabled by WITHOUT_LANG=$(WITHOUT_LANG),$(3)))
+envfilt	= $(strip $(or $(call lfilt,$(1),$(2)),$(call nlfilt,$(1),$(3)),$(call wlfilt,$(1),$(3)),$(4)))
+
+# common things --------------------
+# build common packages, where package names don't differ in different
+# gcc versions (fixincludes, libgcj-common) ...
+with_common_pkgs := no
+
+# ... and some libraries, which do not change (libgcc1, libffi4,
+# libmudflap0, libssp0, libstdc++6).
+with_common_libs := no
+
+#ifeq ($(distribution),Debian)
+#  next_gcc_not_built := alpha m68k mips mipsel hurd-i386 kfreebsd-i386 kfreebsd-amd64
+#  ifneq (,$(filter $(DEB_TARGET_ARCH),$(next_gcc_not_built)))
+#    with_common_pkgs := yes
+#    with_common_libs := yes
+#  endif
+#endif
+ifeq ($(distribution),Ubuntu)
+  with_common_pkgs := yes
+  with_common_libs := yes
+endif
+
+with_gccbase := yes
+with_dev := yes
+
+with_source := no
+ifneq (,$(findstring gcc-4,$(PKGSOURCE)))
+  with_source := yes
+endif
+with_source := $(call envfilt, source, , , $(with_source))
+
+ifeq ($(PKGSOURCE),gcc-snapshot)
+  with_nls := no
+else
+  with_nls := yes
+endif
+with_nls := $(call envfilt, nls, , , $(with_nls))
+
+ifneq ($(WITH_BOOTSTRAP),)
+  # "yes" is the default and causes a 3-stage bootstrap.
+  # "no" means to just build the first stage, and not create the stage1
+  # directory.
+  # "lean" means a lean 3-stage bootstrap, i.e. delete each stage when no
+  # longer needed.
+  with_bootstrap=$(WITH_BOOTSTRAP)
+endif
+
+# separate -base package for the cross compiler.
+ifeq ($(DEB_CROSS),yes)
+  with_gccxbase := yes
+endif
+
+#no_dummy_cpus := ia64 i386 hppa s390 sparc
+#with_base_only := yes
+#ifneq (, $(filter $(DEB_TARGET_ARCH_CPU),$(no_dummy_cpus)))
+#  with_base_only := no
+#  with_common_libs := yes
+#  with_common_pkgs := yes
+#else
+#  with_common_libs := no
+#  with_common_pkgs := no
+#  with_dev := no
+#endif
+
+# C --------------------
+enabled_languages := c
+# Build all packages needed for C development
+ifeq ($(with_base_only),yes)
+  with_cdev := no
+else
+  ifeq ($(with_dev),yes)
+    with_cdev := yes
+  else
+    with_cdev := no
+  endif
+endif
+
+# C++ --------------------
+ifeq ($(with_base_only),yes)
+  with_cxx := no
+else
+  with_cxx := yes
+endif
+no_cxx_cpus := avr
+ifneq (, $(filter $(DEB_TARGET_ARCH_CPU),$(no_cxx_cpus)))
+  with_cxx := disabled for architecture $(DEB_TARGET_ARCH_CPU)
+endif
+with_cxx := $(call envfilt, c++, obj-c++ java, , $(with_cxx))
+
+# Build all packages needed for C++ development
+ifeq ($(with_cxx)-$(with_dev),yes-yes)
+  with_cxxdev := yes
+  with_libcxxdbg := yes
+else
+  with_cxxdev := no
+  with_libcxxdbg := no
+endif
+
+ifeq ($(with_cxx),yes)
+  enabled_languages += c++
+endif
+
+ifeq ($(with_common_pkgs)-$(with_cxx),yes-yes)
+  with_libcxx := yes
+#  ifeq ($(DEB_TARGET_ARCH_CPU),arm)
+#    with_libcxx := no
+#  endif
+else
+  with_libcxx := no
+endif
+
+# debugging versions of libstdc++
+ifeq ($(with_cxxdev),yes)
+  with_debug := yes
+else
+  with_debug := no
+endif
+debug_no_cpus :=
+ifneq (, $(filter $(DEB_TARGET_ARCH_CPU),$(debug_no_cpus)))
+    with_debug := disabled for architecure $(DEB_TARGET_ARCH_CPU)
+endif
+with_debug := $(call envfilt, debug, , , $(with_debug))
+
+# Java --------------------
+# - To build a standalone gcj package (with no corresponding gcc
+#   package): with_separate_libgcj=yes, with_standalone_gcj=yes
+# - To build the java packages from the gcc source package:
+#   with_separate_libgcj=no, with_standalone_gcj=no
+# - To build gcc and java from separate sources:
+#   with_separate_libgcj=yes, with_standalone_gcj=no
+
+with_separate_libgcj := yes
+with_standalone_gcj := no
+
+# java converted for V3 C++ ABI for some archs
+ifeq ($(with_base_only),yes)
+  with_java := no
+else
+  with_java := yes
+endif
+
+java_no_cpus := #mips mipsel
+java_no_arches :=
+java_no_systems :=
+gcj_native_archs = alpha amd64 i386 ia64 m68k mips mipsel powerpc s390 sparc
+
+ifneq (, $(filter $(DEB_TARGET_ARCH_CPU),$(java_no_cpus)))
+  with_java := disabled for architecture $(DEB_TARGET_ARCH_CPU)
+endif
+ifneq (, $(filter $(DEB_TARGET_GNU_SYSTEM),$(java_no_systems)))
+  with_java := disabled for $(DEB_TARGET_GNU_SYSTEM)
+endif
+ifneq (, $(filter $(DEB_TARGET_ARCH),$(java_no_arches)))
+  with_java := disabled for $(DEB_TARGET_ARCH)
+endif
+ifdef DEB_CROSS
+  with_java := disabled for cross compiler package
+endif
+with_java := $(call envfilt, java, , c++, $(with_java))
+
+#ifneq (,$(filter $(DEB_TARGET_ARCH),hppa))
+#  with_native_ecj := yes
+#endif
+
+with_java_maintainer_mode := yes
+with_java_maintainer_mode := no
+
+ifeq ($(distribution),Ubuntu)
+  java_plugin_backend = xulrunner-1.9
+else
+  java_plugin_backend = xulrunner
+endif
+
+ifeq ($(java_plugin_backend),xulrunner-1.9)
+  browser_plugin_dirs = xulrunner-addons
+else
+  browser_plugin_dirs = firefox iceape iceweasel mozilla midbrowser xulrunner
+endif
+
+# used as well in debian/rules.conf to determine the build deps
+java_awt_peers = gtk # qt # xlib
+
+with_libgcjbc := no
+with_libgcj_doc := yes
+ifneq ($(with_common_libs),yes)
+  with_libgcj_doc := no
+endif
+
+# Build all packages needed for Java development (gcj, libgcj-dev)
+ifeq ($(with_java)-$(with_dev),yes-yes)
+  with_javadev := yes
+  with_gcj := yes
+else
+  with_javadev := no
+endif
+
+ifeq ($(with_java),yes)
+  java_plugin_no_cpus := armel arm m68k mips mipsel
+  with_java_plugin := yes
+  ifneq (, $(filter $(DEB_TARGET_ARCH),$(java_plugin_no_cpus)))
+    with_java_plugin := disabled for $(DEB_TARGET_ARCH)
+  endif
+  ifeq ($(distribution),Ubuntu)
+    with_pkg_plugin := yes
+  endif
+endif
+
+ifeq ($(with_java),yes)
+  with_java_alsa := yes
+  ifneq (,$(filter $(DEB_TARGET_GNU_SYSTEM), kfreebsd-gnu gnu))
+    with_java_alsa := no
+  endif
+endif
+
+ifeq ($(with_java),yes)
+  enabled_languages += java
+  with_libgcj := yes
+else
+  with_libgcj := no
+endif
+
+# libmudflap -------------------
+with_mudflap := yes
+with_mudflap := $(call envfilt, mudflap, , , $(with_mudflap))
+ifeq ($(with_mudflap),yes)
+  with_libmudflap := yes
+endif
+ifneq ($(with_common_libs),yes)
+  with_libmudflap := no
+endif
+
+# libssp -------------------
+with_ssp := yes
+ssp_no_archs = arm armel alpha hppa ia64 m68k mips mipsel
+ifneq (, $(filter $(DEB_TARGET_ARCH),$(ssp_no_archs)))
+  with_ssp := not available on $(DEB_TARGET_ARCH)
+endif
+with_ssp := $(call envfilt, ssp, , , $(with_ssp))
+
+ifeq ($(with_ssp),yes)
+  ifneq ($(distribution),Debian)
+    ifneq (,$(findstring gcc-4, $(PKGSOURCE)))
+      with_ssp_default := yes
+    endif
+  endif
+endif
+
+# do it here, the information is only available after gcc is configured
+ifeq ($(with_common_libs),yes)
+  ifeq ($(with_ssp),yes)
+    with_libssp := $(if $(wildcard $(builddir)/gcc/auto-host.h), \
+	             $(shell if grep -qs '^\#define TARGET_LIBC_PROVIDES_SSP 1' $(builddir)/gcc/auto-host.h; then echo 'libc provides ssp'; else echo 'yes'; fi))
+  endif
+endif
+
+# libffi -------------------
+ifeq ($(with_common_libs),yes)
+  with_libffi := yes
+  no_ffi_cpus :=
+  no_ffi_arches :=
+  no_ffi_systems := netbsdelf-gnu
+  ifneq ($(with_java),yes)
+    ifneq (, $(filter $(DEB_TARGET_ARCH_CPU),$(no_ffi_cpus)))
+      with_libffi := disabled for architecure $(DEB_TARGET_ARCH_CPU)
+    endif
+    ifneq (, $(filter $(DEB_TARGET_ARCH),$(no_ffi_arches)))
+      with_libffi := disabled for architecure $(DEB_TARGET_ARCH)
+    endif
+    ifneq (, $(filter $(DEB_TARGET_GNU_SYSTEM),$(no_ffi_systems)))
+      with_libffi := disabled for $(DEB_TARGET_GNU_SYSTEM)
+    endif
+    with_libffi := $(call envfilt, ffi, , , $(with_libffi))
+  endif
+  ifdef DEB_CROSS
+    with_libffi := disabled for cross compiler package
+  endif
+endif
+
+# Fortran 95 --------------------
+ifeq ($(with_base_only),yes)
+  with_fortran := no
+else
+  with_fortran := yes
+endif
+
+f95_no_cpus :=
+ifneq (, $(filter $(DEB_TARGET_ARCH_CPU),$(f95_no_cpus)))
+    with_fortran := disabled for architecure $(DEB_TARGET_ARCH_CPU)
+endif
+ifdef DEB_CROSS
+  with_fortran := disabled for cross compiler package
+endif
+ifeq (f95, $(findstring f95,$(WITHOUT_LANG)))
+  with_fortran := disabled by environment
+endif
+with_fortran := $(call envfilt, fortran, , , $(with_fortran))
+
+# Build all packages needed for Fortran development
+ifeq ($(with_fortran)-$(with_dev),yes-yes)
+  with_fdev := yes
+else
+  with_fdev := no
+endif
+
+ifeq ($(with_fortran),yes)
+  with_libfortran := yes
+  enabled_languages += fortran
+endif
+
+# protoize --------------------
+ifeq ($(with_common_pkgs),yes)
+  with_proto := yes
+  ifdef DEB_CROSS
+    with_proto := disabled for cross compiler package
+  endif
+else
+  with_proto := no
+endif
+#ifeq ($(with_proto),yes)
+#  enabled_languages += proto
+#endif
+
+ifeq ($(with_common_pkgs),yes)
+  with_fixincl := yes
+  ifdef DEB_CROSS
+    with_fixincl := disabled for cross compiler package
+  endif
+else
+  with_fixincl := no
+endif
+
+# Pascal --------------------
+
+with_separate_gpc := yes
+
+with_pascal := yes
+ifneq ($(with_dev),yes)
+  with_pascal := no
+endif
+
+pascal_no_systems :=
+#ifneq (, $(filter $(DEB_TARGET_GNU_SYSTEM),$(pascal_no_systems)))
+#  with_pascal := disabled for $(DEB_TARGET_GNU_SYSTEM)
+#endif
+ifneq ($(DEB_TARGET_ARCH),i386)
+  with_pascal := disabled for $(DEB_TARGET_ARCH)
+endif
+ifeq (,$(findstring gpc, $(PKGSOURCE)))
+  with_pascal := disabled, built by separate source
+endif
+
+with_gpidump := yes
+ifneq (, $(filter $(DEB_TARGET_ARCH_CPU),mips mipsel))
+  with_gpidump := disabled for architecture $(DEB_TARGET_ARCH_CPU)
+endif
+pascal_version := 20030830
+ifeq (pascal, $(findstring pascal,$(WITHOUT_LANG)))
+  with_pascal := disabled by environment
+endif
+with_pascal := disabled for 4.2
+ifdef DEB_CROSS
+  with_pascal := disabled for cross compiler package
+endif
+ifeq ($(with_pascal),yes)
+  enabled_languages += pascal
+endif
+
+# ObjC --------------------
+ifeq ($(with_base_only),yes)
+  with_objc := no
+else
+  with_objc := yes
+endif
+# the ObjC runtime with garbage collection enabled needs the Boehm GC
+with_objc_gc := yes
+
+# disable ObjC garbage collection library (needs libgc)
+libgc_no_cpus := avr #alpha amd64 arm armel hppa i386 ia64 m68k mips mipsel powerpc s390 sparc
+libgc_no_systems :=
+ifneq (, $(filter $(DEB_TARGET_ARCH_CPU),$(libgc_no_cpus)))
+  with_objc_gc := disabled for architecture $(DEB_TARGET_ARCH_CPU)
+endif
+ifneq (, $(filter $(DEB_TARGET_GNU_SYSTEM),$(libgc_no_systems)))
+  with_objc_gc := disabled for $(DEB_TARGET_GNU_SYSTEM)
+endif
+ifdef DEB_CROSS
+  ifneq (objc, $(findstring objc,$(WITH_LANG)))
+    with_objc := disabled for cross compiler package
+  endif
+endif
+with_objc := $(call envfilt, objc, obj-c++, , $(with_objc))
+ifeq ($(DEB_TARGET_ARCH),armel)
+  with_objc := disabled for armel
+endif
+
+ifneq ($(with_objc),yes)
+  with_objc_gc := $(with_objc)
+endif
+
+# Build all packages needed for Objective-C development
+ifeq ($(with_objc)-$(with_dev),yes-yes)
+  with_objcdev := yes
+else
+  with_objcdev := no
+endif
+ifeq ($(with_common_libs)-$(with_objc),yes-yes)
+  with_libobjc := yes
+else
+  with_libobjc := no
+endif
+
+ifeq ($(with_objc),yes)
+  enabled_languages += objc
+endif
+
+# ObjC++ --------------------
+with_objcxx := yes
+with_objcxx := $(call envfilt, obj-c++, , c++ objc, $(with_objcxx))
+ifeq ($(DEB_TARGET_ARCH),armel)
+  with_objcxx := disabled for armel
+endif
+
+ifeq ($(with_objcxx),yes)
+  enabled_languages += obj-c++
+endif
+
+# Ada --------------------
+with_separate_gnat := yes
+with_ada := yes
+ifneq ($(with_dev),yes)
+  with_ada := no
+endif
+
+ada_no_cpus := alpha arm armel m32r m68k sh3 sh3eb sh4 sh4eb
+ada_no_systems := hurd-i386
+ifneq (, $(filter $(DEB_TARGET_ARCH_CPU),$(ada_no_cpus)))
+  with_ada := disabled for architecure $(DEB_TARGET_ARCH_CPU)
+endif
+ifneq (, $(filter $(DEB_TARGET_GNU_SYSTEM),$(ada_no_systems)))
+  with_ada := disabled for $(DEB_TARGET_GNU_SYSTEM)
+endif
+ifeq ($(DEB_TARGET_ARCH),hurd-i386)
+  with_ada := disabled for architecure $(DEB_TARGET_ARCH)
+endif
+with_ada := $(call envfilt, ada, , , $(with_ada))
+ifdef DEB_CROSS
+  with_ada := disabled for cross compiler package
+endif
+#ifeq ($(PKGSOURCE),gcc-snapshot)
+#  with_ada := disabled for snapshot builds
+#endif
+ifneq (,$(findstring 4.2,$(PKGSOURCE)))
+  with_ada := disabled for gcc-4.2
+endif
+
+with_libgnat := $(with_ada)
+ifeq ($(with_ada),yes)
+  enabled_languages += ada
+  libada_shared_dual_cpus := hppa
+  ifneq (, $(filter $(DEB_TARGET_ARCH_CPU),$(libada_shared_dual_cpus)))
+    with_libgnat_shared_dual := yes
+  endif
+else
+  with_libgnat_shared_dual := no
+endif
+
+# D -------------------------
+
+with_separate_gdc := yes
+
+# no suffix for D 1.0
+libphobos_version :=
+
+# still experimental
+# libphobos_version := 2
+
+ifeq ($(with_base_only),yes)
+  with_d := no
+else
+  with_d := yes
+endif
+
+with_libphobos := $(with_d)
+
+libphobos_no_cpus := sparc
+libphobos_no_systems := gnu
+ifneq (, $(filter $(DEB_TARGET_ARCH_CPU),$(libphobos_no_cpus)))
+  with_libphobos := disabled for architecure $(DEB_TARGET_ARCH_CPU)
+endif
+ifneq (, $(filter $(DEB_TARGET_GNU_SYSTEM),$(libphobos_no_systems)))
+  with_libphobos := disabled for $(DEB_TARGET_GNU_SYSTEM)
+endif
+
+ifneq ($(with_cxx),yes)
+  with_d := disabled because C++ disabled
+endif
+
+ifneq ($(with_d),yes)
+  with_libphobos := disabled because D disabled
+endif
+
+ifeq ($(with_d),yes)
+  enabled_languages += d
+endif
+
+# treelang --------------------
+ifeq ($(with_base_only),yes)
+  with_treelang := no
+else
+  ifeq ($(with_dev),yes)
+    with_treelang := yes
+  else
+    with_treelang := no
+  endif
+endif
+#tl_no_cpus := powerpc
+ifneq (, $(filter $(DEB_TARGET_ARCH_CPU),$(tl_no_cpus)))
+    with_treelang := disabled for architecure $(DEB_TARGET_ARCH_CPU)
+endif
+ifdef DEB_CROSS
+  with_treelang := disabled for cross compiler package
+endif
+with_treelang := $(call envfilt, treelang, , , $(with_treelang))
+#with_treelang := disabled for gcc-4.2
+
+ifeq ($(with_treelang),yes)
+  enabled_languages += treelang
+endif
+
+# Shared libgcc --------------------
+with_shared_libgcc := yes
+
+ifeq ($(with_common_libs),yes)
+  with_libgcc := yes
+else
+  with_libgcc := no
+  with_shared_libgcc := no
+endif
+
+# libgcc-math --------------------
+with_libgmath := no
+with_lib32gmath := no
+ifneq (,$(findstring i486,$(DEB_TARGET_ARCH)))
+  #with_gccmath := yes
+  #with_libgmath := yes
+  #with_libgmathdev := yes
+endif
+ifeq ($(DEB_TARGET_ARCH),amd64)
+  #with_gccmath := yes
+  #with_lib32gmath := yes
+  #with_libgmathdev := yes
+endif
+
+# libgomp --------------------
+with_gomp := yes
+with_gomp := $(call envfilt, gomp, , , $(with_gomp))
+ifeq ($(with_common_libs),yes)
+  with_libgomp := yes
+else
+  with_libgomp := no
+endif
+
+# hppa64 build --------------------
+with_hppa64 := no
+ifeq ($(DEB_TARGET_ARCH),hppa)
+  ifneq ($(DEB_CROSS),yes)
+    with_hppa64 := yes
+  endif
+  #ifeq ($(PKGSOURCE),gcc-snapshot)
+  #  with_hppa64 := disabled for snapshot build
+  #endif
+endif
+with_hppa64 := $(call envfilt, hppa64, , , $(with_hppa64))
+
+# run testsuite --------------------
+with_check := yes
+# If you don't want to run the gcc testsuite, set `with_check' to `no'
+#with_check := disabled by hand
+ifeq ($(with_base_only),yes)
+  with_check := no
+endif
+ifdef DEB_CROSS
+  with_check := disabled for cross compiler package
+endif
+ifdef REVERSE_CROSS
+  with_check := disabled for reverse cross build
+endif
+check_no_systems := hurd-i386
+ifneq (, $(filter $(DEB_TARGET_GNU_SYSTEM),$(check_no_systems)))
+  with_check := disabled for $(DEB_TARGET_GNU_SYSTEM)
+endif
+check_no_cpus :=
+ifeq ($(DEB_TARGET_ARCH_CPU), $(findstring $(DEB_TARGET_ARCH_CPU),$(check_no_cpus)))
+  with_check := disabled for architecure $(DEB_TARGET_ARCH_CPU)
+endif
+ifeq ($(DEB_TARGET_ARCH),hurd-i386)
+  with_check := disabled for architecure $(DEB_TARGET_ARCH)
+endif
+ifeq ($(distribution)-$(DEB_HOST_ARCH),Ubuntu-hppa)
+  ifneq ($(PKGSOURCE),gcc-snapshot)
+    with_check := disabled, testsuite timeouts with expect
+  endif
+endif
+with_check := $(call envfilt, check, , , $(with_check))
+ifneq ($(WITHOUT_CHECK),)
+  with_check := disabled by environment
+endif
+ifneq ($(findstring nocheck, $(DEB_BUILD_OPTIONS)),)
+  with_check := disabled by DEB_BUILD_OPTIONS
+endif
+ifneq (,$(findstring gdc,$(PKGSOURCE)))
+  with_check := disabled for gdc
+endif
+
+# not a dependency on all archs, but if available, use it for the testsuite
+ifneq (,$(wildcard /usr/bin/localedef))
+  locale_data = generate
+endif
+
+# powerpc nof libraries --------------------
+with_libnof := no
+
+# multiarch --------------------
+#with_multiarch_inc := yes
+#with_multiarch_lib := no
+
+all_enabled_languages := $(enabled_languages)
+languages_without_lang_opt := c++ objc obj-c++ proto
+
+ifeq ($(with_separate_libgcj),yes)
+  ifneq (,$(findstring gcc-4, $(PKGSOURCE)))
+    enabled_languages := $(filter-out java, $(all_enabled_languages))
+    debian_extra_langs = java
+    with_java := built from separate source
+    with_gcj := built from separate source
+    with_libgcj := built from separate source
+  endif
+  ifneq (,$(findstring gcj, $(PKGSOURCE)))
+    enabled_languages = c c++ java
+    debian_extra_langs := $(filter-out $(enabled_languages) $(languages_without_lang_opt), $(all_enabled_languages))
+    ifneq ($(with_standalone_gcj),yes)
+      with_libgcc := no
+    endif
+    with_libgccmath := no
+    with_cxx := no
+    with_cdev := no
+    with_cxxdev := no
+    with_fortran := no
+    with_proto := no
+    with_fixincl := no
+    with_pascal := no
+    with_mudflap := no
+    with_libmudflap := no
+    with_libffi := no
+    with_libssp := no
+    with_libgomp := no
+    with_objc := no
+    with_libobjc := no
+    with_objcxx := no
+    with_ada := no
+    with_d := no
+    with_libphobos := no
+    with_libgnat := no
+    with_treelang := no
+    with_hppa64 := no
+    with_libnof := no
+    with_debug := no
+    with_gccbase := no
+    ifeq ($(with_standalone_gcj),yes)
+      ifeq ($(DEB_TARGET_ARCH),hppa)
+        with_libgcc := yes
+      endif
+    endif
+  endif
+endif
+
+ifeq ($(with_separate_gnat),yes)
+  ifneq (,$(findstring gcc-4, $(PKGSOURCE)))
+    enabled_languages := $(filter-out ada, $(enabled_languages))
+    debian_extra_langs += ada
+    with_ada := built from separate source
+    with_libgnat := built from separate source
+  endif
+  ifneq (,$(findstring gnat, $(PKGSOURCE)))
+    enabled_languages = c ada
+    debian_extra_langs := $(filter-out $(enabled_languages) $(languages_without_lang_opt), $(all_enabled_languages))
+    with_ada := yes
+    with_libgnat := yes
+    with_libgcc := no
+    with_cxx := no
+    with_cdev := no
+    with_cxxdev := no
+    with_fortran := no
+    with_libfortran := no
+    with_proto := no
+    with_fixincl := no
+    with_pascal := no
+    with_mudflap := no
+    with_libmudflap := no
+    with_libffi := no
+    with_libssp := no
+    with_libgomp := no
+    with_objc := no
+    with_libobjc := no
+    with_objcxx := no
+    with_d := no
+    with_libphobos := no
+    with_java := no
+    with_gcj := no
+    with_libgcj := no
+    with_treelang := no
+    with_hppa64 := no
+    with_libnof := no
+    with_debug := no
+    with_gccbase := no
+    with_check := no
+  endif
+endif
+
+ifeq ($(with_separate_gdc),yes)
+  ifneq (,$(findstring gcc-4, $(PKGSOURCE)))
+    enabled_languages := $(filter-out d, $(enabled_languages))
+    #debian_extra_langs += d
+    with_d := built from separate source
+    with_libphobos := built from separate source
+  endif
+  ifneq (,$(findstring gdc, $(PKGSOURCE)))
+    enabled_languages = c c++ d
+    debian_extra_langs := $(filter-out $(enabled_languages) $(languages_without_lang_opt), $(all_enabled_languages))
+    with_libgcc := no
+    with_cxx := no
+    with_cdev := no
+    with_cxxdev := no
+    with_fortran := no
+    with_proto := no
+    with_fixincl := no
+    with_pascal := no
+    # gdc doesn't support mudflap
+    with_mudflap := no
+    with_libmudflap := no
+    with_libffi := no
+    with_libssp := no
+    with_libgomp := no
+    with_objc := no
+    with_libobjc := no
+    with_objcxx := no
+    with_ada := no
+    with_libgnat := no
+    with_java := no
+    with_gcj := no
+    with_libgcj := no
+    with_treelang := no
+    with_hppa64 := no
+    with_libnof := no
+    with_debug := no
+    with_gccbase := no
+    with_fastjar := no
+  endif
+endif
+
+ifeq ($(with_separate_gpc),yes)
+  ifneq (,$(findstring gcc-4, $(PKGSOURCE)))
+    enabled_languages := $(filter-out pascal, $(enabled_languages))
+    #debian_extra_langs += pascal
+    with_pascal := built from separate source
+  endif
+  ifneq (,$(findstring gpc, $(PKGSOURCE)))
+    enabled_languages = c pascal
+    debian_extra_langs := $(filter-out $(enabled_languages) $(languages_without_lang_opt), $(all_enabled_languages))
+    with_libgcc := no
+    with_cxx := no
+    with_cdev := no
+    with_cxxdev := no
+    with_fortran := no
+    with_proto := no
+    with_fixincl := no
+    with_d := no
+    with_libphobos := no
+    # gpc doesn't support mudflap
+    with_mudflap := no
+    with_libmudflap := no
+    with_libffi := no
+    with_libssp := no
+    with_objc := no
+    with_libobjc := no
+    with_objcxx := no
+    with_ada := no
+    with_libgnat := no
+    with_java := no
+    with_gcj := no
+    with_libgcj := no
+    with_treelang := no
+    with_hppa64 := no
+    with_libnof := no
+    with_debug := no
+    with_gccbase := no
+    with_fastjar := no
+  endif
+endif
+
+debian_extra_langs := $(subst obj-c++,objcp,$(debian_extra_langs))
+export debian_extra_langs
+
+biarch := no
+
+with_lib64gcc		:= no
+with_lib64cxx		:= no
+with_lib64objc		:= no
+with_lib64ffi		:= no
+with_lib64gcj		:= no
+with_lib64fortran	:= no
+with_lib64mudflap	:= no
+with_lib64ssp		:= no
+
+biarch_map := i486=x86_64 powerpc=powerpc64 sparc=sparc64 s390=s390x \
+		x86_64=i486 powerpc64=powerpc
+biarch_cpu := $(patsubst $(DEB_TARGET_GNU_CPU)=%,%, \
+			 $(filter $(DEB_TARGET_GNU_CPU)=%,$(biarch_map)))
+
+biarch_archs := /i386/powerpc/sparc/s390/
+
+ifneq (yes,$(call envfilt, biarch, , ,yes))
+  biarch_archs :=
+endif
+
+biarch_buildd := yes
+# the Ubuntu i386 buildds are i386 only
+ifeq ($(PKGSOURCE)-$(distribution),gcc-snapshot-Ubuntu)
+  ifneq (,$(wildcard /CurrentlyBuilding))
+    biarch_buildd := no
+  endif
+endif
+
+ifneq ($(biarch_buildd),no)
+ifneq (,$(findstring /$(DEB_TARGET_ARCH)/,$(biarch_archs)))
+  biarch := yes
+  biarchsubdir = $(biarch_cpu)-$(DEB_TARGET_GNU_SYSTEM)
+  biarchsubdir = 64
+  ifeq ($(with_libgcc),yes)
+    with_lib64gcc := yes
+  endif
+  ifeq ($(with_libcxx),yes)
+    with_lib64cxx := yes
+  endif
+  ifeq ($(with_libcxxdbg),yes)
+    with_lib64cxxdbg := yes
+  endif
+  ifeq ($(with_libobjc),yes)
+    with_lib64objc := yes
+  endif
+  ifeq ($(with_libfortran),yes)
+    with_lib64fortran := yes
+  endif
+  ifeq ($(with_libffi),yes)
+    with_lib64ffi := yes
+  endif
+  ifeq ($(with_libmudflap),yes)
+    with_lib64mudflap := yes
+  endif
+  ifeq ($(with_libssp),yes)
+    with_lib64ssp := yes
+  endif
+  ifeq ($(with_libgomp),yes)
+    with_lib64gomp:= yes
+  endif
+
+  biarch_multidir_names = libiberty
+  ifeq ($(PKGSOURCE),gcc-snapshot)
+    biarch_multidir_names += libgcc
+  endif
+  ifneq (,$(findstring gcc-, $(PKGSOURCE)))
+    biarch_multidir_names += libstdc++-v3 libgfortran libmudflap libssp \
+				libffi libobjc libgomp zlib
+    ifeq ($(with_objc_gc),yes)
+      biarch_multidir_names += boehm-gc
+    endif
+  endif
+  export biarch_multidir_names
+
+  TARGET32_MACHINE := $(TARGET_ALIAS)
+  TARGET64_MACHINE := $(strip $(subst $(DEB_TARGET_GNU_CPU),$(biarch_cpu), \
+					$(TARGET_ALIAS)))
+  export TARGET32_MACHINE
+  export TARGET64_MACHINE
+endif
+endif
+
+biarch32_archs := /amd64/ppc64/kfreebsd-amd64/
+ifneq (yes,$(call envfilt, biarch, , ,yes))
+  biarch32_archs :=
+endif
+ifneq (,$(findstring /$(DEB_TARGET_ARCH)/,$(biarch32_archs)))
+  biarch32 := yes
+  biarchsubdir = $(biarch_cpu)-$(DEB_TARGET_GNU_SYSTEM)
+  biarchsubdir = 32
+  ifeq ($(with_libgcc),yes)
+    with_lib32gcc := yes
+  endif
+  ifeq ($(with_libcxx),yes)
+    with_lib32cxx := yes
+  endif
+  ifeq ($(with_libcxxdbg),yes)
+    with_lib32cxxdbg := yes
+  endif
+  ifeq ($(with_libobjc),yes)
+    with_lib32objc := yes
+  endif
+  ifeq ($(with_libfortran),yes)
+    with_lib32fortran := yes
+  endif
+  ifeq ($(with_libffi),yes)
+    with_lib32ffi := yes
+  endif
+  ifeq ($(with_libmudflap),yes)
+    with_lib32mudflap := yes
+  endif
+  ifeq ($(with_libssp),yes)
+    with_lib32ssp := yes
+  endif
+  ifeq ($(with_libgomp),yes)
+    with_lib32gomp:= yes
+  endif
+
+  biarch_multidir_names = libiberty
+  ifeq ($(PKGSOURCE),gcc-snapshot)
+    biarch_multidir_names += libgcc
+  endif
+  ifneq (,$(findstring gcc-, $(PKGSOURCE)))
+    biarch_multidir_names += libstdc++-v3 libgfortran libmudflap libssp \
+				libffi libobjc libgomp zlib
+    ifeq ($(with_objc_gc),yes)
+      biarch_multidir_names += boehm-gc
+    endif
+  endif
+  export biarch_multidir_names
+
+  TARGET32_MACHINE := $(strip $(subst $(DEB_TARGET_GNU_CPU),$(biarch_cpu), \
+					$(TARGET_ALIAS)))
+  TARGET64_MACHINE := $(TARGET_ALIAS)
+  export TARGET32_MACHINE
+  export TARGET64_MACHINE
+endif
+
+multilib_archs = $(sort $(subst /, , $(biarch_archs) $(biarch32_archs)))
+
+#ifeq ($(DEB_TARGET_ARCH),ia64)
+#  biarch32 := yes
+#endif
+
+ifeq ($(PKGSOURCE),gcc-snapshot)
+  #ifeq ($(DEB_TARGET_ARCH),$(findstring $(DEB_TARGET_ARCH),sparc))
+    with_lib64gcc	:= no
+    with_lib64cxx	:= no
+    with_lib64objc	:= no
+    with_lib64ffi	:= no
+    with_lib64gcj	:= no
+    with_lib64fortran	:= no
+    with_lib64mudflap	:= no
+    with_lib64ssp	:= no
+
+    with_lib32gcc	:= no
+    with_lib32cxx	:= no
+    with_lib32objc	:= no
+    with_lib32ffi	:= no
+    with_lib32gcj	:= no
+    with_lib32fortran	:= no
+    with_lib32mudflap	:= no
+    with_lib32ssp	:= no
+
+    #biarch   	:= disabled for snapshot build
+    #biarch32 	:= disabled for snapshot build
+  #endif
+  with_java_plugin := no
+endif
+
+ifdef DEB_CROSS_NO_BIARCH
+  with_lib64gcc		:= no
+  with_lib64cxx		:= no
+  with_lib64objc	:= no
+  with_lib64ffi		:= no
+  with_lib64gcj		:= no
+  with_lib64fortran	:= no
+  with_lib64mudflap	:= no
+  with_lib64ssp		:= no
+
+  with_lib32gcc		:= no
+  with_lib32cxx		:= no
+  with_lib32objc	:= no
+  with_lib32ffi		:= no
+  with_lib32gcj		:= no
+  with_lib32fortran	:= no
+  with_lib32mudflap	:= no
+  with_lib32ssp		:= no
+
+  biarch   	:= disabled for cross build
+  biarch32 	:= disabled for cross build
+endif
+
+ifeq ($(biarch32),yes)
+  with_32bit_check := $(strip $(if $(wildcard build/runcheck.out), \
+				$(shell cat build/runcheck.out), \
+				$(shell CC="gcc -m32" bash debian/runcheck.sh)))
+endif
+
+ifeq ($(biarch),yes)
+  with_64bit_check := $(strip $(if $(wildcard build/runcheck.out), \
+			$(shell cat build/runcheck.out), \
+			$(shell CC="gcc -m64" bash debian/runcheck.sh)))
+endif
+
+# GNU locales
+force_gnu_locales := yes
+locale_no_systems := gnu
+ifneq (, $(filter $(DEB_TARGET_GNU_SYSTEM),$(locale_no_systems)))
+  force_gnu_locales := disabled for $(DEB_TARGET_GNU_SYSTEM)
+endif
+
+gcc_tarpath		:= $(firstword $(wildcard gcc-*.tar.* /usr/src/gcc-4.2/gcc-*.tar.*))
+gcc_tarball		:= $(notdir $(gcc_tarpath))
+#gcc_srcdir		:= $(shell echo $(gcc_tarball) | sed 's/\.tar.*//;s/-dfsg//')
+gcc_srcdir		:= $(subst -dfsg,,$(patsubst %.tar.lzma,%,$(patsubst %.tar.gz,%,$(gcc_tarball:.tar.bz2=))))
+
+ifeq ($(with_pascal),yes)
+  gpc_tarpath		:= $(firstword $(wildcard gpc-*.tar.* /usr/src/gcc-4.2/gpc-*.tar.*))
+  gpc_tarball		:= $(notdir $(gpc_tarpath)
+  gpc_srcdir		:= $(patsubst %.tar.gz,%,$(gpc_tarball:.tar.bz2=))
+endif
+
+ifeq ($(with_d),yes)
+  gdc_tarpath		:= $(firstword $(wildcard gdc-*.tar.* /usr/src/gcc-4.1/gdc-*.tar.*))
+  gdc_tarball		:= $(notdir $(gdc_tarpath))
+  gdc_srcdir		:= $(patsubst %.tar.lzma,%,$(patsubst %.tar.gz,%,$(gdc_tarball:.tar.bz2=)))
+endif
+
+unpack_stamp		:= $(stampdir)/01-unpack-stamp
+patch_stamp		:= $(stampdir)/02-patch-stamp
+control_stamp		:= $(stampdir)/03-control-stamp
+configure_stamp		:= $(stampdir)/04-configure-stamp
+build_stamp		:= $(stampdir)/05-build-stamp
+build_html_stamp	:= $(stampdir)/05-build-html-stamp
+build_locale_stamp	:= $(stampdir)/05-build-locale-stamp
+build_doxygen_stamp	:= $(stampdir)/05-build-doxygen-stamp
+build_javadoc_stamp	:= $(stampdir)/05-build-javadoc-stamp
+check_stamp		:= $(stampdir)/06-check-stamp
+check_inst_stamp	:= $(stampdir)/06-check-inst-stamp
+install_stamp		:= $(stampdir)/07-install-stamp
+install_snap_stamp	:= $(stampdir)/07-install-snap-stamp
+binary_stamp		:= $(stampdir)/08-binary-stamp
+
+configure_dummy_stamp	:= $(stampdir)/04-configure-dummy-stamp
+build_dummy_stamp	:= $(stampdir)/05-build-dummy-stamp
+install_dummy_stamp	:= $(stampdir)/07-install-dummy-stamp
+
+configure_hppa64_stamp	:= $(stampdir)/04-configure-hppa64-stamp
+build_hppa64_stamp	:= $(stampdir)/05-build-hppa64-stamp
+install_hppa64_stamp	:= $(stampdir)/07-install-hppa64-stamp
+
+configure_ia6432_stamp	:= $(stampdir)/04-configure-ia6432-stamp
+build_ia6432_stamp	:= $(stampdir)/05-build-ia6432-stamp
+install_ia6432_stamp	:= $(stampdir)/07-install-ia6432-stamp
+
+configure_ia6432_stamp	:= $(stampdir)/04-configure-ia6432-stamp
+build_ia6432_stamp	:= $(stampdir)/05-build-ia6432-stamp
+install_ia6432_stamp	:= $(stampdir)/07-install-ia6432-stamp
+
+ifeq ($(PKGSOURCE),gcc-snapshot)
+    control_dependencies = $(patch_stamp)
+    configure_dependencies = $(configure_stamp)
+    build_dependencies = $(build_stamp)
+    ifeq ($(with_check),yes)
+      build_dependencies += check
+    endif
+    install_dependencies = $(install_snap_stamp)
+else
+  ifeq ($(with_base_only),yes)
+    control_dependencies = $(patch_stamp)
+    configure_dependencies = $(configure_dummy_stamp)
+    build_dependencies = $(build_dummy_stamp)
+    install_dependencies = $(install_dummy_stamp)
+  else
+    control_dependencies = $(patch_stamp)
+    configure_dependencies = $(configure_stamp)
+    build_dependencies = $(build_stamp)
+    ifeq ($(with_check),yes)
+      build_dependencies += check
+    endif
+    install_dependencies = $(install_stamp)
+  endif
+endif
+
+ifneq (,$(findstring gcj-, $(PKGSOURCE)))
+  ifeq ($(with_gcj_base_only),yes)
+    configure_dependencies = $(configure_dummy_stamp)
+    build_dependencies = $(build_dummy_stamp)
+    install_dependencies = $(install_dummy_stamp)
+  endif
+endif
+
+ifeq ($(with_hppa64),yes)
+  build_dependencies += $(build_hppa64_stamp)
+  ifneq ($(PKGSOURCE),gcc-snapshot)
+    install_dependencies += $(install_hppa64_stamp)
+  endif
+endif
+
+ifeq ($(with_ia6432),yes)
+  build_dependencies += $(build_ia6432_stamp)
+endif
+
+ifeq ($(with_ia6432),yes)
+  build_dependencies += $(build_ia6432_stamp)
+endif
+
+stamp-dir:
+	mkdir -p $(stampdir)

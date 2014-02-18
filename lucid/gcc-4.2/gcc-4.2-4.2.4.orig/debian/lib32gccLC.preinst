@@ -1,0 +1,8 @@
+#! /bin/sh -e
+
+if [ ! -h /usr/lib32 -a -d /usr/lib32 -a -d /emul/ia32-linux/usr/lib ]; then
+  rm -rf /usr/lib32
+  ln -s /emul/ia32-linux/usr/lib /usr/lib32
+fi
+
+#DEBHELPER#

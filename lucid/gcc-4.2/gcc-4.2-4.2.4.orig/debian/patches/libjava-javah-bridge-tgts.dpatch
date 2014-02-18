@@ -1,0 +1,185 @@
+#! /bin/sh -e
+
+# DP: libjava: Fix naming of bridge targets in gjavah
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+	uudecode $0
+	tar -xv -f classfiles.tar.bz2 -C ${dir}libjava
+	rm -f classfiles.tar.bz2*
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2008-09-02  Andrew John Hughes  <gnu_andrew@member.fsf.org>
+
+	* tools/gnu/classpath/tools/javah/ClassWrapper.java:
+	(makeVtable()): Populate methodNameMap.
+	(printMethods(CniPrintStream)): Always use pre-populated
+	methodNameMap for bridge targets.
+
+Index: libjava/classpath/tools/gnu/classpath/tools/javah/ClassWrapper.java
+===================================================================
+--- libjava/classpath/tools/gnu/classpath/tools/javah/ClassWrapper.java	(revision 140358)
++++ libjava/classpath/tools/gnu/classpath/tools/javah/ClassWrapper.java	(working copy)
+@@ -217,7 +217,18 @@
+         MethodNode m = (MethodNode) i.next();
+         String desc = MethodHelper.getBridgeTarget(m);
+         if (desc != null)
+-          bridgeTargets.add(m.name + desc);
++	  {
++	    String sum = m.name + desc;
++	    boolean newTarget = bridgeTargets.add(sum);
++	    if (newTarget)
++	      {
++		// Bridge target that is new in this class.
++		String cname = this.name;
++		int index = cname.lastIndexOf('/');
++		cname = cname.substring(index + 1);
++		methodNameMap.put(sum, cname + "$" + m.name);
++	      }
++	  }
+       }
+   }
+ 
+@@ -247,18 +258,7 @@
+ 	String nameToUse;
+ 	String sum = m.name + m.desc;
+ 	if (bridgeTargets.contains(sum))
+-	  {
+-	    if (methodNameMap.containsKey(sum))
+-	      nameToUse = (String) methodNameMap.get(sum);
+-	    else
+-	      {
+-		// Bridge target that is new in this class.
+-		String cname = this.name;
+-		int index = cname.lastIndexOf('/');
+-		cname = cname.substring(index + 1);
+-		nameToUse = cname + "$" + m.name;
+-	      }
+-	  }
++	  nameToUse = (String) methodNameMap.get(sum);
+ 	else
+ 	  nameToUse = Keywords.getCxxName(m.name);
+ 	methodNameMap.put(sum, nameToUse);
+
+begin 644 classfiles.tar.bz2
+M0EIH.3%!629360)[#V0`"P3_____________________________________
+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
+3[1!K]F:D_O_\7<D4X4)`">P]D```
+`
+end

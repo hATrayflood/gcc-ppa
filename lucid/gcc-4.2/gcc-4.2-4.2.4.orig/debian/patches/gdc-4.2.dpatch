@@ -1,0 +1,624 @@
+#! /bin/sh -e
+
+# gdc-4.2.dpatch by Arthur Loiret <arthur.loiret@gmail.com>
+# DP: Setup gcc-4.2.x for D.
+
+dir=
+if [ $# -eq 3 ] && [ "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+	patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        cd ${dir}libcpp && autoconf
+	;;
+    -unpatch)
+	patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        cd ${dir}libcpp && autoconf
+	;;
+    *)
+	echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+	exit 1;;
+esac
+
+exit 0
+
+--- gcc/DEV-PHASE	2008-02-03 20:06:28.000000000 +0000
++++ gcc/DEV-PHASE	2008-02-03 19:59:11.000000000 +0000
+@@ -0,0 +1 @@
++prerelease gdc 0.25 20071215, using dmd 1.022
+--- gcc/cgraph.c	2008-02-03 19:56:05.000000000 +0000
++++ gcc/cgraph.c	2008-02-03 19:57:27.000000000 +0000
+@@ -198,6 +198,7 @@
+ cgraph_node (tree decl)
+ {
+   struct cgraph_node key, *node, **slot;
++  tree context;
+ 
+   gcc_assert (TREE_CODE (decl) == FUNCTION_DECL);
+ 
+@@ -219,15 +220,20 @@
+   node = cgraph_create_node ();
+   node->decl = decl;
+   *slot = node;
+-  if (DECL_CONTEXT (decl) && TREE_CODE (DECL_CONTEXT (decl)) == FUNCTION_DECL)
++  if (!DECL_NO_STATIC_CHAIN (decl))
+     {
+-      node->origin = cgraph_node (DECL_CONTEXT (decl));
+-      node->next_nested = node->origin->nested;
+-      node->origin->nested = node;
+-      node->master_clone = node;
+-    }
+-  return node;
+-}
++       context = decl_function_context (decl);
++       if (context)
++         {
++ 	   node->origin = cgraph_node (context);
++ 	   node->next_nested = node->origin->nested;
++ 	   node->origin->nested = node;
++ 	   node->master_clone = node;
++         }
++      }
++    return node;
++  }
++
+ 
+ /* Insert already constructed node into hashtable.  */
+ 
+--- gcc/dwarf2out.c	2008-02-03 19:56:05.000000000 +0000
++++ gcc/dwarf2out.c	2008-02-03 19:57:28.000000000 +0000
+@@ -5407,7 +5407,8 @@
+ 
+   return (lang == DW_LANG_C || lang == DW_LANG_C89 || lang == DW_LANG_ObjC
+ 	  || lang == DW_LANG_C99
+-	  || lang == DW_LANG_C_plus_plus || lang == DW_LANG_ObjC_plus_plus);
++	  || lang == DW_LANG_C_plus_plus || lang == DW_LANG_ObjC_plus_plus
++	  || lang == DW_LANG_D);
+ }
+ 
+ /* Return TRUE if the language is C++.  */
+@@ -12381,6 +12382,8 @@
+     language = DW_LANG_ObjC;
+   else if (strcmp (language_string, "GNU Objective-C++") == 0)
+     language = DW_LANG_ObjC_plus_plus;
++  else if (strcmp (language_string, "GNU D") == 0)
++    language = DW_LANG_D;
+   else
+     language = DW_LANG_C89;
+ 
+@@ -13475,7 +13478,7 @@
+ 
+       /* For local statics lookup proper context die.  */
+       if (TREE_STATIC (decl) && decl_function_context (decl))
+-	context_die = lookup_decl_die (DECL_CONTEXT (decl));
++	context_die = lookup_decl_die (decl_function_context (decl));
+ 
+       /* If we are in terse mode, don't generate any DIEs to represent any
+ 	 variable declarations or definitions.  */
+--- gcc/expr.c	2008-02-03 19:56:05.000000000 +0000
++++ gcc/expr.c	2008-02-03 19:57:28.000000000 +0000
+@@ -8747,6 +8747,11 @@
+       /* Lowered by gimplify.c.  */
+       gcc_unreachable ();
+ 
++    case STATIC_CHAIN_EXPR:
++    case STATIC_CHAIN_DECL:
++      /* Lowered by tree-nested.c */
++      gcc_unreachable ();
++    
+     case EXC_PTR_EXPR:
+       return get_exception_pointer (cfun);
+ 
+--- gcc/function.c	2008-02-03 19:56:05.000000000 +0000
++++ gcc/function.c	2008-02-03 19:57:28.000000000 +0000
+@@ -3022,7 +3022,8 @@
+       FUNCTION_ARG_ADVANCE (all.args_so_far, data.promoted_mode,
+ 			    data.passed_type, data.named_arg);
+ 
+-      assign_parm_adjust_stack_rtl (&data);
++      if (!cfun->naked)
++        assign_parm_adjust_stack_rtl (&data);
+ 
+       if (assign_parm_setup_block_p (&data))
+ 	assign_parm_setup_block (&all, parm, &data);
+@@ -3037,7 +3038,8 @@
+ 
+   /* Output all parameter conversion instructions (possibly including calls)
+      now that all parameters have been copied out of hard registers.  */
+-  emit_insn (all.conversion_insns);
++  if (!cfun->naked)
++    emit_insn (all.conversion_insns);
+ 
+   /* If we are receiving a struct value address as the first argument, set up
+      the RTL for the function result. As this might require code to convert
+@@ -3167,6 +3169,9 @@
+   struct assign_parm_data_all all;
+   tree fnargs, parm, stmts = NULL;
+ 
++  if (cfun->naked)
++    return NULL;
++
+   assign_parms_initialize_all (&all);
+   fnargs = assign_parms_augmented_arg_list (&all);
+ 
+@@ -4148,11 +4153,14 @@
+       tree parm = cfun->static_chain_decl;
+       rtx local = gen_reg_rtx (Pmode);
+ 
+-      set_decl_incoming_rtl (parm, static_chain_incoming_rtx);
+       SET_DECL_RTL (parm, local);
+       mark_reg_pointer (local, TYPE_ALIGN (TREE_TYPE (TREE_TYPE (parm))));
+ 
+-      emit_move_insn (local, static_chain_incoming_rtx);
++      if (! cfun->custom_static_chain)
++        {
++	    set_decl_incoming_rtl (parm, static_chain_incoming_rtx);
++	    emit_move_insn (local, static_chain_incoming_rtx);
++	}
+     }
+ 
+   /* If the function receives a non-local goto, then store the
+@@ -5064,6 +5072,10 @@
+   rtx epilogue_end = NULL_RTX;
+ #endif
+   edge_iterator ei;
++  
++  if (cfun->naked)
++      return;
++
+ 
+ #ifdef HAVE_prologue
+   if (HAVE_prologue)
+--- gcc/function.h	2008-02-03 19:56:05.000000000 +0000
++++ gcc/function.h	2008-02-03 19:57:28.000000000 +0000
+@@ -462,6 +462,14 @@
+   /* Number of units of floating point registers that need saving in stdarg
+      function.  */
+   unsigned int va_list_fpr_size : 8;
++
++  /* Nonzero if static chain is initialized by something other than
++     static_chain_incoming_rtx. */
++  unsigned int custom_static_chain : 1;
++
++  /* Nonzero if no code should be generated for prologues, copying
++     parameters, etc. */
++  unsigned int naked : 1;
+ };
+ 
+ /* If va_list_[gf]pr_size is set to this, it means we don't know how
+--- gcc/gcc.c	2008-02-03 19:56:05.000000000 +0000
++++ gcc/gcc.c	2008-02-03 19:57:28.000000000 +0000
+@@ -126,6 +126,9 @@
+ /* Flag set by cppspec.c to 1.  */
+ int is_cpp_driver;
+ 
++/* Flag set by drivers needing Pthreads. */
++int need_pthreads;
++
+ /* Flag saying to pass the greatest exit code returned by a sub-process
+    to the calling program.  */
+ static int pass_exit_codes;
+@@ -464,6 +467,7 @@
+ 	assembler has done its job.
+  %D	Dump out a -L option for each directory in startfile_prefixes.
+ 	If multilib_dir is set, extra entries are generated with it affixed.
++ %N     Output the currently selected multilib directory name.
+  %l     process LINK_SPEC as a spec.
+  %L     process LIB_SPEC as a spec.
+  %G     process LIBGCC_SPEC as a spec.
+@@ -892,6 +896,8 @@
+ #endif
+ #endif
+ 
++#define GCC_SPEC_FORMAT_4 1
++
+ /* Record the mapping from file suffixes for compilation specs.  */
+ 
+ struct compiler
+@@ -3945,6 +3951,10 @@
+ 	}
+     }
+ 
++  if (need_pthreads)
++      n_switches++;
++
++
+   if (save_temps_flag && use_pipes)
+     {
+       /* -save-temps overrides -pipe, so that temp files are produced */
+@@ -4283,6 +4293,18 @@
+ 	}
+     }
+ 
++  if (need_pthreads)
++    {
++	switches[n_switches].part1 = "pthread";
++	switches[n_switches].args = 0;
++	switches[n_switches].live_cond = SWITCH_OK;
++	/* Do not print an error if there is not expansion for -pthread. */
++	switches[n_switches].validated = 1;
++	switches[n_switches].ordering = 0;
++
++	n_switches++;
++    }
++  
+   switches[n_switches].part1 = 0;
+   infiles[n_infiles].name = 0;
+ }
+@@ -5215,6 +5237,17 @@
+ 	      return value;
+ 	    break;
+ 
++	  case 'N':
++	    if (multilib_dir)
++	      {
++		arg_going = 1;
++		obstack_grow (&obstack, "-fmultilib-dir=",
++			      strlen ("-fmultilib-dir="));
++	        obstack_grow (&obstack, multilib_dir,
++			      strlen (multilib_dir));
++	      }
++	    break;
++
+ 	    /* Here we define characters other than letters and digits.  */
+ 
+ 	  case '{':
+--- gcc/gcc.h	2008-02-03 19:56:05.000000000 +0000
++++ gcc/gcc.h	2008-02-03 19:57:28.000000000 +0000
+@@ -37,7 +37,7 @@
+    || (CHAR) == 'e' || (CHAR) == 'T' || (CHAR) == 'u' \
+    || (CHAR) == 'I' || (CHAR) == 'm' || (CHAR) == 'x' \
+    || (CHAR) == 'L' || (CHAR) == 'A' || (CHAR) == 'V' \
+-   || (CHAR) == 'B' || (CHAR) == 'b')
++   || (CHAR) == 'B' || (CHAR) == 'b' || (CHAR) == 'J')
+ 
+ /* This defines which multi-letter switches take arguments.  */
+ 
+--- gcc/gimplify.c	2008-02-03 19:56:05.000000000 +0000
++++ gcc/gimplify.c	2008-02-03 19:57:28.000000000 +0000
+@@ -1804,12 +1804,16 @@
+ 	      /* Divide the offset by its alignment.  */
+ 	      offset = size_binop (EXACT_DIV_EXPR, offset, factor);
+ 
+-	      if (!is_gimple_min_invariant (offset))
+-		{
+-	          TREE_OPERAND (t, 2) = offset;
+-		  tret = gimplify_expr (&TREE_OPERAND (t, 2), pre_p, post_p,
+-					is_gimple_formal_tmp_reg, fb_rvalue);
+-		  ret = MIN (ret, tret);
++	      /* Would be better to have a look at size_binop ... */
++	      if (offset != NULL_TREE)
++	        {
++	          if (!is_gimple_min_invariant (offset))
++		    {
++	              TREE_OPERAND (t, 2) = offset;
++		      tret = gimplify_expr (&TREE_OPERAND (t, 2), pre_p, post_p,
++					    is_gimple_formal_tmp_reg, fb_rvalue);
++		      ret = MIN (ret, tret);
++		    }
+ 		}
+ 	    }
+ 	}
+@@ -5508,6 +5512,12 @@
+ 	    }
+ 	  break;
+ 
++	case STATIC_CHAIN_EXPR:
++	  /* The argument is used as information only.  No need to gimplify */
++	case STATIC_CHAIN_DECL:  
++	  ret = GS_ALL_DONE;
++	  break;
++
+ 	case TREE_LIST:
+ 	  gcc_unreachable ();
+ 
+--- gcc/real.c	2008-02-03 19:56:05.000000000 +0000
++++ gcc/real.c	2008-02-03 19:57:28.000000000 +0000
+@@ -2282,6 +2282,9 @@
+       memset (r->sig, -1, SIGSZ * sizeof (unsigned long));
+       clear_significand_below (r, np2);
+ 
++    if (REAL_MODE_FORMAT_COMPOSITE_P (mode))
++        clear_significand_bit (r, SIGNIFICAND_BITS - fmt->pnan - 1);
++
+       if (fmt->pnan < fmt->p)
+ 	/* This is an IBM extended double format made up of two IEEE
+ 	   doubles.  The value of the long double is the sum of the
+--- gcc/tree.def	2008-02-03 19:56:05.000000000 +0000
++++ gcc/tree.def	2008-02-03 19:57:28.000000000 +0000
+@@ -527,6 +527,13 @@
+    Operand 2 is the static chain argument, or NULL.  */
+ DEFTREECODE (CALL_EXPR, "call_expr", tcc_expression, 3)
+ 
++/* Operand 0 is the FUNC_DECL of the outer function for
++   which the static chain is to be computed. */
++DEFTREECODE (STATIC_CHAIN_EXPR, "static_chain_expr", tcc_expression, 1)
++    
++/* Represents a function's static chain.  It can be used as an lvalue. */
++DEFTREECODE (STATIC_CHAIN_DECL, "static_chain_decl", tcc_expression, 0)
++
+ /* Specify a value to compute along with its corresponding cleanup.
+    Operand 0 is the cleanup expression.
+    The cleanup is executed by the first enclosing CLEANUP_POINT_EXPR,
+--- gcc/tree-dump.c	2008-02-03 19:56:05.000000000 +0000
++++ gcc/tree-dump.c	2008-02-03 19:57:28.000000000 +0000
+@@ -605,6 +605,10 @@
+       dump_child ("args", TREE_OPERAND (t, 1));
+       break;
+ 
++    case STATIC_CHAIN_EXPR:
++      dump_child ("func", TREE_OPERAND (t, 0));
++      break;
++
+     case CONSTRUCTOR:
+       {
+ 	unsigned HOST_WIDE_INT cnt;
+--- gcc/tree-gimple.c	2008-02-03 19:56:05.000000000 +0000
++++ gcc/tree-gimple.c	2008-02-03 20:01:21.000000000 +0000
+@@ -71,6 +71,8 @@
+     case VECTOR_CST:
+     case OBJ_TYPE_REF:
+     case ASSERT_EXPR:
++    case STATIC_CHAIN_EXPR: /* not sure if this is right...*/
++    case STATIC_CHAIN_DECL:
+       return true;
+ 
+     default:
+@@ -144,7 +146,10 @@
+ 	  || TREE_CODE (t) == WITH_SIZE_EXPR
+ 	  /* These are complex lvalues, but don't have addresses, so they
+ 	     go here.  */
+-	  || TREE_CODE (t) == BIT_FIELD_REF);
++	  || TREE_CODE (t) == BIT_FIELD_REF
++          /* This is an lvalue because it will be replaced with the real
++	     static chain decl. */
++	  || TREE_CODE (t) == STATIC_CHAIN_DECL);
+ }
+ 
+ /*  Return true if T is a GIMPLE condition.  */
+--- gcc/tree-inline.c	2008-02-03 19:56:05.000000000 +0000
++++ gcc/tree-inline.c	2008-02-03 19:57:28.000000000 +0000
+@@ -554,10 +554,21 @@
+      knows not to copy VAR_DECLs, etc., so this is safe.  */
+   else
+     {
++      if (TREE_CODE (*tp) ==
++	  MODIFY_EXPR &&
++	  TREE_OPERAND (*tp, 0) ==
++	  DECL_STRUCT_FUNCTION (fn)->static_chain_decl)
++	{
++	  /* Don't use special methods to initialize the static chain
++	     if expanding inline.  If this code could somehow be
++	     expanded in expand_start_function, it would not be
++	     necessary to deal with it here. */
++	  *tp = build_empty_stmt ();
++	}
+       /* Here we handle trees that are not completely rewritten.
+ 	 First we detect some inlining-induced bogosities for
+ 	 discarding.  */
+-      if (TREE_CODE (*tp) == MODIFY_EXPR
++      else if (TREE_CODE (*tp) == MODIFY_EXPR
+ 	  && TREE_OPERAND (*tp, 0) == TREE_OPERAND (*tp, 1)
+ 	  && (lang_hooks.tree_inlining.auto_var_in_fn_p
+ 	      (TREE_OPERAND (*tp, 0), fn)))
+@@ -2625,8 +2636,9 @@
+ {
+   tree copy, type;
+ 
+-  gcc_assert (TREE_CODE (decl) == PARM_DECL
+-	      || TREE_CODE (decl) == RESULT_DECL);
++  if (cfun->naked) /* Not sure this is right ... */
++    gcc_assert (TREE_CODE (decl) == PARM_DECL
++	        || TREE_CODE (decl) == RESULT_DECL);
+ 
+   type = TREE_TYPE (decl);
+ 
+--- gcc/tree-nested.c	2008-02-03 19:56:05.000000000 +0000
++++ gcc/tree-nested.c	2008-02-03 19:57:28.000000000 +0000
+@@ -327,6 +327,7 @@
+   if (!decl)
+     {
+       tree type;
++      enum tree_code code;
+ 
+       type = get_frame_type (info->outer);
+       type = build_pointer_type (type);
+@@ -337,12 +338,17 @@
+ 	 Note also that it's represented as a parameter.  This is more
+ 	 close to the truth, since the initial value does come from 
+ 	 the caller.  */
+-      decl = build_decl (PARM_DECL, create_tmp_var_name ("CHAIN"), type);
++      /* If the function has a custom static chain, a VAR_DECL is more
++	 appropriate. */
++      code = DECL_STRUCT_FUNCTION (info->context)->custom_static_chain ?
++	  VAR_DECL : PARM_DECL;
++      decl = build_decl (code, create_tmp_var_name ("CHAIN"), type);
+       DECL_ARTIFICIAL (decl) = 1;
+       DECL_IGNORED_P (decl) = 1;
+       TREE_USED (decl) = 1;
+       DECL_CONTEXT (decl) = info->context;
+-      DECL_ARG_TYPE (decl) = type;
++      if (TREE_CODE (decl) == PARM_DECL)
++	  DECL_ARG_TYPE (decl) = type;
+ 
+       /* Tell tree-inline.c that we never write to this variable, so
+ 	 it can copy-prop the replacement value immediately.  */
+@@ -799,6 +805,8 @@
+ 
+   if (info->context == target_context)
+     {
++      /* might be doing something wrong to need the following line.. */
++      get_frame_type (info);
+       x = build_addr (info->frame_decl, target_context);
+     }
+   else
+@@ -1621,6 +1629,10 @@
+       if (DECL_NO_STATIC_CHAIN (decl))
+ 	break;
+ 
++      /* Don't use a trampoline for a static reference. */
++      if (TREE_STATIC (t))
++	break;
++
+       /* Lookup the immediate parent of the callee, as that's where
+ 	 we need to insert the trampoline.  */
+       for (i = info; i->context != target_context; i = i->outer)
+@@ -1691,6 +1703,14 @@
+ 	}
+       break;
+ 
++    case STATIC_CHAIN_EXPR:
++      *tp = get_static_chain (info, TREE_OPERAND (t, 0), &wi->tsi);
++      break;
++
++    case STATIC_CHAIN_DECL:
++      *tp = get_chain_decl (info);
++      break;
++
+     case RETURN_EXPR:
+     case MODIFY_EXPR:
+     case WITH_SIZE_EXPR:
+@@ -1815,7 +1835,28 @@
+ 	  y = build3 (COMPONENT_REF, TREE_TYPE (field),
+ 		      root->frame_decl, field, NULL_TREE);
+ 	  x = build2 (MODIFY_EXPR, TREE_TYPE (field), y, x);
+-	  append_to_statement_list (x, &stmt_list);
++      /* If the function has a custom static chain, chain_field must
++	 be set after the static chain. */
++      if (DECL_STRUCT_FUNCTION (root->context)->custom_static_chain)
++	{
++	  /* Should use walk_function instead. */
++	  tree_stmt_iterator i =
++	      tsi_start ( BIND_EXPR_BODY (DECL_SAVED_TREE (context)));
++	  while (!tsi_end_p (i))
++	    {
++	      tree t = tsi_stmt (i);
++	      if (TREE_CODE (t) == MODIFY_EXPR &&
++		  TREE_OPERAND (t, 0) == root->chain_decl)
++		{
++		  tsi_link_after(& i, x, TSI_SAME_STMT);
++		  x = NULL_TREE;
++		  break;
++		}
++	    }
++	  gcc_assert(x == NULL_TREE);
++	}
++      else
++	append_to_statement_list (x, &stmt_list);
+ 	}
+     }
+ 
+--- gcc/tree-pretty-print.c	2008-02-03 19:56:05.000000000 +0000
++++ gcc/tree-pretty-print.c	2008-02-03 19:57:28.000000000 +0000
+@@ -1155,6 +1155,16 @@
+ 	pp_string (buffer, " [tail call]");
+       break;
+ 
++    case STATIC_CHAIN_EXPR:
++	pp_string (buffer, "<<static chain of ");
++	dump_generic_node (buffer, TREE_OPERAND (node, 0), spc, flags, false);
++	pp_string (buffer, ">>");
++      break;
++
++    case STATIC_CHAIN_DECL:
++       pp_string (buffer, "<<static chain decl>>");
++       break;
++
+     case WITH_CLEANUP_EXPR:
+       NIY;
+       break;
+--- gcc/varray.h	2008-02-03 19:56:05.000000000 +0000
++++ gcc/varray.h	2008-02-03 19:57:28.000000000 +0000
+@@ -61,6 +61,16 @@
+   NUM_VARRAY_DATA
+ };
+ 
++#ifndef __cplusplus 
++# define VARRAY_STRANGE_1 vdt_rtx
++# define VARRAY_STRANGE_2 vdt_rtvec
++# define VARRAY_STRANGE_3 vdt_tree
++#else
++# define VARRAY_STRANGE_1 vdt_rtx_
++# define VARRAY_STRANGE_2 vdt_rtvec_
++# define VARRAY_STRANGE_3 vdt_tree_
++#endif
++
+ /* Union of various array types that are used.  */
+ typedef union varray_data_tag GTY (()) {
+   char			  GTY ((length ("%0.num_elements"),
+@@ -90,11 +100,11 @@
+   char			 *GTY ((length ("%0.num_elements"),
+ 				tag ("VARRAY_DATA_CPTR")))	vdt_cptr[1];
+   rtx			  GTY ((length ("%0.num_elements"),
+-				tag ("VARRAY_DATA_RTX")))	vdt_rtx[1];
++				tag ("VARRAY_DATA_RTX")))	VARRAY_STRANGE_1[1];
+   rtvec			  GTY ((length ("%0.num_elements"),
+-				tag ("VARRAY_DATA_RTVEC")))	vdt_rtvec[1];
++				tag ("VARRAY_DATA_RTVEC")))	VARRAY_STRANGE_2[1];
+   tree			  GTY ((length ("%0.num_elements"),
+-				tag ("VARRAY_DATA_TREE")))	vdt_tree[1];
++				tag ("VARRAY_DATA_TREE")))	VARRAY_STRANGE_3[1];
+   struct bitmap_head_def *GTY ((length ("%0.num_elements"),
+ 				tag ("VARRAY_DATA_BITMAP")))	vdt_bitmap[1];
+   struct reg_info_def	 *GTY ((length ("%0.num_elements"), skip,
+--- gcc/tree.h	2008-02-03 19:56:05.000000000 +0000
++++ gcc/tree.h	2008-02-03 19:57:28.000000000 +0000
+@@ -3535,6 +3535,19 @@
+ 
+ extern tree build_nt (enum tree_code, ...);
+ 
++/* Still required by gdc */
++#if GCC_VERSION >= 3000 || __STDC_VERSION__ >= 199901L
++/* Use preprocessor trickery to map "build" to "buildN" where N is the
++   expected number of arguments.  This is used for both efficiency (no
++   varargs), and checking (verifying number of passed arguments).  */
++#define build(code, ...) \
++  _buildN1(build, _buildC1(__VA_ARGS__))(code, __VA_ARGS__)
++#define _buildN1(BASE, X)       _buildN2(BASE, X)
++#define _buildN2(BASE, X)       BASE##X
++#define _buildC1(...)           _buildC2(__VA_ARGS__,9,8,7,6,5,4,3,2,1,0,0)
++#define _buildC2(x,a1,a2,a3,a4,a5,a6,a7,a8,a9,c,...) c
++#endif
++
+ extern tree build0_stat (enum tree_code, tree MEM_STAT_DECL);
+ #define build0(c,t) build0_stat (c,t MEM_STAT_INFO)
+ extern tree build1_stat (enum tree_code, tree, tree MEM_STAT_DECL);
+--- gcc/tree-sra.c	2008-02-03 19:56:05.000000000 +0000
++++ gcc/tree-sra.c	2008-02-03 19:57:28.000000000 +0000
+@@ -248,6 +248,8 @@
+     case RECORD_TYPE:
+       {
+ 	bool saw_one_field = false;
++	tree last_offset = size_zero_node;
++	tree cmp;
+ 
+ 	for (t = TYPE_FIELDS (type); t ; t = TREE_CHAIN (t))
+ 	  if (TREE_CODE (t) == FIELD_DECL)
+@@ -257,6 +259,11 @@
+ 		  && (tree_low_cst (DECL_SIZE (t), 1)
+ 		      != TYPE_PRECISION (TREE_TYPE (t))))
+ 		goto fail;
++		/* Reject aliased fields created by GDC for anonymous unions. */
++		cmp = fold_binary_to_constant (LE_EXPR, boolean_type_node,
++		  DECL_FIELD_OFFSET (t), last_offset);
++		if (cmp == NULL_TREE || tree_expr_nonzero_p (cmp))
++		  goto fail;
+ 
+ 	      saw_one_field = true;
+ 	    }
+--- libgomp/Makefile.in	2008-02-03 19:56:05.000000000 +0000
++++ libgomp/Makefile.in	2008-02-03 19:57:28.000000000 +0000
+@@ -100,7 +100,7 @@
+ MULTISUBDIR = 
+ MULTIDO = true
+ MULTICLEAN = true
+-INFO_DEPS = libgomp.info
++INFO_DEPS = 
+ am__TEXINFO_TEX_DIR = $(srcdir)/../gcc/doc/include
+ DVIS = libgomp.dvi
+ PDFS = libgomp.pdf

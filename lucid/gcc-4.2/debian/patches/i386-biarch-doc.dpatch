@@ -1,0 +1,103 @@
+#! /bin/sh -e
+ 
+# DP: biarch patches for i386/x86_64
+ 
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        (cd ${dir}libcpp && autoconf)
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        cd ${dir}libcpp && autoconf
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+
+From: "Joseph S. Myers" <joseph@codesourcery.com>
+Sender: gcc-patches-owner@gcc.gnu.org
+To: gcc-patches@gcc.gnu.org, bkorb@gnu.org
+Subject: Patch to support x86-linux --enable-targets=all
+Date: Sun, 22 Oct 2006 19:57:53 +0000 (UTC)
+
+This patch allows i?86-*-linux* configurations to be built with 64-bit
+support, using the same --enable-targets=all option that enables this
+for powerpc-linux configurations.  (Using this feature needs my recent
+binutils patch
+<http://sourceware.org/ml/binutils/2006-10/msg00156.html>.)
+
+Bootstrapped with no regressions on i686-pc-linux-gnu (without the new
+option) and tested on i686-pc-linux-gnu with the new option.  OK to
+commit?
+
+The fixincludes change is because such biarch configurations have
+wrapper files <asm/*.h> that look something like
+
+#ifndef __ASM_STUB_POSIX_TYPES_H__
+# define __ASM_STUB_POSIX_TYPES_H__
+# if defined __x86_64__
+#  include <asm-x86_64/posix_types.h>
+# endif
+# if defined __i386__
+#  include <asm-i386/posix_types.h>
+# endif
+#endif
+
+and this wrongly matches a fix for an old pre-x86_64 i386
+<asm/posix_types.h> file.
+
+gcc:
+2006-10-22  Joseph Myers  <joseph@codesourcery.com>
+
+	* config.gcc (i[34567]86-*-linux*): Handle --enable-targets=all.
+	Handle tuning for bi-arch i[34567]86-*-linux* like that for
+	i[34567]86-*-solaris2.1[0-9]*.
+	* config/i386/linux64.h (TARGET_VERSION, MULTILIB_DEFAULTS):
+	Define conditionally depending on TARGET_64BIT_DEFAULT.
+	(SPEC_32, SPEC_64): Define.
+	(LINK_SPEC): Use them.
+	* doc/install.texi (--enable-targets=all): Document for x86-linux.
+
+libcpp:
+2006-10-22  Joseph Myers  <joseph@codesourcery.com>
+
+	* configure.ac (need_64bit_hwint): Set for i[34567]86-*-linux*
+	depending on --enable-targets=all.
+	* configure: Regenerate.
+
+fixincludes:
+2006-10-22  Joseph Myers  <joseph@codesourcery.com>
+
+	* inclhack.def (AAB_fd_zero_asm_posix_types_h): Bypass on x86_64.
+	* fixincl.x: Regenerate.
+
+2006-12-12  Matthias Klose  <doko@debian.org>
+
+        * configure.tgt (i[456]86-*-linux*): Only add ia32 specific
+        flags if not building with -m64.
+        * testsuite/lib/libgomp-dg.exp (libgomp_init): Don't add -march
+        flag for i?86-*-* targets, if current target matches -m64.
+
+--- gcc/doc/install.texi.orig	2007-07-06 20:20:31.000000000 +0200
++++ gcc/doc/install.texi	2007-07-12 19:18:13.000000000 +0200
+@@ -1159,7 +1159,7 @@
+ option enables the 32-bit target to be a bi-arch compiler, which is
+ useful when you want a bi-arch compiler that defaults to 32-bit, and
+ you are building a bi-arch or multi-arch binutils in a combined tree.
+-Currently, this option only affects powerpc-linux.
++Currently, this option only affects powerpc-linux and x86-linux.
+ 
+ @item --enable-secureplt
+ This option enables @option{-msecure-plt} by default for powerpc-linux.
