@@ -1,19 +1,19 @@
 diff -urN debian/changelog gcc-4.2-4.2.4.orig/debian/changelog
 --- debian/changelog	2014-02-15 17:39:47.881524702 +0900
-+++ gcc-4.2-4.2.4.orig/debian/changelog	2014-02-18 13:59:10.968942491 +0900
++++ gcc-4.2-4.2.4.orig/debian/changelog	2014-02-21 15:37:47.645518983 +0900
 @@ -1,3 +1,9 @@
-+gcc-4.2 (4.2.4-1ubuntu4lucid0) lucid; urgency=low
++gcc-4.2 (4.2.4-1ubuntu4lucid1) lucid; urgency=low
 +
 +  * ppa for lucid
 +
-+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Mon, 17 Feb 2014 20:20:00 +0900
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Thu, 20 Feb 2014 00:00:00 +0900
 +
  gcc-4.2 (4.2.4-1ubuntu4) hardy-proposed; urgency=low
  
    * Fix PR libgomp/28432. LP: #235070, using the patch in intrepid.
 diff -urN debian/control gcc-4.2-4.2.4.orig/debian/control
 --- debian/control	2014-02-15 17:39:47.925486055 +0900
-+++ gcc-4.2-4.2.4.orig/debian/control	2014-02-18 14:57:56.736027088 +0900
++++ gcc-4.2-4.2.4.orig/debian/control	2014-02-21 15:41:27.205062071 +0900
 @@ -1,12 +1,12 @@
  Source: gcc-4.2
  Section: devel
@@ -555,7 +555,7 @@ diff -urN debian/rules.defs gcc-4.2-4.2.4.orig/debian/rules.defs
  with_dev := yes
 diff -urN debian/rules.parameters gcc-4.2-4.2.4.orig/debian/rules.parameters
 --- debian/rules.parameters	2014-02-15 17:39:47.913529609 +0900
-+++ gcc-4.2-4.2.4.orig/debian/rules.parameters	2014-02-15 19:39:02.671015483 +0900
++++ gcc-4.2-4.2.4.orig/debian/rules.parameters	2014-02-21 15:41:27.214302561 +0900
 @@ -2,9 +2,9 @@
  GCC_VERSION	:= 4.2.4
  NEXT_GCC_VERSION	:= 4.2.5
@@ -563,9 +563,9 @@ diff -urN debian/rules.parameters gcc-4.2-4.2.4.orig/debian/rules.parameters
 -SOURCE_VERSION	:= 4.2.4-1ubuntu2~ppa1
 -DEB_VERSION	:= 4.2.4-1ubuntu2~ppa1
 -DEB_EVERSION	:= 1:4.2.4-1ubuntu2~ppa1
-+SOURCE_VERSION	:= 4.2.4-1ubuntu4lucid0
-+DEB_VERSION	:= 4.2.4-1ubuntu4lucid0
-+DEB_EVERSION	:= 1:4.2.4-1ubuntu4lucid0
++SOURCE_VERSION	:= 4.2.4-1ubuntu4lucid1
++DEB_VERSION	:= 4.2.4-1ubuntu4lucid1
++DEB_EVERSION	:= 1:4.2.4-1ubuntu4lucid1
  GPC_BASE_VERSION	:= 
  GDC_BASE_VERSION  := 
  DEB_GPC_VERSION	:= 
@@ -574,7 +574,7 @@ diff -urN debian/rules.parameters gcc-4.2-4.2.4.orig/debian/rules.parameters
  DEB_SOEVERSION	:= 1:4.2.1
  DEB_LIBGCC_SOVERSION	:= 1:4.2.1
 -DEB_LIBGCC_VERSION	:= 1:4.2.4-1ubuntu2~ppa1
-+DEB_LIBGCC_VERSION	:= 1:4.2.4-1ubuntu4lucid0
++DEB_LIBGCC_VERSION	:= 1:4.2.4-1ubuntu4lucid1
  DEB_STDCXX_SOVERSION	:= 4.2.1
  DEB_GCJ_SOVERSION	:= 4.2.1
  PKG_GCJ_EXT	:= 8
