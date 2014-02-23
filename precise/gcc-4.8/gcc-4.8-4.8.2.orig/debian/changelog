@@ -1,8 +1,23 @@
-gcc-4.8 (4.8.2-15ubuntu3precise1) precise; urgency=medium
+gcc-4.8 (4.8.2-16ubuntu1precise1) precise; urgency=medium
 
   * ppa for precise
 
- -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Thu, 20 Feb 2014 00:00:00 +0900
+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Sat, 22 Feb 2014 22:00:00 +0900
+
+gcc-4.8 (4.8.2-16ubuntu1) trusty; urgency=medium
+
+  * Stop building the libgcc1 packages, now built by gccgo-4.9.
+
+ -- Matthias Klose <doko@ubuntu.com>  Tue, 18 Feb 2014 12:17:00 +0100
+
+gcc-4.8 (4.8.2-16) unstable; urgency=medium
+
+  * Update to SVN 20140217 (r207828) from the gcc-4_8-branch.
+  * Update the ibm branch to SVN 20140211 (r207700).
+  * Update the Linaro support to the 4.8-2014.02 release.
+  * Fix gij wrapper script on hppa. Closes: #739224.
+
+ -- Matthias Klose <doko@debian.org>  Mon, 17 Feb 2014 21:46:34 +0100
 
 gcc-4.8 (4.8.2-15ubuntu3) trusty; urgency=medium
 

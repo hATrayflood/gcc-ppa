@@ -321,6 +321,7 @@ endif
 ifneq (,$(filter $(DEB_TARGET_ARCH),ppc64el))
   with_ibm_branch = yes
 endif
+  with_ibm_branch = yes
 
 # check if we're building for armel or armhf
 ifeq ($(DEB_TARGET_ARCH),armhf)
@@ -1121,6 +1122,10 @@ else
     with_shared_libgcc := yes
     ifeq ($(with_common_libs),yes)
       with_libgcc := yes
+    endif
+    ifneq (,$(filter $(distrelease),trusty))
+      # built from the gccgo-4.9 package
+      with_libgcc :=
     endif
   endif
 

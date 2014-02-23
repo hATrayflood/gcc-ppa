@@ -14,8 +14,8 @@ series_file	?= $(patchdir)/series
 
 debian_patches = \
 	svn-updates \
-	$(if $(with_linaro_branch),gcc-linaro-revert) \
 	$(if $(with_linaro_branch),gcc-linaro) \
+	$(if $(with_linaro_branch),gcc-linaro-no-local) \
 
 #	svn-updates$(if $(with_linaro_branch),-linaro) \
 

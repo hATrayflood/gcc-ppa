@@ -1,19 +1,19 @@
 diff -urN debian/changelog gcc-4.8-4.8.2.orig/debian/changelog
---- debian/changelog	2014-02-17 23:15:32.632681843 +0900
-+++ gcc-4.8-4.8.2.orig/debian/changelog	2014-02-21 16:01:07.776531449 +0900
+--- debian/changelog	2014-02-22 21:58:56.124055003 +0900
++++ gcc-4.8-4.8.2.orig/debian/changelog	2014-02-22 22:06:58.642447638 +0900
 @@ -1,3 +1,9 @@
-+gcc-4.8 (4.8.2-15ubuntu3precise1) precise; urgency=medium
++gcc-4.8 (4.8.2-16ubuntu1precise1) precise; urgency=medium
 +
 +  * ppa for precise
 +
-+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Thu, 20 Feb 2014 00:00:00 +0900
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Sat, 22 Feb 2014 22:00:00 +0900
 +
- gcc-4.8 (4.8.2-15ubuntu3) trusty; urgency=medium
+ gcc-4.8 (4.8.2-16ubuntu1) trusty; urgency=medium
  
-   * Only build using the ibm branch on ppc64el.
+   * Stop building the libgcc1 packages, now built by gccgo-4.9.
 diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
---- debian/control	2014-02-17 23:15:32.636681862 +0900
-+++ gcc-4.8-4.8.2.orig/debian/control	2014-02-21 16:01:36.771165165 +0900
+--- debian/control	2014-02-22 21:58:56.128055016 +0900
++++ gcc-4.8-4.8.2.orig/debian/control	2014-02-22 22:25:55.800086537 +0900
 @@ -1,12 +1,10 @@
  Source: gcc-4.8
  Section: devel
@@ -45,42 +45,240 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  
  Package: gcc-4.8-base
  Architecture: any
-@@ -260,34 +257,6 @@
+@@ -34,6 +31,52 @@
+  This package contains files common to all languages and libraries
+  contained in the GNU Compiler Collection (GCC).
+ 
++Package: libgcc1
++Architecture: any
++Section: libs
++Priority: required
++Depends: gcc-4.8-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
++Multi-Arch: same
++Pre-Depends: multiarch-support
++Breaks: ${multiarch:breaks}
++Provides: libgcc1-armel [armel], libgcc1-armhf [armhf]
++Description: GCC support library
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libgcc1-dbg
++Architecture: any
++Section: debug
++Priority: extra
++Depends: gcc-4.8-base (= ${gcc:Version}), libgcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Multi-Arch: same
++Provides: libgcc1-dbg-armel [armel], libgcc1-dbg-armhf [armhf]
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
++Package: libgcc2
++Architecture: m68k
++Section: libs
++Priority: required
++Depends: gcc-4.8-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
++Multi-Arch: same
++Pre-Depends: multiarch-support
++Breaks: ${multiarch:breaks}
++Description: GCC support library
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libgcc2-dbg
++Architecture: m68k
++Section: debug
++Priority: extra
++Depends: gcc-4.8-base (= ${gcc:Version}), libgcc2 (= ${gcc:Version}), ${misc:Depends}
++Multi-Arch: same
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: libgcc-4.8-dev
+ Architecture: any
+ Section: libdevel
+@@ -45,6 +88,47 @@
   This package contains the headers and static library files necessary for
   building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
  
--Package: libx32gcc1
--Architecture: amd64 i386
--Section: libs
--Priority: optional
--Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
--Description: GCC support library (x32)
-- Shared version of the support library, a library of internal subroutines
-- that GCC uses to overcome shortcomings of particular machines, or
-- special needs for some languages.
--
--Package: libx32gcc1-dbg
--Architecture: amd64 i386
--Section: debug
--Priority: extra
--Depends: gcc-4.8-base (= ${gcc:Version}), libx32gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
--Description: GCC support library (debug symbols)
-- Debug symbols for the GCC support library.
--
--Package: libx32gcc-4.8-dev
--Architecture: amd64 i386
++Package: libgcc4
++Architecture: hppa
++Multi-Arch: same
++Pre-Depends: multiarch-support
++Breaks: ${multiarch:breaks}
++Section: libs
++Priority: required
++Depends: gcc-4.8-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
++Description: GCC support library
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libgcc4-dbg
++Architecture: hppa
++Multi-Arch: same
++Section: debug
++Priority: extra
++Depends: gcc-4.8-base (= ${gcc:Version}), libgcc4 (= ${gcc:Version}), ${misc:Depends}
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
++Package: lib64gcc1
++Architecture: i386 powerpc sparc s390 mips mipsel mipsn32 mipsn32el x32
++Section: libs
++Priority: optional
++Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: libgcc1 (<= 1:3.3-0pre9)
++Description: GCC support library (64bit)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: lib64gcc1-dbg
++Architecture: i386 powerpc sparc s390 mips mipsel mipsn32 mipsn32el x32
++Section: debug
++Priority: extra
++Depends: gcc-4.8-base (= ${gcc:Version}), lib64gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: lib64gcc-4.8-dev
+ Architecture: i386 powerpc sparc s390 mips mipsel mipsn32 mipsn32el x32
+ Section: libdevel
+@@ -55,6 +139,25 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
++Package: lib32gcc1
++Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32 mipsn32 mipsn32el mips64 mips64el
++Section: libs
++Priority: extra
++Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: ${confl:lib32}
++Description: GCC support library (32 bit Version)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: lib32gcc1-dbg
++Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32 mipsn32 mipsn32el mips64 mips64el
++Section: debug
++Priority: extra
++Depends: gcc-4.8-base (= ${gcc:Version}), lib32gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: lib32gcc-4.8-dev
+ Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32 mipsn32 mipsn32el mips64 mips64el
+ Section: libdevel
+@@ -65,6 +168,26 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
++Package: libhfgcc1
++Architecture: armel
++Section: libs
++Priority: optional
++Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: libgcc1-armhf [armel]
++Description: GCC support library (hard float ABI)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libhfgcc1-dbg
++Architecture: armel
++Section: debug
++Priority: extra
++Depends: gcc-4.8-base (= ${gcc:Version}), libhfgcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Conflicts: libgcc1-dbg-armhf [armel]
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: libhfgcc-4.8-dev
+ Architecture: armel
+ Section: libdevel
+@@ -75,6 +198,26 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
++Package: libsfgcc1
++Architecture: armhf
++Section: libs
++Priority: optional
++Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: libgcc1-armel [armhf]
++Description: GCC support library (soft float ABI)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libsfgcc1-dbg
++Architecture: armhf
++Section: debug
++Priority: extra
++Depends: gcc-4.8-base (= ${gcc:Version}), libsfgcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Conflicts: libgcc1-dbg-armel [armhf]
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: libsfgcc-4.8-dev
+ Architecture: armhf
+ Section: libdevel
+@@ -85,23 +228,32 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
+-Package: libn32gcc-4.8-dev
++Package: libn32gcc1
+ Architecture: mips mipsel mips64 mips64el
 -Section: libdevel
--Priority: optional
++Section: libs
+ Priority: optional
 -Recommends: ${dep:libcdev}
 -Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libgccbiarch}, ${dep:libsspbiarch}, ${dep:libgompbiarch}, ${dep:libitmbiarch}, ${dep:libatomicbiarch}, ${dep:libbtracebiarch}, ${dep:libasanbiarch}, ${dep:libtsanbiarch}, ${dep:libqmathbiarch}, ${shlibs:Depends}, ${misc:Depends}
--Description: GCC support library (x32 development files)
+-Description: GCC support library (n32 development files)
 - This package contains the headers and static library files necessary for
 - building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
--
- Package: gcc-4.8
- Architecture: any
- Section: devel
-@@ -466,23 +435,6 @@
++Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: libgcc1 (<= 1:3.3-0pre9)
++Description: GCC support library (n32)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
+ 
+-Package: libx32gcc-4.8-dev
+-Architecture: amd64 i386
++Package: libn32gcc1-dbg
++Architecture: mips mipsel mips64 mips64el
++Section: debug
++Priority: extra
++Depends: gcc-4.8-base (= ${gcc:Version}), libn32gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
++Package: libn32gcc-4.8-dev
++Architecture: mips mipsel mips64 mips64el
+ Section: libdevel
+ Priority: optional
+ Recommends: ${dep:libcdev}
+ Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libgccbiarch}, ${dep:libsspbiarch}, ${dep:libgompbiarch}, ${dep:libitmbiarch}, ${dep:libatomicbiarch}, ${dep:libbtracebiarch}, ${dep:libasanbiarch}, ${dep:libtsanbiarch}, ${dep:libqmathbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GCC support library (x32 development files)
++Description: GCC support library (n32 development files)
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
+@@ -111,7 +263,7 @@
+ Priority: optional
+ Depends: cpp-4.8 (= ${gcc:Version}), gcc-4.8-base (= ${gcc:Version}),
+   binutils (>= ${binutils:Version}), 
+-  ${shlibs:Depends}, ${misc:Depends}
++  libgcc-4.8-dev (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Recommends: ${dep:libcdev}
+ Suggests: ${gcc:multilib}, gcc-4.8-doc (>= ${gcc:SoftVersion}), gcc-4.8-locales (>= ${gcc:SoftVersion}), libgcc1-dbg (>= ${libgcc:Version}), libgomp1-dbg (>= ${gcc:Version}), libitm1-dbg (>= ${gcc:Version}), libatomic1-dbg (>= ${gcc:Version}), libasan0-dbg (>= ${gcc:Version}), libtsan0-dbg (>= ${gcc:Version}), libbacktrace1-dbg (>= ${gcc:Version}), libquadmath0-dbg (>= ${gcc:Version}), ${dep:libcloog}, ${dep:gold}
+ Provides: c-compiler
+@@ -283,23 +435,6 @@
  Description: GCC OpenMP (GOMP) support library (n32 debug symbols)
   GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
  
@@ -104,7 +302,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfgomp1
  Section: libs
  Architecture: armel
-@@ -607,26 +559,6 @@
+@@ -424,26 +559,6 @@
   accesses to the memory of a process, enabling easy-to-use synchronization of
   accesses to shared memory by several threads.
  
@@ -131,7 +329,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfitm1
  Section: libs
  Architecture: armel
-@@ -747,24 +679,6 @@
+@@ -564,24 +679,6 @@
   library providing __atomic built-in functions. When an atomic call cannot
   be turned into lock-free instructions, GCC will make calls into this library.
  
@@ -156,7 +354,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfatomic1
  Section: libs
  Architecture: armel
-@@ -881,24 +795,6 @@
+@@ -698,24 +795,6 @@
   AddressSanitizer (ASan) is a fast memory error detector.  It finds
   use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
  
@@ -181,7 +379,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfasan0
  Section: libs
  Architecture: armel
-@@ -1040,25 +936,6 @@
+@@ -857,25 +936,6 @@
   A library, which provides quad-precision mathematical functions on targets
   supporting the __float128 datatype.
  
@@ -207,7 +405,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfquadmath0
  Section: libs
  Architecture: armel
-@@ -1180,15 +1057,6 @@
+@@ -997,15 +1057,6 @@
   This package contains the headers and static library files needed to build
   GNU ObjC applications.
  
@@ -223,7 +421,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfobjc-4.8-dev
  Architecture: armel
  Section: libdevel
-@@ -1277,22 +1145,6 @@
+@@ -1094,22 +1145,6 @@
  Description: Runtime library for GNU Objective-C applications (n32 debug symbols)
   Library needed for GNU ObjC applications linked against the shared library.
  
@@ -246,7 +444,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfobjc4
  Section: libs
  Architecture: armel
-@@ -1397,15 +1249,6 @@
+@@ -1214,15 +1249,6 @@
   This package contains the headers and static library files needed to build
   GNU Fortran applications.
  
@@ -262,7 +460,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfgfortran-4.8-dev
  Architecture: armel
  Section: libdevel
-@@ -1503,24 +1346,6 @@
+@@ -1320,24 +1346,6 @@
   Library needed for GNU Fortran applications linked against the
   shared library.
  
@@ -287,7 +485,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfgfortran3
  Section: libs
  Architecture: armel
-@@ -1674,25 +1499,6 @@
+@@ -1491,25 +1499,6 @@
   Library needed for GNU Go applications linked against the
   shared library.
  
@@ -313,7 +511,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: gcj-4.8
  Section: java
  Architecture: any
-@@ -1899,19 +1705,6 @@
+@@ -1716,19 +1705,6 @@
   was included up to g++-2.95. The first version of libstdc++-v3 appeared
   in g++-3.0.
  
@@ -333,7 +531,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfstdc++6
  Architecture: armel
  Section: libs
-@@ -2050,29 +1843,6 @@
+@@ -1867,29 +1843,6 @@
  Description: GNU Standard C++ Library v3 (debugging files)
   This package contains the shared library of libstdc++ compiled with
   debugging symbols.
@@ -364,7 +562,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfstdc++-4.8-dev
  Architecture: armel
 diff -urN debian/control.m4 gcc-4.8-4.8.2.orig/debian/control.m4
---- debian/control.m4	2014-02-17 23:15:32.636681862 +0900
+--- debian/control.m4	2014-02-22 21:58:56.128055016 +0900
 +++ gcc-4.8-4.8.2.orig/debian/control.m4	2014-02-17 20:12:53.308325747 +0900
 @@ -34,23 +34,7 @@
  Source: SRCNAME
@@ -471,8 +669,8 @@ diff -urN debian/patches/libquadmath-fenv.diff gcc-4.8-4.8.2.orig/debian/patches
 ++ 	}
 ++ 
 diff -urN debian/rules.conf gcc-4.8-4.8.2.orig/debian/rules.conf
---- debian/rules.conf	2014-02-17 23:15:32.804682695 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules.conf	2014-02-16 16:06:20.434537389 +0900
+--- debian/rules.conf	2014-02-22 21:58:56.320055970 +0900
++++ gcc-4.8-4.8.2.orig/debian/rules.conf	2014-02-22 22:12:27.152076672 +0900
 @@ -355,7 +355,7 @@
  endif
  
@@ -483,31 +681,31 @@ diff -urN debian/rules.conf gcc-4.8-4.8.2.orig/debian/rules.conf
  #CLOOG_RUNTIME_DEP = libisl10, libcloog-isl4
  
 diff -urN debian/rules.parameters gcc-4.8-4.8.2.orig/debian/rules.parameters
---- debian/rules.parameters	2014-02-17 23:15:32.812682735 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules.parameters	2014-02-21 16:01:36.835197480 +0900
+--- debian/rules.parameters	2014-02-22 21:58:56.328056015 +0900
++++ gcc-4.8-4.8.2.orig/debian/rules.parameters	2014-02-22 22:25:55.816086622 +0900
 @@ -2,14 +2,14 @@
  GCC_VERSION	:= 4.8.2
  NEXT_GCC_VERSION	:= 4.8.3
  BASE_VERSION	:= 4.8
--SOURCE_VERSION	:= 4.8.2-15ubuntu1
--DEB_VERSION	:= 4.8.2-15ubuntu1
--DEB_EVERSION	:= 1:4.8.2-15ubuntu1
--DEB_GDC_VERSION	:= 4.8.2-15ubuntu1
-+SOURCE_VERSION	:= 4.8.2-15ubuntu3precise1
-+DEB_VERSION	:= 4.8.2-15ubuntu3precise1
-+DEB_EVERSION	:= 1:4.8.2-15ubuntu3precise1
-+DEB_GDC_VERSION	:= 4.8.2-15ubuntu3precise1
+-SOURCE_VERSION	:= 4.8.2-16ubuntu1
+-DEB_VERSION	:= 4.8.2-16ubuntu1
+-DEB_EVERSION	:= 1:4.8.2-16ubuntu1
+-DEB_GDC_VERSION	:= 4.8.2-16ubuntu1
++SOURCE_VERSION	:= 4.8.2-16ubuntu1precise1
++DEB_VERSION	:= 4.8.2-16ubuntu1precise1
++DEB_EVERSION	:= 1:4.8.2-16ubuntu1precise1
++DEB_GDC_VERSION	:= 4.8.2-16ubuntu1precise1
  DEB_SOVERSION	:= 4.8
  DEB_SOEVERSION	:= 1:4.8
  DEB_LIBGCC_SOVERSION	:= 
--DEB_LIBGCC_VERSION	:= 1:4.8.2-15ubuntu1
-+DEB_LIBGCC_VERSION	:= 1:4.8.2-15ubuntu3precise1
+-DEB_LIBGCC_VERSION	:= 1:4.8.2-16ubuntu1
++DEB_LIBGCC_VERSION	:= 1:4.8.2-16ubuntu1precise1
  DEB_STDCXX_SOVERSION	:= 4.8
  DEB_GCJ_SOVERSION	:= 4.8
  PKG_GCJ_EXT	:= 14
 diff -urN debian/rules.patch gcc-4.8-4.8.2.orig/debian/rules.patch
---- debian/rules.patch	2014-02-17 23:15:32.812682735 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules.patch	2014-02-15 03:43:35.665098534 +0900
+--- debian/rules.patch	2014-02-22 21:58:56.328056015 +0900
++++ gcc-4.8-4.8.2.orig/debian/rules.patch	2014-02-22 22:16:47.965369972 +0900
 @@ -354,6 +354,12 @@
  endif
  debian_patches += libgomp-kfreebsd-testsuite

@@ -1,10 +1,10 @@
-# DP: updates from the 4.8 branch upto 20140211 (r207700).
+# DP: updates from the 4.8 branch upto 20140217 (r207828).
 
 last_updated()
 {
 	cat > ${dir}LAST_UPDATED <<EOF
-Tue Feb 11 22:41:43 CET 2014
-Tue Feb 11 21:41:43 UTC 2014 (revision 207700)
+Mon Feb 17 21:38:33 CET 2014
+Mon Feb 17 20:38:33 UTC 2014 (revision 207828)
 EOF
 }
 
@@ -5398,7 +5398,7 @@ Index: gcc/DATESTAMP
 +++ b/src/gcc/DATESTAMP	(.../branches/gcc-4_8-branch)
 @@ -1 +1 @@
 -20131016
-+20140211
++20140217
 Index: gcc/value-prof.c
 ===================================================================
 --- a/src/gcc/value-prof.c	(.../tags/gcc_4_8_2_release)
@@ -5523,7 +5523,65 @@ Index: gcc/configure
      ;;
  
    i[34567]86-*-* | x86_64-*-*)
-@@ -27239,8 +27275,8 @@
+@@ -24745,6 +24781,10 @@
+ 
+     # These two are used unconditionally by i386.[ch]; it is to be defined
+     # to 1 if the feature is present, 0 otherwise.
++    as_ix86_gotoff_in_data_opt=
++    if test x$gas = xyes; then
++      as_ix86_gotoff_in_data_opt="--32"
++    fi
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking assembler for GOTOFF in data" >&5
+ $as_echo_n "checking assembler for GOTOFF in data... " >&6; }
+ if test "${gcc_cv_as_ix86_gotoff_in_data+set}" = set; then :
+@@ -24761,7 +24801,7 @@
+ 	nop
+ 	.data
+ 	.long .L0@GOTOFF' > conftest.s
+-    if { ac_try='$gcc_cv_as $gcc_cv_as_flags  -o conftest.o conftest.s >&5'
++    if { ac_try='$gcc_cv_as $gcc_cv_as_flags $as_ix86_gotoff_in_data_opt -o conftest.o conftest.s >&5'
+   { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
+   (eval $ac_try) 2>&5
+   ac_status=$?
+@@ -24822,6 +24862,37 @@
+ 
+ fi
+ 
++    { $as_echo "$as_me:${as_lineno-$LINENO}: checking assembler for ud2 mnemonic" >&5
++$as_echo_n "checking assembler for ud2 mnemonic... " >&6; }
++if test "${gcc_cv_as_ix86_ud2+set}" = set; then :
++  $as_echo_n "(cached) " >&6
++else
++  gcc_cv_as_ix86_ud2=no
++  if test x$gcc_cv_as != x; then
++    $as_echo 'ud2' > conftest.s
++    if { ac_try='$gcc_cv_as $gcc_cv_as_flags  -o conftest.o conftest.s >&5'
++  { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
++  test $ac_status = 0; }; }
++    then
++	gcc_cv_as_ix86_ud2=yes
++    else
++      echo "configure: failed program was" >&5
++      cat conftest.s >&5
++    fi
++    rm -f conftest.o conftest.s
++  fi
++fi
++{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $gcc_cv_as_ix86_ud2" >&5
++$as_echo "$gcc_cv_as_ix86_ud2" >&6; }
++if test $gcc_cv_as_ix86_ud2 = yes; then
++
++$as_echo "#define HAVE_AS_IX86_UD2 1" >>confdefs.h
++
++fi
++
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking assembler for R_386_TLS_GD_PLT reloc" >&5
+ $as_echo_n "checking assembler for R_386_TLS_GD_PLT reloc... " >&6; }
+ if test "${gcc_cv_as_ix86_tlsgdplt+set}" = set; then :
+@@ -27239,8 +27310,8 @@
  $as_echo_n "checking for exported symbols... " >&6; }
    if test "x$export_sym_check" != x; then
      echo "int main() {return 0;} int foobar() {return 0;}" > conftest.c
@@ -5534,7 +5592,7 @@ Index: gcc/configure
        : # No need to use a flag
        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
  $as_echo "yes" >&6; }
-@@ -27249,8 +27285,8 @@
+@@ -27249,8 +27320,8 @@
  $as_echo "yes" >&6; }
        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for -rdynamic" >&5
  $as_echo_n "checking for -rdynamic... " >&6; }
@@ -5813,7 +5871,44 @@ Index: gcc/ChangeLog
 ===================================================================
 --- a/src/gcc/ChangeLog	(.../tags/gcc_4_8_2_release)
 +++ b/src/gcc/ChangeLog	(.../branches/gcc-4_8-branch)
-@@ -1,3 +1,1380 @@
+@@ -1,3 +1,1417 @@
++2014-02-14  Roland McGrath  <mcgrathr@google.com>
++
++	* configure.ac (HAVE_AS_IX86_UD2): New test for 'ud2' mnemonic.
++	* configure: Regenerated.
++	* config.in: Regenerated.
++	* config/i386/i386.md (trap) [HAVE_AS_IX86_UD2]: Use the mnemonic
++	instead of ASM_SHORT.
++
++2014-02-13  Uros Bizjak  <ubizjak@gmail.com>
++
++	Backport from mainline
++	2014-02-13  Uros Bizjak  <ubizjak@gmail.com>
++
++	* config/i386/sse.md (xop_vmfrcz<mode>2): Generate const0 in
++	operands[2], not operands[3].
++
++2014-02-13  Dominik Vogt  <vogt@linux.vnet.ibm.com>
++
++	* config/s390/s390.c (s390_asm_output_function_label): Fix crash
++	caused by bad second argument to warning_at() with -mhotpatch and
++	nested functions (e.g. with gfortran).
++
++2014-02-12  H.J. Lu  <hongjiu.lu@intel.com>
++
++	Backport from mainline
++	2014-02-12  H.J. Lu  <hongjiu.lu@intel.com>
++		    Uros Bizjak  <ubizjak@gmail.com>
++
++	PR target/60151
++	* configure.ac (HAVE_AS_GOTOFF_IN_DATA): Pass --32 to GNU assembler.
++
++2014-02-12  Eric Botcazou  <ebotcazou@adacore.com>
++
++	PR rtl-optimization/60116
++	* combine.c (try_combine): Also remove dangling REG_DEAD notes on the
++	other_insn once the combination has been validated.
++
 +2014-02-10  Nagaraju Mekala <nagaraju.mekala@xilinx.com>
 +
 +	* config/microblaze/microblaze.md: Add movsi4_rev insn pattern.
@@ -7194,7 +7289,7 @@ Index: gcc/ChangeLog
  2013-10-16  Release Manager
  
  	* GCC 4.8.2 released.
-@@ -639,7 +2021,7 @@
+@@ -639,7 +2058,7 @@
  2013-07-31  Andreas Krebbel  <Andreas.Krebbel@de.ibm.com>
  
  	Backport from mainline
@@ -9025,6 +9120,34 @@ Index: gcc/testsuite/gcc.target/s390/htm-builtins-compile-2.c
 +void must_not_compile2 (void)
 +{
 +  __builtin_tabort (255); /* { dg-error "Invalid transaction abort code:" } */
++}
+Index: gcc/testsuite/gcc.target/s390/hotpatch-compile-8.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.target/s390/hotpatch-compile-8.c	(.../tags/gcc_4_8_2_release)
++++ b/src/gcc/testsuite/gcc.target/s390/hotpatch-compile-8.c	(.../branches/gcc-4_8-branch)
+@@ -0,0 +1,23 @@
++/* Functional tests for the function hotpatching feature.  */
++
++/* { dg-do run } */
++/* { dg-options "-O3 -mzarch -mhotpatch" } */
++
++#include <stdio.h>
++
++int hp1(void)
++{
++  int nested1(void) /* { dg-warning "hotpatching is not compatible with nested functions" } */
++  { return 1; }
++
++  __attribute__ ((hotpatch))
++  int nested2(void) /* { dg-warning "hotpatching is not compatible with nested functions" } */
++  { return 1; }
++
++  return nested1() - nested2();
++}
++
++int main (void)
++{
++  return hp1();
 +}
 Index: gcc/testsuite/gcc.target/s390/htm-builtins-compile-3.c
 ===================================================================
@@ -11676,6 +11799,63 @@ Index: gcc/testsuite/gfortran.dg/constructor_9.f90
 +end module
 +
 +! { dg-final { cleanup-modules "cf" } }
+Index: gcc/testsuite/gfortran.dg/round_3.f08
+===================================================================
+--- a/src/gcc/testsuite/gfortran.dg/round_3.f08	(.../tags/gcc_4_8_2_release)
++++ b/src/gcc/testsuite/gfortran.dg/round_3.f08	(.../branches/gcc-4_8-branch)
+@@ -16,19 +16,44 @@
+     call checkfmt("(RU,1P,G6.0E2)", 2.0,  "2.E+00")
+     call checkfmt("(RU,1P,G10.4E2)", 2.3456e5,  "2.3456E+05")
+ 
+-    call checkfmt("(RU,F2.0)",     0.09,  "1.")     ! 0.
++    call checkfmt("(RC,G10.2)", 99.5,   "  0.10E+03") ! pr59774
++    call checkfmt("(RC,G10.2)", 995.,   "  0.10E+04") ! pr59774
++    call checkfmt("(RC,G10.3)", 999.5,  " 0.100E+04") ! pr59774
++    call checkfmt("(RC,G10.3)", 9995.,  " 0.100E+05") ! pr59774
++    call checkfmt("(RU,G10.2)", .099,   "  0.10    ") ! pr59774
++    call checkfmt("(RC,G10.1)", .095,   "   0.1    ") ! pr59774
++    call checkfmt("(RU,G10.3)", .0999,  " 0.100    ") ! pr59774
++    call checkfmt("(RC,G10.2)", .0995,  "  0.10    ") ! pr59774
++
++    call checkfmt("(RU,G9.3)",  891.1,  " 892.")      ! pr59836
++    call checkfmt("(RD,G9.3)", -891.1,  "-892.")      ! pr59836
++    
++    call checkfmt("(RU,F6.4)",     0.00006,  "0.0001")! 0.
++    call checkfmt("(RU,F5.3)",     0.0007,  "0.001")  ! 0.
++    call checkfmt("(RU,F4.2)",     0.008,  "0.01")    ! 0.
++    call checkfmt("(RU,F3.1)",     0.09,  "0.1")      ! 0.
++
++    call checkfmt("(RU,F2.0)",     0.09,  "1.")       ! 0.
+     call checkfmt("(RD,F3.0)",     -0.09,  "-1.")     ! -0.
+-    call checkfmt("(RU,F2.0)",      2.0,  "2.")     ! 3.
+-    call checkfmt("(RD,F3.0)",     -2.0,  "-2.")     ! -3.
+-    call checkfmt("(RU,F6.4)",      2.0,  "2.0000")     ! 2.0001
+-    call checkfmt("(RD,F7.4)",     -2.0,  "-2.0000")     ! -2.0001
+-    call checkfmt("(RU,1P,E6.0E2)", 2.0,  "2.E+00") ! 3.E+00
++    call checkfmt("(RU,F2.0)",     0.9,  "1.")        ! pr59836
++    call checkfmt("(RC,F2.0)",     0.4,  "0.")        ! pr59836
++    call checkfmt("(RC,F2.0)",     0.5,  "1.")        ! pr59836
++    call checkfmt("(RC,F2.0)",     0.6,  "1.")        ! pr59836
++    call checkfmt("(RD,F3.0)",     -0.9,  "-1.")      ! pr59836
++    call checkfmt("(RC,F3.0)",     -0.4,  "-0.")      ! pr59836
++    call checkfmt("(RC,F3.0)",     -0.5,  "-1.")      ! pr59836
++    call checkfmt("(RC,F3.0)",     -0.6,  "-1.")      ! pr59836
++    call checkfmt("(RU,F2.0)",      2.0,  "2.")       ! 3.
++    call checkfmt("(RD,F3.0)",     -2.0,  "-2.")      ! -3.
++    call checkfmt("(RU,F6.4)",      2.0,  "2.0000")   ! 2.0001
++    call checkfmt("(RD,F7.4)",     -2.0,  "-2.0000")  ! -2.0001
++    call checkfmt("(RU,1P,E6.0E2)", 2.0,  "2.E+00")   ! 3.E+00
+     call checkfmt("(RD,1P,E7.0E2)", -2.0,  "-2.E+00") ! -3.E+00
+-    call checkfmt("(RU,1P,E7.1E2)", 2.5,  "2.5E+00") ! 2.6E+00
++    call checkfmt("(RU,1P,E7.1E2)", 2.5,  "2.5E+00")  ! 2.6E+00
+     call checkfmt("(RD,1P,E8.1E2)", -2.5,  "-2.5E+00") ! -2.6E+00
+     call checkfmt("(RU,1P,E10.4E2)", 2.5,  "2.5000E+00") ! 2.5001E+00
+     call checkfmt("(RD,1P,E11.4E2)", -2.5,  "-2.5000E+00") ! -2.5001E+00
+-    call checkfmt("(RU,1P,G6.0E2)", 2.0,  "2.E+00") ! 3.E+00
++    call checkfmt("(RU,1P,G6.0E2)", 2.0,  "2.E+00")   ! 3.E+00
+     call checkfmt("(RD,1P,G7.0E2)", -2.0,  "-2.E+00") ! -3.E+00
+     call checkfmt("(RU,1P,G10.4E2)", 2.3456e5,  "2.3456E+05") ! 2.3457E+05
+     call checkfmt("(RD,1P,G11.4E2)", -2.3456e5,  "-2.3456E+05") ! -2.3457E+05
 Index: gcc/testsuite/gfortran.dg/default_initialization_7.f90
 ===================================================================
 --- a/src/gcc/testsuite/gfortran.dg/default_initialization_7.f90	(.../tags/gcc_4_8_2_release)
@@ -11984,6 +12164,22 @@ Index: gcc/testsuite/gfortran.dg/unlimited_polymorphic_15.f90
 +  ptr => cla1
 +
 +end
+Index: gcc/testsuite/gfortran.dg/fmt_g_1.f90
+===================================================================
+--- a/src/gcc/testsuite/gfortran.dg/fmt_g_1.f90	(.../tags/gcc_4_8_2_release)
++++ b/src/gcc/testsuite/gfortran.dg/fmt_g_1.f90	(.../branches/gcc-4_8-branch)
+@@ -0,0 +1,11 @@
++! { dg-do run }
++! PR59771 Cleanup handling of Gw.0 and Gw.0Ee format
++! Test case prepared by Dominique d'Humieres <dominiq@lps.ens.fr>
++       PROGRAM FOO
++       character(len=60) :: buffer, buffer1
++
++       write (buffer ,'(6(1X,1PG9.0e2))') 0.0, 0.04, 0.06, 0.4, 0.6, 243.0
++       write (buffer1,'(6(1X,1PE9.0e2))') 0.0, 0.04, 0.06, 0.4, 0.6, 243.0
++
++       if (buffer /= buffer1) call abort
++       end
 Index: gcc/testsuite/gfortran.dg/elemental_subroutine_9.f90
 ===================================================================
 --- a/src/gcc/testsuite/gfortran.dg/elemental_subroutine_9.f90	(.../tags/gcc_4_8_2_release)
@@ -12028,6 +12224,48 @@ Index: gcc/testsuite/gfortran.dg/elemental_subroutine_9.f90
 +  end function str_cmp
 +
 +end program x
+Index: gcc/testsuite/gcc.c-torture/execute/20140212-1.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.c-torture/execute/20140212-1.c	(.../tags/gcc_4_8_2_release)
++++ b/src/gcc/testsuite/gcc.c-torture/execute/20140212-1.c	(.../branches/gcc-4_8-branch)
+@@ -0,0 +1,37 @@
++/* PR rtl-optimization/60116 */
++/* Reported by Zhendong Su <su@cs.ucdavis.edu> */
++
++extern void abort (void);
++
++int a, b, c, d = 1, e, f = 1, h, i, k;
++char g, j;
++
++void
++fn1 (void)
++{
++  int l;
++  e = 0;
++  c = 0;
++  for (;;)
++    {
++      k = a && b;
++      j = k * 54;
++      g = j * 147;
++      l = ~g + (long long) e && 1;
++      if (d)
++	c = l;
++      else
++	h = i = l * 9UL;
++      if (f)
++	return;
++    }
++}
++
++int
++main (void)
++{
++  fn1 ();
++  if (c != 1)
++    abort ();
++  return 0;
++}
 Index: gcc/testsuite/gcc.c-torture/execute/pr58984.c
 ===================================================================
 --- a/src/gcc/testsuite/gcc.c-torture/execute/pr58984.c	(.../tags/gcc_4_8_2_release)
@@ -13650,7 +13888,25 @@ Index: gcc/testsuite/ChangeLog
 ===================================================================
 --- a/src/gcc/testsuite/ChangeLog	(.../tags/gcc_4_8_2_release)
 +++ b/src/gcc/testsuite/ChangeLog	(.../branches/gcc-4_8-branch)
-@@ -1,3 +1,814 @@
+@@ -1,3 +1,832 @@
++2014-02-15  Jerry DeLisle  <jvdelisle@gcc.gnu>
++	    Dominique d'Humieres  <dominiq@lps.ens.fr>
++
++	Backport from mainline
++	PR libfortran/59771
++	PR libfortran/59774
++	PR libfortran/59836
++	* gfortran.dg/fmt_g_1.f90: New test.
++	* gfortran.dg/round_3.f08: New cases added.
++
++2014-02-13  Dominik Vogt  <vogt@linux.vnet.ibm.com>
++
++	* gcc.target/s390/hotpatch-compile-8.c: New test.
++
++2014-02-12  Eric Botcazou  <ebotcazou@adacore.com>
++
++	* gcc.c-torture/execute/20140212-1.c: New test.
++
 +2014-02-10  Richard Biener  <rguenther@suse.de>
 +
 +	Backport from mainline
@@ -14465,7 +14721,7 @@ Index: gcc/testsuite/ChangeLog
  2013-10-16  Release Manager
  
  	* GCC 4.8.2 released.
-@@ -39,9 +850,9 @@
+@@ -39,9 +868,9 @@
  	Backport from mainline
  	2013-06-27  Andreas Krebbel  <Andreas.Krebbel@de.ibm.com>
  
@@ -14478,7 +14734,7 @@ Index: gcc/testsuite/ChangeLog
  
  2013-10-04  Tobias Burnus  <burnus@net-b.de>
  
-@@ -307,8 +1118,8 @@
+@@ -307,8 +1136,8 @@
  	Backport from mainline
  	2013-08-12  Perez Read  <netfirewall@gmail.com>
  
@@ -14489,7 +14745,7 @@ Index: gcc/testsuite/ChangeLog
  
  2013-08-11  Janus Weil  <janus@gcc.gnu.org>
  
-@@ -494,7 +1305,7 @@
+@@ -494,7 +1323,7 @@
  	2013-06-19  Wei Mi  <wmi@google.com>
  
  	PR rtl-optimization/57518
@@ -14498,7 +14754,7 @@ Index: gcc/testsuite/ChangeLog
  
  2013-06-11  Tobias Burnus  <burnus@net-b.de>
  
-@@ -623,8 +1434,8 @@
+@@ -623,8 +1452,8 @@
  
  2013-05-09  Martin Jambor  <mjambor@suse.cz>
  
@@ -14509,7 +14765,7 @@ Index: gcc/testsuite/ChangeLog
  
  2013-05-08  Marc Glisse  <marc.glisse@inria.fr>
  
-@@ -701,7 +1512,7 @@
+@@ -701,7 +1530,7 @@
  	2013-04-25  Marek Polacek  <polacek@redhat.com>
  
  	PR tree-optimization/57066
@@ -14518,7 +14774,7 @@ Index: gcc/testsuite/ChangeLog
  
  2013-05-02  Jakub Jelinek  <jakub@redhat.com>
  
-@@ -727,32 +1538,32 @@
+@@ -727,32 +1556,32 @@
  	Backport from mainline
  	2013-04-24  Vladimir Makarov  <vmakarov@redhat.com>
  
@@ -14559,7 +14815,7 @@ Index: gcc/testsuite/ChangeLog
  
  2013-05-02  Ian Bolton  <ian.bolton@arm.com>
  
-@@ -1102,7 +1913,7 @@
+@@ -1102,7 +1931,7 @@
  	2013-03-29  Tobias Burnus  <burnus@net-b.de>
  
  	PR fortran/56737
@@ -14568,7 +14824,7 @@ Index: gcc/testsuite/ChangeLog
  
  2013-04-02  Richard Biener  <rguenther@suse.de>
  
-@@ -1636,7 +2447,7 @@
+@@ -1636,7 +2465,7 @@
  2013-02-20  Jan Hubicka  <jh@suse.cz>
  
  	PR tree-optimization/56265
@@ -14577,7 +14833,7 @@ Index: gcc/testsuite/ChangeLog
  
  2013-02-20  Richard Biener  <rguenther@suse.de>
  
-@@ -1823,11 +2634,9 @@
+@@ -1823,11 +2652,9 @@
  
  	Avoid instrumenting duplicated memory access in the same basic block
  	* c-c++-common/asan/no-redundant-instrumentation-1.c: New test.
@@ -17051,7 +17307,20 @@ Index: gcc/config.in
 ===================================================================
 --- a/src/gcc/config.in	(.../tags/gcc_4_8_2_release)
 +++ b/src/gcc/config.in	(.../branches/gcc-4_8-branch)
-@@ -375,6 +375,12 @@
+@@ -363,6 +363,12 @@
+ #endif
+ 
+ 
++/* Define if your assembler supports the 'ud2' mnemonic. */
++#ifndef USED_FOR_TARGET
++#undef HAVE_AS_IX86_UD2
++#endif
++
++
+ /* Define if your assembler supports the lituse_jsrdirect relocation. */
+ #ifndef USED_FOR_TARGET
+ #undef HAVE_AS_JSRDIRECT_RELOCS
+@@ -375,6 +381,12 @@
  #endif
  
  
@@ -20518,7 +20787,35 @@ Index: gcc/configure.ac
      ;;
  
  changequote(,)dnl
-@@ -5193,15 +5205,15 @@
+@@ -3749,8 +3761,13 @@
+ 
+     # These two are used unconditionally by i386.[ch]; it is to be defined
+     # to 1 if the feature is present, 0 otherwise.
++    as_ix86_gotoff_in_data_opt=
++    if test x$gas = xyes; then
++      as_ix86_gotoff_in_data_opt="--32"
++    fi
+     gcc_GAS_CHECK_FEATURE([GOTOFF in data],
+-        gcc_cv_as_ix86_gotoff_in_data, [2,11,0],,
++      gcc_cv_as_ix86_gotoff_in_data, [2,11,0],
++      [$as_ix86_gotoff_in_data_opt],
+ [	.text
+ .L0:
+ 	nop
+@@ -3772,6 +3789,12 @@
+         [AC_DEFINE(HAVE_AS_IX86_REP_LOCK_PREFIX, 1,
+           [Define if the assembler supports 'rep <insn>, lock <insn>'.])])
+ 
++    gcc_GAS_CHECK_FEATURE([ud2 mnemonic],
++	gcc_cv_as_ix86_ud2,,,
++	[ud2],,
++      [AC_DEFINE(HAVE_AS_IX86_UD2, 1,
++	[Define if your assembler supports the 'ud2' mnemonic.])])
++
+     gcc_GAS_CHECK_FEATURE([R_386_TLS_GD_PLT reloc],
+         gcc_cv_as_ix86_tlsgdplt,,,
+ 	[call    tls_gd@tlsgdplt],
+@@ -5193,15 +5216,15 @@
    AC_MSG_CHECKING([for exported symbols])
    if test "x$export_sym_check" != x; then
      echo "int main() {return 0;} int foobar() {return 0;}" > conftest.c
@@ -21929,7 +22226,32 @@ Index: gcc/combine.c
 ===================================================================
 --- a/src/gcc/combine.c	(.../tags/gcc_4_8_2_release)
 +++ b/src/gcc/combine.c	(.../branches/gcc-4_8-branch)
-@@ -5798,8 +5798,15 @@
+@@ -3884,15 +3884,19 @@
+ 
+       PATTERN (undobuf.other_insn) = other_pat;
+ 
+-      /* If any of the notes in OTHER_INSN were REG_UNUSED, ensure that they
+-	 are still valid.  Then add any non-duplicate notes added by
+-	 recog_for_combine.  */
++      /* If any of the notes in OTHER_INSN were REG_DEAD or REG_UNUSED,
++	 ensure that they are still valid.  Then add any non-duplicate
++	 notes added by recog_for_combine.  */
+       for (note = REG_NOTES (undobuf.other_insn); note; note = next)
+ 	{
+ 	  next = XEXP (note, 1);
+ 
+-	  if (REG_NOTE_KIND (note) == REG_UNUSED
+-	      && ! reg_set_p (XEXP (note, 0), PATTERN (undobuf.other_insn)))
++	  if ((REG_NOTE_KIND (note) == REG_DEAD
++	       && !reg_referenced_p (XEXP (note, 0),
++				     PATTERN (undobuf.other_insn)))
++	      ||(REG_NOTE_KIND (note) == REG_UNUSED
++		 && !reg_set_p (XEXP (note, 0),
++				PATTERN (undobuf.other_insn))))
+ 	    remove_note (undobuf.other_insn, note);
+ 	}
+ 
+@@ -5798,8 +5802,15 @@
  		return x;
  	    }
  
@@ -21947,7 +22269,7 @@ Index: gcc/combine.c
  	    return gen_rtx_fmt_ee (new_code, mode, op0, op1);
  
  	  /* Otherwise, keep this operation, but maybe change its operands.
-@@ -7991,7 +7998,7 @@
+@@ -7991,7 +8002,7 @@
    if (code == CALL || code == ASM_OPERANDS || code == CLOBBER)
      return x;
  
@@ -21956,7 +22278,7 @@ Index: gcc/combine.c
       that the operation is valid in MODE, in which case we do the operation
       in MODE.  */
    op_mode = ((GET_MODE_CLASS (mode) == GET_MODE_CLASS (GET_MODE (x))
-@@ -8427,9 +8434,10 @@
+@@ -8427,9 +8438,10 @@
  					    GET_MODE (x), GEN_INT (mask),
  					    XEXP (x, 1));
  	  if (temp && CONST_INT_P (temp))
@@ -21970,7 +22292,7 @@ Index: gcc/combine.c
  	}
        break;
  
-@@ -8497,14 +8505,16 @@
+@@ -8497,14 +8509,16 @@
        /* We have no way of knowing if the IF_THEN_ELSE can itself be
  	 written in a narrower mode.  We play it safe and do not do so.  */
  
@@ -22741,7 +23063,7 @@ Index: gcc/config/s390/s390.c
  	      return ADDR_REGS;
  	    else
  	      return NO_REGS;
-@@ -5311,6 +5418,102 @@
+@@ -5311,6 +5418,101 @@
    gcc_unreachable ();
  }
  
@@ -22809,9 +23131,8 @@ Index: gcc/config/s390/s390.c
 +      if (hotpatch_trampoline_halfwords >= 0
 +	  && decl_function_context (decl) != NULL_TREE)
 +	{
-+	  warning_at (0, DECL_SOURCE_LOCATION (decl),
-+		      "hotpatch_prologue is not compatible with nested"
-+		      " function");
++	  warning_at (DECL_SOURCE_LOCATION (decl), OPT_mhotpatch,
++		      "hotpatching is not compatible with nested functions");
 +	  hotpatch_trampoline_halfwords = -1;
 +	}
 +    }
@@ -22844,7 +23165,7 @@ Index: gcc/config/s390/s390.c
  /* Output machine-dependent UNSPECs occurring in address constant X
     in assembler syntax to stdio stream FILE.  Returns true if the
     constant X could be recognized, false otherwise.  */
-@@ -7846,6 +8049,9 @@
+@@ -7846,6 +8048,9 @@
      {
        bb = BASIC_BLOCK (bb_index);
  
@@ -22854,7 +23175,7 @@ Index: gcc/config/s390/s390.c
        FOR_BB_INSNS (bb, insn)
  	{
  	  rtx ite, cc, pat, target;
-@@ -7959,7 +8165,10 @@
+@@ -7959,7 +8164,10 @@
    if (!result)
      return;
  
@@ -22866,7 +23187,7 @@ Index: gcc/config/s390/s390.c
    INSN_CODE (tbegin_insn) = -1;
    df_insn_rescan (tbegin_insn);
  
-@@ -9568,61 +9777,47 @@
+@@ -9568,61 +9776,47 @@
  void
  s390_expand_tbegin (rtx dest, rtx tdb, rtx retry, bool clobber_fprs_p)
  {
@@ -22948,7 +23269,7 @@ Index: gcc/config/s390/s390.c
        emit_insn (gen_subsi3 (count, count, retry_reg));
        emit_insn (gen_tx_assist (count));
        jump = emit_jump_insn (gen_doloop_si64 (retry_label,
-@@ -9630,13 +9825,8 @@
+@@ -9630,13 +9824,8 @@
  					      retry_reg));
        JUMP_LABEL (jump) = retry_label;
        LABEL_NUSES (retry_label) = 1;
@@ -22963,7 +23284,7 @@ Index: gcc/config/s390/s390.c
  }
  
  /* Builtins.  */
-@@ -9674,6 +9864,9 @@
+@@ -9674,6 +9863,9 @@
  s390_init_builtins (void)
  {
    tree ftype, uint64_type;
@@ -22973,7 +23294,7 @@ Index: gcc/config/s390/s390.c
  
    /* void foo (void) */
    ftype = build_function_type_list (void_type_node, NULL_TREE);
-@@ -9684,17 +9877,17 @@
+@@ -9684,17 +9876,17 @@
    ftype = build_function_type_list (void_type_node, integer_type_node,
  				    NULL_TREE);
    add_builtin_function ("__builtin_tabort", ftype,
@@ -22994,7 +23315,7 @@ Index: gcc/config/s390/s390.c
  
    /* int foo (void *, int) */
    ftype = build_function_type_list (integer_type_node, ptr_type_node,
-@@ -9702,11 +9895,11 @@
+@@ -9702,11 +9894,11 @@
    add_builtin_function ("__builtin_tbegin_retry", ftype,
  			S390_BUILTIN_TBEGIN_RETRY,
  			BUILT_IN_MD,
@@ -23008,7 +23329,7 @@ Index: gcc/config/s390/s390.c
  
    /* int foo (void) */
    ftype = build_function_type_list (integer_type_node, NULL_TREE);
-@@ -11622,6 +11815,12 @@
+@@ -11622,6 +11814,12 @@
  #undef TARGET_CANONICALIZE_COMPARISON
  #define TARGET_CANONICALIZE_COMPARISON s390_canonicalize_comparison
  
@@ -24371,6 +24692,21 @@ Index: gcc/config/i386/i386.md
     && ix86_binary_operator_ok (AND, DImode, operands)"
    "@
     and{l}\t{%k2, %k0|%k0, %k2}
+@@ -17569,7 +17594,13 @@
+ (define_insn "trap"
+   [(trap_if (const_int 1) (const_int 6))]
+   ""
+-  { return ASM_SHORT "0x0b0f"; }
++{
++#ifdef HAVE_AS_IX86_UD2
++  return "ud2";
++#else
++  return ASM_SHORT "0x0b0f";
++#endif
++}
+   [(set_attr "length" "2")])
+ 
+ (define_expand "prefetch"
 Index: gcc/config/i386/f16cintrin.h
 ===================================================================
 --- a/src/gcc/config/i386/f16cintrin.h	(.../tags/gcc_4_8_2_release)
@@ -24705,7 +25041,7 @@ Index: gcc/config/i386/sse.md
     (set_attr "length_immediate" "1")
     (set_attr "memory" "none,load,none,load")
     (set_attr "prefix" "maybe_vex")
-@@ -10213,7 +10248,6 @@
+@@ -10213,21 +10248,18 @@
    [(set_attr "type" "ssecvt1")
     (set_attr "mode" "<MODE>")])
  
@@ -24713,14 +25049,17 @@ Index: gcc/config/i386/sse.md
  (define_expand "xop_vmfrcz<mode>2"
    [(set (match_operand:VF_128 0 "register_operand")
  	(vec_merge:VF_128
-@@ -10223,11 +10257,9 @@
- 	  (match_dup 3)
+ 	  (unspec:VF_128
+ 	   [(match_operand:VF_128 1 "nonimmediate_operand")]
+ 	   UNSPEC_FRCZ)
+-	  (match_dup 3)
++	  (match_dup 2)
  	  (const_int 1)))]
    "TARGET_XOP"
 -{
 -  operands[3] = CONST0_RTX (<MODE>mode);
 -})
-+  "operands[3] = CONST0_RTX (<MODE>mode);")
++  "operands[2] = CONST0_RTX (<MODE>mode);")
  
 -(define_insn "*xop_vmfrcz_<mode>"
 +(define_insn "*xop_vmfrcz<mode>2"
@@ -30364,6 +30703,101 @@ Index: libgo/Makefile.am
  @go_include@ go/doc.lo.dep
  go/doc.lo.dep: $(go_go_doc_files)
  	$(BUILDDEPS)
+Index: libgfortran/ChangeLog
+===================================================================
+--- a/src/libgfortran/ChangeLog	(.../tags/gcc_4_8_2_release)
++++ b/src/libgfortran/ChangeLog	(.../branches/gcc-4_8-branch)
+@@ -1,3 +1,14 @@
++2014-02-15  Jerry DeLisle  <jvdelisle@gcc.gnu>
++	    Dominique d'Humieres  <dominiq@lps.ens.fr>
++
++	Backport from mainline
++	PR libfortran/59771
++	PR libfortran/59774
++	PR libfortran/59836
++	* io/write_float.def (output_float): Fix wrong handling of the
++	Fw.0 format.
++	(output_float_FMT_G_): Fixes rounding issues with -m32.
++
+ 2013-10-16  Release Manager
+ 
+ 	* GCC 4.8.2 released.
+Index: libgfortran/io/write_float.def
+===================================================================
+--- a/src/libgfortran/io/write_float.def	(.../tags/gcc_4_8_2_release)
++++ b/src/libgfortran/io/write_float.def	(.../branches/gcc-4_8-branch)
+@@ -373,7 +373,7 @@
+   updown:
+ 
+   rchar = '0';
+-  if (w > 0 && d == 0 && p == 0)
++  if  (ft != FMT_F && w > 0 && d == 0 && p == 0)
+     nbefore = 1;
+   /* Scan for trailing zeros to see if we really need to round it.  */
+   for(i = nbefore + nafter; i < ndigits; i++)
+@@ -386,13 +386,14 @@
+   do_rnd:
+  
+   if (nbefore + nafter == 0)
++    /* Handle the case Fw.0 and value < 1.0 */
+     {
+       ndigits = 0;
+-      if (nzero_real == d && digits[0] >= rchar)
++      if (digits[0] >= rchar)
+ 	{
+ 	  /* We rounded to zero but shouldn't have */
+-	  nzero--;
+-	  nafter = 1;
++	  nbefore = 1;
++	  digits--;
+ 	  digits[0] = '1';
+ 	  ndigits = 1;
+ 	}
+@@ -990,13 +991,14 @@
+   int d = f->u.real.d;\
+   int w = f->u.real.w;\
+   fnode newf;\
+-  GFC_REAL_ ## x rexp_d, r = 0.5;\
++  GFC_REAL_ ## x exp_d, r = 0.5, r_sc;\
+   int low, high, mid;\
+   int ubound, lbound;\
+   char *p, pad = ' ';\
+   int save_scale_factor, nb = 0;\
+   try result;\
+   int nprinted, precision;\
++  volatile GFC_REAL_ ## x temp;\
+ \
+   save_scale_factor = dtp->u.p.scale_factor;\
+ \
+@@ -1015,10 +1017,13 @@
+ 	break;\
+     }\
+ \
+-  rexp_d = calculate_exp_ ## x (-d);\
+-  if ((m > 0.0 && ((m < 0.1 - 0.1 * r * rexp_d) || (rexp_d * (m + r) >= 1.0)))\
++  exp_d = calculate_exp_ ## x (d);\
++  r_sc = (1 - r / exp_d);\
++  temp = 0.1 * r_sc;\
++  if ((m > 0.0 && ((m < temp) || (r >= (exp_d - m))))\
+       || ((m == 0.0) && !(compile_options.allow_std\
+-			  & (GFC_STD_F2003 | GFC_STD_F2008))))\
++			  & (GFC_STD_F2003 | GFC_STD_F2008)))\
++      ||  d == 0)\
+     { \
+       newf.format = FMT_E;\
+       newf.u.real.w = w;\
+@@ -1038,10 +1043,9 @@
+ \
+   while (low <= high)\
+     { \
+-      volatile GFC_REAL_ ## x temp;\
+       mid = (low + high) / 2;\
+ \
+-      temp = (calculate_exp_ ## x (mid - 1) * (1 - r * rexp_d));\
++      temp = (calculate_exp_ ## x (mid - 1) * r_sc);\
+ \
+       if (m < temp)\
+         { \
 Index: libcpp/po/pt_BR.po
 ===================================================================
 --- a/src/libcpp/po/pt_BR.po	(.../tags/gcc_4_8_2_release)
