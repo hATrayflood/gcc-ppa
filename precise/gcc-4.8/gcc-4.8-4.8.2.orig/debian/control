@@ -13,7 +13,7 @@ Build-Depends: debhelper (>= 5.0.62), g++-multilib [amd64 armel armhf i386 kfree
   gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, 
   texinfo (>= 4.3), locales, sharutils, 
   procps, zlib1g-dev, libantlr-java, python, libffi-dev, fastjar, libmagic-dev, libecj-java (>= 3.3.0-2), zip, libasound2-dev [ !hurd-any !kfreebsd-any], libxtst-dev, libxt-dev, libgtk2.0-dev (>= 2.4.4-2), libart-2.0-dev, libcairo2-dev, g++-4.8 [armel armhf], netbase, 
-  libcloog-isl-dev (>= 0.17), libmpc-dev, libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), 
+  libcloog-isl-dev-lts (>= 0.18), libmpc-dev, libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), 
   dejagnu [!m68k !hurd-amd64 !hurd-i386 !hurd-alpha], autogen, realpath (>= 1.9.12), chrpath, lsb-release, quilt
 Build-Depends-Indep: doxygen (>= 1.7.2), graphviz (>= 2.2), ghostscript, texlive-latex-base, xsltproc, libxml2-utils, docbook-xsl-ns, 
 Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-upper

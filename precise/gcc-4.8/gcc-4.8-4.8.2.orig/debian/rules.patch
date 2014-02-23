@@ -354,10 +354,8 @@ ifeq ($(derivative),Ubuntu)
 endif
 debian_patches += libgomp-kfreebsd-testsuite
 
-ifeq ($(distrelease),precise)
-  ifeq ($(DEB_TARGET_ARCH),amd64)
-    debian_patches += libquadmath-fenv
-  endif
+ifeq ($(DEB_TARGET_ARCH),amd64)
+  debian_patches += libquadmath-fenv
 endif
 
 series_stamp = $(stampdir)/02-series-stamp

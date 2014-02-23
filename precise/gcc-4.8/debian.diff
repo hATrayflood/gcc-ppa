@@ -13,7 +13,7 @@ diff -urN debian/changelog gcc-4.8-4.8.2.orig/debian/changelog
    * Stop building the libgcc1 packages, now built by gccgo-4.9.
 diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 --- debian/control	2014-02-22 21:58:56.128055016 +0900
-+++ gcc-4.8-4.8.2.orig/debian/control	2014-02-22 22:25:55.800086537 +0900
++++ gcc-4.8-4.8.2.orig/debian/control	2014-02-23 19:54:32.321669479 +0900
 @@ -1,12 +1,10 @@
  Source: gcc-4.8
  Section: devel
@@ -34,7 +34,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
    texinfo (>= 4.3), locales, sharutils, 
    procps, zlib1g-dev, libantlr-java, python, libffi-dev, fastjar, libmagic-dev, libecj-java (>= 3.3.0-2), zip, libasound2-dev [ !hurd-any !kfreebsd-any], libxtst-dev, libxt-dev, libgtk2.0-dev (>= 2.4.4-2), libart-2.0-dev, libcairo2-dev, g++-4.8 [armel armhf], netbase, 
 -  libcloog-isl-dev (>= 0.18), libmpc-dev (>= 1.0), libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), 
-+  libcloog-isl-dev (>= 0.17), libmpc-dev, libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), 
++  libcloog-isl-dev-lts (>= 0.18), libmpc-dev, libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), 
    dejagnu [!m68k !hurd-amd64 !hurd-i386 !hurd-alpha], autogen, realpath (>= 1.9.12), chrpath, lsb-release, quilt
  Build-Depends-Indep: doxygen (>= 1.7.2), graphviz (>= 2.2), ghostscript, texlive-latex-base, xsltproc, libxml2-utils, docbook-xsl-ns, 
 -Homepage: http://gcc.gnu.org/
@@ -670,13 +670,15 @@ diff -urN debian/patches/libquadmath-fenv.diff gcc-4.8-4.8.2.orig/debian/patches
 ++ 
 diff -urN debian/rules.conf gcc-4.8-4.8.2.orig/debian/rules.conf
 --- debian/rules.conf	2014-02-22 21:58:56.320055970 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules.conf	2014-02-22 22:12:27.152076672 +0900
-@@ -355,7 +355,7 @@
++++ gcc-4.8-4.8.2.orig/debian/rules.conf	2014-02-23 09:21:30.928814778 +0900
+@@ -354,8 +354,8 @@
+   MPFR_BUILD_DEP = libmpfr-dev (>= 3.0.0-9~),
  endif
  
- PPL_BUILD_DEP = libisl-dev,
+-PPL_BUILD_DEP = libisl-dev,
 -CLOOG_BUILD_DEP = libcloog-isl-dev (>= 0.18),
-+CLOOG_BUILD_DEP = libcloog-isl-dev (>= 0.17),
++PPL_BUILD_DEP = libisl-dev-lts,
++CLOOG_BUILD_DEP = libcloog-isl-dev-lts (>= 0.18),
  # FIXME: currently not dl'opened.
  #CLOOG_RUNTIME_DEP = libisl10, libcloog-isl4
  
@@ -705,17 +707,36 @@ diff -urN debian/rules.parameters gcc-4.8-4.8.2.orig/debian/rules.parameters
  PKG_GCJ_EXT	:= 14
 diff -urN debian/rules.patch gcc-4.8-4.8.2.orig/debian/rules.patch
 --- debian/rules.patch	2014-02-22 21:58:56.328056015 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules.patch	2014-02-22 22:16:47.965369972 +0900
-@@ -354,6 +354,12 @@
++++ gcc-4.8-4.8.2.orig/debian/rules.patch	2014-02-23 09:23:08.657299310 +0900
+@@ -354,6 +354,10 @@
  endif
  debian_patches += libgomp-kfreebsd-testsuite
  
-+ifeq ($(distrelease),precise)
-+  ifeq ($(DEB_TARGET_ARCH),amd64)
-+    debian_patches += libquadmath-fenv
-+  endif
++ifeq ($(DEB_TARGET_ARCH),amd64)
++  debian_patches += libquadmath-fenv
 +endif
 +
  series_stamp = $(stampdir)/02-series-stamp
  series: $(series_stamp)
  $(series_stamp):
+diff -urN debian/rules2 gcc-4.8-4.8.2.orig/debian/rules2
+--- debian/rules2	2014-02-22 21:58:56.328056015 +0900
++++ gcc-4.8-4.8.2.orig/debian/rules2	2014-02-23 19:51:40.640303013 +0900
+@@ -1548,7 +1548,7 @@
+ 	    fi; \
+ 	    echo "Build Dependencies:" >> ts-include; \
+ 	    dpkg -l g++-* binutils* `echo '$(LIBC_DEP)' | awk '{print $$1}'` \
+-		libgmp*-dev libmpfr-dev libmpc-dev libisl-dev libcloog-isl-dev \
++		libgmp*-dev libmpfr-dev libmpc-dev libisl-dev* libcloog-isl-dev* \
+ 	        | fgrep -v '<none>' >> ts-include; \
+ 	    echo '' >> ts-include; \
+ 	    cat ../$(patch_stamp) >> ts-include; \
+@@ -1624,7 +1624,7 @@
+ 	    echo '' >> ts-include; \
+ 	    echo "Build Dependencies:" >> ts-include; \
+ 	    dpkg -l g++-* binutils* `echo '$(LIBC_DEP)' | awk '{print $$1}'` \
+-		libgmp*-dev libmpfr-dev libmpc-dev libisl*-dev libcloog-isl-dev \
++		libgmp*-dev libmpfr-dev libmpc-dev libisl*-dev* libcloog-isl-dev* \
+ 	        | fgrep -v '<none>' >> ts-include; \
+ 	    echo '' >> ts-include; \
+ 	    echo 'Results for the installed GCC-3.3 compilers' >> ts-include; \
