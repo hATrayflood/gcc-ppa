@@ -30,7 +30,7 @@ apt-get -y install libgtk2.0-dev
 apt-get -y install libart-2.0-dev
 apt-get -y install libcairo2-dev
 apt-get -y install libcloog-ppl-dev
-apt-get -y install libcloog-isl-dev
+apt-get -y install libcloog-isl-dev-lts
 apt-get -y install libmpc-dev
 apt-get -y install libmpfr-dev
 apt-get -y install libgmp-dev
