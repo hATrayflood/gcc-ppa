@@ -13,7 +13,7 @@ diff -urN debian/changelog gcc-4.2-4.2.4.orig/debian/changelog
    * Fix PR libgomp/28432. LP: #235070, using the patch in intrepid.
 diff -urN debian/control gcc-4.2-4.2.4.orig/debian/control
 --- debian/control	2014-02-15 17:39:47.925486055 +0900
-+++ gcc-4.2-4.2.4.orig/debian/control	2014-02-21 15:41:27.205062071 +0900
++++ gcc-4.2-4.2.4.orig/debian/control	2014-02-26 00:17:55.311912813 +0900
 @@ -1,12 +1,12 @@
  Source: gcc-4.2
  Section: devel
@@ -505,7 +505,7 @@ diff -urN debian/control.m4 gcc-4.2-4.2.4.orig/debian/control.m4
  Package: gcc-snapshot
 diff -urN debian/patches/libjava-armel-ldflags.dpatch gcc-4.2-4.2.4.orig/debian/patches/libjava-armel-ldflags.dpatch
 --- debian/patches/libjava-armel-ldflags.dpatch	2014-02-15 17:39:47.978523837 +0900
-+++ gcc-4.2-4.2.4.orig/debian/patches/libjava-armel-ldflags.dpatch	2014-02-15 18:17:26.633077418 +0900
++++ gcc-4.2-4.2.4.orig/debian/patches/libjava-armel-ldflags.dpatch	2014-02-26 00:15:17.239923033 +0900
 @@ -13,7 +13,7 @@
  case "$1" in
      -patch)
@@ -517,7 +517,7 @@ diff -urN debian/patches/libjava-armel-ldflags.dpatch gcc-4.2-4.2.4.orig/debian/
          patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
 diff -urN debian/patches/libobjc-gc-link.dpatch gcc-4.2-4.2.4.orig/debian/patches/libobjc-gc-link.dpatch
 --- debian/patches/libobjc-gc-link.dpatch	2014-02-15 17:39:47.950500477 +0900
-+++ gcc-4.2-4.2.4.orig/debian/patches/libobjc-gc-link.dpatch	2014-02-15 18:19:17.173533846 +0900
++++ gcc-4.2-4.2.4.orig/debian/patches/libobjc-gc-link.dpatch	2014-02-26 00:17:36.904050480 +0900
 @@ -13,7 +13,7 @@
  case "$1" in
      -patch)
@@ -529,7 +529,7 @@ diff -urN debian/patches/libobjc-gc-link.dpatch gcc-4.2-4.2.4.orig/debian/patche
          patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
 diff -urN debian/patches/pr24170.dpatch gcc-4.2-4.2.4.orig/debian/patches/pr24170.dpatch
 --- debian/patches/pr24170.dpatch	2014-02-15 17:39:47.954503754 +0900
-+++ gcc-4.2-4.2.4.orig/debian/patches/pr24170.dpatch	2014-02-15 18:18:27.429496063 +0900
++++ gcc-4.2-4.2.4.orig/debian/patches/pr24170.dpatch	2014-02-26 00:15:48.095924250 +0900
 @@ -13,7 +13,7 @@
  case "$1" in
      -patch)
@@ -541,7 +541,7 @@ diff -urN debian/patches/pr24170.dpatch gcc-4.2-4.2.4.orig/debian/patches/pr2417
          patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
 diff -urN debian/rules.defs gcc-4.2-4.2.4.orig/debian/rules.defs
 --- debian/rules.defs	2014-02-15 17:39:47.885526302 +0900
-+++ gcc-4.2-4.2.4.orig/debian/rules.defs	2014-02-15 22:45:20.984463645 +0900
++++ gcc-4.2-4.2.4.orig/debian/rules.defs	2014-02-26 00:07:04.091943246 +0900
 @@ -196,10 +196,6 @@
  #    with_common_libs := yes
  #  endif
@@ -553,6 +553,14 @@ diff -urN debian/rules.defs gcc-4.2-4.2.4.orig/debian/rules.defs
  
  with_gccbase := yes
  with_dev := yes
+@@ -792,6 +788,7 @@
+ ifneq (,$(findstring gdc,$(PKGSOURCE)))
+   with_check := disabled for gdc
+ endif
++with_check := disabled for this build
+ 
+ # not a dependency on all archs, but if available, use it for the testsuite
+ ifneq (,$(wildcard /usr/bin/localedef))
 diff -urN debian/rules.parameters gcc-4.2-4.2.4.orig/debian/rules.parameters
 --- debian/rules.parameters	2014-02-15 17:39:47.913529609 +0900
 +++ gcc-4.2-4.2.4.orig/debian/rules.parameters	2014-02-21 15:41:27.214302561 +0900

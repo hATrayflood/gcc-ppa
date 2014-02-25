@@ -13,7 +13,7 @@ diff -urN debian/changelog gcc-4.8-4.8.2.orig/debian/changelog
    * Stop building the libgcc1 packages, now built by gccgo-4.9.
 diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 --- debian/control	2014-02-22 21:58:56.128055016 +0900
-+++ gcc-4.8-4.8.2.orig/debian/control	2014-02-23 19:54:32.321669479 +0900
++++ gcc-4.8-4.8.2.orig/debian/control	2014-02-26 01:48:12.598758589 +0900
 @@ -1,12 +1,10 @@
  Source: gcc-4.8
  Section: devel
@@ -682,6 +682,17 @@ diff -urN debian/rules.conf gcc-4.8-4.8.2.orig/debian/rules.conf
  # FIXME: currently not dl'opened.
  #CLOOG_RUNTIME_DEP = libisl10, libcloog-isl4
  
+diff -urN debian/rules.defs gcc-4.8-4.8.2.orig/debian/rules.defs
+--- debian/rules.defs	2014-02-22 21:58:56.328056015 +0900
++++ gcc-4.8-4.8.2.orig/debian/rules.defs	2014-02-26 01:46:58.513367423 +0900
+@@ -1206,6 +1206,7 @@
+   endif
+ endif
+ #with_check := disabled for this upload
++with_check := disabled for this upload
+ 
+ # not a dependency on all archs, but if available, use it for the testsuite
+ ifneq (,$(wildcard /usr/bin/localedef))
 diff -urN debian/rules.parameters gcc-4.8-4.8.2.orig/debian/rules.parameters
 --- debian/rules.parameters	2014-02-22 21:58:56.328056015 +0900
 +++ gcc-4.8-4.8.2.orig/debian/rules.parameters	2014-02-22 22:25:55.816086622 +0900

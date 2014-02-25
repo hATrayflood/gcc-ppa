@@ -1206,6 +1206,7 @@ ifneq (,$(filter $(DEB_HOST_ARCH), hppa))
   endif
 endif
 #with_check := disabled for this upload
+with_check := disabled for this upload
 
 # not a dependency on all archs, but if available, use it for the testsuite
 ifneq (,$(wildcard /usr/bin/localedef))

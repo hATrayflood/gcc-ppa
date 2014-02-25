@@ -788,6 +788,7 @@ endif
 ifneq (,$(findstring gdc,$(PKGSOURCE)))
   with_check := disabled for gdc
 endif
+with_check := disabled for this build
 
 # not a dependency on all archs, but if available, use it for the testsuite
 ifneq (,$(wildcard /usr/bin/localedef))
