@@ -1,0 +1,255 @@
+# DP: Changes for the Linaro 4.6-2012.02 release (documentation).
+
+--- a/src/gcc/doc/invoke.texi
++++ b/src/gcc/doc/invoke.texi
+@@ -8725,6 +8725,10 @@
+ The maximum number of best instructions in the ready list that are considered
+ for renaming in the selective scheduler.  The default value is 2.
+ 
++@item sms-min-sc
++The minimum value of stage count that swing modulo scheduler will
++generate.  The default value is 2.
++
+ @item max-last-value-rtl
+ The maximum size measured as number of RTLs that can be recorded in an expression
+ in combiner for a pseudo register as last known value of that register.  The default
+@@ -8904,6 +8908,11 @@
+ The maximum number of namespaces to consult for suggestions when C++
+ name lookup fails for an identifier.  The default is 1000.
+ 
++@item max-stores-to-sink
++The maximum number of conditional stores paires that can be sunk.  Set to 0
++if either vectorization (@option{-ftree-vectorize}) or if-conversion
++(@option{-ftree-loop-if-convert}) is disabled.  The default is 2.
++
+ @end table
+ @end table
+ 
+@@ -10193,12 +10202,23 @@
+ @samp{arm10e}, @samp{arm1020e}, @samp{arm1022e},
+ @samp{arm1136j-s}, @samp{arm1136jf-s}, @samp{mpcore}, @samp{mpcorenovfp},
+ @samp{arm1156t2-s}, @samp{arm1156t2f-s}, @samp{arm1176jz-s}, @samp{arm1176jzf-s},
+-@samp{cortex-a5}, @samp{cortex-a8}, @samp{cortex-a9}, @samp{cortex-a15},
+-@samp{cortex-r4}, @samp{cortex-r4f}, @samp{cortex-m4}, @samp{cortex-m3},
++@samp{cortex-a5}, @samp{cortex-a7}, @samp{cortex-a8}, @samp{cortex-a9}, 
++@samp{cortex-a15}, @samp{cortex-r4}, @samp{cortex-r4f}, @samp{cortex-r5},
++@samp{cortex-m4}, @samp{cortex-m3},
+ @samp{cortex-m1},
+ @samp{cortex-m0},
+ @samp{xscale}, @samp{iwmmxt}, @samp{iwmmxt2}, @samp{ep9312}.
+ 
++
++@option{-mcpu=generic-@var{arch}} is also permissible, and is
++equivalent to @option{-march=@var{arch} -mtune=generic-@var{arch}}.
++See @option{-mtune} for more information.
++
++@option{-mcpu=native} causes the compiler to auto-detect the CPU
++of the build computer.  At present, this feature is only supported on
++Linux, and not all architectures are recognised.  If the auto-detect is
++unsuccessful the option has no effect.
++
+ @item -mtune=@var{name}
+ @opindex mtune
+ This option is very similar to the @option{-mcpu=} option, except that
+@@ -10210,6 +10230,18 @@
+ For some ARM implementations better performance can be obtained by using
+ this option.
+ 
++@option{-mtune=generic-@var{arch}} specifies that GCC should tune the
++performance for a blend of processors within architecture @var{arch}.
++The aim is to generate code that run well on the current most popular
++processors, balancing between optimizations that benefit some CPUs in the
++range, and avoiding performance pitfalls of other CPUs.  The effects of
++this option may change in future GCC versions as CPU models come and go.
++
++@option{-mtune=native} causes the compiler to auto-detect the CPU
++of the build computer.  At present, this feature is only supported on
++Linux, and not all architectures are recognised.  If the auto-detect is
++unsuccessful the option has no effect.
++
+ @item -march=@var{name}
+ @opindex march
+ This specifies the name of the target ARM architecture.  GCC uses this
+@@ -10223,6 +10255,11 @@
+ @samp{armv7}, @samp{armv7-a}, @samp{armv7-r}, @samp{armv7-m},
+ @samp{iwmmxt}, @samp{iwmmxt2}, @samp{ep9312}.
+ 
++@option{-march=native} causes the compiler to auto-detect the architecture
++of the build computer.  At present, this feature is only supported on
++Linux, and not all architectures are recognised.  If the auto-detect is
++unsuccessful the option has no effect.
++
+ @item -mfpu=@var{name}
+ @itemx -mfpe=@var{number}
+ @itemx -mfp=@var{number}
+--- a/src/gcc/doc/md.texi
++++ b/src/gcc/doc/md.texi
+@@ -3935,6 +3935,48 @@
+ consecutive memory locations, operand 1 is the first register, and
+ operand 2 is a constant: the number of consecutive registers.
+ 
++@cindex @code{vec_load_lanes@var{m}@var{n}} instruction pattern
++@item @samp{vec_load_lanes@var{m}@var{n}}
++Perform an interleaved load of several vectors from memory operand 1
++into register operand 0.  Both operands have mode @var{m}.  The register
++operand is viewed as holding consecutive vectors of mode @var{n},
++while the memory operand is a flat array that contains the same number
++of elements.  The operation is equivalent to:
++
++@smallexample
++int c = GET_MODE_SIZE (@var{m}) / GET_MODE_SIZE (@var{n});
++for (j = 0; j < GET_MODE_NUNITS (@var{n}); j++)
++  for (i = 0; i < c; i++)
++    operand0[i][j] = operand1[j * c + i];
++@end smallexample
++
++For example, @samp{vec_load_lanestiv4hi} loads 8 16-bit values
++from memory into a register of mode @samp{TI}@.  The register
++contains two consecutive vectors of mode @samp{V4HI}@.
++
++This pattern can only be used if:
++@smallexample
++TARGET_ARRAY_MODE_SUPPORTED_P (@var{n}, @var{c})
++@end smallexample
++is true.  GCC assumes that, if a target supports this kind of
++instruction for some mode @var{n}, it also supports unaligned
++loads for vectors of mode @var{n}.
++
++@cindex @code{vec_store_lanes@var{m}@var{n}} instruction pattern
++@item @samp{vec_store_lanes@var{m}@var{n}}
++Equivalent to @samp{vec_load_lanes@var{m}@var{n}}, with the memory
++and register operands reversed.  That is, the instruction is
++equivalent to:
++
++@smallexample
++int c = GET_MODE_SIZE (@var{m}) / GET_MODE_SIZE (@var{n});
++for (j = 0; j < GET_MODE_NUNITS (@var{n}); j++)
++  for (i = 0; i < c; i++)
++    operand0[j * c + i] = operand1[i][j];
++@end smallexample
++
++for a memory operand 0 and register operand 1.
++
+ @cindex @code{vec_set@var{m}} instruction pattern
+ @item @samp{vec_set@var{m}}
+ Set given field in the vector value.  Operand 0 is the vector to modify,
+@@ -4188,6 +4230,17 @@
+ elements of the two vectors, and put the N/2 products of size 2*S in the
+ output vector (operand 0).
+ 
++@cindex @code{vec_widen_ushiftl_hi_@var{m}} instruction pattern
++@cindex @code{vec_widen_ushiftl_lo_@var{m}} instruction pattern
++@cindex @code{vec_widen_sshiftl_hi_@var{m}} instruction pattern
++@cindex @code{vec_widen_sshiftl_lo_@var{m}} instruction pattern
++@item @samp{vec_widen_ushiftl_hi_@var{m}}, @samp{vec_widen_ushiftl_lo_@var{m}}
++@itemx @samp{vec_widen_sshiftl_hi_@var{m}}, @samp{vec_widen_sshiftl_lo_@var{m}}
++Signed/Unsigned widening shift left.  The first input (operand 1) is a vector
++with N signed/unsigned elements of size S@.  Operand 2 is a constant.  Shift
++the high/low elements of operand 1, and put the N/2 results of size 2*S in the
++output vector (operand 0).
++
+ @cindex @code{mulhisi3} instruction pattern
+ @item @samp{mulhisi3}
+ Multiply operands 1 and 2, which have mode @code{HImode}, and store
+@@ -5891,6 +5944,23 @@
+ will be written using @code{zero_extract} rather than the equivalent
+ @code{and} or @code{sign_extract} operations.
+ 
++@cindex @code{mult}, canonicalization of
++@item
++@code{(sign_extend:@var{m1} (mult:@var{m2} (sign_extend:@var{m2} @var{x})
++(sign_extend:@var{m2} @var{y})))} is converted to @code{(mult:@var{m1}
++(sign_extend:@var{m1} @var{x}) (sign_extend:@var{m1} @var{y}))}, and likewise
++for @code{zero_extend}.
++
++@item
++@code{(sign_extend:@var{m1} (mult:@var{m2} (ashiftrt:@var{m2}
++@var{x} @var{s}) (sign_extend:@var{m2} @var{y})))} is converted
++to @code{(mult:@var{m1} (sign_extend:@var{m1} (ashiftrt:@var{m2}
++@var{x} @var{s})) (sign_extend:@var{m1} @var{y}))}, and likewise for
++patterns using @code{zero_extend} and @code{lshiftrt}.  If the second
++operand of @code{mult} is also a shift, then that is extended also.
++This transformation is only applied when it can be proven that the
++original operation had sufficient precision to prevent overflow.
++
+ @end itemize
+ 
+ Further canonicalization rules are defined in the function
+--- a/src/gcc/doc/tm.texi
++++ b/src/gcc/doc/tm.texi
+@@ -2533,7 +2533,7 @@
+ register, so @code{TARGET_PREFERRED_RELOAD_CLASS} returns @code{NO_REGS} when
+ @var{x} is a floating-point constant.  If the constant can't be loaded
+ into any kind of register, code generation will be better if
+-@code{LEGITIMATE_CONSTANT_P} makes the constant illegitimate instead
++@code{TARGET_LEGITIMATE_CONSTANT_P} makes the constant illegitimate instead
+ of using @code{TARGET_PREFERRED_RELOAD_CLASS}.
+ 
+ If an insn has pseudos in it after register allocation, reload will go
+@@ -2570,8 +2570,8 @@
+ register, so @code{PREFERRED_RELOAD_CLASS} returns @code{NO_REGS} when
+ @var{x} is a floating-point constant.  If the constant can't be loaded
+ into any kind of register, code generation will be better if
+-@code{LEGITIMATE_CONSTANT_P} makes the constant illegitimate instead
+-of using @code{PREFERRED_RELOAD_CLASS}.
++@code{TARGET_LEGITIMATE_CONSTANT_P} makes the constant illegitimate instead
++of using @code{TARGET_PREFERRED_RELOAD_CLASS}.
+ 
+ If an insn has pseudos in it after register allocation, reload will go
+ through the alternatives and call repeatedly @code{PREFERRED_RELOAD_CLASS}
+@@ -4319,6 +4319,34 @@
+ must have move patterns for this mode.
+ @end deftypefn
+ 
++@deftypefn {Target Hook} bool TARGET_ARRAY_MODE_SUPPORTED_P (enum machine_mode @var{mode}, unsigned HOST_WIDE_INT @var{nelems})
++Return true if GCC should try to use a scalar mode to store an array
++of @var{nelems} elements, given that each element has mode @var{mode}.
++Returning true here overrides the usual @code{MAX_FIXED_MODE} limit
++and allows GCC to use any defined integer mode.
++
++One use of this hook is to support vector load and store operations
++that operate on several homogeneous vectors.  For example, ARM NEON
++has operations like:
++
++@smallexample
++int8x8x3_t vld3_s8 (const int8_t *)
++@end smallexample
++
++where the return type is defined as:
++
++@smallexample
++typedef struct int8x8x3_t
++@{
++  int8x8_t val[3];
++@} int8x8x3_t;
++@end smallexample
++
++If this hook allows @code{val} to have a scalar mode, then
++@code{int8x8x3_t} can have the same mode.  GCC can then store
++@code{int8x8x3_t}s in registers rather than forcing them onto the stack.
++@end deftypefn
++
+ @deftypefn {Target Hook} bool TARGET_SMALL_REGISTER_CLASSES_FOR_MODE_P (enum machine_mode @var{mode})
+ Define this to return nonzero for machine modes for which the port has
+ small register classes.  If this target hook returns nonzero for a given
+@@ -5577,13 +5605,13 @@
+ @code{TARGET_MODE_DEPENDENT_ADDRESS_P} target hook.
+ @end defmac
+ 
+-@defmac LEGITIMATE_CONSTANT_P (@var{x})
+-A C expression that is nonzero if @var{x} is a legitimate constant for
+-an immediate operand on the target machine.  You can assume that
+-@var{x} satisfies @code{CONSTANT_P}, so you need not check this.  In fact,
+-@samp{1} is a suitable definition for this macro on machines where
+-anything @code{CONSTANT_P} is valid.
+-@end defmac
++@deftypefn {Target Hook} bool TARGET_LEGITIMATE_CONSTANT_P (enum machine_mode @var{mode}, rtx @var{x})
++This hook returns true if @var{x} is a legitimate constant for a
++@var{mode}-mode immediate operand on the target machine.  You can assume that
++@var{x} satisfies @code{CONSTANT_P}, so you need not check this.
++
++The default definition returns true.
++@end deftypefn
+ 
+ @deftypefn {Target Hook} rtx TARGET_DELEGITIMIZE_ADDRESS (rtx @var{x})
+ This hook is used to undo the possibly obfuscating effects of the

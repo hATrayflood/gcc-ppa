@@ -1,0 +1,2525 @@
+# DP: updates from the ibm/4.6 branch upto 20110707 (r175989).
+
+svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_6-branch@175885 svn://gcc.gnu.org/svn/gcc/branches/ibm/gcc-4_6-branch \
+	| sed -r 's,^--- (\S+)\t(\S+)(.*)$,--- a/src/\1\t\2,;s,^\+\+\+ (\S+)\t(\S+)(.*)$,+++ b/src/\1\t\2,' \
+	| awk '/^Index:.*\.(class|texi)/ {skip=1; next} /^Index:/ { skip=0 } skip==0'
+
+Index: gcc/testsuite/gcc.target/powerpc/pr48053-3.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.target/powerpc/pr48053-3.c	(.../gcc-4_6-branch)
++++ b/src/gcc/testsuite/gcc.target/powerpc/pr48053-3.c	(.../ibm/gcc-4_6-branch)
+@@ -0,0 +1,41 @@
++/* { dg-do compile } */
++/* { dg-skip-if "" { powerpc*-*-darwin* } { "*" } { "" } } */
++/* { dg-require-effective-target powerpc_vsx_ok } */
++/* { dg-options "-O3 -mcpu=power7" } */
++
++/* Cut down example from s_scalbnl that aborted on 32-bit when the fix for
++   48053 went in to allow creating DImode 0's in VSX registers.  */
++
++typedef union
++{
++  long double value;
++  struct
++  {
++    unsigned long long msw;
++    unsigned long long lsw;
++  } parts64;
++  struct
++  {
++    unsigned int w0, w1, w2, w3;
++  } parts32;
++} ieee854_long_double_shape_type;
++
++static const long double twolm54 = 5.55111512312578270212e-17;
++
++long double foo (long double x, int n)
++{
++  long long k, hx, lx;
++  ieee854_long_double_shape_type qw_u;
++
++  qw_u.value = x;
++  hx = qw_u.parts64.msw;
++  lx = qw_u.parts64.lsw;
++
++  k = ((hx >> 52) & 0x7ff) + n + 54;
++
++  qw_u.parts64.msw = ((hx & 0x800fffffffffffffULL) | (k << 52));
++  qw_u.parts64.lsw = lx;
++  x = qw_u.value;
++
++  return x*twolm54;
++}
+Index: gcc/testsuite/gcc.target/powerpc/no-r11-1.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.target/powerpc/no-r11-1.c	(.../gcc-4_6-branch)
++++ b/src/gcc/testsuite/gcc.target/powerpc/no-r11-1.c	(.../ibm/gcc-4_6-branch)
+@@ -0,0 +1,11 @@
++/* { dg-do compile { target { powerpc*-*-* && lp64 } } } */
++/* { dg-skip-if "" { *-*-darwin* } { "*" } { "" } } */
++/* { dg-options "-O2 -mno-r11" } */
++
++int
++call_ptr (int (func) (void))
++{
++  return func () + 1;
++}
++
++/* { dg-final { scan-assembler-not "ld 11,16(3)" } } */
+Index: gcc/testsuite/gcc.target/powerpc/no-r11-2.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.target/powerpc/no-r11-2.c	(.../gcc-4_6-branch)
++++ b/src/gcc/testsuite/gcc.target/powerpc/no-r11-2.c	(.../ibm/gcc-4_6-branch)
+@@ -0,0 +1,11 @@
++/* { dg-do compile { target { powerpc*-*-* && lp64 } } } */
++/* { dg-skip-if "" { *-*-darwin* } { "*" } { "" } } */
++/* { dg-options "-O2 -mr11" } */
++
++int
++call_ptr (int (func) (void))
++{
++  return func () + 1;
++}
++
++/* { dg-final { scan-assembler "ld 11,16" } } */
+Index: gcc/testsuite/gcc.target/powerpc/no-r11-3.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.target/powerpc/no-r11-3.c	(.../gcc-4_6-branch)
++++ b/src/gcc/testsuite/gcc.target/powerpc/no-r11-3.c	(.../ibm/gcc-4_6-branch)
+@@ -0,0 +1,20 @@
++/* { dg-do compile { target { powerpc*-*-* && lp64 } } } */
++/* { dg-skip-if "" { *-*-darwin* } { "*" } { "" } } */
++/* { dg-options "-O2 -mno-r11" } */
++
++extern void ext_call (int (func) (void));
++
++int
++outer_func (int init)	/* { dg-error "-mno-r11 must not be used if you have trampolines" "" } */
++{
++  int value = init;
++
++  int inner (void)
++  {
++    return ++value;
++  }
++
++  ext_call (inner);
++  return value;
++}
++
+Index: gcc/testsuite/gcc.target/powerpc/ppc-switch-1.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.target/powerpc/ppc-switch-1.c	(.../gcc-4_6-branch)
++++ b/src/gcc/testsuite/gcc.target/powerpc/ppc-switch-1.c	(.../ibm/gcc-4_6-branch)
+@@ -0,0 +1,26 @@
++/* { dg-do compile { target { powerpc*-*-* } } } */
++/* { dg-skip-if "" { powerpc*-*-darwin* } { "*" } { "" } } */
++/* { dg-options "-O2 --param case-values-threshold=2" } */
++/* { dg-final { scan-assembler "mtctr" } } */
++/* { dg-final { scan-assembler "bctr" } } */
++
++/* Force using a dispatch table even though by default we would generate
++   ifs.  */
++
++extern long call (long);
++
++long
++test_switch (long a, long b)
++{
++  long c;
++
++  switch (a)
++    {
++    case 0:  c = -b;	break;
++    case 1:  c = ~b;	break;
++    case 2:  c = b+1;	break;
++    default: c = b & 9;	break;
++    }
++
++  return call (c) + 1;
++}
+Index: gcc/testsuite/gcc.target/powerpc/ppc-switch-2.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.target/powerpc/ppc-switch-2.c	(.../gcc-4_6-branch)
++++ b/src/gcc/testsuite/gcc.target/powerpc/ppc-switch-2.c	(.../ibm/gcc-4_6-branch)
+@@ -0,0 +1,32 @@
++/* { dg-do compile { target { powerpc*-*-* } } } */
++/* { dg-skip-if "" { powerpc*-*-darwin* } { "*" } { "" } } */
++/* { dg-options "-O2 --param case-values-threshold=20" } */
++/* { dg-final { scan-assembler-not "mtctr" } } */
++/* { dg-final { scan-assembler-not "bctr" } } */
++
++/* Force using if tests, instead of a dispatch table.  */
++
++extern long call (long);
++
++long
++test_switch (long a, long b)
++{
++  long c;
++
++  switch (a)
++    {
++    case 0:  c = -b;	break;
++    case 1:  c = ~b;	break;
++    case 2:  c = b+1;	break;
++    case 3:  c = b-2;	break;
++    case 4:  c = b*3;	break;
++    case 5:  c = b/4;	break;
++    case 6:  c = b<<5;	break;
++    case 7:  c = b>>6;	break;
++    case 8:  c = b|7;	break;
++    case 9:  c = b^8;	break;
++    default: c = b&9;	break;
++    }
++
++  return call (c) + 1;
++}
+Index: gcc/testsuite/gcc.target/powerpc/pr48258-1.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.target/powerpc/pr48258-1.c	(.../gcc-4_6-branch)
++++ b/src/gcc/testsuite/gcc.target/powerpc/pr48258-1.c	(.../ibm/gcc-4_6-branch)
+@@ -0,0 +1,57 @@
++/* { dg-do compile } */
++/* { dg-skip-if "" { powerpc*-*-darwin* } { "*" } { "" } } */
++/* { dg-require-effective-target powerpc_vsx_ok } */
++/* { dg-options "-O3 -mcpu=power7 -mabi=altivec -ffast-math -fno-unroll-loops" } */
++/* { dg-final { scan-assembler-times "xvaddsp" 3 } } */
++/* { dg-final { scan-assembler-times "xvminsp" 3 } } */
++/* { dg-final { scan-assembler-times "xvmaxsp" 3 } } */
++/* { dg-final { scan-assembler-times "xxsldwi" 6 } } */
++/* { dg-final { scan-assembler-times "xscvspdp" 3 } } */
++/* { dg-final { scan-assembler-not "stvewx" } } */
++/* { dg-final { scan-assembler-not "stvx" } } */
++/* { dg-final { scan-assembler-not "stxvd2x" } } */
++/* { dg-final { scan-assembler-not "stxvw4x" } } */
++
++#include <stddef.h>
++
++#ifndef SIZE
++#define SIZE 1024
++#endif
++
++float values[SIZE] __attribute__((__aligned__(32)));
++
++float
++vector_sum (void)
++{
++  size_t i;
++  float sum = 0.0f;
++
++  for (i = 0; i < SIZE; i++)
++    sum += values[i];
++
++  return sum;
++}
++
++float
++vector_min (void)
++{
++  size_t i;
++  float min = values[0];
++
++  for (i = 0; i < SIZE; i++)
++    min = __builtin_fminf (min, values[i]);
++
++  return min;
++}
++
++float
++vector_max (void)
++{
++  size_t i;
++  float max = values[0];
++
++  for (i = 0; i < SIZE; i++)
++    max = __builtin_fmaxf (max, values[i]);
++
++  return max;
++}
+Index: gcc/testsuite/gcc.target/powerpc/pr48258-2.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.target/powerpc/pr48258-2.c	(.../gcc-4_6-branch)
++++ b/src/gcc/testsuite/gcc.target/powerpc/pr48258-2.c	(.../ibm/gcc-4_6-branch)
+@@ -0,0 +1,58 @@
++/* { dg-do compile } */
++/* { dg-skip-if "" { powerpc*-*-darwin* } { "*" } { "" } } */
++/* { dg-require-effective-target powerpc_vsx_ok } */
++/* { dg-options "-O3 -mcpu=power7 -mabi=altivec -ffast-math -fno-unroll-loops" } */
++/* { dg-final { scan-assembler-times "xvadddp" 1 } } */
++/* { dg-final { scan-assembler-times "xvmindp" 1 } } */
++/* { dg-final { scan-assembler-times "xvmaxdp" 1 } } */
++/* { dg-final { scan-assembler-times "xsadddp" 1 } } */
++/* { dg-final { scan-assembler-times "xsmindp" 1 } } */
++/* { dg-final { scan-assembler-times "xsmaxdp" 1 } } */
++/* { dg-final { scan-assembler-not "xxsldwi" } } */
++/* { dg-final { scan-assembler-not "stvx" } } */
++/* { dg-final { scan-assembler-not "stxvd2x" } } */
++/* { dg-final { scan-assembler-not "stxvw4x" } } */
++
++#include <stddef.h>
++
++#ifndef SIZE
++#define SIZE 1024
++#endif
++
++double values[SIZE] __attribute__((__aligned__(32)));
++
++double
++vector_sum (void)
++{
++  size_t i;
++  double sum = 0.0;
++
++  for (i = 0; i < SIZE; i++)
++    sum += values[i];
++
++  return sum;
++}
++
++double
++vector_min (void)
++{
++  size_t i;
++  double min = values[0];
++
++  for (i = 0; i < SIZE; i++)
++    min = __builtin_fmin (min, values[i]);
++
++  return min;
++}
++
++double
++vector_max (void)
++{
++  size_t i;
++  double max = values[0];
++
++  for (i = 0; i < SIZE; i++)
++    max = __builtin_fmax (max, values[i]);
++
++  return max;
++}
+Index: gcc/testsuite/ChangeLog.ibm
+===================================================================
+--- a/src/gcc/testsuite/ChangeLog.ibm	(.../gcc-4_6-branch)
++++ b/src/gcc/testsuite/ChangeLog.ibm	(.../ibm/gcc-4_6-branch)
+@@ -0,0 +1,37 @@
++2011-07-06  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Backport from mainline
++	2011-07-06  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	* gcc.target/powerpc/no-r11-1.c: New test for -mr11, -mno-r11.
++	* gcc.target/powerpc/no-r11-2.c: Ditto.
++	* gcc.target/powerpc/no-r11-3.c: Ditto.
++
++2011-07-05  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 175885.
++
++	Backport from mainline
++	2011-07-05  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	* gcc.target/powerpc/ppc-switch-1.c: New test for
++	--param case-values-threshold.
++	* gcc.target/powerpc/ppc-switch-2.c: Ditto.
++
++2011-04-28  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 173137.
++
++2011-04-26  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Backport from mainline
++	2011-03-23  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	PR target/48258
++	* gcc.target/powerpc/pr48258-1.c: New file.
++	* gcc.target/powerpc/pr48258-2.c: Ditto.
++
++2011-03-28  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Branch from gcc-4_6-branch, subversion id 171614.
++
+Index: gcc/ChangeLog.ibm
+===================================================================
+--- a/src/gcc/ChangeLog.ibm	(.../gcc-4_6-branch)
++++ b/src/gcc/ChangeLog.ibm	(.../ibm/gcc-4_6-branch)
+@@ -0,0 +1,248 @@
++2011-07-06  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Backport from mainline
++	2011-07-06  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	* config/rs6000/rs6000-protos.h (rs6000_call_indirect_aix): New
++	declaration.
++	(rs6000_save_toc_in_prologue_p): Ditto.
++
++	* config/rs6000/rs6000.opt (-mr11): New switch to disable loading
++	up the static chain (r11) during indirect function calls.
++	(-msave-toc-indirect): New undocumented debug switch.
++
++	* config/rs6000/rs6000.c (struct machine_function): Add
++	save_toc_in_prologue field to note whether the prologue needs to
++	save the TOC value in the reserved stack location.
++	(rs6000_emit_prologue): Use TOC_REGNUM instead of 2.  If we need
++	to save the TOC in the prologue, do so.
++	(rs6000_trampoline_init): Don't allow creating AIX style
++	trampolines if -mno-r11 is in effect.
++	(rs6000_call_indirect_aix): New function to create AIX style
++	indirect calls, adding support for -mno-r11 to suppress loading
++	the static chain, and saving the TOC in the prologue instead of
++	the call body.
++	(rs6000_save_toc_in_prologue_p): Return true if we are saving the
++	TOC in the prologue.
++
++	* config/rs6000/rs6000.md (STACK_POINTER_REGNUM): Add more fixed
++	register numbers.
++	(TOC_REGNUM): Ditto.
++	(STATIC_CHAIN_REGNUM): Ditto.
++	(ARG_POINTER_REGNUM): Ditto.
++	(SFP_REGNO): Delete, unused.
++	(TOC_SAVE_OFFSET_32BIT): Add constants for AIX TOC save and
++	function descriptor offsets.
++	(TOC_SAVE_OFFSET_64BIT): Ditto.
++	(AIX_FUNC_DESC_TOC_32BIT): Ditto.
++	(AIX_FUNC_DESC_TOC_64BIT): Ditto.
++	(AIX_FUNC_DESC_SC_32BIT): Ditto.
++	(AIX_FUNC_DESC_SC_64BIT): Ditto.
++	(ptrload): New mode attribute for the appropriate load of a
++	pointer.
++	(call_indirect_aix32): Delete, rewrite AIX indirect function
++	calls.
++	(call_indirect_aix64): Ditto.
++	(call_value_indirect_aix32): Ditto.
++	(call_value_indirect_aix64): Ditto.
++	(call_indirect_nonlocal_aix32_internal): Ditto.
++	(call_indirect_nonlocal_aix32): Ditto.
++	(call_indirect_nonlocal_aix64_internal): Ditto.
++	(call_indirect_nonlocal_aix64): Ditto.
++	(call): Rewrite AIX indirect function calls.  Add support for
++	eliminating the static chain, and for moving the save of the TOC
++	to the function prologue.
++	(call_value): Ditto.
++	(call_indirect_aix<ptrsize>): Ditto.
++	(call_indirect_aix<ptrsize>_internal): Ditto.
++	(call_indirect_aix<ptrsize>_internal2): Ditto.
++	(call_indirect_aix<ptrsize>_nor11): Ditto.
++	(call_value_indirect_aix<ptrsize>): Ditto.
++	(call_value_indirect_aix<ptrsize>_internal): Ditto.
++	(call_value_indirect_aix<ptrsize>_internal2): Ditto.
++	(call_value_indirect_aix<ptrsize>_nor11): Ditto.
++	(call_nonlocal_aix32): Relocate in the rs6000.md file.
++	(call_nonlocal_aix64): Ditto.
++
++	* doc/invoke.texi (RS/6000 and PowerPC Options): Add -mr11 and
++	-mno-r11 documentation.
++
++2011-07-05  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 175885.
++	* REVISION: Update subversion id.
++
++	Backport from the mainline:
++	2011-07-05  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	* params.def (PARAM_CASE_VALUES_THRESHOLD): New parameter to
++	override CASE_VALUES_THRESHOLD.
++
++	* stmt.c (toplevel): Include params.h.
++	(case_values_threshold): Use the --param case-values-threshold
++	value if non-zero, otherwise use machine dependent value.
++	(expand_case): Use case_values_threshold.
++
++	* Makefile.in (stmt.o): Add $(PARAMS_H) dependency.
++
++	* doc/invoke.texi (--param case-values-threshold): Document.
++
++2011-07-01  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 175762.
++	* REVISION: Update subversion id.
++
++2011-06-06  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 174573.
++	* REVISION: Update subversion id.
++
++2011-06-02  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 174572.
++	* REVISION: Update subversion id.
++
++2011-05-27  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 174363.
++	* REVISION: Update subversion id.
++
++2011-05-26  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 174299.
++	* REVISION: Update subversion id.
++
++2011-05-19  Peter Bergner  <bergner@vnet.ibm.com>
++
++	* config/rs6000/t-linux64 (MULTILIB_OPTIONS): Remove soft-float support.
++	(MULTILIB_DIRNAMES): Likewise.
++	(MULTILIB_EXCEPTIONS): Likewise.
++	(MULTILIB_EXCLUSIONS): Likewise.
++	(MULTILIB_OSDIRNAMES): Likewise.
++	(MULTILIB_MATCHES): Likewise.
++
++2011-05-10  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 173634 (fix PR 48857).
++	* REVISION: Update subversion id.
++
++2011-04-28  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 173137.
++	* REVISION: Update subversion id.
++
++	Backport from mainline
++	2011-03-26  Alan Modra  <amodra@gmail.com>
++
++	* config/rs6000/predicates.md (word_offset_memref_op): Handle
++	cmodel medium addresses.
++	* config/rs6000/rs6000.c (rs6000_secondary_reload): Handle misaligned
++	64-bit gpr loads and stores.
++	(rs6000_secondary_reload_ppc64): New function.
++	* config/rs6000/rs6000-protos.h: Declare it.
++	* config/rs6000/rs6000.md (reload_di_store, reload_di_load): New.
++
++2011-04-27  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 173048.
++	* REVISION: Update subversion id.
++
++2011-04-26  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Backport from mainline
++	2011-04-26  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	PR target/48258
++	* config/rs6000/vector.md (UNSPEC_REDUC): New unspec for vector
++	reduction.
++	(VEC_reduc): New code iterator and splitters for vector reduction.
++	(VEC_reduc_name): Ditto.
++	(VEC_reduc_rtx): Ditto.
++	(reduc_<VEC_reduc_name>_v2df): Vector reduction expanders for VSX.
++	(reduc_<VEC_reduc_name>_v4sf): Ditto.
++
++	* config/rs6000/rs6000.c (rs6000_expand_vector_extract): Add
++	support for extracting SF on VSX.
++
++	* config/rs6000/vsx.md (vsx_xscvspdp_scalar2): New insn for
++	generating xscvspdp.
++	(vsx_extract_v4sf): New insn to extract SF from V4SF vector.
++	(vsx_reduc_<VEC_reduc_name>_v2df): New insns and splitters for
++	double add, minimum, maximum vector reduction.
++	(vsx_reduc_<VEC_reduc_name>_v4sf): Ditto.
++	(vsx_reduc_<VEC_reduc_name>_v2df2_scalar): New combiner insn to
++	optimize double vector reduction.
++	(vsx_reduc_<VEC_reduc_name>_v4sf_scalar): Ditto.
++
++2011-04-19  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 172725.
++	* REVISION: Update subversion id.
++
++2011-04-15  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 172515.
++	* REVISION: Update subversion id.
++
++2011-04-11  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 172266.
++	* REVISION: Update subversion id.
++
++2011-04-08  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 172195.
++	* REVISION: Update subversion id.
++
++2011-04-06  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 172055.
++	* REVISION: Update subversion id.
++
++2011-03-29  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 171704.
++	* REVISION: Update subersion id.
++
++2011-03-28  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Backport from mainline
++	2011-03-21  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	* config/rs6000/rs6000.md (UNSPEC_*, UNSPECV_*): Redefine all
++	UNSPEC constants to be in the unspec enumeration, and redefine
++	all UNSPECV constants to be in the unspecv enumeration, so that
++	dumps print which unspec/unspec_volatile this is.
++	* config/rs6000/vector.md (UNSPEC_*): Ditto.
++	* config/rs6000/paired.md (UNSPEC_*): Ditto.
++	* config/rs6000/vsx.md (UNSPEC_*): Ditto.
++	* config/rs6000/altivec.md (UNSPEC_*, UNSPECV_*): Ditto.
++	* config/rs6000/dfp.md (UNSPEC_*): Ditto.
++
++	* config/rs6000/rs6000.md (UNSPECV_ISYNC, UNSPECV_LWSYNC): Rename
++	UNSPEC_ISYNC and UNSPEC_HWSYNC to UNSPECV_ISYNC and
++	UNSPECV_LWSYNC, since these are used as unspec_volatile.
++	* config/rs6000/sync.md (isync, lwsync): Ditto.
++
++	Backport from mainline
++	2011-03-21  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	PR target/48226
++	* config/rs6000/rs6000-c.c (rs6000_macro_to_expand): If we see a
++	vector when peeking at the next token for vector, don't expand the
++	keywords.
++
++	Backport from mainline
++	2011-03-16  Alan Modra  <amodra@gmail.com>
++
++	PR target/45844
++	* config/rs6000/rs6000.c (rs6000_legitimize_reload_address): Don't
++	create invalid offset address for vsx splat insn.
++	* config/rs6000/predicates.md (splat_input_operand): New.
++	* config/rs6000/vsx.md (vsx_splat_*): Use it.
++
++2011-03-28  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Branch from gcc-4_6-branch, subversion id 171614.
++	* REVISION: New file.
++
+Index: gcc/REVISION
+===================================================================
+--- a/src/gcc/REVISION	(.../gcc-4_6-branch)
++++ b/src/gcc/REVISION	(.../ibm/gcc-4_6-branch)
+@@ -0,0 +1 @@
++Advance Toolchain 5.xx [merged from gcc-4_6-branch, 175885]
+Index: gcc/Makefile.in
+===================================================================
+--- a/src/gcc/Makefile.in	(.../gcc-4_6-branch)
++++ b/src/gcc/Makefile.in	(.../ibm/gcc-4_6-branch)
+@@ -2876,7 +2876,7 @@
+    $(LIBFUNCS_H) $(EXCEPT_H) $(RECOG_H) $(DIAGNOSTIC_CORE_H) \
+    output.h $(GGC_H) $(TM_P_H) langhooks.h $(PREDICT_H) $(OPTABS_H) \
+    $(TARGET_H) $(GIMPLE_H) $(MACHMODE_H) $(REGS_H) alloc-pool.h \
+-   $(PRETTY_PRINT_H) $(BITMAP_H)
++   $(PRETTY_PRINT_H) $(BITMAP_H) $(PARAMS_H)
+ except.o : except.c $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) $(RTL_H) \
+    $(TREE_H) $(FLAGS_H) $(EXCEPT_H) $(FUNCTION_H) $(EXPR_H) $(LIBFUNCS_H) \
+    langhooks.h insn-config.h hard-reg-set.h $(BASIC_BLOCK_H) output.h \
+Index: gcc/config/rs6000/vector.md
+===================================================================
+--- a/src/gcc/config/rs6000/vector.md	(.../gcc-4_6-branch)
++++ b/src/gcc/config/rs6000/vector.md	(.../ibm/gcc-4_6-branch)
+@@ -74,9 +74,20 @@
+ 			   (V2DF  "V2DI")])
+ 
+ ;; constants for unspec
+-(define_constants
+-  [(UNSPEC_PREDICATE	400)])
++(define_c_enum "unspec" [UNSPEC_PREDICATE
++			 UNSPEC_REDUC])
+ 
++;; Vector reduction code iterators
++(define_code_iterator VEC_reduc [plus smin smax])
++
++(define_code_attr VEC_reduc_name [(plus "splus")
++				  (smin "smin")
++				  (smax "smax")])
++
++(define_code_attr VEC_reduc_rtx [(plus "add")
++				 (smin "smin")
++				 (smax "smax")])
++
+ 
+ ;; Vector move instructions.
+ (define_expand "mov<mode>"
+@@ -992,6 +1003,41 @@
+   "TARGET_ALTIVEC"
+   "")
+ 
++;; Vector reduction expanders for VSX
++
++(define_expand "reduc_<VEC_reduc_name>_v2df"
++  [(parallel [(set (match_operand:V2DF 0 "vfloat_operand" "")
++		   (VEC_reduc:V2DF
++		    (vec_concat:V2DF
++		     (vec_select:DF
++		      (match_operand:V2DF 1 "vfloat_operand" "")
++		      (parallel [(const_int 1)]))
++		     (vec_select:DF
++		      (match_dup 1)
++		      (parallel [(const_int 0)])))
++		    (match_dup 1)))
++	      (clobber (match_scratch:V2DF 2 ""))])]
++  "VECTOR_UNIT_VSX_P (V2DFmode)"
++  "")
++
++; The (VEC_reduc:V4SF
++;	(op1)
++;	(unspec:V4SF [(const_int 0)] UNSPEC_REDUC))
++;
++; is to allow us to use a code iterator, but not completely list all of the
++; vector rotates, etc. to prevent canonicalization
++
++(define_expand "reduc_<VEC_reduc_name>_v4sf"
++  [(parallel [(set (match_operand:V4SF 0 "vfloat_operand" "")
++		   (VEC_reduc:V4SF
++		    (unspec:V4SF [(const_int 0)] UNSPEC_REDUC)
++		    (match_operand:V4SF 1 "vfloat_operand" "")))
++	      (clobber (match_scratch:V4SF 2 ""))
++	      (clobber (match_scratch:V4SF 3 ""))])]
++  "VECTOR_UNIT_VSX_P (V4SFmode)"
++  "")
++
++
+ ;;; Expanders for vector insn patterns shared between the SPE and TARGET_PAIRED systems.
+ 
+ (define_expand "absv2sf2"
+Index: gcc/config/rs6000/predicates.md
+===================================================================
+--- a/src/gcc/config/rs6000/predicates.md	(.../gcc-4_6-branch)
++++ b/src/gcc/config/rs6000/predicates.md	(.../ibm/gcc-4_6-branch)
+@@ -1,5 +1,5 @@
+ ;; Predicate definitions for POWER and PowerPC.
+-;; Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010
++;; Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011
+ ;; Free Software Foundation, Inc.
+ ;;
+ ;; This file is part of GCC.
+@@ -435,9 +435,12 @@
+     op = XEXP (op, 0);
+   else if (GET_CODE (op) == PRE_MODIFY)
+     op = XEXP (op, 1);
++  else if (GET_CODE (op) == LO_SUM
++	   && GET_CODE (XEXP (op, 0)) == REG
++	   && GET_CODE (XEXP (op, 1)) == CONST)
++    op = XEXP (XEXP (op, 1), 0);
+ 
+   return (GET_CODE (op) != PLUS
+-	  || ! REG_P (XEXP (op, 0))
+ 	  || GET_CODE (XEXP (op, 1)) != CONST_INT
+ 	  || INTVAL (XEXP (op, 1)) % 4 == 0);
+ })
+@@ -871,6 +874,23 @@
+   return 0;
+ })
+ 
++;; Return 1 if this operand is a valid input for a vsx_splat insn.
++(define_predicate "splat_input_operand"
++  (match_code "label_ref,symbol_ref,const,high,reg,subreg,mem,
++	       const_double,const_vector,const_int,plus")
++{
++  if (MEM_P (op))
++    {
++      if (mode == DFmode)
++	mode = V2DFmode;
++      else if (mode == DImode)
++	mode = V2DImode;
++      else
++	gcc_unreachable ();        
++    }
++  return input_operand (op, mode);
++})
++
+ ;; Return true if OP is an invalid SUBREG operation on the e500.
+ (define_predicate "rs6000_nonimmediate_operand"
+   (match_code "reg,subreg,mem")
+Index: gcc/config/rs6000/paired.md
+===================================================================
+--- a/src/gcc/config/rs6000/paired.md	(.../gcc-4_6-branch)
++++ b/src/gcc/config/rs6000/paired.md	(.../ibm/gcc-4_6-branch)
+@@ -1,5 +1,5 @@
+ ;; PowerPC paired single and double hummer description
+-;; Copyright (C) 2007, 2009, 2010
++;; Copyright (C) 2007, 2009, 2010, 2011
+ ;; Free Software Foundation, Inc.
+ ;; Contributed by David Edelsohn <edelsohn@gnu.org> and Revital Eres
+ ;; <eres@il.ibm.com>
+@@ -20,12 +20,12 @@
+ ;; along with this program; see the file COPYING3.  If not see
+ ;; <http://www.gnu.org/licenses/>.
+ 
+-(define_constants
+-[(UNSPEC_INTERHI_V2SF     330)
+- (UNSPEC_INTERLO_V2SF     331)
+- (UNSPEC_EXTEVEN_V2SF     332)
+- (UNSPEC_EXTODD_V2SF      333)
+-])
++(define_c_enum "unspec"
++  [UNSPEC_INTERHI_V2SF
++   UNSPEC_INTERLO_V2SF
++   UNSPEC_EXTEVEN_V2SF
++   UNSPEC_EXTODD_V2SF
++  ])
+ 
+ (define_insn "paired_negv2sf2"
+   [(set (match_operand:V2SF 0 "gpc_reg_operand" "=f")
+Index: gcc/config/rs6000/rs6000-protos.h
+===================================================================
+--- a/src/gcc/config/rs6000/rs6000-protos.h	(.../gcc-4_6-branch)
++++ b/src/gcc/config/rs6000/rs6000-protos.h	(.../ibm/gcc-4_6-branch)
+@@ -79,6 +79,7 @@
+ 						    enum machine_mode,
+ 						    enum reg_class);
+ extern void rs6000_secondary_reload_inner (rtx, rtx, rtx, bool);
++extern void rs6000_secondary_reload_ppc64 (rtx, rtx, rtx, bool);
+ extern int paired_emit_vector_cond_expr (rtx, rtx, rtx,
+                                          rtx, rtx, rtx);
+ extern void paired_expand_vector_move (rtx operands[]);
+@@ -170,6 +171,8 @@
+ extern void rs6000_emit_epilogue (int);
+ extern void rs6000_emit_eh_reg_restore (rtx, rtx);
+ extern const char * output_isel (rtx *);
++extern void rs6000_call_indirect_aix (rtx, rtx, rtx);
++extern bool rs6000_save_toc_in_prologue_p (void);
+ extern bool rs6000_tls_referenced_p (rtx);
+ 
+ extern void rs6000_aix_asm_output_dwarf_table_ref (char *);
+Index: gcc/config/rs6000/rs6000.opt
+===================================================================
+--- a/src/gcc/config/rs6000/rs6000.opt	(.../gcc-4_6-branch)
++++ b/src/gcc/config/rs6000/rs6000.opt	(.../ibm/gcc-4_6-branch)
+@@ -461,4 +461,10 @@
+ Target Var(rs6000_xilinx_fpu) Save
+ Specify Xilinx FPU.
+ 
++mr11
++Target Report Var(TARGET_R11) Init(1) Save
++Use/do not use r11 to hold the static link in calls.
+ 
++msave-toc-indirect
++Target Undocumented Var(TARGET_SAVE_TOC_INDIRECT) Save Init(1)
++; Control whether we save the TOC in the prologue for indirect calls or generate the save inline
+Index: gcc/config/rs6000/rs6000.c
+===================================================================
+--- a/src/gcc/config/rs6000/rs6000.c	(.../gcc-4_6-branch)
++++ b/src/gcc/config/rs6000/rs6000.c	(.../ibm/gcc-4_6-branch)
+@@ -128,6 +128,9 @@
+   int ra_need_lr;
+   /* Cache lr_save_p after expansion of builtin_eh_return.  */
+   int lr_save_state;
++  /* Whether we need to save the TOC to the reserved stack location in the
++     function prologue.  */
++  bool save_toc_in_prologue;
+   /* Offset from virtual_stack_vars_rtx to the start of the ABI_V4
+      varargs save area.  */
+   HOST_WIDE_INT varargs_save_offset;
+@@ -5488,12 +5491,22 @@
+   enum machine_mode inner_mode = GET_MODE_INNER (mode);
+   rtx mem;
+ 
+-  if (VECTOR_MEM_VSX_P (mode) && (mode == V2DFmode || mode == V2DImode))
++  if (VECTOR_MEM_VSX_P (mode))
+     {
+-      rtx (*extract_func) (rtx, rtx, rtx)
+-	= ((mode == V2DFmode) ? gen_vsx_extract_v2df : gen_vsx_extract_v2di);
+-      emit_insn (extract_func (target, vec, GEN_INT (elt)));
+-      return;
++      switch (mode)
++	{
++	default:
++	  break;
++	case V2DFmode:
++	  emit_insn (gen_vsx_extract_v2df (target, vec, GEN_INT (elt)));
++	  return;
++	case V2DImode:
++	  emit_insn (gen_vsx_extract_v2di (target, vec, GEN_INT (elt)));
++	  return;
++	case V4SFmode:
++	  emit_insn (gen_vsx_extract_v4sf (target, vec, GEN_INT (elt)));
++	  return;
++	}
+     }
+ 
+   /* Allocate mode-sized buffer.  */
+@@ -6694,6 +6707,14 @@
+ {
+   bool reg_offset_p = reg_offset_addressing_ok_p (mode);
+ 
++  /* Nasty hack for vsx_splat_V2DF/V2DI load from mem, which takes a
++     DFmode/DImode MEM.  */
++  if (reg_offset_p
++      && opnum == 1
++      && ((mode == DFmode && recog_data.operand_mode[0] == V2DFmode)
++	  || (mode == DImode && recog_data.operand_mode[0] == V2DImode)))
++    reg_offset_p = false;
++
+   /* We must recognize output that we have already generated ourselves.  */
+   if (GET_CODE (x) == PLUS
+       && GET_CODE (XEXP (x, 0)) == PLUS
+@@ -14811,8 +14832,11 @@
+    needed for the immediate register.
+ 
+    For VSX and Altivec, we may need a register to convert sp+offset into
+-   reg+sp.  */
++   reg+sp.
+ 
++   For misaligned 64-bit gpr loads and stores we need a register to
++   convert an offset address to indirect.  */
++
+ static reg_class_t
+ rs6000_secondary_reload (bool in_p,
+ 			 rtx x,
+@@ -14914,6 +14938,34 @@
+       else
+ 	default_p = true;
+     }
++  else if (TARGET_POWERPC64
++	   && rs6000_reload_register_type (rclass) == GPR_REGISTER_TYPE
++	   && MEM_P (x)
++	   && GET_MODE_SIZE (GET_MODE (x)) >= UNITS_PER_WORD)
++    {
++      rtx addr = XEXP (x, 0);
++
++      if (GET_CODE (addr) == PRE_MODIFY)
++	addr = XEXP (addr, 1);
++      else if (GET_CODE (addr) == LO_SUM
++	       && GET_CODE (XEXP (addr, 0)) == REG
++	       && GET_CODE (XEXP (addr, 1)) == CONST)
++	addr = XEXP (XEXP (addr, 1), 0);
++
++      if (GET_CODE (addr) == PLUS
++	  && GET_CODE (XEXP (addr, 1)) == CONST_INT
++	  && (INTVAL (XEXP (addr, 1)) & 3) != 0)
++	{
++	  if (in_p)
++	    sri->icode = CODE_FOR_reload_di_load;
++	  else
++	    sri->icode = CODE_FOR_reload_di_store;
++	  sri->extra_cost = 2;
++	  ret = NO_REGS;
++	}
++      else
++	default_p = true;
++    }
+   else
+     default_p = true;
+ 
+@@ -15202,6 +15254,56 @@
+   return;
+ }
+ 
++/* Convert reloads involving 64-bit gprs and misaligned offset
++   addressing to use indirect addressing.  */
++
++void
++rs6000_secondary_reload_ppc64 (rtx reg, rtx mem, rtx scratch, bool store_p)
++{
++  int regno = true_regnum (reg);
++  enum reg_class rclass;
++  rtx addr;
++  rtx scratch_or_premodify = scratch;
++
++  if (TARGET_DEBUG_ADDR)
++    {
++      fprintf (stderr, "\nrs6000_secondary_reload_ppc64, type = %s\n",
++	       store_p ? "store" : "load");
++      fprintf (stderr, "reg:\n");
++      debug_rtx (reg);
++      fprintf (stderr, "mem:\n");
++      debug_rtx (mem);
++      fprintf (stderr, "scratch:\n");
++      debug_rtx (scratch);
++    }
++
++  gcc_assert (regno >= 0 && regno < FIRST_PSEUDO_REGISTER);
++  gcc_assert (GET_CODE (mem) == MEM);
++  rclass = REGNO_REG_CLASS (regno);
++  gcc_assert (rclass == GENERAL_REGS || rclass == BASE_REGS);
++  addr = XEXP (mem, 0);
++
++  if (GET_CODE (addr) == PRE_MODIFY)
++    {
++      scratch_or_premodify = XEXP (addr, 0);
++      gcc_assert (REG_P (scratch_or_premodify));
++      addr = XEXP (addr, 1);
++    }
++  gcc_assert (GET_CODE (addr) == PLUS || GET_CODE (addr) == LO_SUM);
++
++  rs6000_emit_move (scratch_or_premodify, addr, Pmode);
++
++  mem = replace_equiv_address_nv (mem, scratch_or_premodify);
++
++  /* Now create the move.  */
++  if (store_p)
++    emit_insn (gen_rtx_SET (VOIDmode, mem, reg));
++  else
++    emit_insn (gen_rtx_SET (VOIDmode, reg, mem));
++
++  return;
++}
++
+ /* Target hook to return the cover classes for Integrated Register Allocator.
+    Cover classes is a set of non-intersected register classes covering all hard
+    registers used for register allocation purpose.  Any move between two
+@@ -20859,7 +20961,7 @@
+       JUMP_LABEL (jump) = toc_save_done;
+       LABEL_NUSES (toc_save_done) += 1;
+ 
+-      emit_frame_save (frame_reg_rtx, frame_ptr_rtx, reg_mode, 2,
++      emit_frame_save (frame_reg_rtx, frame_ptr_rtx, reg_mode, TOC_REGNUM,
+ 		       sp_offset + 5 * reg_size, info->total_size);
+       emit_label (toc_save_done);
+       if (using_static_chain_p)
+@@ -21050,6 +21152,11 @@
+ 	emit_move_insn (lr, gen_rtx_REG (Pmode, 0));
+     }
+ #endif
++
++  /* If we need to, save the TOC register after doing the stack setup.  */
++  if (rs6000_save_toc_in_prologue_p ())
++    emit_frame_save (sp_reg_rtx, sp_reg_rtx, reg_mode, TOC_REGNUM,
++		     5 * reg_size, info->total_size);
+ }
+ 
+ /* Write function prologue.  */
+@@ -25002,10 +25109,15 @@
+     /* Under AIX, just build the 3 word function descriptor */
+     case ABI_AIX:
+       {
+-	rtx fnmem = gen_const_mem (Pmode, force_reg (Pmode, fnaddr));
+-	rtx fn_reg = gen_reg_rtx (Pmode);
+-	rtx toc_reg = gen_reg_rtx (Pmode);
++	rtx fnmem, fn_reg, toc_reg;
+ 
++	if (!TARGET_R11)
++	  error ("-mno-r11 must not be used if you have trampolines");
++
++	fnmem = gen_const_mem (Pmode, force_reg (Pmode, fnaddr));
++	fn_reg = gen_reg_rtx (Pmode);
++	toc_reg = gen_reg_rtx (Pmode);
++
+   /* Macro to shorten the code expansions below.  */
+ # define MEM_PLUS(MEM, OFFSET) adjust_address (MEM, Pmode, OFFSET)
+ 
+@@ -28257,5 +28369,132 @@
+   return x;
+ }
+ 
++
++/* A function pointer under AIX is a pointer to a data area whose first word
++   contains the actual address of the function, whose second word contains a
++   pointer to its TOC, and whose third word contains a value to place in the
++   static chain register (r11).  Note that if we load the static chain, our
++   "trampoline" need not have any executable code.  */
+ 
++void
++rs6000_call_indirect_aix (rtx value, rtx func_desc, rtx flag)
++{
++  rtx func_addr;
++  rtx toc_reg;
++  rtx sc_reg;
++  rtx stack_ptr;
++  rtx stack_toc_offset;
++  rtx stack_toc_mem;
++  rtx func_toc_offset;
++  rtx func_toc_mem;
++  rtx func_sc_offset;
++  rtx func_sc_mem;
++  rtx insn;
++  rtx (*call_func) (rtx, rtx, rtx, rtx);
++  rtx (*call_value_func) (rtx, rtx, rtx, rtx, rtx);
++
++  stack_ptr = gen_rtx_REG (Pmode, STACK_POINTER_REGNUM);
++  toc_reg = gen_rtx_REG (Pmode, TOC_REGNUM);
++
++  /* Load up address of the actual function.  */
++  func_desc = force_reg (Pmode, func_desc);
++  func_addr = gen_reg_rtx (Pmode);
++  emit_move_insn (func_addr, gen_rtx_MEM (Pmode, func_desc));
++
++  if (TARGET_32BIT)
++    {
++
++      stack_toc_offset = GEN_INT (TOC_SAVE_OFFSET_32BIT);
++      func_toc_offset = GEN_INT (AIX_FUNC_DESC_TOC_32BIT);
++      func_sc_offset = GEN_INT (AIX_FUNC_DESC_SC_32BIT);
++      if (TARGET_R11)
++	{
++	  call_func = gen_call_indirect_aix32bit;
++	  call_value_func = gen_call_value_indirect_aix32bit;
++	}
++      else
++	{
++	  call_func = gen_call_indirect_aix32bit_nor11;
++	  call_value_func = gen_call_value_indirect_aix32bit_nor11;
++	}
++    }
++  else
++    {
++      stack_toc_offset = GEN_INT (TOC_SAVE_OFFSET_64BIT);
++      func_toc_offset = GEN_INT (AIX_FUNC_DESC_TOC_64BIT);
++      func_sc_offset = GEN_INT (AIX_FUNC_DESC_SC_64BIT);
++      if (TARGET_R11)
++	{
++	  call_func = gen_call_indirect_aix64bit;
++	  call_value_func = gen_call_value_indirect_aix64bit;
++	}
++      else
++	{
++	  call_func = gen_call_indirect_aix64bit_nor11;
++	  call_value_func = gen_call_value_indirect_aix64bit_nor11;
++	}
++    }
++
++  /* Reserved spot to store the TOC.  */
++  stack_toc_mem = gen_frame_mem (Pmode,
++				 gen_rtx_PLUS (Pmode,
++					       stack_ptr,
++					       stack_toc_offset));
++
++  gcc_assert (cfun);
++  gcc_assert (cfun->machine);
++
++  /* Can we optimize saving the TOC in the prologue or do we need to do it at
++     every call?  */
++  if (TARGET_SAVE_TOC_INDIRECT && !cfun->calls_alloca
++      && !cfun->calls_setjmp && !cfun->has_nonlocal_label
++      && !cfun->can_throw_non_call_exceptions
++      && ((flags_from_decl_or_type (cfun->decl) & ECF_NOTHROW) == ECF_NOTHROW))
++    cfun->machine->save_toc_in_prologue = true;
++
++  else
++    {
++      MEM_VOLATILE_P (stack_toc_mem) = 1;
++      emit_move_insn (stack_toc_mem, toc_reg);
++    }
++
++  /* Calculate the address to load the TOC of the called function.  We don't
++     actually load this until the split after reload.  */
++  func_toc_mem = gen_rtx_MEM (Pmode,
++			      gen_rtx_PLUS (Pmode,
++					    func_desc,
++					    func_toc_offset));
++
++  /* If we have a static chain, load it up.  */
++  if (TARGET_R11)
++    {
++      func_sc_mem = gen_rtx_MEM (Pmode,
++				 gen_rtx_PLUS (Pmode,
++					       func_desc,
++					       func_sc_offset));
++
++      sc_reg = gen_rtx_REG (Pmode, STATIC_CHAIN_REGNUM);
++      emit_move_insn (sc_reg, func_sc_mem);
++    }
++
++  /* Create the call.  */
++  if (value)
++    insn = call_value_func (value, func_addr, flag, func_toc_mem,
++			    stack_toc_mem);
++  else
++    insn = call_func (func_addr, flag, func_toc_mem, stack_toc_mem);
++
++  emit_call_insn (insn);
++  return;
++}
++
++/* Return whether we need to always update the saved TOC pointer when we update
++   the stack pointer.  */
++
++bool
++rs6000_save_toc_in_prologue_p (void)
++{
++  return (cfun && cfun->machine && cfun->machine->save_toc_in_prologue);
++}
++
+ #include "gt-rs6000.h"
+
+Property changes on: gcc/config/rs6000/rs6000.c
+___________________________________________________________________
+Modified: svn:mergeinfo
+   Merged /branches/gcc-4_6-branch/gcc/config/rs6000/rs6000.c:r171610-175885
+
+Index: gcc/config/rs6000/vsx.md
+===================================================================
+--- a/src/gcc/config/rs6000/vsx.md	(.../gcc-4_6-branch)
++++ b/src/gcc/config/rs6000/vsx.md	(.../ibm/gcc-4_6-branch)
+@@ -183,25 +183,25 @@
+ 			     (V16QI	"QI")])
+ 			     
+ ;; Constants for creating unspecs
+-(define_constants
+-  [(UNSPEC_VSX_CONCAT		500)
+-   (UNSPEC_VSX_CVDPSXWS		501)
+-   (UNSPEC_VSX_CVDPUXWS		502)
+-   (UNSPEC_VSX_CVSPDP		503)
+-   (UNSPEC_VSX_CVSXWDP		504)
+-   (UNSPEC_VSX_CVUXWDP		505)
+-   (UNSPEC_VSX_CVSXDSP		506)
+-   (UNSPEC_VSX_CVUXDSP		507)
+-   (UNSPEC_VSX_CVSPSXDS		508)
+-   (UNSPEC_VSX_CVSPUXDS		509)
+-   ;; 510-514 deleted
+-   (UNSPEC_VSX_TDIV		515)
+-   (UNSPEC_VSX_TSQRT		516)
+-   (UNSPEC_VSX_XXPERMDI		517)
+-   (UNSPEC_VSX_SET		518)
+-   (UNSPEC_VSX_ROUND_I		519)
+-   (UNSPEC_VSX_ROUND_IC		520)
+-   (UNSPEC_VSX_SLDWI		521)])
++(define_c_enum "unspec"
++  [UNSPEC_VSX_CONCAT
++   UNSPEC_VSX_CVDPSXWS
++   UNSPEC_VSX_CVDPUXWS
++   UNSPEC_VSX_CVSPDP
++   UNSPEC_VSX_CVSXWDP
++   UNSPEC_VSX_CVUXWDP
++   UNSPEC_VSX_CVSXDSP
++   UNSPEC_VSX_CVUXDSP
++   UNSPEC_VSX_CVSPSXDS
++   UNSPEC_VSX_CVSPUXDS
++   UNSPEC_VSX_TDIV
++   UNSPEC_VSX_TSQRT
++   UNSPEC_VSX_XXPERMDI
++   UNSPEC_VSX_SET
++   UNSPEC_VSX_ROUND_I
++   UNSPEC_VSX_ROUND_IC
++   UNSPEC_VSX_SLDWI
++  ])
+ 
+ ;; VSX moves
+ (define_insn "*vsx_mov<mode>"
+@@ -829,6 +829,15 @@
+   "xscvdpsp %x0,%x1"
+   [(set_attr "type" "fp")])
+ 
++;; Same as vsx_xscvspdp, but use SF as the type
++(define_insn "vsx_xscvspdp_scalar2"
++  [(set (match_operand:SF 0 "vsx_register_operand" "=f")
++	(unspec:SF [(match_operand:V4SF 1 "vsx_register_operand" "wa")]
++		   UNSPEC_VSX_CVSPDP))]
++  "VECTOR_UNIT_VSX_P (DFmode)"
++  "xscvspdp %x0,%x1"
++  [(set_attr "type" "fp")])
++
+ ;; Convert from 64-bit to 32-bit types
+ ;; Note, favor the Altivec registers since the usual use of these instructions
+ ;; is in vector converts and we need to use the Altivec vperm instruction.
+@@ -1039,6 +1048,43 @@
+   [(set_attr "type" "fpload")
+    (set_attr "length" "4")])  
+ 
++;; Extract a SF element from V4SF
++(define_insn_and_split "vsx_extract_v4sf"
++  [(set (match_operand:SF 0 "vsx_register_operand" "=f,f")
++	(vec_select:SF
++	 (match_operand:V4SF 1 "vsx_register_operand" "wa,wa")
++	 (parallel [(match_operand:QI 2 "u5bit_cint_operand" "O,i")])))
++   (clobber (match_scratch:V4SF 3 "=X,0"))]
++  "VECTOR_UNIT_VSX_P (V4SFmode)"
++  "@
++   xscvspdp %x0,%x1
++   #"
++  ""
++  [(const_int 0)]
++  "
++{
++  rtx op0 = operands[0];
++  rtx op1 = operands[1];
++  rtx op2 = operands[2];
++  rtx op3 = operands[3];
++  rtx tmp;
++  HOST_WIDE_INT ele = INTVAL (op2);
++
++  if (ele == 0)
++    tmp = op1;
++  else
++    {
++      if (GET_CODE (op3) == SCRATCH)
++	op3 = gen_reg_rtx (V4SFmode);
++      emit_insn (gen_vsx_xxsldwi_v4sf (op3, op1, op1, op2));
++      tmp = op3;
++    }
++  emit_insn (gen_vsx_xscvspdp_scalar2 (op0, tmp));
++  DONE;
++}"
++  [(set_attr "length" "4,8")
++   (set_attr "type" "fp")])
++
+ ;; General double word oriented permute, allow the other vector types for
+ ;; optimizing the permute instruction.
+ (define_insn "vsx_xxpermdi_<mode>"
+@@ -1076,7 +1122,7 @@
+ (define_insn "vsx_splat_<mode>"
+   [(set (match_operand:VSX_D 0 "vsx_register_operand" "=wd,wd,wd,?wa,?wa,?wa")
+ 	(vec_duplicate:VSX_D
+-	 (match_operand:<VS_scalar> 1 "input_operand" "ws,f,Z,wa,wa,Z")))]
++	 (match_operand:<VS_scalar> 1 "splat_input_operand" "ws,f,Z,wa,wa,Z")))]
+   "VECTOR_MEM_VSX_P (<MODE>mode)"
+   "@
+    xxpermdi %x0,%x1,%x1,0
+@@ -1150,3 +1196,153 @@
+   "VECTOR_MEM_VSX_P (<MODE>mode)"
+   "xxsldwi %x0,%x1,%x2,%3"
+   [(set_attr "type" "vecperm")])
++
++
++;; Vector reduction insns and splitters
++
++(define_insn_and_split "*vsx_reduc_<VEC_reduc_name>_v2df"
++  [(set (match_operand:V2DF 0 "vfloat_operand" "=&wd,&?wa,wd,?wa")
++	(VEC_reduc:V2DF
++	 (vec_concat:V2DF
++	  (vec_select:DF
++	   (match_operand:V2DF 1 "vfloat_operand" "wd,wa,wd,wa")
++	   (parallel [(const_int 1)]))
++	  (vec_select:DF
++	   (match_dup 1)
++	   (parallel [(const_int 0)])))
++	 (match_dup 1)))
++   (clobber (match_scratch:V2DF 2 "=0,0,&wd,&wa"))]
++  "VECTOR_UNIT_VSX_P (V2DFmode)"
++  "#"
++  ""
++  [(const_int 0)]
++  "
++{
++  rtx tmp = (GET_CODE (operands[2]) == SCRATCH)
++	     ? gen_reg_rtx (V2DFmode)
++	     : operands[2];
++  emit_insn (gen_vsx_xxsldwi_v2df (tmp, operands[1], operands[1], const2_rtx));
++  emit_insn (gen_<VEC_reduc_rtx>v2df3 (operands[0], tmp, operands[1]));
++  DONE;
++}"
++  [(set_attr "length" "8")
++   (set_attr "type" "veccomplex")])
++
++(define_insn_and_split "*vsx_reduc_<VEC_reduc_name>_v4sf"
++  [(set (match_operand:V4SF 0 "vfloat_operand" "=wf,?wa")
++	(VEC_reduc:V4SF
++	 (unspec:V4SF [(const_int 0)] UNSPEC_REDUC)
++	 (match_operand:V4SF 1 "vfloat_operand" "wf,wa")))
++   (clobber (match_scratch:V4SF 2 "=&wf,&wa"))
++   (clobber (match_scratch:V4SF 3 "=&wf,&wa"))]
++  "VECTOR_UNIT_VSX_P (V4SFmode)"
++  "#"
++  ""
++  [(const_int 0)]
++  "
++{
++  rtx op0 = operands[0];
++  rtx op1 = operands[1];
++  rtx tmp2, tmp3, tmp4;
++
++  if (can_create_pseudo_p ())
++    {
++      tmp2 = gen_reg_rtx (V4SFmode);
++      tmp3 = gen_reg_rtx (V4SFmode);
++      tmp4 = gen_reg_rtx (V4SFmode);
++    }
++  else
++    {
++      tmp2 = operands[2];
++      tmp3 = operands[3];
++      tmp4 = tmp2;
++    }
++
++  emit_insn (gen_vsx_xxsldwi_v4sf (tmp2, op1, op1, const2_rtx));
++  emit_insn (gen_<VEC_reduc_rtx>v4sf3 (tmp3, tmp2, op1));
++  emit_insn (gen_vsx_xxsldwi_v4sf (tmp4, tmp3, tmp3, GEN_INT (3)));
++  emit_insn (gen_<VEC_reduc_rtx>v4sf3 (op0, tmp4, tmp3));
++  DONE;
++}"
++  [(set_attr "length" "16")
++   (set_attr "type" "veccomplex")])
++
++;; Combiner patterns with the vector reduction patterns that knows we can get
++;; to the top element of the V2DF array without doing an extract.
++
++(define_insn_and_split "*vsx_reduc_<VEC_reduc_name>_v2df_scalar"
++  [(set (match_operand:DF 0 "vfloat_operand" "=&ws,&?wa,ws,?wa")
++	(vec_select:DF
++	 (VEC_reduc:V2DF
++	  (vec_concat:V2DF
++	   (vec_select:DF
++	    (match_operand:V2DF 1 "vfloat_operand" "wd,wa,wd,wa")
++	    (parallel [(const_int 1)]))
++	   (vec_select:DF
++	    (match_dup 1)
++	    (parallel [(const_int 0)])))
++	  (match_dup 1))
++	 (parallel [(const_int 1)])))
++   (clobber (match_scratch:DF 2 "=0,0,&wd,&wa"))]
++  "VECTOR_UNIT_VSX_P (V2DFmode)"
++  "#"
++  ""
++  [(const_int 0)]
++  "
++{
++  rtx hi = gen_highpart (DFmode, operands[1]);
++  rtx lo = (GET_CODE (operands[2]) == SCRATCH)
++	    ? gen_reg_rtx (DFmode)
++	    : operands[2];
++
++  emit_insn (gen_vsx_extract_v2df (lo, operands[1], const1_rtx));
++  emit_insn (gen_<VEC_reduc_rtx>df3 (operands[0], hi, lo));
++  DONE;
++}"
++  [(set_attr "length" "8")
++   (set_attr "type" "veccomplex")])
++
++(define_insn_and_split "*vsx_reduc_<VEC_reduc_name>_v4sf_scalar"
++  [(set (match_operand:SF 0 "vfloat_operand" "=f,?f")
++	(vec_select:SF
++	 (VEC_reduc:V4SF
++	  (unspec:V4SF [(const_int 0)] UNSPEC_REDUC)
++	  (match_operand:V4SF 1 "vfloat_operand" "wf,wa"))
++	 (parallel [(const_int 3)])))
++   (clobber (match_scratch:V4SF 2 "=&wf,&wa"))
++   (clobber (match_scratch:V4SF 3 "=&wf,&wa"))
++   (clobber (match_scratch:V4SF 4 "=0,0"))]
++  "VECTOR_UNIT_VSX_P (V4SFmode)"
++  "#"
++  ""
++  [(const_int 0)]
++  "
++{
++  rtx op0 = operands[0];
++  rtx op1 = operands[1];
++  rtx tmp2, tmp3, tmp4, tmp5;
++
++  if (can_create_pseudo_p ())
++    {
++      tmp2 = gen_reg_rtx (V4SFmode);
++      tmp3 = gen_reg_rtx (V4SFmode);
++      tmp4 = gen_reg_rtx (V4SFmode);
++      tmp5 = gen_reg_rtx (V4SFmode);
++    }
++  else
++    {
++      tmp2 = operands[2];
++      tmp3 = operands[3];
++      tmp4 = tmp2;
++      tmp5 = operands[4];
++    }
++
++  emit_insn (gen_vsx_xxsldwi_v4sf (tmp2, op1, op1, const2_rtx));
++  emit_insn (gen_<VEC_reduc_rtx>v4sf3 (tmp3, tmp2, op1));
++  emit_insn (gen_vsx_xxsldwi_v4sf (tmp4, tmp3, tmp3, GEN_INT (3)));
++  emit_insn (gen_<VEC_reduc_rtx>v4sf3 (tmp5, tmp4, tmp3));
++  emit_insn (gen_vsx_xscvspdp_scalar2 (op0, tmp5));
++  DONE;
++}"
++  [(set_attr "length" "20")
++   (set_attr "type" "veccomplex")])
+
+Property changes on: gcc/config/rs6000/rs6000.h
+___________________________________________________________________
+Modified: svn:mergeinfo
+   Merged /branches/gcc-4_6-branch/gcc/config/rs6000/rs6000.h:r171610-175885
+
+Index: gcc/config/rs6000/altivec.md
+===================================================================
+--- a/src/gcc/config/rs6000/altivec.md	(.../gcc-4_6-branch)
++++ b/src/gcc/config/rs6000/altivec.md	(.../ibm/gcc-4_6-branch)
+@@ -19,138 +19,130 @@
+ ;; along with GCC; see the file COPYING3.  If not see
+ ;; <http://www.gnu.org/licenses/>.
+ 
+-(define_constants
+-   ;; 51-62 deleted
+-  [(UNSPEC_VCMPBFP       64)
+-   (UNSPEC_VMSUMU        65)
+-   (UNSPEC_VMSUMM        66)
+-   (UNSPEC_VMSUMSHM      68)
+-   (UNSPEC_VMSUMUHS      69)
+-   (UNSPEC_VMSUMSHS      70)
+-   (UNSPEC_VMHADDSHS     71)
+-   (UNSPEC_VMHRADDSHS    72)
+-   (UNSPEC_VMLADDUHM     73)
+-   (UNSPEC_VADDCUW       75)
+-   (UNSPEC_VADDU         76)
+-   (UNSPEC_VADDS         77)
+-   (UNSPEC_VAVGU         80)
+-   (UNSPEC_VAVGS         81)
+-   (UNSPEC_VMULEUB       83)
+-   (UNSPEC_VMULESB       84)
+-   (UNSPEC_VMULEUH       85)
+-   (UNSPEC_VMULESH       86)
+-   (UNSPEC_VMULOUB       87)
+-   (UNSPEC_VMULOSB       88)
+-   (UNSPEC_VMULOUH       89)
+-   (UNSPEC_VMULOSH       90)
+-   (UNSPEC_VPKUHUM       93)
+-   (UNSPEC_VPKUWUM       94)
+-   (UNSPEC_VPKPX         95)
+-   (UNSPEC_VPKSHSS       97)
+-   (UNSPEC_VPKSWSS       99)
+-   (UNSPEC_VPKUHUS      100)
+-   (UNSPEC_VPKSHUS      101)
+-   (UNSPEC_VPKUWUS      102)
+-   (UNSPEC_VPKSWUS      103)
+-   ;; 104 deleted
+-   (UNSPEC_VSLV4SI      110)
+-   (UNSPEC_VSLO         111)
+-   (UNSPEC_VSR          118)
+-   (UNSPEC_VSRO         119)
+-   (UNSPEC_VSUBCUW      124)
+-   (UNSPEC_VSUBU        125)
+-   (UNSPEC_VSUBS        126)
+-   (UNSPEC_VSUM4UBS     131)
+-   (UNSPEC_VSUM4S       132)
+-   (UNSPEC_VSUM2SWS     134)
+-   (UNSPEC_VSUMSWS      135)
+-   (UNSPEC_VPERM        144)
+-   (UNSPEC_VPERM_UNS    145)
+-   ;; 148 deleted
+-   (UNSPEC_VRFIN        149)
+-   ;; 150 deleted
+-   (UNSPEC_VCFUX        151)
+-   (UNSPEC_VCFSX        152)
+-   (UNSPEC_VCTUXS       153)
+-   (UNSPEC_VCTSXS       154)
+-   (UNSPEC_VLOGEFP      155)
+-   (UNSPEC_VEXPTEFP     156)
+-   ;; 157-162 deleted
+-   (UNSPEC_VLSDOI       163)
+-   (UNSPEC_VUPKHSB      167)
+-   (UNSPEC_VUPKHPX      168)
+-   (UNSPEC_VUPKHSH      169)
+-   (UNSPEC_VUPKLSB      170)
+-   (UNSPEC_VUPKLPX      171)
+-   (UNSPEC_VUPKLSH      172)
+-   ;; 173 deleted
+-   (UNSPEC_DST          190)
+-   (UNSPEC_DSTT         191)
+-   (UNSPEC_DSTST        192)
+-   (UNSPEC_DSTSTT       193)
+-   (UNSPEC_LVSL         194)
+-   (UNSPEC_LVSR         195)
+-   (UNSPEC_LVE          196)
+-   (UNSPEC_STVX         201)
+-   (UNSPEC_STVXL        202)
+-   (UNSPEC_STVE         203)
+-   (UNSPEC_SET_VSCR     213)
+-   (UNSPEC_GET_VRSAVE   214)
+-   (UNSPEC_LVX		215)
+-   (UNSPEC_REDUC_PLUS   217)
+-   (UNSPEC_VECSH        219)
+-   (UNSPEC_EXTEVEN_V4SI 220)
+-   (UNSPEC_EXTEVEN_V8HI 221)
+-   (UNSPEC_EXTEVEN_V16QI 222)
+-   (UNSPEC_EXTEVEN_V4SF 223)
+-   (UNSPEC_EXTODD_V4SI  224)
+-   (UNSPEC_EXTODD_V8HI  225)
+-   (UNSPEC_EXTODD_V16QI 226)
+-   (UNSPEC_EXTODD_V4SF  227)
+-   (UNSPEC_INTERHI_V4SI 228)
+-   (UNSPEC_INTERHI_V8HI 229)
+-   (UNSPEC_INTERHI_V16QI 230)
+-   ;; delete 231
+-   (UNSPEC_INTERLO_V4SI 232)
+-   (UNSPEC_INTERLO_V8HI 233)
+-   (UNSPEC_INTERLO_V16QI 234)
+-   ;; delete 235
+-   (UNSPEC_LVLX         236)
+-   (UNSPEC_LVLXL        237)
+-   (UNSPEC_LVRX         238)
+-   (UNSPEC_LVRXL        239)
+-   (UNSPEC_STVLX        240)
+-   (UNSPEC_STVLXL       241)
+-   (UNSPEC_STVRX        242)
+-   (UNSPEC_STVRXL       243)
+-   (UNSPEC_VMULWHUB     308)
+-   (UNSPEC_VMULWLUB     309)
+-   (UNSPEC_VMULWHSB     310)
+-   (UNSPEC_VMULWLSB     311)
+-   (UNSPEC_VMULWHUH     312)
+-   (UNSPEC_VMULWLUH     313)
+-   (UNSPEC_VMULWHSH     314)
+-   (UNSPEC_VMULWLSH     315)
+-   (UNSPEC_VUPKHUB      316)
+-   (UNSPEC_VUPKHUH      317)
+-   (UNSPEC_VUPKLUB      318)
+-   (UNSPEC_VUPKLUH      319)
+-   (UNSPEC_VPERMSI	320)
+-   (UNSPEC_VPERMHI	321)
+-   (UNSPEC_INTERHI      322)
+-   (UNSPEC_INTERLO      323)
+-   (UNSPEC_VUPKHS_V4SF  324)
+-   (UNSPEC_VUPKLS_V4SF  325)
+-   (UNSPEC_VUPKHU_V4SF  326)
+-   (UNSPEC_VUPKLU_V4SF  327)
++(define_c_enum "unspec"
++  [UNSPEC_VCMPBFP
++   UNSPEC_VMSUMU
++   UNSPEC_VMSUMM
++   UNSPEC_VMSUMSHM
++   UNSPEC_VMSUMUHS
++   UNSPEC_VMSUMSHS
++   UNSPEC_VMHADDSHS
++   UNSPEC_VMHRADDSHS
++   UNSPEC_VMLADDUHM
++   UNSPEC_VADDCUW
++   UNSPEC_VADDU
++   UNSPEC_VADDS
++   UNSPEC_VAVGU
++   UNSPEC_VAVGS
++   UNSPEC_VMULEUB
++   UNSPEC_VMULESB
++   UNSPEC_VMULEUH
++   UNSPEC_VMULESH
++   UNSPEC_VMULOUB
++   UNSPEC_VMULOSB
++   UNSPEC_VMULOUH
++   UNSPEC_VMULOSH
++   UNSPEC_VPKUHUM
++   UNSPEC_VPKUWUM
++   UNSPEC_VPKPX
++   UNSPEC_VPKSHSS
++   UNSPEC_VPKSWSS
++   UNSPEC_VPKUHUS
++   UNSPEC_VPKSHUS
++   UNSPEC_VPKUWUS
++   UNSPEC_VPKSWUS
++   UNSPEC_VSLV4SI
++   UNSPEC_VSLO
++   UNSPEC_VSR
++   UNSPEC_VSRO
++   UNSPEC_VSUBCUW
++   UNSPEC_VSUBU
++   UNSPEC_VSUBS
++   UNSPEC_VSUM4UBS
++   UNSPEC_VSUM4S
++   UNSPEC_VSUM2SWS
++   UNSPEC_VSUMSWS
++   UNSPEC_VPERM
++   UNSPEC_VPERM_UNS
++   UNSPEC_VRFIN
++   UNSPEC_VCFUX
++   UNSPEC_VCFSX
++   UNSPEC_VCTUXS
++   UNSPEC_VCTSXS
++   UNSPEC_VLOGEFP
++   UNSPEC_VEXPTEFP
++   UNSPEC_VLSDOI
++   UNSPEC_VUPKHSB
++   UNSPEC_VUPKHPX
++   UNSPEC_VUPKHSH
++   UNSPEC_VUPKLSB
++   UNSPEC_VUPKLPX
++   UNSPEC_VUPKLSH
++   UNSPEC_DST
++   UNSPEC_DSTT
++   UNSPEC_DSTST
++   UNSPEC_DSTSTT
++   UNSPEC_LVSL
++   UNSPEC_LVSR
++   UNSPEC_LVE
++   UNSPEC_STVX
++   UNSPEC_STVXL
++   UNSPEC_STVE
++   UNSPEC_SET_VSCR
++   UNSPEC_GET_VRSAVE
++   UNSPEC_LVX
++   UNSPEC_REDUC_PLUS
++   UNSPEC_VECSH
++   UNSPEC_EXTEVEN_V4SI
++   UNSPEC_EXTEVEN_V8HI
++   UNSPEC_EXTEVEN_V16QI
++   UNSPEC_EXTEVEN_V4SF
++   UNSPEC_EXTODD_V4SI
++   UNSPEC_EXTODD_V8HI
++   UNSPEC_EXTODD_V16QI
++   UNSPEC_EXTODD_V4SF
++   UNSPEC_INTERHI_V4SI
++   UNSPEC_INTERHI_V8HI
++   UNSPEC_INTERHI_V16QI
++   UNSPEC_INTERLO_V4SI
++   UNSPEC_INTERLO_V8HI
++   UNSPEC_INTERLO_V16QI
++   UNSPEC_LVLX
++   UNSPEC_LVLXL
++   UNSPEC_LVRX
++   UNSPEC_LVRXL
++   UNSPEC_STVLX
++   UNSPEC_STVLXL
++   UNSPEC_STVRX
++   UNSPEC_STVRXL
++   UNSPEC_VMULWHUB
++   UNSPEC_VMULWLUB
++   UNSPEC_VMULWHSB
++   UNSPEC_VMULWLSB
++   UNSPEC_VMULWHUH
++   UNSPEC_VMULWLUH
++   UNSPEC_VMULWHSH
++   UNSPEC_VMULWLSH
++   UNSPEC_VUPKHUB
++   UNSPEC_VUPKHUH
++   UNSPEC_VUPKLUB
++   UNSPEC_VUPKLUH
++   UNSPEC_VPERMSI
++   UNSPEC_VPERMHI
++   UNSPEC_INTERHI
++   UNSPEC_INTERLO
++   UNSPEC_VUPKHS_V4SF
++   UNSPEC_VUPKLS_V4SF
++   UNSPEC_VUPKHU_V4SF
++   UNSPEC_VUPKLU_V4SF
+ ])
+ 
+-(define_constants
+-  [(UNSPECV_SET_VRSAVE   30)
+-   (UNSPECV_MTVSCR      186)
+-   (UNSPECV_MFVSCR      187)
+-   (UNSPECV_DSSALL      188)
+-   (UNSPECV_DSS         189)
++(define_c_enum "unspecv"
++  [UNSPECV_SET_VRSAVE
++   UNSPECV_MTVSCR
++   UNSPECV_MFVSCR
++   UNSPECV_DSSALL
++   UNSPECV_DSS
+   ])
+ 
+ ;; Vec int modes
+Index: gcc/config/rs6000/dfp.md
+===================================================================
+--- a/src/gcc/config/rs6000/dfp.md	(.../gcc-4_6-branch)
++++ b/src/gcc/config/rs6000/dfp.md	(.../ibm/gcc-4_6-branch)
+@@ -1,5 +1,5 @@
+ ;; Decimal Floating Point (DFP) patterns.
+-;; Copyright (C) 2007, 2008, 2010
++;; Copyright (C) 2007, 2008, 2010, 2011
+ ;; Free Software Foundation, Inc.
+ ;; Contributed by Ben Elliston (bje@au.ibm.com) and Peter Bergner
+ ;; (bergner@vnet.ibm.com).
+@@ -24,9 +24,9 @@
+ ;; UNSPEC usage
+ ;;
+ 
+-(define_constants
+-  [(UNSPEC_MOVSD_LOAD		400)
+-   (UNSPEC_MOVSD_STORE		401)
++(define_c_enum "unspec"
++  [UNSPEC_MOVSD_LOAD
++   UNSPEC_MOVSD_STORE
+   ])
+ 
+ 
+Index: gcc/config/rs6000/sync.md
+===================================================================
+--- a/src/gcc/config/rs6000/sync.md	(.../gcc-4_6-branch)
++++ b/src/gcc/config/rs6000/sync.md	(.../ibm/gcc-4_6-branch)
+@@ -1,5 +1,6 @@
+ ;; Machine description for PowerPC synchronization instructions.
+-;; Copyright (C) 2005, 2007, 2008, 2009 Free Software Foundation, Inc.
++;; Copyright (C) 2005, 2007, 2008, 2009, 2011
++;; Free Software Foundation, Inc.
+ ;; Contributed by Geoffrey Keating.
+ 
+ ;; This file is part of GCC.
+@@ -591,7 +592,7 @@
+ 
+ (define_insn "isync"
+   [(set (mem:BLK (match_scratch 0 "X"))
+-	(unspec_volatile:BLK [(mem:BLK (match_scratch 1 "X"))] UNSPEC_ISYNC))]
++	(unspec_volatile:BLK [(mem:BLK (match_scratch 1 "X"))] UNSPECV_ISYNC))]
+   ""
+   "{ics|isync}"
+   [(set_attr "type" "isync")])
+@@ -610,7 +611,7 @@
+ ; Some AIX assemblers don't accept lwsync, so we use a .long.
+ (define_insn "lwsync"
+   [(set (mem:BLK (match_scratch 0 "X"))
+-	(unspec_volatile:BLK [(mem:BLK (match_scratch 1 "X"))] UNSPEC_LWSYNC))]
++	(unspec_volatile:BLK [(mem:BLK (match_scratch 1 "X"))] UNSPECV_LWSYNC))]
+   ""
+ {
+   if (TARGET_NO_LWSYNC)
+Index: gcc/config/rs6000/rs6000.md
+===================================================================
+--- a/src/gcc/config/rs6000/rs6000.md	(.../gcc-4_6-branch)
++++ b/src/gcc/config/rs6000/rs6000.md	(.../ibm/gcc-4_6-branch)
+@@ -1,6 +1,6 @@
+ ;; Machine description for IBM RISC System 6000 (POWER) for GNU C compiler
+ ;; Copyright (C) 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
+-;; 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
++;; 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
+ ;; Free Software Foundation, Inc.
+ ;; Contributed by Richard Kenner (kenner@vlsi1.ultra.nyu.edu)
+ 
+@@ -27,9 +27,14 @@
+ ;;
+ 
+ (define_constants
+-  [(MQ_REGNO			64)
++  [(STACK_POINTER_REGNUM	1)
++   (TOC_REGNUM			2)
++   (STATIC_CHAIN_REGNUM		11)
++   (HARD_FRAME_POINTER_REGNUM	31)
++   (MQ_REGNO			64)
+    (LR_REGNO			65)
+    (CTR_REGNO			66)
++   (ARG_POINTER_REGNUM		67)
+    (CR0_REGNO			68)
+    (CR1_REGNO			69)
+    (CR2_REGNO			70)
+@@ -46,83 +51,96 @@
+    (VSCR_REGNO			110)
+    (SPE_ACC_REGNO		111)
+    (SPEFSCR_REGNO		112)
+-   (SFP_REGNO			113)
++   (FRAME_POINTER_REGNUM	113)
++
++   ; ABI defined stack offsets for storing the TOC pointer with AIX calls.
++   (TOC_SAVE_OFFSET_32BIT	20)
++   (TOC_SAVE_OFFSET_64BIT	40)
++
++   ; Function TOC offset in the AIX function descriptor.
++   (AIX_FUNC_DESC_TOC_32BIT	4)
++   (AIX_FUNC_DESC_TOC_64BIT	8)
++
++   ; Static chain offset in the AIX function descriptor.
++   (AIX_FUNC_DESC_SC_32BIT	8)
++   (AIX_FUNC_DESC_SC_64BIT	16)
+   ])
+ 
+ ;;
+ ;; UNSPEC usage
+ ;;
+ 
+-(define_constants
+-  [(UNSPEC_FRSP			0)	; frsp for POWER machines
+-   (UNSPEC_PROBE_STACK		4)	; probe stack memory reference
+-   (UNSPEC_TIE			5)	; tie stack contents and stack pointer
+-   (UNSPEC_TOCPTR		6)	; address of a word pointing to the TOC
+-   (UNSPEC_TOC			7)	; address of the TOC (more-or-less)
+-   (UNSPEC_MOVSI_GOT		8)
+-   (UNSPEC_MV_CR_OV		9)	; move_from_CR_ov_bit
+-   (UNSPEC_FCTIWZ		10)
+-   (UNSPEC_FRIM			11)
+-   (UNSPEC_FRIN			12)
+-   (UNSPEC_FRIP			13)
+-   (UNSPEC_FRIZ			14)
+-   (UNSPEC_LD_MPIC		15)	; load_macho_picbase
+-   (UNSPEC_MPIC_CORRECT		16)	; macho_correct_pic
+-   (UNSPEC_TLSGD		17)
+-   (UNSPEC_TLSLD		18)
+-   (UNSPEC_MOVESI_FROM_CR	19)
+-   (UNSPEC_MOVESI_TO_CR		20)
+-   (UNSPEC_TLSDTPREL		21)
+-   (UNSPEC_TLSDTPRELHA		22)
+-   (UNSPEC_TLSDTPRELLO		23)
+-   (UNSPEC_TLSGOTDTPREL		24)
+-   (UNSPEC_TLSTPREL		25)
+-   (UNSPEC_TLSTPRELHA		26)
+-   (UNSPEC_TLSTPRELLO		27)
+-   (UNSPEC_TLSGOTTPREL		28)
+-   (UNSPEC_TLSTLS		29)
+-   (UNSPEC_FIX_TRUNC_TF		30)	; fadd, rounding towards zero
+-   (UNSPEC_MV_CR_GT		31)	; move_from_CR_gt_bit
+-   (UNSPEC_STFIWX		32)
+-   (UNSPEC_POPCNTB		33)
+-   (UNSPEC_FRES			34)
+-   (UNSPEC_SP_SET		35)
+-   (UNSPEC_SP_TEST		36)
+-   (UNSPEC_SYNC			37)
+-   (UNSPEC_LWSYNC		38)
+-   (UNSPEC_ISYNC		39)
+-   (UNSPEC_SYNC_OP		40)
+-   (UNSPEC_ATOMIC		41)
+-   (UNSPEC_CMPXCHG		42)
+-   (UNSPEC_XCHG			43)
+-   (UNSPEC_AND			44)
+-   (UNSPEC_DLMZB		45)
+-   (UNSPEC_DLMZB_CR		46)
+-   (UNSPEC_DLMZB_STRLEN		47)
+-   (UNSPEC_RSQRT		48)
+-   (UNSPEC_TOCREL		49)
+-   (UNSPEC_MACHOPIC_OFFSET	50)
+-   (UNSPEC_BPERM		51)
+-   (UNSPEC_COPYSIGN		52)
+-   (UNSPEC_PARITY		53)
+-   (UNSPEC_FCTIW		54)
+-   (UNSPEC_FCTID		55)
+-   (UNSPEC_LFIWAX		56)
+-   (UNSPEC_LFIWZX		57)
+-   (UNSPEC_FCTIWUZ		58)
++(define_c_enum "unspec"
++  [UNSPEC_FRSP			; frsp for POWER machines
++   UNSPEC_PROBE_STACK		; probe stack memory reference
++   UNSPEC_TIE			; tie stack contents and stack pointer
++   UNSPEC_TOCPTR		; address of a word pointing to the TOC
++   UNSPEC_TOC			; address of the TOC (more-or-less)
++   UNSPEC_MOVSI_GOT
++   UNSPEC_MV_CR_OV		; move_from_CR_ov_bit
++   UNSPEC_FCTIWZ
++   UNSPEC_FRIM
++   UNSPEC_FRIN
++   UNSPEC_FRIP
++   UNSPEC_FRIZ
++   UNSPEC_LD_MPIC		; load_macho_picbase
++   UNSPEC_MPIC_CORRECT		; macho_correct_pic
++   UNSPEC_TLSGD
++   UNSPEC_TLSLD
++   UNSPEC_MOVESI_FROM_CR
++   UNSPEC_MOVESI_TO_CR
++   UNSPEC_TLSDTPREL
++   UNSPEC_TLSDTPRELHA
++   UNSPEC_TLSDTPRELLO
++   UNSPEC_TLSGOTDTPREL
++   UNSPEC_TLSTPREL
++   UNSPEC_TLSTPRELHA
++   UNSPEC_TLSTPRELLO
++   UNSPEC_TLSGOTTPREL
++   UNSPEC_TLSTLS
++   UNSPEC_FIX_TRUNC_TF		; fadd, rounding towards zero
++   UNSPEC_MV_CR_GT		; move_from_CR_gt_bit
++   UNSPEC_STFIWX
++   UNSPEC_POPCNTB
++   UNSPEC_FRES
++   UNSPEC_SP_SET
++   UNSPEC_SP_TEST
++   UNSPEC_SYNC
++   UNSPEC_SYNC_OP
++   UNSPEC_ATOMIC
++   UNSPEC_CMPXCHG
++   UNSPEC_XCHG
++   UNSPEC_AND
++   UNSPEC_DLMZB
++   UNSPEC_DLMZB_CR
++   UNSPEC_DLMZB_STRLEN
++   UNSPEC_RSQRT
++   UNSPEC_TOCREL
++   UNSPEC_MACHOPIC_OFFSET
++   UNSPEC_BPERM
++   UNSPEC_COPYSIGN
++   UNSPEC_PARITY
++   UNSPEC_FCTIW
++   UNSPEC_FCTID
++   UNSPEC_LFIWAX
++   UNSPEC_LFIWZX
++   UNSPEC_FCTIWUZ
+   ])
+ 
+ ;;
+ ;; UNSPEC_VOLATILE usage
+ ;;
+ 
+-(define_constants
+-  [(UNSPECV_BLOCK		0)
+-   (UNSPECV_LL			1)	; load-locked
+-   (UNSPECV_SC			2)	; store-conditional
+-   (UNSPECV_PROBE_STACK_RANGE	3)	; probe range of stack addresses
+-   (UNSPECV_EH_RR		9)	; eh_reg_restore
++(define_c_enum "unspecv"
++  [UNSPECV_BLOCK
++   UNSPECV_LL			; load-locked
++   UNSPECV_SC			; store-conditional
++   UNSPECV_PROBE_STACK_RANGE	; probe range of stack addresses
++   UNSPECV_EH_RR		; eh_reg_restore
++   UNSPECV_ISYNC		; isync instruction
++   UNSPECV_LWSYNC		; lwsync
+   ])
++
+ 
+ ;; Define an insn type attribute.  This is used in function unit delay
+ ;; computations.
+@@ -266,6 +284,9 @@
+ (define_mode_attr mptrsize [(SI "si")
+ 			    (DI "di")])
+ 
++(define_mode_attr ptrload [(SI "{l|lwz}")
++			   (DI "ld")])
++
+ (define_mode_attr rreg [(SF   "f")
+ 			(DF   "ws")
+ 			(V4SF "wf")
+@@ -9644,6 +9665,27 @@
+   [(set_attr "type" "two,load,store,*,*,*")
+    (set_attr "length" "8,8,8,8,12,16")])
+ 
++;; Reload patterns to support gpr load/store with misaligned mem.
++(define_expand "reload_di_store"
++  [(parallel [(match_operand 0 "memory_operand" "=m")
++              (match_operand 1 "gpc_reg_operand" "r")
++              (match_operand:DI 2 "register_operand" "=&b")])]
++  "TARGET_POWERPC64"
++{
++  rs6000_secondary_reload_ppc64 (operands[1], operands[0], operands[2], true);
++  DONE;
++})
++
++(define_expand "reload_di_load"
++  [(parallel [(match_operand 0 "gpc_reg_operand" "=r")
++              (match_operand 1 "memory_operand" "m")
++              (match_operand:DI 2 "register_operand" "=b")])]
++  "TARGET_POWERPC64"
++{
++  rs6000_secondary_reload_ppc64 (operands[0], operands[1], operands[2], false);
++  DONE;
++})
++
+ ; ld/std require word-aligned displacements -> 'Y' constraint.
+ ; List Y->r and r->Y before r->r for reload.
+ (define_insn "*movdf_hardfloat64_mfpgpr"
+@@ -12156,87 +12198,7 @@
+    "TARGET_ELF && TARGET_CMODEL != CMODEL_SMALL"
+    "{cal %0,%2@l(%1)|addi %0,%1,%2@l}")
+ 
+-;; A function pointer under AIX is a pointer to a data area whose first word
+-;; contains the actual address of the function, whose second word contains a
+-;; pointer to its TOC, and whose third word contains a value to place in the
+-;; static chain register (r11).  Note that if we load the static chain, our
+-;; "trampoline" need not have any executable code.
+-
+-(define_expand "call_indirect_aix32"
+-  [(set (match_dup 2)
+-	(mem:SI (match_operand:SI 0 "gpc_reg_operand" "")))
+-   (set (mem:SI (plus:SI (reg:SI 1) (const_int 20)))
+-	(reg:SI 2))
+-   (set (reg:SI 11)
+-	(mem:SI (plus:SI (match_dup 0)
+-			 (const_int 8))))
+-   (parallel [(call (mem:SI (match_dup 2))
+-		    (match_operand 1 "" ""))
+-	      (use (mem:SI (plus:SI (match_dup 0) (const_int 4))))
+-	      (use (reg:SI 11))
+-	      (use (mem:SI (plus:SI (reg:SI 1) (const_int 20))))
+-	      (clobber (reg:SI LR_REGNO))])]
+-  "TARGET_32BIT"
+-  "
+-{ operands[2] = gen_reg_rtx (SImode); }")
+-
+-(define_expand "call_indirect_aix64"
+-  [(set (match_dup 2)
+-	(mem:DI (match_operand:DI 0 "gpc_reg_operand" "")))
+-   (set (mem:DI (plus:DI (reg:DI 1) (const_int 40)))
+-	(reg:DI 2))
+-   (set (reg:DI 11)
+-	(mem:DI (plus:DI (match_dup 0)
+-			 (const_int 16))))
+-   (parallel [(call (mem:SI (match_dup 2))
+-		    (match_operand 1 "" ""))
+-	      (use (mem:DI (plus:DI (match_dup 0) (const_int 8))))
+-	      (use (reg:DI 11))
+-	      (use (mem:DI (plus:DI (reg:DI 1) (const_int 40))))
+-	      (clobber (reg:SI LR_REGNO))])]
+-  "TARGET_64BIT"
+-  "
+-{ operands[2] = gen_reg_rtx (DImode); }")
+-
+-(define_expand "call_value_indirect_aix32"
+-  [(set (match_dup 3)
+-	(mem:SI (match_operand:SI 1 "gpc_reg_operand" "")))
+-   (set (mem:SI (plus:SI (reg:SI 1) (const_int 20)))
+-	(reg:SI 2))
+-   (set (reg:SI 11)
+-	(mem:SI (plus:SI (match_dup 1)
+-			 (const_int 8))))
+-   (parallel [(set (match_operand 0 "" "")
+-		   (call (mem:SI (match_dup 3))
+-			 (match_operand 2 "" "")))
+-	      (use (mem:SI (plus:SI (match_dup 1) (const_int 4))))
+-	      (use (reg:SI 11))
+-	      (use (mem:SI (plus:SI (reg:SI 1) (const_int 20))))
+-	      (clobber (reg:SI LR_REGNO))])]
+-  "TARGET_32BIT"
+-  "
+-{ operands[3] = gen_reg_rtx (SImode); }")
+-
+-(define_expand "call_value_indirect_aix64"
+-  [(set (match_dup 3)
+-	(mem:DI (match_operand:DI 1 "gpc_reg_operand" "")))
+-   (set (mem:DI (plus:DI (reg:DI 1) (const_int 40)))
+-	(reg:DI 2))
+-   (set (reg:DI 11)
+-	(mem:DI (plus:DI (match_dup 1)
+-			 (const_int 16))))
+-   (parallel [(set (match_operand 0 "" "")
+-		   (call (mem:SI (match_dup 3))
+-			 (match_operand 2 "" "")))
+-	      (use (mem:DI (plus:DI (match_dup 1) (const_int 8))))
+-	      (use (reg:DI 11))
+-	      (use (mem:DI (plus:DI (reg:DI 1) (const_int 40))))
+-	      (clobber (reg:SI LR_REGNO))])]
+-  "TARGET_64BIT"
+-  "
+-{ operands[3] = gen_reg_rtx (DImode); }")
+-
+-;; Now the definitions for the call and call_value insns
++;; Call and call_value insns
+ (define_expand "call"
+   [(parallel [(call (mem:SI (match_operand 0 "address_operand" ""))
+ 		    (match_operand 1 "" ""))
+@@ -12272,13 +12234,7 @@
+ 	case ABI_AIX:
+ 	  /* AIX function pointers are really pointers to a three word
+ 	     area.  */
+-	  emit_call_insn (TARGET_32BIT
+-			  ? gen_call_indirect_aix32 (force_reg (SImode,
+-							        operands[0]),
+-						     operands[1])
+-			  : gen_call_indirect_aix64 (force_reg (DImode,
+-							        operands[0]),
+-						     operands[1]));
++	  rs6000_call_indirect_aix (NULL_RTX, operands[0], operands[1]);
+ 	  DONE;
+ 
+ 	default:
+@@ -12323,15 +12279,7 @@
+ 	case ABI_AIX:
+ 	  /* AIX function pointers are really pointers to a three word
+ 	     area.  */
+-	  emit_call_insn (TARGET_32BIT
+-			  ? gen_call_value_indirect_aix32 (operands[0],
+-							   force_reg (SImode,
+-								      operands[1]),
+-							   operands[2])
+-			  : gen_call_value_indirect_aix64 (operands[0],
+-							   force_reg (DImode,
+-								      operands[1]),
+-							   operands[2]));
++	  rs6000_call_indirect_aix (operands[0], operands[1], operands[2]);
+ 	  DONE;
+ 
+ 	default:
+@@ -12425,149 +12373,202 @@
+   [(set_attr "type" "branch")
+    (set_attr "length" "4,8")])
+ 
+-;; Call to function which may be in another module.  Restore the TOC
+-;; pointer (r2) after the call unless this is System V.
+-;; Operand2 is nonzero if we are using the V.4 calling sequence and
+-;; either the function was not prototyped, or it was prototyped as a
+-;; variable argument function.  It is > 0 if FP registers were passed
+-;; and < 0 if they were not.
++;; Call to indirect functions with the AIX abi using a 3 word descriptor.
++;; Operand0 is the addresss of the function to call
++;; Operand1 is the flag for System V.4 for unprototyped or FP registers
++;; Operand2 is the location in the function descriptor to load r2 from
++;; Operand3 is the stack location to hold the current TOC pointer
+ 
+-(define_insn_and_split "*call_indirect_nonlocal_aix32_internal"
+-  [(call (mem:SI (match_operand:SI 0 "register_operand" "c,*l"))
+-		 (match_operand 1 "" "g,g"))
+-   (use (mem:SI (plus:SI (match_operand:SI 2 "register_operand" "b,b") (const_int 4))))
+-   (use (reg:SI 11))
+-   (use (mem:SI (plus:SI (reg:SI 1) (const_int 20))))
+-   (clobber (reg:SI LR_REGNO))]
+-  "TARGET_32BIT && DEFAULT_ABI == ABI_AIX"
++(define_insn_and_split "call_indirect_aix<ptrsize>"
++  [(call (mem:SI (match_operand:P 0 "register_operand" "c,*l"))
++	 (match_operand 1 "" "g,g"))
++   (use (match_operand:P 2 "memory_operand" "m,m"))
++   (use (match_operand:P 3 "memory_operand" "m,m"))
++   (use (reg:P STATIC_CHAIN_REGNUM))
++   (clobber (reg:P LR_REGNO))]
++  "DEFAULT_ABI == ABI_AIX && TARGET_R11"
+   "#"
+   "&& reload_completed"
+-  [(set (reg:SI 2)
+-	(mem:SI (plus:SI (match_dup 2) (const_int 4))))
++  [(set (reg:P TOC_REGNUM) (match_dup 2))
+    (parallel [(call (mem:SI (match_dup 0))
+ 		    (match_dup 1))
+-	      (use (reg:SI 2))
+-	      (use (reg:SI 11))
+-	      (set (reg:SI 2)
+-		   (mem:SI (plus:SI (reg:SI 1) (const_int 20))))
+-	      (clobber (reg:SI LR_REGNO))])]
++	      (use (reg:P TOC_REGNUM))
++	      (use (reg:P STATIC_CHAIN_REGNUM))
++	      (use (match_dup 3))
++	      (set (reg:P TOC_REGNUM) (match_dup 3))
++	      (clobber (reg:P LR_REGNO))])]
+   ""
+   [(set_attr "type" "jmpreg")
+    (set_attr "length" "12")])
+ 
+-(define_insn "*call_indirect_nonlocal_aix32"
+-  [(call (mem:SI (match_operand:SI 0 "register_operand" "c,*l"))
++(define_insn "*call_indirect_aix<ptrsize>_internal"
++  [(call (mem:SI (match_operand:P 0 "register_operand" "c,*l"))
+ 	 (match_operand 1 "" "g,g"))
+-   (use (reg:SI 2))
+-   (use (reg:SI 11))
+-   (set (reg:SI 2)
+-	(mem:SI (plus:SI (reg:SI 1) (const_int 20))))
+-   (clobber (reg:SI LR_REGNO))]
+-  "TARGET_32BIT && DEFAULT_ABI == ABI_AIX && reload_completed"
+-  "b%T0l\;{l|lwz} 2,20(1)"
++   (use (reg:P TOC_REGNUM))
++   (use (reg:P STATIC_CHAIN_REGNUM))
++   (use (match_operand:P 2 "memory_operand" "m,m"))
++   (set (reg:P TOC_REGNUM) (match_dup 2))
++   (clobber (reg:P LR_REGNO))]
++  "DEFAULT_ABI == ABI_AIX && reload_completed && TARGET_R11"
++  "b%T0l\;<ptrload> 2,%2"
+   [(set_attr "type" "jmpreg")
+    (set_attr "length" "8")])
+ 
+-(define_insn "*call_nonlocal_aix32"
+-  [(call (mem:SI (match_operand:SI 0 "symbol_ref_operand" "s"))
+-	 (match_operand 1 "" "g"))
+-   (use (match_operand:SI 2 "immediate_operand" "O"))
+-   (clobber (reg:SI LR_REGNO))]
+-  "TARGET_32BIT
+-   && DEFAULT_ABI == ABI_AIX
+-   && (INTVAL (operands[2]) & CALL_LONG) == 0"
+-  "bl %z0\;%."
+-  [(set_attr "type" "branch")
+-   (set_attr "length" "8")])
+-   
+-(define_insn_and_split "*call_indirect_nonlocal_aix64_internal"
+-  [(call (mem:SI (match_operand:DI 0 "register_operand" "c,*l"))
+-		 (match_operand 1 "" "g,g"))
+-   (use (mem:DI (plus:DI (match_operand:DI 2 "register_operand" "b,b")
+-			 (const_int 8))))
+-   (use (reg:DI 11))
+-   (use (mem:DI (plus:DI (reg:DI 1) (const_int 40))))
+-   (clobber (reg:SI LR_REGNO))]
+-  "TARGET_64BIT && DEFAULT_ABI == ABI_AIX"
++;; Like call_indirect_aix<ptrsize>, except don't load the static chain
++;; Operand0 is the addresss of the function to call
++;; Operand1 is the flag for System V.4 for unprototyped or FP registers
++;; Operand2 is the location in the function descriptor to load r2 from
++;; Operand3 is the stack location to hold the current TOC pointer
++
++(define_insn_and_split "call_indirect_aix<ptrsize>_nor11"
++  [(call (mem:SI (match_operand:P 0 "register_operand" "c,*l"))
++	 (match_operand 1 "" "g,g"))
++   (use (match_operand:P 2 "memory_operand" "m,m"))
++   (use (match_operand:P 3 "memory_operand" "m,m"))
++   (clobber (reg:P LR_REGNO))]
++  "DEFAULT_ABI == ABI_AIX && !TARGET_R11"
+   "#"
+   "&& reload_completed"
+-  [(set (reg:DI 2)
+-	(mem:DI (plus:DI (match_dup 2) (const_int 8))))
++  [(set (reg:P TOC_REGNUM) (match_dup 2))
+    (parallel [(call (mem:SI (match_dup 0))
+ 		    (match_dup 1))
+-	      (use (reg:DI 2))
+-	      (use (reg:DI 11))
+-	      (set (reg:DI 2)
+-		   (mem:DI (plus:DI (reg:DI 1) (const_int 40))))
+-	      (clobber (reg:SI LR_REGNO))])]
++	      (use (reg:P TOC_REGNUM))
++	      (use (match_dup 3))
++	      (set (reg:P TOC_REGNUM) (match_dup 3))
++	      (clobber (reg:P LR_REGNO))])]
+   ""
+   [(set_attr "type" "jmpreg")
+    (set_attr "length" "12")])
+ 
+-(define_insn "*call_indirect_nonlocal_aix64"
+-  [(call (mem:SI (match_operand:DI 0 "register_operand" "c,*l"))
++(define_insn "*call_indirect_aix<ptrsize>_internal2"
++  [(call (mem:SI (match_operand:P 0 "register_operand" "c,*l"))
+ 	 (match_operand 1 "" "g,g"))
+-   (use (reg:DI 2))
+-   (use (reg:DI 11))
+-   (set (reg:DI 2)
+-	(mem:DI (plus:DI (reg:DI 1) (const_int 40))))
+-   (clobber (reg:SI LR_REGNO))]
+-  "TARGET_64BIT && DEFAULT_ABI == ABI_AIX && reload_completed"
+-  "b%T0l\;ld 2,40(1)"
++   (use (reg:P TOC_REGNUM))
++   (use (match_operand:P 2 "memory_operand" "m,m"))
++   (set (reg:P TOC_REGNUM) (match_dup 2))
++   (clobber (reg:P LR_REGNO))]
++  "DEFAULT_ABI == ABI_AIX && reload_completed && !TARGET_R11"
++  "b%T0l\;<ptrload> 2,%2"
+   [(set_attr "type" "jmpreg")
+    (set_attr "length" "8")])
+ 
+-(define_insn "*call_nonlocal_aix64"
+-  [(call (mem:SI (match_operand:DI 0 "symbol_ref_operand" "s"))
+-	 (match_operand 1 "" "g"))
+-   (use (match_operand:SI 2 "immediate_operand" "O"))
+-   (clobber (reg:SI LR_REGNO))]
+-  "TARGET_64BIT
+-   && DEFAULT_ABI == ABI_AIX
+-   && (INTVAL (operands[2]) & CALL_LONG) == 0"
+-  "bl %z0\;%."
+-  [(set_attr "type" "branch")
++;; Operand0 is the return result of the function
++;; Operand1 is the addresss of the function to call
++;; Operand2 is the flag for System V.4 for unprototyped or FP registers
++;; Operand3 is the location in the function descriptor to load r2 from
++;; Operand4 is the stack location to hold the current TOC pointer
++
++(define_insn_and_split "call_value_indirect_aix<ptrsize>"
++  [(set (match_operand 0 "" "")
++	(call (mem:SI (match_operand:P 1 "register_operand" "c,*l"))
++	      (match_operand 2 "" "g,g")))
++   (use (match_operand:P 3 "memory_operand" "m,m"))
++   (use (match_operand:P 4 "memory_operand" "m,m"))
++   (use (reg:P STATIC_CHAIN_REGNUM))
++   (clobber (reg:P LR_REGNO))]
++  "DEFAULT_ABI == ABI_AIX && TARGET_R11"
++  "#"
++  "&& reload_completed"
++  [(set (reg:P TOC_REGNUM) (match_dup 3))
++   (parallel [(set (match_dup 0)
++		   (call (mem:SI (match_dup 1))
++			 (match_dup 2)))
++	      (use (reg:P TOC_REGNUM))
++	      (use (reg:P STATIC_CHAIN_REGNUM))
++	      (use (match_dup 4))
++	      (set (reg:P TOC_REGNUM) (match_dup 4))
++	      (clobber (reg:P LR_REGNO))])]
++  ""
++  [(set_attr "type" "jmpreg")
++   (set_attr "length" "12")])
++
++(define_insn "*call_value_indirect_aix<ptrsize>_internal"
++  [(set (match_operand 0 "" "")
++	(call (mem:SI (match_operand:P 1 "register_operand" "c,*l"))
++	      (match_operand 2 "" "g,g")))
++   (use (reg:P TOC_REGNUM))
++   (use (reg:P STATIC_CHAIN_REGNUM))
++   (use (match_operand:P 3 "memory_operand" "m,m"))
++   (set (reg:P TOC_REGNUM) (match_dup 3))
++   (clobber (reg:P LR_REGNO))]
++  "DEFAULT_ABI == ABI_AIX && reload_completed && TARGET_R11"
++  "b%T1l\;<ptrload> 2,%3"
++  [(set_attr "type" "jmpreg")
+    (set_attr "length" "8")])
+ 
+-(define_insn_and_split "*call_value_indirect_nonlocal_aix32_internal"
++;; Like call_value_indirect_aix<ptrsize>, but don't load the static chain
++;; Operand0 is the return result of the function
++;; Operand1 is the addresss of the function to call
++;; Operand2 is the flag for System V.4 for unprototyped or FP registers
++;; Operand3 is the location in the function descriptor to load r2 from
++;; Operand4 is the stack location to hold the current TOC pointer
++
++(define_insn_and_split "call_value_indirect_aix<ptrsize>_nor11"
+   [(set (match_operand 0 "" "")
+-	(call (mem:SI (match_operand:SI 1 "register_operand" "c,*l"))
+-		      (match_operand 2 "" "g,g")))
+-	(use (mem:SI (plus:SI (match_operand:SI 3 "register_operand" "b,b")
+-			      (const_int 4))))
+-	(use (reg:SI 11))
+-	(use (mem:SI (plus:SI (reg:SI 1) (const_int 20))))
+-	(clobber (reg:SI LR_REGNO))]
+-  "TARGET_32BIT && DEFAULT_ABI == ABI_AIX"
++	(call (mem:SI (match_operand:P 1 "register_operand" "c,*l"))
++	      (match_operand 2 "" "g,g")))
++   (use (match_operand:P 3 "memory_operand" "m,m"))
++   (use (match_operand:P 4 "memory_operand" "m,m"))
++   (clobber (reg:P LR_REGNO))]
++  "DEFAULT_ABI == ABI_AIX && !TARGET_R11"
+   "#"
+   "&& reload_completed"
+-  [(set (reg:SI 2)
+-	(mem:SI (plus:SI (match_dup 3) (const_int 4))))
+-   (parallel [(set (match_dup 0) (call (mem:SI (match_dup 1))
+-				       (match_dup 2)))
+-	      (use (reg:SI 2))
+-	      (use (reg:SI 11))
+-	      (set (reg:SI 2)
+-		   (mem:SI (plus:SI (reg:SI 1) (const_int 20))))
+-	      (clobber (reg:SI LR_REGNO))])]
++  [(set (reg:P TOC_REGNUM) (match_dup 3))
++   (parallel [(set (match_dup 0)
++		   (call (mem:SI (match_dup 1))
++			 (match_dup 2)))
++	      (use (reg:P TOC_REGNUM))
++	      (use (match_dup 4))
++	      (set (reg:P TOC_REGNUM) (match_dup 4))
++	      (clobber (reg:P LR_REGNO))])]
+   ""
+   [(set_attr "type" "jmpreg")
+    (set_attr "length" "12")])
+ 
+-(define_insn "*call_value_indirect_nonlocal_aix32"
++(define_insn "*call_value_indirect_aix<ptrsize>_internal2"
+   [(set (match_operand 0 "" "")
+-	(call (mem:SI (match_operand:SI 1 "register_operand" "c,*l"))
++	(call (mem:SI (match_operand:P 1 "register_operand" "c,*l"))
+ 	      (match_operand 2 "" "g,g")))
+-   (use (reg:SI 2))
+-   (use (reg:SI 11))
+-   (set (reg:SI 2)
+-	(mem:SI (plus:SI (reg:SI 1) (const_int 20))))
+-   (clobber (reg:SI LR_REGNO))]
+-  "TARGET_32BIT && DEFAULT_ABI == ABI_AIX && reload_completed"
+-  "b%T1l\;{l|lwz} 2,20(1)"
++   (use (reg:P TOC_REGNUM))
++   (use (match_operand:P 3 "memory_operand" "m,m"))
++   (set (reg:P TOC_REGNUM) (match_dup 3))
++   (clobber (reg:P LR_REGNO))]
++  "DEFAULT_ABI == ABI_AIX && reload_completed && !TARGET_R11"
++  "b%T1l\;<ptrload> 2,%3"
+   [(set_attr "type" "jmpreg")
+    (set_attr "length" "8")])
+ 
++;; Call to function which may be in another module.  Restore the TOC
++;; pointer (r2) after the call unless this is System V.
++;; Operand2 is nonzero if we are using the V.4 calling sequence and
++;; either the function was not prototyped, or it was prototyped as a
++;; variable argument function.  It is > 0 if FP registers were passed
++;; and < 0 if they were not.
++
++(define_insn "*call_nonlocal_aix32"
++  [(call (mem:SI (match_operand:SI 0 "symbol_ref_operand" "s"))
++	 (match_operand 1 "" "g"))
++   (use (match_operand:SI 2 "immediate_operand" "O"))
++   (clobber (reg:SI LR_REGNO))]
++  "TARGET_32BIT
++   && DEFAULT_ABI == ABI_AIX
++   && (INTVAL (operands[2]) & CALL_LONG) == 0"
++  "bl %z0\;%."
++  [(set_attr "type" "branch")
++   (set_attr "length" "8")])
++   
++(define_insn "*call_nonlocal_aix64"
++  [(call (mem:SI (match_operand:DI 0 "symbol_ref_operand" "s"))
++	 (match_operand 1 "" "g"))
++   (use (match_operand:SI 2 "immediate_operand" "O"))
++   (clobber (reg:SI LR_REGNO))]
++  "TARGET_64BIT
++   && DEFAULT_ABI == ABI_AIX
++   && (INTVAL (operands[2]) & CALL_LONG) == 0"
++  "bl %z0\;%."
++  [(set_attr "type" "branch")
++   (set_attr "length" "8")])
++
+ (define_insn "*call_value_nonlocal_aix32"
+   [(set (match_operand 0 "" "")
+ 	(call (mem:SI (match_operand:SI 1 "symbol_ref_operand" "s"))
+@@ -12581,45 +12582,6 @@
+   [(set_attr "type" "branch")
+    (set_attr "length" "8")])
+ 
+-(define_insn_and_split "*call_value_indirect_nonlocal_aix64_internal"
+-  [(set (match_operand 0 "" "")
+-	(call (mem:SI (match_operand:DI 1 "register_operand" "c,*l"))
+-		      (match_operand 2 "" "g,g")))
+-	(use (mem:DI (plus:DI (match_operand:DI 3 "register_operand" "b,b")
+-			      (const_int 8))))
+-	(use (reg:DI 11))
+-	(use (mem:DI (plus:DI (reg:DI 1) (const_int 40))))
+-	(clobber (reg:SI LR_REGNO))]
+-  "TARGET_64BIT && DEFAULT_ABI == ABI_AIX"
+-  "#"
+-  "&& reload_completed"
+-  [(set (reg:DI 2)
+-	(mem:DI (plus:DI (match_dup 3) (const_int 8))))
+-   (parallel [(set (match_dup 0) (call (mem:SI (match_dup 1))
+-				       (match_dup 2)))
+-	      (use (reg:DI 2))
+-	      (use (reg:DI 11))
+-	      (set (reg:DI 2)
+-		   (mem:DI (plus:DI (reg:DI 1) (const_int 40))))
+-	      (clobber (reg:SI LR_REGNO))])]
+-  ""
+-  [(set_attr "type" "jmpreg")
+-   (set_attr "length" "12")])
+-
+-(define_insn "*call_value_indirect_nonlocal_aix64"
+-  [(set (match_operand 0 "" "")
+-	(call (mem:SI (match_operand:DI 1 "register_operand" "c,*l"))
+-	      (match_operand 2 "" "g,g")))
+-   (use (reg:DI 2))
+-   (use (reg:DI 11))
+-   (set (reg:DI 2)
+-	(mem:DI (plus:DI (reg:DI 1) (const_int 40))))
+-   (clobber (reg:SI LR_REGNO))]
+-  "TARGET_64BIT && DEFAULT_ABI == ABI_AIX && reload_completed"
+-  "b%T1l\;ld 2,40(1)"
+-  [(set_attr "type" "jmpreg")
+-   (set_attr "length" "8")])
+-
+ (define_insn "*call_value_nonlocal_aix64"
+   [(set (match_operand 0 "" "")
+ 	(call (mem:SI (match_operand:DI 1 "symbol_ref_operand" "s"))
+Index: gcc/stmt.c
+===================================================================
+--- a/src/gcc/stmt.c	(.../gcc-4_6-branch)
++++ b/src/gcc/stmt.c	(.../ibm/gcc-4_6-branch)
+@@ -53,6 +53,7 @@
+ #include "alloc-pool.h"
+ #include "pretty-print.h"
+ #include "bitmap.h"
++#include "params.h"
+ 
+ 
+ /* Functions and data structures for expanding case statements.  */
+@@ -2270,6 +2271,20 @@
+ 	      || (uniq == 3 && count >= 6)));
+ }
+ 
++/* Return the smallest number of different values for which it is best to use a
++   jump-table instead of a tree of conditional branches.  */
++
++static unsigned int
++case_values_threshold (void)
++{
++  unsigned int threshold = PARAM_VALUE (PARAM_CASE_VALUES_THRESHOLD);
++
++  if (threshold == 0)
++    threshold = targetm.case_values_threshold ();
++
++  return threshold;
++}
++
+ /* Terminate a case (Pascal/Ada) or switch (C) statement
+    in which ORIG_INDEX is the expression to be tested.
+    If ORIG_TYPE is not NULL, it is the original ORIG_INDEX
+@@ -2424,7 +2439,7 @@
+ 	 If the switch-index is a constant, do it this way
+ 	 because we can optimize it.  */
+ 
+-      else if (count < targetm.case_values_threshold ()
++      else if (count < case_values_threshold ()
+ 	       || compare_tree_int (range,
+ 				    (optimize_insn_for_size_p () ? 3 : 10) * count) > 0
+ 	       /* RANGE may be signed, and really large ranges will show up
+Index: gcc/params.def
+===================================================================
+--- a/src/gcc/params.def	(.../gcc-4_6-branch)
++++ b/src/gcc/params.def	(.../ibm/gcc-4_6-branch)
+@@ -883,6 +883,16 @@
+ 	  "name lookup fails",
+ 	  1000, 0, 0)
+ 
++/* Override CASE_VALUES_THRESHOLD of when to switch from doing switch
++   statements via if statements to using a table jump operation.  If the value
++   is 0, the default CASE_VALUES_THRESHOLD will be used.  */
++DEFPARAM (PARAM_CASE_VALUES_THRESHOLD,
++          "case-values-threshold",
++          "The smallest number of different values for which it is best to "
++	  "use a jump-table instead of a tree of conditional branches, "
++	  "if 0, use the default for the machine",
++          0, 0, 0)
++
+ /*
+ Local variables:
+ mode:c
+Index: libcpp/ChangeLog.ibm
+===================================================================
+--- a/src/libcpp/ChangeLog.ibm	(.../gcc-4_6-branch)
++++ b/src/libcpp/ChangeLog.ibm	(.../ibm/gcc-4_6-branch)
+@@ -0,0 +1,10 @@
++2011-04-28  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Merge up to 173137.
++
++2011-03-28  Michael Meissner  <meissner@linux.vnet.ibm.com>
++
++	Branch from gcc-4_6-branch, subversion id 171614.
++
++
++
+
+Property changes on: .
+___________________________________________________________________
+Modified: svn:mergeinfo
+   Merged /branches/gcc-4_6-branch:r171610-175885
+Added: svnmerge-integrated
+   + /branches/gcc-4_6-branch:1-175885
+

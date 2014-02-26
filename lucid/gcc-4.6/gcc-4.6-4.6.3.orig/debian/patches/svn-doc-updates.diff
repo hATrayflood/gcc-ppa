@@ -1,0 +1,105 @@
+# DP: updates from the 4.6 branch upto 20110816 (documentation).
+
+svn diff svn://gcc.gnu.org/svn/gcc/tags/gcc_4_6_1_release svn://gcc.gnu.org/svn/gcc/branches/gcc-4_6-branch \
+	| sed -r 's,^--- (\S+)\t(\S+)(.*)$,--- a/src/\1\t\2,;s,^\+\+\+ (\S+)\t(\S+)(.*)$,+++ b/src/\1\t\2,' \
+	| awk '/^Index:.*\.texi/ {skip=0; print; next} /^Index:/ {skip=1; next} skip==0'
+
+Index: gcc/doc/invoke.texi
+===================================================================
+--- a/src/gcc/doc/invoke.texi	(.../tags/gcc_4_6_1_release)
++++ b/src/gcc/doc/invoke.texi	(.../branches/gcc-4_6-branch)
+@@ -611,7 +611,8 @@
+ -momit-leaf-frame-pointer  -mno-red-zone -mno-tls-direct-seg-refs @gol
+ -mcmodel=@var{code-model} -mabi=@var{name} @gol
+ -m32  -m64 -mlarge-data-threshold=@var{num} @gol
+--msse2avx -mfentry -m8bit-idiv}
++-msse2avx -mfentry -m8bit-idiv @gol
++-mavx256-split-unaligned-load -mavx256-split-unaligned-store}
+ 
+ @emph{i386 and x86-64 Windows Options}
+ @gccoptlist{-mconsole -mcygwin -mno-cygwin -mdll
+@@ -12172,6 +12173,10 @@
+ @item corei7-avx
+ Intel Core i7 CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3, SSSE3,
+ SSE4.1, SSE4.2, AVX, AES and PCLMUL instruction set support.
++@item core-avx-i
++Intel Core CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3, SSSE3,
++SSE4.1, SSE4.2, AVX, AES, PCLMUL, FSGSBASE, RDRND and F16C instruction
++set support.
+ @item atom
+ Intel Atom CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3 and SSSE3
+ instruction set support.
+@@ -12769,6 +12774,12 @@
+ to 255, 8bit unsigned integer divide will be used instead of
+ 32bit/64bit integer divide.
+ 
++@item -mavx256-split-unaligned-load
++@item -mavx256-split-unaligned-store
++@opindex avx256-split-unaligned-load
++@opindex avx256-split-unaligned-store
++Split 32-byte AVX unaligned load and store.
++
+ @end table
+ 
+ These @samp{-m} switches are supported in addition to the above
+Index: gcc/doc/md.texi
+===================================================================
+--- a/src/gcc/doc/md.texi	(.../tags/gcc_4_6_1_release)
++++ b/src/gcc/doc/md.texi	(.../branches/gcc-4_6-branch)
+@@ -4641,8 +4641,9 @@
+ string.  The instruction is not allowed to prefetch more than one byte
+ at a time since either string may end in the first byte and reading past
+ that may access an invalid page or segment and cause a fault.  The
+-effect of the instruction is to store a value in operand 0 whose sign
+-indicates the result of the comparison.
++comparison terminates early if the fetched bytes are different or if
++they are equal to zero.  The effect of the instruction is to store a
++value in operand 0 whose sign indicates the result of the comparison.
+ 
+ @cindex @code{cmpstr@var{m}} instruction pattern
+ @item @samp{cmpstr@var{m}}
+@@ -4660,8 +4661,10 @@
+ order starting at the beginning of each string.  The instruction is not allowed
+ to prefetch more than one byte at a time since either string may end in the
+ first byte and reading past that may access an invalid page or segment and
+-cause a fault.  The effect of the instruction is to store a value in operand 0
+-whose sign indicates the result of the comparison.
++cause a fault.  The comparison will terminate when the fetched bytes
++are different or if they are equal to zero.  The effect of the
++instruction is to store a value in operand 0 whose sign indicates the
++result of the comparison.
+ 
+ @cindex @code{cmpmem@var{m}} instruction pattern
+ @item @samp{cmpmem@var{m}}
+@@ -4669,9 +4672,10 @@
+ of @samp{cmpstr@var{m}}.  The two memory blocks specified are compared
+ byte by byte in lexicographic order starting at the beginning of each
+ block.  Unlike @samp{cmpstr@var{m}} the instruction can prefetch
+-any bytes in the two memory blocks.  The effect of the instruction is
+-to store a value in operand 0 whose sign indicates the result of the
+-comparison.
++any bytes in the two memory blocks.  Also unlike @samp{cmpstr@var{m}}
++the comparison will not stop if both bytes are zero.  The effect of
++the instruction is to store a value in operand 0 whose sign indicates
++the result of the comparison.
+ 
+ @cindex @code{strlen@var{m}} instruction pattern
+ @item @samp{strlen@var{m}}
+@@ -5510,7 +5514,7 @@
+ @cindex @code{stack_protect_set} instruction pattern
+ @item @samp{stack_protect_set}
+ 
+-This pattern, if defined, moves a @code{Pmode} value from the memory
++This pattern, if defined, moves a @code{ptr_mode} value from the memory
+ in operand 1 to the memory in operand 0 without leaving the value in
+ a register afterward.  This is to avoid leaking the value some place
+ that an attacker might use to rewrite the stack guard slot after
+@@ -5521,7 +5525,7 @@
+ @cindex @code{stack_protect_test} instruction pattern
+ @item @samp{stack_protect_test}
+ 
+-This pattern, if defined, compares a @code{Pmode} value from the
++This pattern, if defined, compares a @code{ptr_mode} value from the
+ memory in operand 1 with the memory in operand 0 without leaving the
+ value in a register afterward and branches to operand 2 if the values
+ weren't equal.

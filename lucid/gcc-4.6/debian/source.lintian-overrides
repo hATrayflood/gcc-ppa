@@ -1,0 +1,5 @@
+gcc-4.6: invalid-arch-string-in-source-relation
+gcc-4.6: quilt-build-dep-but-no-series-file
+gcc-4.6: weak-library-dev-dependency libgnatvsn4.6-dev on libgnatvsn4.6 (= ${gnat:Version})
+gcc-4.6: weak-library-dev-dependency libgnatprj4.6-dev on libgnatprj4.6 (= ${gnat:Version})
+gcc-4.6: weak-library-dev-dependency libgcj12-dev on libgcj12-awt (= ${gcj:Version})

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "upgrade" ] || [ "$1" = "configure" ]; then
+    update-alternatives --quiet --remove arm-linux-gnueabihf-gcc /usr/bin/arm-linux-gnueabihf-gcc-4.6
+    update-alternatives --quiet --remove arm-linux-gnueabihf-gcov /usr/bin/arm-linux-gnueabihf-gcov-4.6
+fi
+
+#DEBHELPER#
+
+exit 0

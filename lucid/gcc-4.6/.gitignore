@@ -1,0 +1,5 @@
+*.deb
+gcc-4.6_4.6.3-*
+gcc-4.6_4.6.3.orig.*
+gcc-4.6-4.6.3.orig/*
+!gcc-4.6-4.6.3.orig/debian

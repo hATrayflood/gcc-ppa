@@ -1,0 +1,68 @@
+--- a/src/libffi/src/m68k/sysv.S
++++ b/src/libffi/src/m68k/sysv.S
+@@ -109,7 +109,7 @@
+ retfloat:
+ 	btst	#2,%d2
+ 	jbeq	retdouble
+-#if defined(__MC68881__)
++#if defined(__MC68881__) || defined(__HAVE_68881__)
+ 	fmove.s	%fp0,(%a1)
+ #else
+ 	move.l	%d0,(%a1)
+@@ -119,7 +119,7 @@
+ retdouble:
+ 	btst	#3,%d2
+ 	jbeq	retlongdouble
+-#if defined(__MC68881__)
++#if defined(__MC68881__) || defined(__HAVE_68881__)
+ 	fmove.d	%fp0,(%a1)
+ #else
+ 	move.l	%d0,(%a1)+
+@@ -130,7 +130,7 @@
+ retlongdouble:
+ 	btst	#4,%d2
+ 	jbeq	retpointer
+-#if defined(__MC68881__)
++#if defined(__MC68881__) || defined(__HAVE_68881__)
+ 	fmove.x	%fp0,(%a1)
+ #else
+ 	move.l	%d0,(%a1)+
+@@ -199,7 +199,7 @@
+ 	move.l	(%a0),%d1
+ 	jra	.Lcls_epilogue
+ .Lcls_ret_float:
+-#if defined(__MC68881__)
++#if defined(__MC68881__) || defined(__HAVE_68881__)
+ 	fmove.s	(%a0),%fp0
+ #else
+ 	move.l	(%a0),%d0
+@@ -209,7 +209,7 @@
+ 	lsr.l	#2,%d0
+ 	jne	1f
+ 	jcs	.Lcls_ret_ldouble
+-#if defined(__MC68881__)
++#if defined(__MC68881__) || defined(__HAVE_68881__)
+ 	fmove.d	(%a0),%fp0
+ #else
+ 	move.l	(%a0)+,%d0
+@@ -217,7 +217,7 @@
+ #endif
+ 	jra	.Lcls_epilogue
+ .Lcls_ret_ldouble:
+-#if defined(__MC68881__)
++#if defined(__MC68881__) || defined(__HAVE_68881__)
+ 	fmove.x	(%a0),%fp0
+ #else
+ 	move.l	(%a0)+,%d0
+--- a/src/libffi/src/m68k/ffi.c
++++ b/src/libffi/src/m68k/ffi.c
+@@ -261,7 +261,8 @@
+ 		      void *user_data,
+ 		      void *codeloc)
+ {
+-  FFI_ASSERT (cif->abi == FFI_SYSV);
++  if (cif->abi != FFI_SYSV)
++    return FFI_BAD_ABI;
+ 
+   *(unsigned short *)closure->tramp = 0x207c;
+   *(void **)(closure->tramp + 2) = codeloc;

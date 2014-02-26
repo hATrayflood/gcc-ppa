@@ -1,0 +1,4 @@
+# DP: Updates from the cell-4_5-branch up to 2010xxxx
+
+svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_5-branch@xxxx svn://gcc.gnu.org/svn/gcc/branches/cell-4_5-branch
+
