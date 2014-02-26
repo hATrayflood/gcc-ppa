@@ -1,0 +1,680 @@
+# DP: updates from the 4.5 branch upto 20120122 (r183389).
+
+last_updated()
+{
+	cat > ${dir}LAST_UPDATED <<EOF
+Sun Jan 22 11:57:00 CET 2012
+Sun Jan 22 10:57:00 UTC 2012 (revision 183389)
+EOF
+}
+
+svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_5-branch@r182893 svn://gcc.gnu.org/svn/gcc/branches/gcc-4_5-branch \
+	| sed -r 's,^--- (\S+)\t(\S+)(.*)$,--- a/src/\1\t\2,;s,^\+\+\+ (\S+)\t(\S+)(.*)$,+++ b/src/\1\t\2,' \
+	| awk '/^Index:.*\.(class|texi)/ {skip=1; next} /^Index:/ { skip=0 } skip==0'
+
+Index: gcc/DATESTAMP
+===================================================================
+--- a/src/gcc/DATESTAMP	(revision
++++ b/src/gcc/DATESTAMP	(revision
+@@ -1 +1 @@
+-20120105
++20120122
+Index: gcc/ChangeLog
+===================================================================
+--- a/src/gcc/ChangeLog	(revision
++++ b/src/gcc/ChangeLog	(revision
+@@ -1,3 +1,63 @@
++2012-01-20  Eric Botcazou  <ebotcazou@adacore.com>
++
++	* cfgrtl.c (rtl_dump_bb): Do not dump insns for {ENTRY|EXIT}_BLOCK.
++
++2012-01-12  Matthew Gretton-Dann  <matthew.gretton-dann@arm.com>
++
++	Backport from mainline:
++	2012-01-11  Matthew Gretton-Dann  <matthew.gretton-dann@arm.com>
++
++	* config/arm/arm.md (mov_notscc): Use MVN for false condition.
++
++2012-01-10  Joseph Myers  <joseph@codesourcery.com>
++
++	Revert:
++
++	2008-09-18  Andrew Pinski  <andrew_pinski@playstation.sony.com>
++
++	PR rtl-opt/37451
++	* loop-doloop.c (doloop_modify): New argument zero_extend_p and
++	zero extend count after the correction to it is done.
++	(doloop_optimize): Update call to doloop_modify, don't zero extend
++	count before call.
++
++	2008-11-03  Andrew Pinski  <andrew_pinski@playstation.sony.com>
++
++	PR rtl-opt/37782
++	* loop-doloop.c (doloop_modify): Add from_mode argument that says what
++	mode count is in.
++	(doloop_optimize): Update call to doloop_modify.
++
++2012-01-09  Richard Sandiford  <rdsandiford@googlemail.com>
++
++	* config/mips/mips.md (loadgp_newabi_<mode>): Add missing
++	earlyclobber.
++
++2012-01-09  Martin Jambor  <mjambor@suse.cz>
++
++	PR tree-optimization/51759
++	Backport from mainline
++	2010-09-15  Martin Jambor  <mjambor@suse.cz>
++
++	PR middle-end/45644
++	* tree-sra.c (create_access): Check for bit-fields directly.
++
++2012-01-09  Eric Botcazou  <ebotcazou@adacore.com>
++
++	* config/sparc/sol2-unwind.h (sparc64_is_sighandler): Check that the
++	purported sigacthandler address isn't null before dereferencing it.
++	(sparc_is_sighandler): Likewise.
++
++2012-01-06  Richard Sandiford  <richard.sandiford@linaro.org>
++
++	PR middle-end/48660
++	* expr.h (copy_blkmode_to_reg): Declare.
++	* expr.c (copy_blkmode_to_reg): New function.
++	(expand_assignment): Don't expand register RESULT_DECLs before
++	the lhs.  Use copy_blkmode_to_reg to copy BLKmode values into a
++	RESULT_DECL register.
++	(expand_expr_real_1): Handle BLKmode decls when looking for promotion.
++
+ 2012-01-04  Richard Guenther  <rguenther@suse.de>
+ 
+ 	Backport from mainline
+@@ -34,7 +100,7 @@
+ 	CAST_RESTRICT.
+ 
+ 2012-01-03  Richard Guenther  <rguenther@suse.de>
+- 
++
+ 	Backport from mainline
+ 	2011-08-23  Richard Guenther  <rguenther@suse.de>
+ 
+@@ -169,7 +235,8 @@
+ 2011-10-29  John David Anglin  <dave.anglin@nrc-cnrc.gc.ca>
+ 
+ 	PR target/50691
+-	* config/pa/pa.c (emit_move_sequence): Legitimize TLS symbol references.
++	* config/pa/pa.c (emit_move_sequence): Legitimize TLS symbol
++	references.
+ 	* config/pa/pa.h (LEGITIMATE_CONSTANT_P): Return false for
+ 	TLS_MODEL_GLOBAL_DYNAMIC and TLS_MODEL_LOCAL_DYNAMIC symbol references.
+ 
+Index: gcc/testsuite/gcc.c-torture/execute/doloop-1.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.c-torture/execute/doloop-1.c	(revision
++++ b/src/gcc/testsuite/gcc.c-torture/execute/doloop-1.c	(revision
+@@ -0,0 +1,18 @@
++#include <limits.h>
++
++extern void exit (int);
++extern void abort (void);
++
++volatile unsigned int i;
++
++int
++main (void)
++{
++  unsigned char z = 0;
++
++  do ++i;
++  while (--z > 0);
++  if (i != UCHAR_MAX + 1U)
++    abort ();
++  exit (0);
++}
+Index: gcc/testsuite/gcc.c-torture/execute/20120111-1.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.c-torture/execute/20120111-1.c	(revision
++++ b/src/gcc/testsuite/gcc.c-torture/execute/20120111-1.c	(revision
+@@ -0,0 +1,18 @@
++#include <stdlib.h>
++#include <stdint.h>
++
++uint32_t f0a (uint64_t arg2) __attribute__((noinline));
++
++uint32_t
++f0a (uint64_t arg)
++{
++  return ~(arg > -3);
++}
++
++int main() {
++  uint32_t r1;
++  r1 = f0a (12094370573988097329ULL);
++  if (r1 != ~0U)
++    abort ();
++  return 0;
++}
+Index: gcc/testsuite/gcc.c-torture/execute/doloop-2.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.c-torture/execute/doloop-2.c	(revision
++++ b/src/gcc/testsuite/gcc.c-torture/execute/doloop-2.c	(revision
+@@ -0,0 +1,18 @@
++#include <limits.h>
++
++extern void exit (int);
++extern void abort (void);
++
++volatile unsigned int i;
++
++int
++main (void)
++{
++  unsigned short z = 0;
++
++  do ++i;
++  while (--z > 0);
++  if (i != USHRT_MAX + 1U)
++    abort ();
++  exit (0);
++}
+Index: gcc/testsuite/gnat.dg/renaming5.adb
+===================================================================
+--- a/src/gcc/testsuite/gnat.dg/renaming5.adb	(revision
++++ b/src/gcc/testsuite/gnat.dg/renaming5.adb	(revision
+@@ -0,0 +1,30 @@
++-- PR ada/46192
++-- Testcase by Rolf Ebert <rolf.ebert.gcc@gmx.de>
++
++-- { dg-do compile }
++-- { dg-options "-O2 -fdump-tree-optimized" }
++
++with System; use System;
++
++package body Renaming5 is
++
++   type Bits_In_Byte is array (0 .. 7) of Boolean;
++   pragma Pack (Bits_In_Byte);
++
++   A : Bits_In_Byte;
++   for A'Address use System'To_Address(16#c0#);
++   pragma Volatile (A);
++
++   B : Bits_In_Byte renames A;
++
++   procedure Proc is
++   begin
++      while B (0) = False loop
++         null;
++      end loop;
++   end;
++
++end Renaming5;
++
++-- { dg-final { scan-tree-dump-times "goto" 2 "optimized" } }
++-- { dg-final { cleanup-tree-dump "optimized" } }
+Index: gcc/testsuite/gnat.dg/renaming5.ads
+===================================================================
+--- a/src/gcc/testsuite/gnat.dg/renaming5.ads	(revision
++++ b/src/gcc/testsuite/gnat.dg/renaming5.ads	(revision
+@@ -0,0 +1,5 @@
++package Renaming5 is
++
++   procedure Proc;
++
++end Renaming5;
+Index: gcc/testsuite/gcc.dg/pr51821.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.dg/pr51821.c	(revision
++++ b/src/gcc/testsuite/gcc.dg/pr51821.c	(revision
+@@ -0,0 +1,25 @@
++/* { dg-do run } */
++/* { dg-options "-std=c99 -O2" } */
++/* { dg-options "-std=c99 -O2 -msse" { target { i?86-*-* x86_64-*-* } } } */
++/* { dg-require-effective-target sse_runtime { target { i?86-*-* x86_64-*-* } } } */
++
++extern void abort (void);
++
++unsigned int  __attribute__((noinline))
++test (int shift_size)
++{
++  unsigned long long res = ~0;
++
++  return res << shift_size;
++}
++
++int
++main ()
++{
++  int dst = 32;
++
++  if (test (dst) != 0)
++    abort ();
++
++  return 0;
++}
+Index: gcc/testsuite/gcc.dg/ipa/pr45644.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.dg/ipa/pr45644.c	(revision
++++ b/src/gcc/testsuite/gcc.dg/ipa/pr45644.c	(revision
+@@ -0,0 +1,35 @@
++/* Verify that we do not IPA-SRA bitfields.  */
++/* { dg-do run } */
++/* { dg-options "-O2"  } */
++
++extern void abort (void);
++
++struct S
++{
++  int j : 8;
++  int i : 24;
++  int l;
++};
++
++static int __attribute__((noinline)) foo (struct S *s)
++{
++  int z = s->i;
++  if (z != 777)
++    abort ();
++  return 0;
++}
++
++int __attribute__((noinline)) bar (struct S *s)
++{
++  return foo (s);
++}
++
++int main (int argc, char *argv[])
++{
++  struct S s;
++  s.j = 5;
++  s.i = 777;
++  s.l = -1;
++
++  return bar (&s);
++}
+Index: gcc/testsuite/ada/acats/overflow.lst
+===================================================================
+--- a/src/gcc/testsuite/ada/acats/overflow.lst	(revision
++++ b/src/gcc/testsuite/ada/acats/overflow.lst	(revision
+@@ -14,3 +14,4 @@
+ c460008
+ c460011
+ c4a012b
++cb20004
+Index: gcc/testsuite/ChangeLog
+===================================================================
+--- a/src/gcc/testsuite/ChangeLog	(revision
++++ b/src/gcc/testsuite/ChangeLog	(revision
+@@ -1,3 +1,47 @@
++2012-01-21  Eric Botcazou  <ebotcazou@adacore.com>
++
++	* gnat.dg/renaming5.ad[sb]: New test.
++
++2012-01-20  Kai Tietz  <ktietz@redhat.com>
++
++	* g++.dg/torture/pr51344.C: Fix typo.
++
++2012-01-19  Kai Tietz  <ktietz@redhat.com>
++
++	* g++.dg/torture/pr51344.C: New test.
++
++2012-01-15  Uros Bizjak  <ubizjak@gmail.com>
++
++	PR rtl-optimization/51821
++	* gcc.dg/pr51821.c: New test.
++
++2012-01-12  Matthew Gretton-Dann  <matthew.gretton-dann@arm.com>
++
++	Backport from mainline:
++	2011-01-11  Matthew Gretton-Dann  <matthew.gretton-dann@arm.com>
++
++	* gcc.c-torture/execute/20120110-1.c: New testcase.
++
++2012-01-10  Joseph Myers  <joseph@codesourcery.com>
++
++	* gcc.c-torture/execute/doloop-1.c,
++	gcc.c-torture/execute/doloop-2.c: New tests.
++
++2012-01-09  Martin Jambor  <mjambor@suse.cz>
++
++	PR tree-optimization/51759
++	* gcc.dg/ipa/pr45644.c: New test.
++	* g++.dg/ipa/pr51759.C: Likewise.
++
++2012-01-06  Richard Sandiford  <richard.sandiford@linaro.org>
++
++	PR middle-end/48660
++	* g++.dg/pr48660.C: New test.
++
++2012-01-06  Eric Botcazou  <ebotcazou@adacore.com>
++
++	* ada/acats/overflow.lst: Add cb20004.
++
+ 2012-01-04  Richard Guenther  <rguenther@suse.de>
+ 
+ 	Backport from mainline
+Index: gcc/testsuite/g++.dg/pr48660.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/pr48660.C	(revision
++++ b/src/gcc/testsuite/g++.dg/pr48660.C	(revision
+@@ -0,0 +1,22 @@
++template<int N> struct val { char a[N]; };
++
++class Base
++{
++public:
++  virtual val<1> get1() const = 0;
++  virtual val<2> get2() const = 0;
++  virtual val<3> get3() const = 0;
++  virtual val<4> get4() const = 0;
++};
++
++class Derived : public virtual Base
++{
++public:
++  virtual val<1> get1() const { return foo->get1(); }
++  virtual val<2> get2() const { return foo->get2(); }
++  virtual val<3> get3() const { return foo->get3(); }
++  virtual val<4> get4() const { return foo->get4(); }
++  Base *foo;
++};
++
++Base* make() { return new Derived; }
+Index: gcc/testsuite/g++.dg/torture/pr51344.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/torture/pr51344.C	(revision
++++ b/src/gcc/testsuite/g++.dg/torture/pr51344.C	(revision
+@@ -0,0 +1,11 @@
++/* { dg-do compile } */
++class A;
++
++template <class T>
++class B
++{
++  friend __attribute__((cdecl)) A& operator >>(A& a, B& b)
++  {
++    return a;
++  }
++};
+Index: gcc/testsuite/g++.dg/ipa/pr51759.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/ipa/pr51759.C	(revision
++++ b/src/gcc/testsuite/g++.dg/ipa/pr51759.C	(revision
+@@ -0,0 +1,26 @@
++/* { dg-do run } */
++/* { dg-options "-O2"  } */
++
++extern "C" void abort (void);
++struct S
++{
++  void __attribute__((noinline)) set(unsigned val)
++    {
++      data = val;
++      if (data != val)
++        abort ();
++    }
++  int pad0;
++  unsigned pad1 : 8;
++  unsigned data : 24;
++  int pad2;
++};
++int main()
++{
++  S s;
++  s.pad2 = -1;
++  s.set(0);
++  if (s.pad2 != -1)
++    abort ();
++}
++
+Index: gcc/cp/ChangeLog
+===================================================================
+--- a/src/gcc/cp/ChangeLog	(revision
++++ b/src/gcc/cp/ChangeLog	(revision
+@@ -1,3 +1,9 @@
++2012-01-19  Kai Tietz  <ktietz@redhat.com>
++
++	PR c++/51344
++	* decl2.c (save_template_attributes): Use merge_attributes
++	instead of chaining up via TREE_CHAIN.
++
+ 2011-12-20  Dodji Seketeli  <dodji@redhat.com>
+ 
+ 	PR debug/49951
+Index: gcc/cp/decl2.c
+===================================================================
+--- a/src/gcc/cp/decl2.c	(revision
++++ b/src/gcc/cp/decl2.c	(revision
+@@ -1189,9 +1189,9 @@
+ 
+   old_attrs = *q;
+ 
+-  /* Place the late attributes at the beginning of the attribute
++  /* Merge the late attributes at the beginning with the attribute
+      list.  */
+-  TREE_CHAIN (tree_last (late_attrs)) = *q;
++  late_attrs = merge_attributes (late_attrs, *q);
+   *q = late_attrs;
+ 
+   if (!DECL_P (*decl_p) && *decl_p == TYPE_MAIN_VARIANT (*decl_p))
+Index: gcc/expr.h
+===================================================================
+--- a/src/gcc/expr.h	(revision
++++ b/src/gcc/expr.h	(revision
+@@ -460,6 +460,8 @@
+ /* Copy BLKmode object from a set of registers.  */
+ extern rtx copy_blkmode_from_reg (rtx, rtx, tree);
+ 
++extern rtx copy_blkmode_to_reg (enum machine_mode, tree);
++
+ /* Mark REG as holding a parameter for the next CALL_INSN.  */
+ extern void use_reg (rtx *, rtx);
+ 
+Index: gcc/ada/ChangeLog
+===================================================================
+--- a/src/gcc/ada/ChangeLog	(revision
++++ b/src/gcc/ada/ChangeLog	(revision
+@@ -1,3 +1,13 @@
++2012-01-21  Eric Botcazou  <ebotcazou@adacore.com>
++
++	PR ada/46192
++	* gcc-interface/decl.c (gnat_to_gnu_entity) <object>: In the case of a
++	renaming, preserve the volatileness through the indirection, if any.
++
++2012-01-09  Eric Botcazou  <ebotcazou@adacore.com>
++
++	* gcc-interface/trans.c (addressable_p) <COMPONENT_REF>: Fix thinko.
++
+ 2011-07-14  John David Anglin  <dave.anglin@nrc-cnrc.gc.ca>
+ 
+ 	PR ada/46350
+Index: gcc/ada/gcc-interface/decl.c
+===================================================================
+--- a/src/gcc/ada/gcc-interface/decl.c	(revision
++++ b/src/gcc/ada/gcc-interface/decl.c	(revision
+@@ -942,6 +942,14 @@
+ 		   entity is always accessed indirectly through it.  */
+ 		else
+ 		  {
++		    /* We need to preserve the volatileness of the renamed
++		       object through the indirection.  */
++		    if (TREE_THIS_VOLATILE (gnu_expr)
++			&& !TYPE_VOLATILE (gnu_type))
++		      gnu_type
++			= build_qualified_type (gnu_type,
++						(TYPE_QUALS (gnu_type)
++						 | TYPE_QUAL_VOLATILE));
+ 		    gnu_type = build_reference_type (gnu_type);
+ 		    inner_const_flag = TREE_READONLY (gnu_expr);
+ 		    const_flag = true;
+Index: gcc/ada/gcc-interface/trans.c
+===================================================================
+--- a/src/gcc/ada/gcc-interface/trans.c	(revision
++++ b/src/gcc/ada/gcc-interface/trans.c	(revision
+@@ -7017,7 +7017,7 @@
+ 		    || DECL_ALIGN (TREE_OPERAND (gnu_expr, 1))
+ 		       >= TYPE_ALIGN (TREE_TYPE (gnu_expr))))
+ 	       /* The field of a padding record is always addressable.  */
+-	       || TYPE_PADDING_P (TREE_TYPE (TREE_OPERAND (gnu_expr, 0))))
++	       || TYPE_IS_PADDING_P (TREE_TYPE (TREE_OPERAND (gnu_expr, 0))))
+ 	      && addressable_p (TREE_OPERAND (gnu_expr, 0), NULL_TREE));
+ 
+     case ARRAY_REF:  case ARRAY_RANGE_REF:
+Index: gcc/loop-doloop.c
+===================================================================
+--- a/src/gcc/loop-doloop.c	(revision
++++ b/src/gcc/loop-doloop.c	(revision
+@@ -334,14 +334,11 @@
+    describes the loop, DESC describes the number of iterations of the
+    loop, and DOLOOP_INSN is the low-overhead looping insn to emit at the
+    end of the loop.  CONDITION is the condition separated from the
+-   DOLOOP_SEQ.  COUNT is the number of iterations of the LOOP.
+-   ZERO_EXTEND_P says to zero extend COUNT after the increment of it to
+-   word_mode from FROM_MODE.  */
++   DOLOOP_SEQ.  COUNT is the number of iterations of the LOOP.  */
+ 
+ static void
+ doloop_modify (struct loop *loop, struct niter_desc *desc,
+-	       rtx doloop_seq, rtx condition, rtx count,
+-	       bool zero_extend_p, enum machine_mode from_mode)
++	       rtx doloop_seq, rtx condition, rtx count)
+ {
+   rtx counter_reg;
+   rtx tmp, noloop = NULL_RTX;
+@@ -415,12 +412,8 @@
+     }
+ 
+   if (increment_count)
+-    count = simplify_gen_binary (PLUS, from_mode, count, const1_rtx);
++    count = simplify_gen_binary (PLUS, mode, count, const1_rtx);
+ 
+-  if (zero_extend_p)
+-    count = simplify_gen_unary (ZERO_EXTEND, word_mode,
+-				count, from_mode);
+-
+   /* Insert initialization of the count register into the loop header.  */
+   start_sequence ();
+   tmp = force_operand (count, counter_reg);
+@@ -555,7 +548,6 @@
+   struct niter_desc *desc;
+   unsigned word_mode_size;
+   unsigned HOST_WIDE_INT word_mode_max;
+-  bool zero_extend_p = false;
+ 
+   if (dump_file)
+     fprintf (dump_file, "Doloop: Processing loop %d.\n", loop->num);
+@@ -630,7 +622,8 @@
+     {
+       if (word_mode_size > GET_MODE_BITSIZE (mode))
+ 	{
+-	  zero_extend_p = true;
++	  count = simplify_gen_unary (ZERO_EXTEND, word_mode,
++				      count, mode);
+ 	  iterations = simplify_gen_unary (ZERO_EXTEND, word_mode,
+ 					   iterations, mode);
+ 	  iterations_max = simplify_gen_unary (ZERO_EXTEND, word_mode,
+@@ -674,8 +667,7 @@
+       return false;
+     }
+ 
+-  doloop_modify (loop, desc, doloop_seq, condition, count,
+-		 zero_extend_p, mode);
++  doloop_modify (loop, desc, doloop_seq, condition, count);
+   return true;
+ }
+ 
+Index: gcc/tree-sra.c
+===================================================================
+--- a/src/gcc/tree-sra.c	(revision
++++ b/src/gcc/tree-sra.c	(revision
+@@ -771,12 +771,13 @@
+ 	  disqualify_candidate (base, "Encountered a variable sized access.");
+ 	  return NULL;
+ 	}
+-      if ((offset % BITS_PER_UNIT) != 0 || (size % BITS_PER_UNIT) != 0)
++      if (TREE_CODE (expr) == COMPONENT_REF
++	  && DECL_BIT_FIELD (TREE_OPERAND (expr, 1)))
+ 	{
+-	  disqualify_candidate (base,
+-				"Encountered an acces not aligned to a byte.");
++	  disqualify_candidate (base, "Encountered a bit-field access.");
+ 	  return NULL;
+ 	}
++      gcc_assert ((offset % BITS_PER_UNIT) == 0);
+ 
+       if (ptr)
+ 	mark_parm_dereference (base, offset + size, stmt);
+Index: gcc/config/sparc/sol2-unwind.h
+===================================================================
+--- a/src/gcc/config/sparc/sol2-unwind.h	(revision
++++ b/src/gcc/config/sparc/sol2-unwind.h	(revision
+@@ -123,10 +123,10 @@
+ 	  /* This matches the call_user_handler pattern for Solaris 10.
+ 	     There are 2 cases so we look for the return address of the
+ 	     caller's caller frame in order to do more pattern matching.  */
+-	  unsigned int sah_pattern
+-	    = *(unsigned int *)(*(unsigned long *)(this_cfa + 176 + 15*8) - 4);
++	  unsigned long sah_address
++	    = *(unsigned long *)(this_cfa + 176 + 15*8);
+ 
+-          if (sah_pattern == 0x92100019)
++          if (sah_address && *(unsigned int *)(sah_address - 4) == 0x92100019)
+ 	    /* This is the same setup as for Solaris 9, see below.  */
+ 	    regs_off = 176 + 176 + 176 + 304;
+ 	  else
+@@ -371,10 +371,10 @@
+ 	  /* This matches the call_user_handler pattern for Solaris 10.
+ 	     There are 2 cases so we look for the return address of the
+ 	     caller's caller frame in order to do more pattern matching.  */
+-	  unsigned int sah_pattern
+-	    = *(unsigned int *)(*(unsigned int *)(this_cfa + 96 + 15*4) - 4);
++	  unsigned int sah_address
++	    = *(unsigned int *)(this_cfa + 96 + 15*4);
+ 
+-          if (sah_pattern == 0x92100019)
++          if (sah_address && *(unsigned int *)(sah_address - 4) == 0x92100019)
+ 	    /* This is the same setup as for Solaris 9, see below.  */
+ 	    regs_off = 96 + 96 + 96 + 160;
+ 	  else
+Index: gcc/config/arm/arm.md
+===================================================================
+--- a/src/gcc/config/arm/arm.md	(revision
++++ b/src/gcc/config/arm/arm.md	(revision
+@@ -7994,7 +7994,7 @@
+ 	(not:SI (match_operator:SI 1 "arm_comparison_operator"
+ 		 [(match_operand 2 "cc_register" "") (const_int 0)])))]
+   "TARGET_ARM"
+-  "mov%D1\\t%0, #0\;mvn%d1\\t%0, #1"
++  "mvn%D1\\t%0, #0\;mvn%d1\\t%0, #1"
+   [(set_attr "conds" "use")
+    (set_attr "length" "8")]
+ )
+Index: gcc/config/mips/mips.md
+===================================================================
+--- a/src/gcc/config/mips/mips.md	(revision
++++ b/src/gcc/config/mips/mips.md	(revision
+@@ -4806,7 +4806,7 @@
+ ;; of _gp from the start of this function.  Operand 1 is the incoming
+ ;; function address.
+ (define_insn_and_split "loadgp_newabi_<mode>"
+-  [(set (match_operand:P 0 "register_operand" "=d")
++  [(set (match_operand:P 0 "register_operand" "=&d")
+ 	(unspec:P [(match_operand:P 1)
+ 		   (match_operand:P 2 "register_operand" "d")]
+ 		  UNSPEC_LOADGP))]
+Index: gcc/cfgrtl.c
+===================================================================
+--- a/src/gcc/cfgrtl.c	(revision
++++ b/src/gcc/cfgrtl.c	(revision
+@@ -1640,9 +1640,10 @@
+       putc ('\n', outf);
+     }
+ 
+-  for (insn = BB_HEAD (bb), last = NEXT_INSN (BB_END (bb)); insn != last;
+-       insn = NEXT_INSN (insn))
+-    print_rtl_single (outf, insn);
++  if (bb->index != ENTRY_BLOCK && bb->index != EXIT_BLOCK)
++    for (insn = BB_HEAD (bb), last = NEXT_INSN (BB_END (bb)); insn != last;
++	 insn = NEXT_INSN (insn))
++      print_rtl_single (outf, insn);
+ 
+   if (df)
+     {

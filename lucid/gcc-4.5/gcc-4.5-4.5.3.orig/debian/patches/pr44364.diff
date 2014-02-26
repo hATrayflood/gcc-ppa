@@ -1,0 +1,18 @@
+# DP: This patch made it into trunk. I don't get it into the 4.4 branch
+# DP: because I can't prove that it is a regression since 4.3.
+
+Index: gcc/config/rs6000/e500.h
+===================================================================
+--- a/src/gcc/config/rs6000/e500.h	(revision 160245)
++++ b/src/gcc/config/rs6000/e500.h	(working copy)
+@@ -43,3 +43,10 @@
+ 	  error ("E500 and FPRs not supported");			\
+       }									\
+   } while (0)
++
++/* When setting up caller-save slots (MODE == VOIDmode) ensure we
++   allocate space for DFmode.  Save gprs in the correct mode too.  */
++#define HARD_REGNO_CALLER_SAVE_MODE(REGNO, NREGS, MODE) \
++  (TARGET_E500_DOUBLE && ((MODE) == VOIDmode || (MODE) == DFmode)	\
++   ? DFmode								\
++   : choose_hard_reg_mode ((REGNO), (NREGS), false))

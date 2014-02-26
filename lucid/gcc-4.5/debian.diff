@@ -1,0 +1,196 @@
+diff -urN debian/changelog gcc-4.5-4.5.3.orig/debian/changelog
+--- debian/changelog	2014-02-20 18:00:08.421973186 +0900
++++ gcc-4.5-4.5.3.orig/debian/changelog	2014-02-27 02:09:51.063516743 +0900
+@@ -1,3 +1,9 @@
++gcc-4.5 (4.5.3-12ubuntu2lucid1) lucid; urgency=low
++
++  * ppa for lucid
++
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Thu, 27 Feb 2014 02:00:00 +0900
++
+ gcc-4.5 (4.5.3-12ubuntu2) precise; urgency=low
+ 
+   * Pursuant to the cross-distro consensus on the armhf linker path,
+diff -urN debian/control gcc-4.5-4.5.3.orig/debian/control
+--- debian/control	2014-02-20 18:00:08.433981620 +0900
++++ gcc-4.5-4.5.3.orig/debian/control	2014-02-27 02:11:41.898958807 +0900
+@@ -1,20 +1,16 @@
+ Source: gcc-4.5
+ Section: devel
+ Priority: optional
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-XSBC-Original-Maintainer: Debian GCC Maintainers <debian-gcc@lists.debian.org>
+-Uploaders: Matthias Klose <doko@debian.org>, Arthur Loiret <aloiret@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.9.2
+-Build-Depends: dpkg-dev (>= 1.16.0~ubuntu4), debhelper (>= 5.0.62), g++-multilib [amd64 i386 mips mipsel powerpc ppc64 s390 s390x sparc kfreebsd-amd64], libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6), libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 s390x], lib64gcc1 [i386 powerpc sparc s390], libc6-dev-mips64 [mips mipsel], libc6-dev-mipsn32 [mips mipsel], m4, libtool, autoconf2.64, automake (>= 1:1.11), automake (<< 1:1.12), libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], zlib1g-dev, gawk, lzma, xz-utils, patchutils, binutils (>= 2.20.1-14~) | binutils-multiarch (>= 2.20.1-14~), binutils-hppa64 (>= 2.20.1-14~) [hppa], gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, texinfo (>= 4.3), locales [!m68k !knetbsd-i386 !knetbsd-alpha], procps, sharutils, binutils-spu (>= 2.20.1-14~) [powerpc ppc64], newlib-spu (>= 1.16.0) [powerpc ppc64], libcloog-ppl-dev (>= 0.15.9-2~), libmpc-dev, libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), libelfg0-dev (>= 0.8.12), dejagnu [!m68k !hurd-i386 !hurd-alpha], autogen, realpath (>= 1.9.12), chrpath, lsb-release, make (>= 3.81), quilt
++Build-Depends: dpkg-dev (>= 1.14.15), debhelper (>= 5.0.62), g++-multilib [amd64 i386 mips mipsel powerpc ppc64 s390 s390x sparc kfreebsd-amd64], libc6.1-dev (>= 2.5) [alpha ia64] | libc0.3-dev (>= 2.5) [hurd-i386] | libc0.1-dev (>= 2.5) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.5), libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 s390x], lib64gcc1 [i386 powerpc sparc s390], libc6-dev-mips64 [mips mipsel], libc6-dev-mipsn32 [mips mipsel], m4, libtool, autoconf2.64, automake (>= 1:1.11), automake (<< 1:1.12), libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], zlib1g-dev, gawk, lzma, xz-utils, patchutils, binutils (>= 2.20.1) | binutils-multiarch (>= 2.20.1), binutils-hppa64 (>= 2.20.1) [hppa], gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, texinfo (>= 4.3), locales [!m68k !knetbsd-i386 !knetbsd-alpha], procps, sharutils, binutils-spu (>= 2.20.1) [powerpc ppc64], newlib-spu (>= 1.16.0) [powerpc ppc64], libcloog-ppl-dev (>= 0.15.8), libmpc-dev, libmpfr-dev, libgmp3-dev, libelfg0-dev (>= 0.8.12), dejagnu [!m68k !hurd-i386 !hurd-alpha], autogen, realpath (>= 1.9.12), chrpath, lsb-release, make (>= 3.81), quilt
+ Build-Depends-Indep: doxygen (>= 1.4.2), graphviz (>= 2.2), gsfonts-x11, texlive-latex-base, 
+ Build-Conflicts: binutils-gold
+-Homepage: http://gcc.gnu.org/
+-XS-Vcs-Browser: http://svn.debian.org/viewsvn/gcccvs/branches/sid/gcc-4.5/
+-XS-Vcs-Svn: svn://svn.debian.org/svn/gcccvs/branches/sid/gcc-4.5
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-upper
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ Package: gcc-4.5-base
+ Architecture: any
+-Multi-Arch: same
+ Section: libs
+ Priority: required
+ Depends: ${misc:Depends}
+@@ -51,7 +47,7 @@
+ Architecture: any
+ Section: devel
+ Priority: optional
+-Depends: gcc-4.5-base (= ${gcc:Version}), gcc-4.5 (= ${gcc:Version}), libgmp-dev (>= 2:5.0.1~), ${shlibs:Depends}, ${misc:Depends}
++Depends: gcc-4.5-base (= ${gcc:Version}), gcc-4.5 (= ${gcc:Version}), libgmp3-dev, ${shlibs:Depends}, ${misc:Depends}
+ Description: Files for GNU GCC plugin development.
+  This package contains (header) files for GNU GCC plugin development. It
+  is only used for the development of GCC plugins, but not needed to run
+@@ -212,8 +208,6 @@
+ Package: libobjc2
+ Section: libs
+ Architecture: any
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+ Priority: optional
+ Depends: gcc-4.5-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Description: Runtime library for GNU Objective-C applications
+@@ -222,7 +216,6 @@
+ Package: libobjc2-dbg
+ Section: debug
+ Architecture: any
+-Multi-Arch: same
+ Priority: extra
+ Depends: gcc-4.5-base (= ${gcc:Version}), libobjc2 (= ${gcc:Version}), libgcc1-dbg, ${misc:Depends}
+ Description: Runtime library for GNU Objective-C applications (debug symbols)
+diff -urN debian/control.m4 gcc-4.5-4.5.3.orig/debian/control.m4
+--- debian/control.m4	2014-02-20 18:00:08.405972933 +0900
++++ gcc-4.5-4.5.3.orig/debian/control.m4	2014-02-27 02:11:03.459454160 +0900
+@@ -25,23 +25,7 @@
+ Source: SRCNAME
+ Section: devel
+ Priority: PRI(optional)
+-ifelse(DIST,`Ubuntu',`dnl
+-ifelse(regexp(SRCNAME, `gnat\|gdc-'),0,`dnl
+-Maintainer: Ubuntu MOTU Developers <ubuntu-motu@lists.ubuntu.com>
+-', `dnl
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-')dnl SRCNAME
+-XSBC-Original-Maintainer: MAINTAINER
+-', `dnl
+-Maintainer: MAINTAINER
+-')dnl DIST
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Uploaders: Ludovic Brenta <lbrenta@debian.org>
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Uploaders: Arthur Loiret <arthur.loiret@gmail.com>
+-', `dnl
+-Uploaders: Matthias Klose <doko@debian.org>, Arthur Loiret <aloiret@debian.org>
+-')dnl SRCNAME
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.9.2
+ ifdef(`TARGET',`dnl cross
+ Build-Depends: DPKG_BUILD_DEP debhelper (>= 5.0.62), dpkg-cross (>= 1.25.99), LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP LIBUNWIND_BUILD_DEP LIBATOMIC_OPS_BUILD_DEP AUTOGEN_BUILD_DEP CLOOG_BUILD_DEP AUTO_BUILD_DEP SOURCE_BUILD_DEP CROSS_BUILD_DEP MPFR_BUILD_DEP GMP_BUILD_DEP zlib1g-dev, gawk, lzma, xz-utils, patchutils, BINUTILS_BUILD_DEP, bison (>= 1:2.3), flex, realpath (>= 1.9.12), lsb-release, make (>= 3.81), quilt
+@@ -52,15 +36,8 @@
+ ')dnl
+ ')dnl
+ Build-Conflicts: binutils-gold
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Homepage: http://gcc.gnu.org/
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Homepage: http://dgcc.sourceforge.net/
+-', `dnl
+-Homepage: http://gcc.gnu.org/
+-')dnl SRCNAME
+-XS-Vcs-Browser: http://svn.debian.org/viewsvn/gcccvs/branches/sid/gcc`'PV/
+-XS-Vcs-Svn: svn://svn.debian.org/svn/gcccvs/branches/sid/gcc`'PV
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-upper
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ ifelse(SRCNAME,gcc-snapshot,`dnl
+ Package: gcc-snapshot
+diff -urN debian/rules.conf gcc-4.5-4.5.3.orig/debian/rules.conf
+--- debian/rules.conf	2014-02-20 18:00:08.414512154 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.conf	2014-02-20 17:57:46.845954776 +0900
+@@ -126,7 +126,7 @@
+ # See http://gcc.gnu.org/ml/gcc-patches/2008-09/msg01713.html
+ BINUTILSV      = 2.20.51.20100418~
+ # Lower the binutils build dependency for amd64/i386. gold seems to be good enough on these architectures.
+-BINUTILSV      = 2.20.1-14~
++BINUTILSV      = 2.20.1
+ ifeq ($(DEB_CROSS),yes)
+   BINUTILS_BUILD_DEP = binutils$(TS) (>= $(BINUTILSV))
+ else
+@@ -248,8 +248,8 @@
+ endif
+ 
+ PPL_BUILD_DEP = libppl-dev (>= 0.10) | libppl0.10-dev (>= 0.10),
+-CLOOG_BUILD_DEP = libcloog-ppl-dev (>= 0.15.9-2~),
+-CLOOG_RUNTIME_DEP = libcloog-ppl0 (>= 0.15.9-2~), libppl-c2, libppl7
++CLOOG_BUILD_DEP = libcloog-ppl-dev (>= 0.15.8),
++CLOOG_RUNTIME_DEP = libcloog-ppl0 (>= 0.15.8), libppl-c2, libppl7
+ MPC_BUILD_DEP = libmpc-dev,
+ ELF_BUILD_DEP = libelfg0-dev (>= 0.8.12),
+ 
+diff -urN debian/rules.defs gcc-4.5-4.5.3.orig/debian/rules.defs
+--- debian/rules.defs	2014-02-20 18:00:08.409950985 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.defs	2014-02-25 19:08:53.172942322 +0900
+@@ -297,6 +297,10 @@
+ # XXX: should with_common_libs be "yes" only if this is the default compiler
+ # version on the targeted arch?
+ 
++# PPA uploads ...
++with_common_pkgs :=
++with_common_libs :=
++
+ # is this a multiarch-enabled build?
+ ifeq (,$(filter $(distrelease),lenny etch squeeze dapper hardy jaunty karmic lucid maverick))
+   with_multiarch_lib := yes
+@@ -947,6 +951,7 @@
+ ifneq ($(findstring nocheck, $(DEB_BUILD_OPTIONS)),)
+   with_check := disabled by DEB_BUILD_OPTIONS
+ endif
++with_check := disabled for this build
+ 
+ # not a dependency on all archs, but if available, use it for the testsuite
+ ifneq (,$(wildcard /usr/bin/localedef))
+diff -urN debian/rules.parameters gcc-4.5-4.5.3.orig/debian/rules.parameters
+--- debian/rules.parameters	2014-02-20 18:00:08.414512154 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.parameters	2014-02-27 02:11:41.914952390 +0900
+@@ -2,15 +2,15 @@
+ GCC_VERSION	:= 4.5.3
+ NEXT_GCC_VERSION	:= 4.5.4
+ BASE_VERSION	:= 4.5
+-SOURCE_VERSION	:= 4.5.3-12ubuntu1
+-DEB_VERSION	:= 4.5.3-12ubuntu1
+-DEB_EVERSION	:= 1:4.5.3-12ubuntu1
++SOURCE_VERSION	:= 4.5.3-12ubuntu2lucid1
++DEB_VERSION	:= 4.5.3-12ubuntu2lucid1
++DEB_EVERSION	:= 1:4.5.3-12ubuntu2lucid1
+ GDC_BASE_VERSION  := 
+ DEB_GDC_VERSION	:= 
+ DEB_SOVERSION	:= 4.4
+ DEB_SOEVERSION	:= 1:4.4
+ DEB_LIBGCC_SOVERSION	:= 1:4.4
+-DEB_LIBGCC_VERSION	:= 1:4.5.3-12ubuntu1
++DEB_LIBGCC_VERSION	:= 1:4.5.3-12ubuntu2lucid1
+ DEB_STDCXX_SOVERSION	:= 4.4
+ DEB_GCJ_SOVERSION	:= 4.4
+ PKG_GCJ_EXT	:= 11
+diff -urN debian/rules.patch gcc-4.5-4.5.3.orig/debian/rules.patch
+--- debian/rules.patch	2014-02-20 18:00:08.446559546 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.patch	2014-02-26 01:19:11.416729506 +0900
+@@ -250,11 +250,7 @@
+ debian_patches += $(if $(with_linaro_branch),,gcc-powerpc-undef)
+ debian_patches += gcc-only-build-m4nofpu
+ ifeq ($(biarch32),yes)
+-  ifeq ($(with_multiarch_lib),yes)
+     debian_patches += gcc-multilib64-multiarch
+-  else
+-    debian_patches += gcc-multilib64
+-  endif
+ endif
+ ifeq (,$(filter $(distrelease),lenny squeeze dapper hardy intrepid jaunty karmic lucid maverick))
+   debian_patches += gcc-no-add-needed

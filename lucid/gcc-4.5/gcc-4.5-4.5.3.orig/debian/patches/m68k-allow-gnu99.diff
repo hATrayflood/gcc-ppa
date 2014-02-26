@@ -1,0 +1,30 @@
+# DP: patch to allow gnu99 mode on m68k
+
+On m68k, gnu99 mode doesn't work correctly out of the box due to our
+woefully outdated glibc (we're currently stuck at 2.5-1). This is
+because the inline schematics changed between glibc 2.5 and 2.7, and
+gcc 4.2 to 4.3.  This patch configures the built in spec file to pass
+-fgnu89-inline, and thus allowing proper compilation and linking with
+the older glibc on m68k. This patch should not be merged upstream, and
+it should be removed once a newer glibc is available for our
+architecture.
+
+---
+ gcc/config/m68k/linux.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+--- a/src/gcc/config/m68k/linux.h
++++ b/src/gcc/config/m68k/linux.h
+@@ -37,6 +37,12 @@ along with GCC; see the file COPYING3.  If not see
+ #undef M68K_HONOR_TARGET_STRICT_ALIGNMENT
+ #define M68K_HONOR_TARGET_STRICT_ALIGNMENT 0
+ 
++/* on m68k, we always need to use gnu89 inlining because we're
++   still limited to glibc 2.5. This should be removed after
++   a newer glibc is available */
++#undef CC1_SPEC
++#define CC1_SPEC "%{profile:-p} %{std=gnu99:-fgnu89-inline}"
++
+ /* Here are four prefixes that are used by asm_fprintf to
+    facilitate customization for alternate assembler syntaxes.
+    Machines with no likelihood of an alternate syntax need not
