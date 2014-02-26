@@ -1,3 +1,5 @@
+# DP: Updates from the x32 gcc-4.7 branch (documentation)
+
 --- a/src/gcc/doc/invoke.texi
 +++ b/src/gcc/doc/invoke.texi
 @@ -637,7 +637,7 @@ Objective-C and Objective-C++ Dialects}.
@@ -9,7 +11,7 @@
  -m32 -m64 -mx32 -mlarge-data-threshold=@var{num} @gol
  -msse2avx -mfentry -m8bit-idiv @gol
  -mavx256-split-unaligned-load -mavx256-split-unaligned-store}
-@@ -13577,6 +13577,12 @@ Attempt to keep the stack boundary aligned to a 2 raised to @var{num}
+@@ -13579,6 +13579,12 @@ Attempt to keep the stack boundary aligned to a 2 raised to @var{num}
  byte boundary.  If @option{-mpreferred-stack-boundary} is not specified,
  the default is 4 (16 bytes or 128 bits).
  
@@ -22,7 +24,7 @@
  @item -mincoming-stack-boundary=@var{num}
  @opindex mincoming-stack-boundary
  Assume the incoming stack is aligned to a 2 raised to @var{num} byte
-@@ -13975,6 +13981,18 @@ be statically or dynamically linked.
+@@ -13977,6 +13983,18 @@ be statically or dynamically linked.
  @opindex mcmodel=large
  Generate code for the large model: This model makes no assumptions
  about addresses and sizes of sections.

@@ -34,7 +34,7 @@ Source: SRCNAME
 Section: devel
 Priority: PRI(optional)
 Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
-Standards-Version: 3.9.4
+Standards-Version: 3.9.5
 ifdef(`TARGET',`dnl cross
 Build-Depends: DPKG_BUILD_DEP debhelper (>= 5.0.62),
   LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP

@@ -1,4 +1,4 @@
-# DP: Changes for the Linaro 4.7-2013.12 release (documentation).
+# DP: Changes for the Linaro 4.7-2014.01 release (documentation).
 
 --- a/src/gcc/doc/extend.texi
 +++ b/src/gcc/doc/extend.texi
@@ -95,7 +95,7 @@
  .\"
  .IX Title "FSF-FUNDING 7"
 -.TH FSF-FUNDING 7 "2013-04-11" "gcc-4.7.3" "GNU"
-+.TH FSF-FUNDING 7 "2013-12-07" "gcc-4.7.4" "GNU"
++.TH FSF-FUNDING 7 "2014-01-07" "gcc-4.7.4" "GNU"
  .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
  .\" way too many mistakes in technical documents.
  .if n .ad l
@@ -141,7 +141,7 @@
  .\"
  .IX Title "GFDL 7"
 -.TH GFDL 7 "2013-04-11" "gcc-4.7.3" "GNU"
-+.TH GFDL 7 "2013-12-07" "gcc-4.7.4" "GNU"
++.TH GFDL 7 "2014-01-07" "gcc-4.7.4" "GNU"
  .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
  .\" way too many mistakes in technical documents.
  .if n .ad l
@@ -199,7 +199,7 @@
  .\"
  .IX Title "GPL 7"
 -.TH GPL 7 "2013-04-11" "gcc-4.7.3" "GNU"
-+.TH GPL 7 "2013-12-07" "gcc-4.7.4" "GNU"
++.TH GPL 7 "2014-01-07" "gcc-4.7.4" "GNU"
  .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
  .\" way too many mistakes in technical documents.
  .if n .ad l
@@ -322,7 +322,23 @@
  
  @emph{AVR Options}
  @gccoptlist{-mmcu=@var{mcu} -maccumulate-args -mbranch-cost=@var{cost} @gol
-@@ -6237,8 +6249,8 @@
+@@ -1429,11 +1441,13 @@
+ for the plugin called @var{name}.
+ 
+ @item -fdump-ada-spec@r{[}-slim@r{]}
+-For C and C++ source and include files, generate corresponding Ada
+-specs. @xref{Generating Ada Bindings for C and C++ headers,,, gnat_ugn,
++@opindex fdump-ada-spec
++For C and C++ source and include files, generate corresponding Ada specs.
++@xref{Generating Ada Bindings for C and C++ headers,,, gnat_ugn,
+ GNAT User's Guide}, which provides detailed documentation on this feature.
+ 
+ @item -fdump-go-spec=@var{file}
++@opindex fdump-go-spec
+ For input files in any language, generate corresponding Go
+ declarations in @var{file}.  This generates Go @code{const},
+ @code{type}, @code{var}, and @code{func} declarations which may be a
+@@ -6237,8 +6251,8 @@
  Optimize yet more.  @option{-O3} turns on all optimizations specified
  by @option{-O2} and also turns on the @option{-finline-functions},
  @option{-funswitch-loops}, @option{-fpredictive-commoning},
@@ -333,7 +349,7 @@
  
  @item -O0
  @opindex O0
-@@ -7033,6 +7045,11 @@
+@@ -7033,6 +7047,11 @@
  Perform partial redundancy elimination (PRE) on trees.  This flag is
  enabled by default at @option{-O2} and @option{-O3}.
  
@@ -345,7 +361,7 @@
  @item -ftree-forwprop
  @opindex ftree-forwprop
  Perform forward propagation on trees.  This flag is enabled by default
-@@ -7428,6 +7445,24 @@
+@@ -7428,6 +7447,24 @@
  variable names which more closely resemble the original variables.  This flag
  is enabled by default at @option{-O} and higher.
  
@@ -370,7 +386,7 @@
  @item -ftree-ter
  @opindex ftree-ter
  Perform temporary expression replacement during the SSA->normal phase.  Single
-@@ -10329,6 +10364,7 @@
+@@ -10329,6 +10366,7 @@
  @c in Machine Dependent Options
  
  @menu
@@ -378,7 +394,7 @@
  * Adapteva Epiphany Options::
  * ARM Options::
  * AVR Options::
-@@ -10537,6 +10573,125 @@
+@@ -10537,6 +10575,125 @@
  
  @end table
  
@@ -504,7 +520,7 @@
  @node ARM Options
  @subsection ARM Options
  @cindex ARM options
-@@ -10948,6 +11103,11 @@
+@@ -10948,6 +11105,11 @@
  preprocessor symbol @code{__ARM_FEATURE_UNALIGNED} will also be
  defined.
  

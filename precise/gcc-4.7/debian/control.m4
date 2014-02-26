@@ -50,7 +50,7 @@ Uploaders: Iain Buclaw <ibuclaw@ubuntu.com>, Matthias Klose <doko@debian.org>
 ', `dnl
 Uploaders: Matthias Klose <doko@debian.org>
 ')dnl SRCNAME
-Standards-Version: 3.9.4
+Standards-Version: 3.9.5
 ifdef(`TARGET',`dnl cross
 Build-Depends: DPKG_BUILD_DEP debhelper (>= 5.0.62),
   LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP

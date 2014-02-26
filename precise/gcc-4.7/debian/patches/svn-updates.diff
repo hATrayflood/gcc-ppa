@@ -1,10 +1,10 @@
-# DP: updates from the 4.7 branch upto 20140112 (r206563).
+# DP: updates from the 4.7 branch upto 20140222 (r208044).
 
 last_updated()
 {
 	cat > ${dir}LAST_UPDATED <<EOF
-Sun Jan 12 10:47:48 CET 2014
-Sun Jan 12 09:47:48 UTC 2014 (revision 206563)
+Sat Feb 22 17:58:25 CET 2014
+Sat Feb 22 16:58:25 UTC 2014 (revision 208044)
 EOF
 }
 
@@ -9108,6 +9108,36 @@ Index: libiberty/ChangeLog
  2013-04-11  Release Manager
  
  	* GCC 4.7.3 released.
+Index: contrib/ChangeLog
+===================================================================
+--- a/src/contrib/ChangeLog	(.../tags/gcc_4_7_3_release)
++++ b/src/contrib/ChangeLog	(.../branches/gcc-4_7-branch)
+@@ -1,3 +1,10 @@
++2014-02-02  Uros Bizjak  <ubizjak@gmail.com>
++
++	Backport from mainline
++	2012-05-09  David Edelsohn  <dje.gcc@gmail.com>
++
++	* gcc_update: Use $GCC_SVN to retrieve branch and revision.
++
+ 2013-04-11  Release Manager
+ 
+ 	* GCC 4.7.3 released.
+Index: contrib/gcc_update
+===================================================================
+--- a/src/contrib/gcc_update	(.../tags/gcc_4_7_3_release)
++++ b/src/contrib/gcc_update	(.../branches/gcc-4_7-branch)
+@@ -367,8 +367,8 @@
+ 	    exit 1
+ 	fi
+ 
+-	revision=`svn info | awk '/Revision:/ { print $2 }'`
+-	branch=`svn info | sed -ne "/URL:/ {
++	revision=`$GCC_SVN info | awk '/Revision:/ { print $2 }'`
++	branch=`$GCC_SVN info | sed -ne "/^URL:/ {
+ 	    s,.*/trunk,trunk,
+ 	    s,.*/branches/,,
+ 	    s,.*/tags/,,
 Index: libjava/classpath/native/jni/gtk-peer/gnu_java_awt_peer_gtk_GdkFontPeer.c
 ===================================================================
 --- a/src/libjava/classpath/native/jni/gtk-peer/gnu_java_awt_peer_gtk_GdkFontPeer.c	(.../tags/gcc_4_7_3_release)
@@ -9171,6 +9201,15 @@ Index: libgcc/config.host
  	extra_parts="$extra_parts crti.o crtn.o"
  	;;
  arm*-*-freebsd*)
+@@ -1127,7 +1127,7 @@
+ 	extra_parts="$extra_parts crti.o crtn.o"
+ 	;;
+ xtensa*-*-linux*)
+-	tmake_file="$tmake_file xtensa/t-xtensa xtensa/t-linux"
++	tmake_file="$tmake_file xtensa/t-xtensa xtensa/t-linux t-slibgcc-libgcc"
+ 	md_unwind_header=xtensa/linux-unwind.h
+ 	;;
+ am33_2.0-*-linux*)
 Index: libgcc/Makefile.in
 ===================================================================
 --- a/src/libgcc/Makefile.in	(.../tags/gcc_4_7_3_release)
@@ -9189,7 +9228,115 @@ Index: libgcc/ChangeLog
 ===================================================================
 --- a/src/libgcc/ChangeLog	(.../tags/gcc_4_7_3_release)
 +++ b/src/libgcc/ChangeLog	(.../branches/gcc-4_7-branch)
-@@ -1,3 +1,60 @@
+@@ -1,3 +1,168 @@
++2014-01-25  Walter Lee  <walt@tilera.com>
++
++	Backport from mainline
++	2014-01-25  Walter Lee  <walt@tilera.com>
++
++	* config/tilepro/atomic.c (pre_atomic_barrier): Mark inline.
++	(post_atomic_barrier): Ditto.
++	(__fetch_and_do): New macro.
++	(__atomic_fetch_and_do): Use __fetch_and_do.
++	(__sync_fetch_and_do): New macro.
++	(__sync_fetch_and_add_4): New function.
++	(__sync_fetch_and_sub_4): New function.
++	(__sync_fetch_and_or_4): New function.
++	(__sync_fetch_and_and_4): New function.
++	(__sync_fetch_and_xor_4): New function.
++	(__sync_fetch_and_nand_4): New function.
++	(__sync_fetch_and_add_8): New function.
++	(__sync_fetch_and_sub_8): New function.
++	(__sync_fetch_and_or_8): New function.
++	(__sync_fetch_and_and_8): New function.
++	(__sync_fetch_and_xor_8): New function.
++	(__sync_fetch_and_nand_8): New function.
++	(__do_and_fetch): New macro.
++	(__atomic_do_and_fetch): Use __do_and_fetch.
++	(__sync_do_and_fetch): New macro.
++	(__sync_add_and_fetch_4): New function.
++	(__sync_sub_and_fetch_4): New function.
++	(__sync_or_and_fetch_4): New function.
++	(__sync_and_and_fetch_4): New function.
++	(__sync_xor_and_fetch_4): New function.
++	(__sync_nand_and_fetch_4): New function.
++	(__sync_add_and_fetch_8): New function.
++	(__sync_sub_and_fetch_8): New function.
++	(__sync_or_and_fetch_8): New function.
++	(__sync_and_and_fetch_8): New function.
++	(__sync_xor_and_fetch_8): New function.
++	(__sync_nand_and_fetch_8): New function.
++	(__sync_exchange_methods): New macro.
++	(__sync_val_compare_and_swap_4): New function.
++	(__sync_bool_compare_and_swap_4): New function.
++	(__sync_lock_test_and_test_4): New function.
++	(__sync_val_compare_and_swap_8): New function.
++	(__sync_bool_compare_and_swap_8): New function.
++	(__sync_lock_test_and_test_8): New function.
++	(__subword_cmpxchg_body): New macro.
++	(__atomic_compare_exchange_1): Use __subword_cmpxchg_body.
++	(__atomic_compare_exchange_2): Ditto.
++	(__sync_subword_cmpxchg): New macro.
++	(__sync_val_compare_and_swap_1): New function.
++	(__sync_bool_compare_and_swap_1): New function.
++	(__sync_val_compare_and_swap_2): New function.
++	(__sync_bool_compare_and_swap_2): New function.
++	(__atomic_subword): Rename to ...
++	(__subword): ... New name.
++	(__atomic_subword_fetch): Use __subword.
++	(__sync_subword_fetch): New macro.
++	(__sync_fetch_and_add_1): New function.
++	(__sync_fetch_and_sub_1): New function.
++	(__sync_fetch_and_or_1): New function.
++	(__sync_fetch_and_and_1): New function.
++	(__sync_fetch_and_xor_1): New function.
++	(__sync_fetch_and_nand_1): New function.
++	(__sync_fetch_and_add_2): New function.
++	(__sync_fetch_and_sub_2): New function.
++	(__sync_fetch_and_or_2): New function.
++	(__sync_fetch_and_and_2): New function.
++	(__sync_fetch_and_xor_2): New function.
++	(__sync_fetch_and_nand_2): New function.
++	(__sync_add_and_fetch_1): New function.
++	(__sync_sub_and_fetch_1): New function.
++	(__sync_or_and_fetch_1): New function.
++	(__sync_and_and_fetch_1): New function.
++	(__sync_xor_and_fetch_1): New function.
++	(__sync_nand_and_fetch_1): New function.
++	(__sync_add_and_fetch_2): New function.
++	(__sync_sub_and_fetch_2): New function.
++	(__sync_or_and_fetch_2): New function.
++	(__sync_and_and_fetch_2): New function.
++	(__sync_xor_and_fetch_2): New function.
++	(__sync_nand_and_fetch_2): New function.
++	(__atomic_subword_lock): Use __subword.
++	(__sync_subword_lock): New macro.
++	(__sync_lock_test_and_set_1): New function.
++	(__sync_lock_test_and_set_2): New function.
++
++2014-01-25  Walter Lee  <walt@tilera.com>
++
++	Backport from mainline
++	2014-01-25  Walter Lee  <walt@tilera.com>
++
++	* config/tilepro/atomic.c (BIT_OFFSET): Define.
++	(__atomic_subword_cmpxchg): Use BIT_OFFSET.
++	(__atomic_subword): Ditto.
++
++2014-01-25  Walter Lee  <walt@tilera.com>
++
++	Backport from mainline
++	2014-01-25  Walter Lee  <walt@tilera.com>
++
++	* config/tilepro/atomic.c (__atomic_do_and_fetch): Add
++	a prefix op argument.
++	(__atomic_nand_fetch_4): Add prefix op.
++	(__atomic_nand_fetch_8): Ditto.
++
++2014-01-21  Baruch Siach <barch@tkos.co.il>
++
++	* config.host (tmake_file): add t-slibgcc-libgcc for xtensa*-*-linux*.
++
 +2014-01-03  Joseph Myers  <joseph@codesourcery.com>
 +
 +	* config/rs6000/ibm-ldouble.c (__gcc_qdiv): Scale up arguments in
@@ -9250,7 +9397,7 @@ Index: libgcc/ChangeLog
  2013-04-11  Release Manager
  
  	* GCC 4.7.3 released.
-@@ -14,7 +71,8 @@
+@@ -14,7 +179,8 @@
  
  	PR target/49880
  	* config/sh/lib1funcs.S (sdivsi3_i4, udivsi3_i4): Enable for SH2A.
@@ -9528,6 +9675,388 @@ Index: libgcc/config/tilepro/atomic.h
      __typeof(*(mem)) __mask = (__typeof(*(mem)))1 << (bit);             \
      __mask & arch_atomic_and((mem), ~__mask);                           \
    })
+Index: libgcc/config/tilepro/atomic.c
+===================================================================
+--- a/src/libgcc/config/tilepro/atomic.c	(.../tags/gcc_4_7_3_release)
++++ b/src/libgcc/config/tilepro/atomic.c	(.../branches/gcc-4_7-branch)
+@@ -29,7 +29,7 @@
+ /* This code should be inlined by the compiler, but for now support
+    it as out-of-line methods in libgcc.  */
+ 
+-static void
++static inline void
+ pre_atomic_barrier (int model)
+ {
+   switch ((enum memmodel) model)
+@@ -45,7 +45,7 @@
+   return;
+ }
+ 
+-static void
++static inline void
+ post_atomic_barrier (int model)
+ {
+   switch ((enum memmodel) model)
+@@ -63,16 +63,21 @@
+ 
+ #define __unused __attribute__((unused))
+ 
+-#define __atomic_fetch_and_do(type, size, opname)		\
+-type								\
+-__atomic_fetch_##opname##_##size(type* p, type i, int model)	\
++#define __fetch_and_do(proto, type, size, opname, top, bottom)	\
++proto								\
+ {								\
+-  pre_atomic_barrier(model);					\
++  top;								\
+   type rv = arch_atomic_##opname(p, i);				\
+-  post_atomic_barrier(model);					\
++  bottom;							\
+   return rv;							\
+ }
+ 
++#define __atomic_fetch_and_do(type, size, opname)			\
++  __fetch_and_do(type __atomic_fetch_##opname##_##size(type* p, type i, int model), \
++		 type, size, opname,					\
++		 pre_atomic_barrier(model),				\
++		 post_atomic_barrier(model))				\
++
+ __atomic_fetch_and_do (int, 4, add)
+ __atomic_fetch_and_do (int, 4, sub)
+ __atomic_fetch_and_do (int, 4, or)
+@@ -85,27 +90,73 @@
+ __atomic_fetch_and_do (long long, 8, and)
+ __atomic_fetch_and_do (long long, 8, xor)
+ __atomic_fetch_and_do (long long, 8, nand)
+-#define __atomic_do_and_fetch(type, size, opname, op)		\
+-type								\
+-__atomic_##opname##_fetch_##size(type* p, type i, int model)	\
+-{								\
+-  pre_atomic_barrier(model);					\
+-  type rv = arch_atomic_##opname(p, i) op i;			\
+-  post_atomic_barrier(model);					\
+-  return rv;							\
++
++#define __sync_fetch_and_do(type, size, opname)				\
++  __fetch_and_do(type __sync_fetch_and_##opname##_##size(type* p, type i), \
++		 type, size, opname,					\
++		 arch_atomic_write_barrier(),				\
++		 arch_atomic_read_barrier())
++
++__sync_fetch_and_do (int, 4, add)
++__sync_fetch_and_do (int, 4, sub)
++__sync_fetch_and_do (int, 4, or)
++__sync_fetch_and_do (int, 4, and)
++__sync_fetch_and_do (int, 4, xor)
++__sync_fetch_and_do (int, 4, nand)
++__sync_fetch_and_do (long long, 8, add)
++__sync_fetch_and_do (long long, 8, sub)
++__sync_fetch_and_do (long long, 8, or)
++__sync_fetch_and_do (long long, 8, and)
++__sync_fetch_and_do (long long, 8, xor)
++__sync_fetch_and_do (long long, 8, nand)
++
++#define __do_and_fetch(proto, type, size, opname, op, op2, top, bottom)	\
++proto									\
++{									\
++  top;									\
++  type rv = op2 (arch_atomic_##opname(p, i) op i);			\
++  bottom;								\
++  return rv;								\
+ }
+-__atomic_do_and_fetch (int, 4, add, +)
+-__atomic_do_and_fetch (int, 4, sub, -)
+-__atomic_do_and_fetch (int, 4, or, |)
+-__atomic_do_and_fetch (int, 4, and, &)
+-__atomic_do_and_fetch (int, 4, xor, |)
+-__atomic_do_and_fetch (int, 4, nand, &)
+-__atomic_do_and_fetch (long long, 8, add, +)
+-__atomic_do_and_fetch (long long, 8, sub, -)
+-__atomic_do_and_fetch (long long, 8, or, |)
+-__atomic_do_and_fetch (long long, 8, and, &)
+-__atomic_do_and_fetch (long long, 8, xor, |)
+-__atomic_do_and_fetch (long long, 8, nand, &)
++
++#define __atomic_do_and_fetch(type, size, opname, op, op2)		\
++  __do_and_fetch(type __atomic_##opname##_fetch_##size(type* p, type i, int model), \
++		 type, size, opname, op, op2,				\
++		 pre_atomic_barrier(model),				\
++		 post_atomic_barrier(model))				\
++
++__atomic_do_and_fetch (int, 4, add, +, )
++__atomic_do_and_fetch (int, 4, sub, -, )
++__atomic_do_and_fetch (int, 4, or, |, )
++__atomic_do_and_fetch (int, 4, and, &, )
++__atomic_do_and_fetch (int, 4, xor, |, )
++__atomic_do_and_fetch (int, 4, nand, &, ~)
++__atomic_do_and_fetch (long long, 8, add, +, )
++__atomic_do_and_fetch (long long, 8, sub, -, )
++__atomic_do_and_fetch (long long, 8, or, |, )
++__atomic_do_and_fetch (long long, 8, and, &, )
++__atomic_do_and_fetch (long long, 8, xor, |, )
++__atomic_do_and_fetch (long long, 8, nand, &, ~)
++
++#define __sync_do_and_fetch(type, size, opname, op, op2)		\
++  __do_and_fetch(type __sync_##opname##_and_fetch_##size(type* p, type i), \
++		 type, size, opname, op, op2,				\
++		 arch_atomic_write_barrier(),				\
++		 arch_atomic_read_barrier())				\
++
++__sync_do_and_fetch (int, 4, add, +, )
++__sync_do_and_fetch (int, 4, sub, -, )
++__sync_do_and_fetch (int, 4, or, |, )
++__sync_do_and_fetch (int, 4, and, &, )
++__sync_do_and_fetch (int, 4, xor, |, )
++__sync_do_and_fetch (int, 4, nand, &, ~)
++__sync_do_and_fetch (long long, 8, add, +, )
++__sync_do_and_fetch (long long, 8, sub, -, )
++__sync_do_and_fetch (long long, 8, or, |, )
++__sync_do_and_fetch (long long, 8, and, &, )
++__sync_do_and_fetch (long long, 8, xor, |, )
++__sync_do_and_fetch (long long, 8, nand, &, ~)
++
+ #define __atomic_exchange_methods(type, size)				\
+ bool									\
+ __atomic_compare_exchange_##size(volatile type* ptr, type* oldvalp,	\
+@@ -129,49 +180,117 @@
+   post_atomic_barrier(model);						\
+   return retval;							\
+ }
++
+ __atomic_exchange_methods (int, 4)
+ __atomic_exchange_methods (long long, 8)
+ 
++#define __sync_exchange_methods(type, size)				\
++type									\
++__sync_val_compare_and_swap_##size(type* ptr, type oldval, type newval)	\
++{									\
++  arch_atomic_write_barrier();						\
++  type retval = arch_atomic_val_compare_and_exchange(ptr, oldval, newval); \
++  arch_atomic_read_barrier();						\
++  return retval;							\
++}									\
++									\
++bool									\
++__sync_bool_compare_and_swap_##size(type* ptr, type oldval, type newval) \
++{									\
++  arch_atomic_write_barrier();						\
++  bool retval = arch_atomic_bool_compare_and_exchange(ptr, oldval, newval); \
++  arch_atomic_read_barrier();						\
++  return retval;							\
++}									\
++									\
++type									\
++__sync_lock_test_and_set_##size(type* ptr, type val)			\
++{									\
++  type retval = arch_atomic_exchange(ptr, val);				\
++  arch_atomic_acquire_barrier_value(retval);				\
++  return retval;							\
++}
++
++__sync_exchange_methods (int, 4)
++__sync_exchange_methods (long long, 8)
++
++#ifdef __LITTLE_ENDIAN__
++#define BIT_OFFSET(n, type) ((n) * 8)
++#else
++#define BIT_OFFSET(n, type) ((4 - sizeof(type) - (n)) * 8)
++#endif
++
+ /* Subword methods require the same approach for both TILEPro and
+    TILE-Gx.  We load the background data for the word, insert the
+    desired subword piece, then compare-and-exchange it into place.  */
+ #define u8 unsigned char
+ #define u16 unsigned short
++
++#define __subword_cmpxchg_body(type, size, ptr, guess, val)		\
++  ({									\
++    unsigned int *p = (unsigned int *)((unsigned long)ptr & ~3UL);	\
++    const int shift = BIT_OFFSET((unsigned long)ptr & 3UL, type);	\
++    const unsigned int valmask = (1 << (sizeof(type) * 8)) - 1;		\
++    const unsigned int bgmask = ~(valmask << shift);			\
++    unsigned int oldword = *p;						\
++    type oldval = (oldword >> shift) & valmask;				\
++    if (__builtin_expect((oldval == guess), 1)) {			\
++      unsigned int word = (oldword & bgmask) | ((val & valmask) << shift); \
++      oldword = arch_atomic_val_compare_and_exchange(p, oldword, word);	\
++      oldval = (oldword >> shift) & valmask;				\
++    }									\
++    oldval;								\
++  })									\
++
+ #define __atomic_subword_cmpxchg(type, size)				\
+   									\
+ bool									\
+-__atomic_compare_exchange_##size(volatile type* ptr, type* guess,	\
++__atomic_compare_exchange_##size(volatile type* ptr, type* guess_ptr,	\
+ 				 type val, bool weak __unused, int models, \
+ 				 int modelf __unused)			\
+ {									\
+   pre_atomic_barrier(models);						\
+-  unsigned int *p = (unsigned int *)((unsigned long)ptr & ~3UL);	\
+-  const int shift = ((unsigned long)ptr & 3UL) * 8;			\
+-  const unsigned int valmask = (1 << (sizeof(type) * 8)) - 1;		\
+-  const unsigned int bgmask = ~(valmask << shift);			\
+-  unsigned int oldword = *p;						\
+-  type oldval = (oldword >> shift) & valmask;				\
+-  if (__builtin_expect((oldval == *guess), 1)) {			\
+-    unsigned int word = (oldword & bgmask) | ((val & valmask) << shift); \
+-    oldword = arch_atomic_val_compare_and_exchange(p, oldword, word);	\
+-    oldval = (oldword >> shift) & valmask;				\
+-  }									\
++  type guess = *guess_ptr;						\
++  type oldval = __subword_cmpxchg_body(type, size, ptr, guess, val);	\
+   post_atomic_barrier(models);						\
+-  bool success = (oldval == *guess);					\
+-  *guess = oldval;							\
++  bool success = (oldval == guess);					\
++  *guess_ptr = oldval;							\
+   return success;							\
+ }
++
+ __atomic_subword_cmpxchg (u8, 1)
+ __atomic_subword_cmpxchg (u16, 2)
++
++#define __sync_subword_cmpxchg(type, size)				\
++  									\
++type									\
++__sync_val_compare_and_swap_##size(type* ptr, type guess, type val)	\
++{									\
++  arch_atomic_write_barrier();						\
++  type oldval = __subword_cmpxchg_body(type, size, ptr, guess, val);	\
++  arch_atomic_read_barrier();						\
++  return oldval;							\
++}									\
++									\
++bool									\
++__sync_bool_compare_and_swap_##size(type* ptr, type guess, type val)	\
++{									\
++  type oldval = __sync_val_compare_and_swap_##size(ptr, guess, val);	\
++  return oldval == guess;						\
++}
++
++__sync_subword_cmpxchg (u8, 1)
++__sync_subword_cmpxchg (u16, 2)
++
+ /* For the atomic-update subword methods, we use the same approach as
+    above, but we retry until we succeed if the compare-and-exchange
+    fails.  */
+-#define __atomic_subword(type, proto, top, expr, bottom)		\
++#define __subword(type, proto, top, expr, bottom)			\
+ proto									\
+ {									\
+   top									\
+   unsigned int *p = (unsigned int *)((unsigned long)ptr & ~3UL);	\
+-  const int shift = ((unsigned long)ptr & 3UL) * 8;			\
++  const int shift = BIT_OFFSET((unsigned long)ptr & 3UL, type);		\
+   const unsigned int valmask = (1 << (sizeof(type) * 8)) - 1;		\
+   const unsigned int bgmask = ~(valmask << shift);			\
+   unsigned int oldword, xword = *p;					\
+@@ -185,42 +304,93 @@
+   } while (__builtin_expect(xword != oldword, 0));			\
+   bottom								\
+ }
++
+ #define __atomic_subword_fetch(type, funcname, expr, retval)		\
+-  __atomic_subword(type,						\
+-		   type __atomic_ ## funcname(volatile type *ptr, type i, int model), \
+-		   pre_atomic_barrier(model);,				\
+-		   expr,						\
+-		   post_atomic_barrier(model); return retval;)
++  __subword(type,							\
++	    type __atomic_ ## funcname(volatile type *ptr, type i, int model), \
++	    pre_atomic_barrier(model);,					\
++	    expr,							\
++	    post_atomic_barrier(model); return retval;)
++
+ __atomic_subword_fetch (u8, fetch_add_1, oldval + i, oldval)
+ __atomic_subword_fetch (u8, fetch_sub_1, oldval - i, oldval)
+ __atomic_subword_fetch (u8, fetch_or_1, oldval | i, oldval)
+ __atomic_subword_fetch (u8, fetch_and_1, oldval & i, oldval)
+ __atomic_subword_fetch (u8, fetch_xor_1, oldval ^ i, oldval)
+ __atomic_subword_fetch (u8, fetch_nand_1, ~(oldval & i), oldval)
++
+ __atomic_subword_fetch (u16, fetch_add_2, oldval + i, oldval)
+ __atomic_subword_fetch (u16, fetch_sub_2, oldval - i, oldval)
+ __atomic_subword_fetch (u16, fetch_or_2, oldval | i, oldval)
+ __atomic_subword_fetch (u16, fetch_and_2, oldval & i, oldval)
+ __atomic_subword_fetch (u16, fetch_xor_2, oldval ^ i, oldval)
+ __atomic_subword_fetch (u16, fetch_nand_2, ~(oldval & i), oldval)
++
+ __atomic_subword_fetch (u8, add_fetch_1, oldval + i, val)
+ __atomic_subword_fetch (u8, sub_fetch_1, oldval - i, val)
+ __atomic_subword_fetch (u8, or_fetch_1, oldval | i, val)
+ __atomic_subword_fetch (u8, and_fetch_1, oldval & i, val)
+ __atomic_subword_fetch (u8, xor_fetch_1, oldval ^ i, val)
+ __atomic_subword_fetch (u8, nand_fetch_1, ~(oldval & i), val)
++
+ __atomic_subword_fetch (u16, add_fetch_2, oldval + i, val)
+ __atomic_subword_fetch (u16, sub_fetch_2, oldval - i, val)
+ __atomic_subword_fetch (u16, or_fetch_2, oldval | i, val)
+ __atomic_subword_fetch (u16, and_fetch_2, oldval & i, val)
+ __atomic_subword_fetch (u16, xor_fetch_2, oldval ^ i, val)
+ __atomic_subword_fetch (u16, nand_fetch_2, ~(oldval & i), val)
++
++#define __sync_subword_fetch(type, funcname, expr, retval)	\
++  __subword(type,						\
++	    type __sync_ ## funcname(type *ptr, type i),	\
++	    arch_atomic_read_barrier();,			\
++	    expr,						\
++	    arch_atomic_write_barrier(); return retval;)
++
++__sync_subword_fetch (u8, fetch_and_add_1, oldval + i, oldval)
++__sync_subword_fetch (u8, fetch_and_sub_1, oldval - i, oldval)
++__sync_subword_fetch (u8, fetch_and_or_1, oldval | i, oldval)
++__sync_subword_fetch (u8, fetch_and_and_1, oldval & i, oldval)
++__sync_subword_fetch (u8, fetch_and_xor_1, oldval ^ i, oldval)
++__sync_subword_fetch (u8, fetch_and_nand_1, ~(oldval & i), oldval)
++
++__sync_subword_fetch (u16, fetch_and_add_2, oldval + i, oldval)
++__sync_subword_fetch (u16, fetch_and_sub_2, oldval - i, oldval)
++__sync_subword_fetch (u16, fetch_and_or_2, oldval | i, oldval)
++__sync_subword_fetch (u16, fetch_and_and_2, oldval & i, oldval)
++__sync_subword_fetch (u16, fetch_and_xor_2, oldval ^ i, oldval)
++__sync_subword_fetch (u16, fetch_and_nand_2, ~(oldval & i), oldval)
++
++__sync_subword_fetch (u8, add_and_fetch_1, oldval + i, val)
++__sync_subword_fetch (u8, sub_and_fetch_1, oldval - i, val)
++__sync_subword_fetch (u8, or_and_fetch_1, oldval | i, val)
++__sync_subword_fetch (u8, and_and_fetch_1, oldval & i, val)
++__sync_subword_fetch (u8, xor_and_fetch_1, oldval ^ i, val)
++__sync_subword_fetch (u8, nand_and_fetch_1, ~(oldval & i), val)
++
++__sync_subword_fetch (u16, add_and_fetch_2, oldval + i, val)
++__sync_subword_fetch (u16, sub_and_fetch_2, oldval - i, val)
++__sync_subword_fetch (u16, or_and_fetch_2, oldval | i, val)
++__sync_subword_fetch (u16, and_and_fetch_2, oldval & i, val)
++__sync_subword_fetch (u16, xor_and_fetch_2, oldval ^ i, val)
++__sync_subword_fetch (u16, nand_and_fetch_2, ~(oldval & i), val)
++
+ #define __atomic_subword_lock(type, size)				\
+-									\
+-__atomic_subword(type,							\
+-		 type __atomic_exchange_##size(volatile type* ptr, type nval, int model), \
+-	         pre_atomic_barrier(model);,				\
+-	         nval,							\
+-	         post_atomic_barrier(model); return oldval;)
++  __subword(type,							\
++	    type __atomic_exchange_##size(volatile type* ptr, type nval, int model), \
++	    pre_atomic_barrier(model);,					\
++	    nval,							\
++	    post_atomic_barrier(model); return oldval;)
++
+ __atomic_subword_lock (u8, 1)
+ __atomic_subword_lock (u16, 2)
++
++#define __sync_subword_lock(type, size)					\
++  __subword(type,							\
++	    type __sync_lock_test_and_set_##size(type* ptr, type nval), \
++	    ,								\
++	    nval,							\
++	    arch_atomic_acquire_barrier_value(oldval); return oldval;)
++
++__sync_subword_lock (u8, 1)
++__sync_subword_lock (u16, 2)
 Index: libgcc/config/arm/linux-atomic.c
 ===================================================================
 --- a/src/libgcc/config/arm/linux-atomic.c	(.../tags/gcc_4_7_3_release)
@@ -9799,7 +10328,7 @@ Index: gcc/DATESTAMP
 +++ b/src/gcc/DATESTAMP	(.../branches/gcc-4_7-branch)
 @@ -1 +1 @@
 -20130411
-+20140112
++20140222
 Index: gcc/tree-tailcall.c
 ===================================================================
 --- a/src/gcc/tree-tailcall.c	(.../tags/gcc_4_7_3_release)
@@ -9832,7 +10361,27 @@ Index: gcc/configure
 ===================================================================
 --- a/src/gcc/configure	(.../tags/gcc_4_7_3_release)
 +++ b/src/gcc/configure	(.../branches/gcc-4_7-branch)
-@@ -27309,8 +27309,8 @@
+@@ -24878,6 +24878,10 @@
+ 
+     # These two are used unconditionally by i386.[ch]; it is to be defined
+     # to 1 if the feature is present, 0 otherwise.
++    as_ix86_gotoff_in_data_opt=
++    if test x$gas = xyes; then
++      as_ix86_gotoff_in_data_opt="--32"
++    fi
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking assembler for GOTOFF in data" >&5
+ $as_echo_n "checking assembler for GOTOFF in data... " >&6; }
+ if test "${gcc_cv_as_ix86_gotoff_in_data+set}" = set; then :
+@@ -24894,7 +24898,7 @@
+ 	nop
+ 	.data
+ 	.long .L0@GOTOFF' > conftest.s
+-    if { ac_try='$gcc_cv_as $gcc_cv_as_flags  -o conftest.o conftest.s >&5'
++    if { ac_try='$gcc_cv_as $gcc_cv_as_flags $as_ix86_gotoff_in_data_opt -o conftest.o conftest.s >&5'
+   { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
+   (eval $ac_try) 2>&5
+   ac_status=$?
+@@ -27309,8 +27313,8 @@
  $as_echo_n "checking for exported symbols... " >&6; }
    if test "x$export_sym_check" != x; then
      echo "int main() {return 0;} int foobar() {return 0;}" > conftest.c
@@ -9843,7 +10392,7 @@ Index: gcc/configure
        : # No need to use a flag
        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
  $as_echo "yes" >&6; }
-@@ -27319,8 +27319,8 @@
+@@ -27319,8 +27323,8 @@
  $as_echo "yes" >&6; }
        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for -rdynamic" >&5
  $as_echo_n "checking for -rdynamic... " >&6; }
@@ -10026,7 +10575,256 @@ Index: gcc/ChangeLog
 ===================================================================
 --- a/src/gcc/ChangeLog	(.../tags/gcc_4_7_3_release)
 +++ b/src/gcc/ChangeLog	(.../branches/gcc-4_7-branch)
-@@ -1,3 +1,618 @@
+@@ -1,3 +1,867 @@
++2014-02-21  Uros Bizjak  <ubizjak@gmail.com>
++
++	Backport from mainline
++	2014-02-21  Jakub Jelinek  <jakub@redhat.com>
++
++	* config/i386/i386.c (ix86_expand_vec_perm): Use V8SImode
++	mode for mask of V8SFmode permutation.
++
++	Backport from 4.8 branch
++	2014-02-20  Jakub Jelinek  <jakub@redhat.com>
++
++	PR target/57896
++	* config/i386/i386.c (expand_vec_perm_interleave2): Don't call
++	gen_reg_rtx if d->testing_p.
++	(expand_vec_perm_pshufb2, expand_vec_perm_even_odd_1,
++	expand_vec_perm_broadcast_1): Return early if d->testing_p and
++	we will certainly return true.
++
++2014-02-20  Terry Guo  <terry.guo@arm.com>
++
++	Backport from mainline
++	2014-02-08  Terry Guo  <terry.guo@arm.com>
++
++	* doc/invoke.texi: Document ARM -march=armv7e-m.
++
++2014-02-19  H.J. Lu  <hongjiu.lu@intel.com>
++
++	Backport from mainline
++	2014-02-19  H.J. Lu  <hongjiu.lu@intel.com>
++
++	PR target/60207
++	* config/i386/i386.c (construct_container): Remove TFmode check
++	for X86_64_INTEGER_CLASS.
++
++2014-02-18  Kai Tietz  <ktietz@redhat.com>
++
++	Backport from mainline
++	PR target/60193
++	* config/i386/i386.c (ix86_expand_prologue): Use
++	rax register as displacement for restoring %r10, %rax.
++	Additional fix wrong offset for restoring both-registers.
++
++2014-02-18  Eric Botcazou  <ebotcazou@adacore.com>
++
++	* ipa-prop.c (compute_complex_ancestor_jump_func): Replace overzealous
++	assertion with conditional return.
++
++2014-02-18  Jakub Jelinek  <jakub@redhat.com>
++	    Uros Bizjak  <ubizjak@gmail.com>
++
++	PR driver/60233
++	* config/i386/driver-i386.c (host_detect_local_cpu): If
++	YMM state is not saved by the OS, also clear has_f16c.  Move
++	CPUID 0x80000001 handling before YMM state saving checking.
++
++2014-02-13  Uros Bizjak  <ubizjak@gmail.com>
++
++	Backport from mainline
++	2014-02-13  Uros Bizjak  <ubizjak@gmail.com>
++
++	* config/i386/sse.md (xop_vmfrcz<mode>2): Generate const0 in
++	operands[2], not operands[3].
++
++2014-02-12  H.J. Lu  <hongjiu.lu@intel.com>
++
++	Backport from mainline
++	2014-02-12  H.J. Lu  <hongjiu.lu@intel.com>
++		    Uros Bizjak  <ubizjak@gmail.com>
++
++	PR target/60151
++	* configure.ac (HAVE_AS_GOTOFF_IN_DATA): Pass --32 to GNU assembler.
++
++2014-02-05  James Greenhalgh  <james.greenhalgh@arm.com>
++
++	* doc/invoke.texi: Fix thinko introduced by previous revision.
++
++2014-02-05  James Greenhalgh  <james.greenhalgh@arm.com>
++
++	Backport from mainline.
++	2014-02-05  James Greenhalgh  <james.greenhalgh@arm.com>
++
++	PR target/59718
++	* doc/invoke.texi (-march): Clarify documentation for ARM.
++	(-mtune): Likewise.
++	(-mcpu): Likewise.
++
++2014-02-04  Uros Bizjak  <ubizjak@gmail.com>
++
++	Backport from mainline
++	2014-02-02  Uros Bizjak  <ubizjak@gmail.com>
++
++	PR target/60017
++	* config/i386/i386.c (classify_argument): Fix handling of bit_offset
++	when calculating size of integer atomic types.
++
++2014-02-02  Uros Bizjak  <ubizjak@gmail.com>
++
++	Backport from mainline
++	2014-01-30  Jakub Jelinek  <jakub@redhat.com>
++
++	* config/i386/f16cintrin.h (_cvtsh_ss): Avoid -Wnarrowing warning.
++
++2014-01-31  Richard Henderson  <rth@redhat.com>
++
++	PR middle-end/60004
++	* tree-eh.c (lower_try_finally_switch): Delay lowering finally block
++	until after else_eh is processed.
++
++2014-01-29  Markus Trippelsdorf  <markus@trippelsdorf.de>
++
++	Backport from mainline
++	2012-12-13  Jakub Jelinek  <jakub@redhat.com>
++
++	PR gcov-profile/55650
++	* coverage.c (coverage_obj_init): Return false if no functions
++	are being emitted.
++
++2014-01-25  Walter Lee  <walt@tilera.com>
++
++	Backport from mainline
++	2014-01-25  Walter Lee  <walt@tilera.com>
++
++	* config/tilegx/sync.md (atomic_fetch_sub): Fix negation and
++	avoid clobbering a live register.
++
++2014-01-25  Walter Lee  <walt@tilera.com>
++
++	Backport from mainline
++	2014-01-25  Walter Lee  <walt@tilera.com>
++
++	* config/tilegx/tilegx-c.c (tilegx_cpu_cpp_builtins):
++	Define __GCC_HAVE_SYNC_COMPARE_AND_SWAP_{1,2}.
++	* config/tilegx/tilepro-c.c (tilepro_cpu_cpp_builtins):
++	Define __GCC_HAVE_SYNC_COMPARE_AND_SWAP_{1,2,4,8}.
++
++2014-01-25  Walter Lee  <walt@tilera.com>
++
++	Backport from mainline
++	2014-01-25  Walter Lee  <walt@tilera.com>
++
++	* config/tilegx/tilegx.c (tilegx_gen_bundles): Delete barrier
++	insns before bundling.
++	* config/tilegx/tilegx.md (tile_network_barrier): Update comment.
++
++2014-01-25  Walter Lee  <walt@tilera.com>
++
++	Backport from mainline
++	2014-01-25  Walter Lee  <walt@tilera.com>
++
++	* config/tilegx/tilegx.c (tilegx_expand_builtin): Set
++	PREFETCH_SCHEDULE_BARRIER_P to true for prefetches.
++	* config/tilepro/tilepro.c (tilepro_expand_builtin): Ditto.
++
++2014-01-25  Walter Lee  <walt@tilera.com>
++
++	Backport from mainline
++	2014-01-25  Walter Lee  <walt@tilera.com>
++
++	* config/tilepro/tilepro.md (ctzdi2): Use register_operand predicate.
++	(clzdi2): Ditto.
++	(ffsdi2): Ditto.
++
++2014-01-25  Walter Lee  <walt@tilera.com>
++
++	Backport from mainline
++	2014-01-25  Walter Lee  <walt@tilera.com>
++
++	* config/tilegx/tilegx.c (tilegx_expand_to_rtl_hook): New.
++	(TARGET_EXPAND_TO_RTL_HOOK): Define.
++
++2014-01-22  Uros Bizjak  <ubizjak@gmail.com>
++	    Jakub Jelinek  <jakub@redhat.com>
++
++	PR target/59880
++	* config/i386/i386.c (ix86_avoid_lea_for_addr): Return false
++	for SImode_address_operand operands.  Return false
++	if operands[1] is a REG.
++
++2014-01-21  Andrey Belevantsev  <abel@ispras.ru>
++
++	Backport from mainline
++	2013-12-23  Andrey Belevantsev  <abel@ispras.ru>
++
++	PR rtl-optimization/57422
++	* sel-sched.c (mark_unavailable_hard_regs): Fix typo when calling
++	add_to_hard_reg_set.
++
++2014-01-19  John David Anglin  <danglin@gcc.gnu.org>
++
++	* config/pa/pa.c (pa_attr_length_millicode_call): Correct length of
++	long non-pic millicode calls.
++
++2014-01-17  John David Anglin  <danglin@gcc.gnu.org>
++
++	* config/pa/pa.c (pa_attr_length_indirect_call): Don't output a short
++	call to $$dyncall when TARGET_LONG_CALLS is true.
++
++2014-01-17  Charles Baylis  <charles.baylis@linaro.org>
++
++	Backport from mainline
++	2013-12-19  Charles Baylis  <charles.baylis@linaro.org>
++
++	PR target/59142
++	* config/arm/arm-ldmstm.ml: Use low_register_operand for Thumb
++	patterns.
++	* config/arm/ldmstm.md: Regenerate.
++
++	2013-12-19  Charles Baylis  <charles.baylis@linaro.org>
++
++	PR target/59142
++	* config/arm/predicates.md (arm_hard_general_register_operand):
++	New predicate.
++	(arm_hard_register_operand): Remove.
++	* config/arm/arm-ldmstm.ml: Use arm_hard_general_register_operand
++	for all patterns.
++	* config/arm/ldmstm.md: Regenerate.
++
++2014-01-16  Jakub Jelinek  <jakub@redhat.com>
++
++	PR target/59839
++	* config/i386/i386.c (ix86_expand_builtin): If target doesn't
++	satisfy operand 0 predicate for gathers, use a new pseudo as
++	subtarget.
++
++2014-01-16  Richard Henderson  <rth@redhat.com>
++
++	PR debug/54694
++	* reginfo.c (global_regs_decl): Globalize.
++	* rtl.h (global_regs_decl): Declare.
++	* ira.c (do_reload): Diagnose frame_pointer_needed and it
++	reserved via global_regs.
++
++2014-01-16  Marek Polacek  <polacek@redhat.com>
++
++	Backport from mainline
++	2014-01-16  Marek Polacek  <polacek@redhat.com>
++
++	PR middle-end/59827
++	* gimple-low.c (gimple_check_call_args): Don't use DECL_ARG_TYPE if
++	it is error_mark_node.
++
++2014-01-14  Uros Bizjak  <ubizjak@gmail.com>
++
++	Revert:
++	2014-01-08  Uros Bizjak  <ubizjak@gmail.com>
++
++	* config/i386/i386.c (ix86_data_alignment): Calculate max_align
++	from prefetch_block tune setting.
++
 +2014-01-10  Richard Earnshaw  <rearnsha@arm.com>
 +
 +	PR rtl-optimization/54300
@@ -10765,6 +11563,22 @@ Index: gcc/testsuite/gcc.target/powerpc/rs6000-ldouble-3.c
 +    abort ();
 +  exit (0);
 +}
+Index: gcc/testsuite/gcc.target/i386/pr54694.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.target/i386/pr54694.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gcc.target/i386/pr54694.c	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,11 @@
++/* { dg-do compile } */
++/* { dg-options "-O" } */
++
++register void *hfp __asm__("%ebp");	/* { dg-message "note: for" } */
++
++extern void g(void *);
++
++void f(int x)			/* { dg-error "frame pointer required" } */
++{
++  g(__builtin_alloca(x));
++}
 Index: gcc/testsuite/gcc.target/i386/avx-vmovapd-256-2.c
 ===================================================================
 --- a/src/gcc/testsuite/gcc.target/i386/avx-vmovapd-256-2.c	(.../tags/gcc_4_7_3_release)
@@ -10778,6 +11592,29 @@ Index: gcc/testsuite/gcc.target/i386/avx-vmovapd-256-2.c
  
    u.x = _mm256_set_pd (39578.467285, 7856.342941, 85632.783567, 47563.234215);
  
+Index: gcc/testsuite/gcc.target/i386/pr9771-1.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.target/i386/pr9771-1.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gcc.target/i386/pr9771-1.c	(.../branches/gcc-4_7-branch)
+@@ -45,7 +45,17 @@
+   exit(0);
+ }
+ 
+-int main()
++/* main usually performs dynamic realignment of the stack in case
++   _start would fail to properly align the stack, but for dynamic
++   stack realignment we need frame pointer which is incompatible
++   with -ffixed-ebp and the global register var.  So, cheat here
++   and hide from the compiler that main is really main.  */
++#define ASMNAME(cname)  ASMNAME2 (__USER_LABEL_PREFIX__, cname)
++#define ASMNAME2(prefix, cname) STRING (prefix) cname
++#define STRING(x)    #x
++int real_main() __asm (ASMNAME ("main"));
++
++int real_main()
+ {
+   test();
+   return 0;
 Index: gcc/testsuite/gcc.target/i386/pr57264.c
 ===================================================================
 --- a/src/gcc/testsuite/gcc.target/i386/pr57264.c	(.../tags/gcc_4_7_3_release)
@@ -10870,6 +11707,23 @@ Index: gcc/testsuite/gcc.target/i386/pr56866.c
 +xop_test (void)
 +{
 +  xop_test_main ();
++}
+Index: gcc/testsuite/gcc.target/i386/pr59839.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.target/i386/pr59839.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gcc.target/i386/pr59839.c	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,12 @@
++/* PR target/59839 */
++/* { dg-do compile } */
++/* { dg-options "-O0 -mavx2" } */
++
++#include <x86intrin.h>
++
++void
++test (const float *x)
++{
++  __m256i i = _mm256_set1_epi32 (1);
++  __m256 d = _mm256_i32gather_ps (x, i, 1);
 +}
 Index: gcc/testsuite/gcc.target/i386/xop-frczX.c
 ===================================================================
@@ -11060,6 +11914,25 @@ Index: gcc/testsuite/gcc.target/i386/avx-vmovapd-256-1.c
  
    u.x = test (e);
  
+Index: gcc/testsuite/gcc.target/i386/nest-1.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.target/i386/nest-1.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gcc.target/i386/nest-1.c	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,14 @@
++/* { dg-do compile { target llp64 } } */
++/* { dg-options "" } */
++
++void foo (int i)
++{
++  void nested (void)
++  {
++    char arr[(1U << 31) + 4U];
++    arr[i] = 0;
++  }
++
++  nested ();
++}
++
 Index: gcc/testsuite/gcc.target/sh/pr57108.c
 ===================================================================
 --- a/src/gcc/testsuite/gcc.target/sh/pr57108.c	(.../tags/gcc_4_7_3_release)
@@ -11149,6 +12022,65 @@ Index: gcc/testsuite/gfortran.dg/transfer_check_4.f90
 +  real(r8_),intent(out) :: val
 +  val = transfer(byte_array(1:8),val)    
 +end subroutine
+Index: gcc/testsuite/gfortran.dg/unresolved_fixup_2.f90
+===================================================================
+--- a/src/gcc/testsuite/gfortran.dg/unresolved_fixup_2.f90	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gfortran.dg/unresolved_fixup_2.f90	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,36 @@
++! { dg-do compile }
++!
++! PR fortran/58007
++! Unresolved fiixup while loading a module.
++!
++! This tests that the specification expression A%MAX_DEGREE in module BSR is
++! correctly loaded and resolved in program MAIN.
++!
++! Original testcase from Daniel Shapiro <shapero@uw.edu>
++
++module matrix
++  type :: sparse_matrix
++    integer :: max_degree
++  end type
++end module
++
++module bsr
++  use matrix
++
++  type, extends(sparse_matrix) :: bsr_matrix
++  end type
++
++  integer :: i1
++  integer :: i2
++  integer :: i3
++contains
++  function get_neighbors (A)
++    type(bsr_matrix), intent(in) :: A
++    integer :: get_neighbors(A%max_degree)
++  end function
++end module
++
++program main
++  use matrix
++  use bsr
++end
+Index: gcc/testsuite/gfortran.dg/init_flag_12.f90
+===================================================================
+--- a/src/gcc/testsuite/gfortran.dg/init_flag_12.f90	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gfortran.dg/init_flag_12.f90	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,13 @@
++! { dg-do compile }
++! { dg-options "-fno-automatic -finit-local-zero" }
++!
++! PR 55907: [4.7/4.8/4.9 Regression] ICE with -fno-automatic -finit-local-zero
++!
++! Contributed by J.R. Garcia <garcia.espinosa.jr@gmail.com>
++
++subroutine cchaine (i)
++  implicit none
++  integer :: i
++  character(len=i) :: chaine
++  write(*,*) chaine
++end subroutine 
 Index: gcc/testsuite/gfortran.dg/derived_external_function_1.f90
 ===================================================================
 --- a/src/gcc/testsuite/gfortran.dg/derived_external_function_1.f90	(.../tags/gcc_4_7_3_release)
@@ -11181,6 +12113,133 @@ Index: gcc/testsuite/gfortran.dg/derived_external_function_1.f90
 +  write (line2, *) 42_4
 +  if (line1 .ne. line2) call abort
 +end
+Index: gcc/testsuite/gfortran.dg/round_3.f08
+===================================================================
+--- a/src/gcc/testsuite/gfortran.dg/round_3.f08	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gfortran.dg/round_3.f08	(.../branches/gcc-4_7-branch)
+@@ -16,19 +16,44 @@
+     call checkfmt("(RU,1P,G6.0E2)", 2.0,  "2.E+00")
+     call checkfmt("(RU,1P,G10.4E2)", 2.3456e5,  "2.3456E+05")
+ 
+-    call checkfmt("(RU,F2.0)",     0.09,  "1.")     ! 0.
++    call checkfmt("(RC,G10.2)", 99.5,   "  0.10E+03") ! pr59774
++    call checkfmt("(RC,G10.2)", 995.,   "  0.10E+04") ! pr59774
++    call checkfmt("(RC,G10.3)", 999.5,  " 0.100E+04") ! pr59774
++    call checkfmt("(RC,G10.3)", 9995.,  " 0.100E+05") ! pr59774
++    call checkfmt("(RU,G10.2)", .099,   "  0.10    ") ! pr59774
++    call checkfmt("(RC,G10.1)", .095,   "   0.1    ") ! pr59774
++    call checkfmt("(RU,G10.3)", .0999,  " 0.100    ") ! pr59774
++    call checkfmt("(RC,G10.2)", .0995,  "  0.10    ") ! pr59774
++
++    call checkfmt("(RU,G9.3)",  891.1,  " 892.")      ! pr59836
++    call checkfmt("(RD,G9.3)", -891.1,  "-892.")      ! pr59836
++    
++    call checkfmt("(RU,F6.4)",     0.00006,  "0.0001")! 0.
++    call checkfmt("(RU,F5.3)",     0.0007,  "0.001")  ! 0.
++    call checkfmt("(RU,F4.2)",     0.008,  "0.01")    ! 0.
++    call checkfmt("(RU,F3.1)",     0.09,  "0.1")      ! 0.
++
++    call checkfmt("(RU,F2.0)",     0.09,  "1.")       ! 0.
+     call checkfmt("(RD,F3.0)",     -0.09,  "-1.")     ! -0.
+-    call checkfmt("(RU,F2.0)",      2.0,  "2.")     ! 3.
+-    call checkfmt("(RD,F3.0)",     -2.0,  "-2.")     ! -3.
+-    call checkfmt("(RU,F6.4)",      2.0,  "2.0000")     ! 2.0001
+-    call checkfmt("(RD,F7.4)",     -2.0,  "-2.0000")     ! -2.0001
+-    call checkfmt("(RU,1P,E6.0E2)", 2.0,  "2.E+00") ! 3.E+00
++    call checkfmt("(RU,F2.0)",     0.9,  "1.")        ! pr59836
++    call checkfmt("(RC,F2.0)",     0.4,  "0.")        ! pr59836
++    call checkfmt("(RC,F2.0)",     0.5,  "1.")        ! pr59836
++    call checkfmt("(RC,F2.0)",     0.6,  "1.")        ! pr59836
++    call checkfmt("(RD,F3.0)",     -0.9,  "-1.")      ! pr59836
++    call checkfmt("(RC,F3.0)",     -0.4,  "-0.")      ! pr59836
++    call checkfmt("(RC,F3.0)",     -0.5,  "-1.")      ! pr59836
++    call checkfmt("(RC,F3.0)",     -0.6,  "-1.")      ! pr59836
++    call checkfmt("(RU,F2.0)",      2.0,  "2.")       ! 3.
++    call checkfmt("(RD,F3.0)",     -2.0,  "-2.")      ! -3.
++    call checkfmt("(RU,F6.4)",      2.0,  "2.0000")   ! 2.0001
++    call checkfmt("(RD,F7.4)",     -2.0,  "-2.0000")  ! -2.0001
++    call checkfmt("(RU,1P,E6.0E2)", 2.0,  "2.E+00")   ! 3.E+00
+     call checkfmt("(RD,1P,E7.0E2)", -2.0,  "-2.E+00") ! -3.E+00
+-    call checkfmt("(RU,1P,E7.1E2)", 2.5,  "2.5E+00") ! 2.6E+00
++    call checkfmt("(RU,1P,E7.1E2)", 2.5,  "2.5E+00")  ! 2.6E+00
+     call checkfmt("(RD,1P,E8.1E2)", -2.5,  "-2.5E+00") ! -2.6E+00
+     call checkfmt("(RU,1P,E10.4E2)", 2.5,  "2.5000E+00") ! 2.5001E+00
+     call checkfmt("(RD,1P,E11.4E2)", -2.5,  "-2.5000E+00") ! -2.5001E+00
+-    call checkfmt("(RU,1P,G6.0E2)", 2.0,  "2.E+00") ! 3.E+00
++    call checkfmt("(RU,1P,G6.0E2)", 2.0,  "2.E+00")   ! 3.E+00
+     call checkfmt("(RD,1P,G7.0E2)", -2.0,  "-2.E+00") ! -3.E+00
+     call checkfmt("(RU,1P,G10.4E2)", 2.3456e5,  "2.3456E+05") ! 2.3457E+05
+     call checkfmt("(RD,1P,G11.4E2)", -2.3456e5,  "-2.3456E+05") ! -2.3457E+05
+Index: gcc/testsuite/gfortran.dg/typebound_proc_26.f90
+===================================================================
+--- a/src/gcc/testsuite/gfortran.dg/typebound_proc_26.f90	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gfortran.dg/typebound_proc_26.f90	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,38 @@
++! { dg-do compile }
++!
++! PR 59941: [4.7 Regression] [OOP] ICE with polymorphic types
++!
++! Contributed by Jürgen Reuter <juergen.reuter@desy.de>
++
++module tao_random_numbers
++  integer, dimension(10), private :: s_buffer
++  integer, private :: s_buffer_end = size (s_buffer)
++end module
++
++
++module beam_structures
++
++  private
++
++  type :: beam_structure_t
++     integer, dimension(:), allocatable :: smatrix
++   contains
++     procedure :: get_smatrix
++  end type
++  
++contains
++
++  function get_smatrix (beam_structure) result (matrix)
++    class(beam_structure_t), intent(in) :: beam_structure
++    integer, dimension (size (beam_structure%smatrix)) :: matrix
++  end function
++  
++end module
++
++
++program p
++  use tao_random_numbers
++  use beam_structures
++end
++
++! { dg-final { cleanup-modules "tao_random_numbers beam_structures" } }
+Index: gcc/testsuite/gfortran.dg/default_initialization_7.f90
+===================================================================
+--- a/src/gcc/testsuite/gfortran.dg/default_initialization_7.f90	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gfortran.dg/default_initialization_7.f90	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,22 @@
++! { dg-do compile }
++!
++! PR fortran/57033
++! ICE on a structure constructor of an extended derived type whose parent
++! type last component has a default initializer
++!
++! Contributed by Tilo Schwarz <tilo@tilo-schwarz.de>
++
++program ice
++
++type m
++    integer i
++    logical :: f = .false.
++end type m
++
++type, extends(m) :: me
++end type me
++
++type(me) meo
++
++meo = me(1)              ! ICE
++end program ice
 Index: gcc/testsuite/gfortran.dg/namelist_77.f90
 ===================================================================
 --- a/src/gcc/testsuite/gfortran.dg/namelist_77.f90	(.../tags/gcc_4_7_3_release)
@@ -11382,6 +12441,55 @@ Index: gcc/testsuite/gfortran.dg/do_5.f90
 +      END
 +
 +      END
+Index: gcc/testsuite/gfortran.dg/unresolved_fixup_1.f90
+===================================================================
+--- a/src/gcc/testsuite/gfortran.dg/unresolved_fixup_1.f90	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gfortran.dg/unresolved_fixup_1.f90	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,44 @@
++! { dg-do compile }
++!
++! PR fortran/58007
++! Unresolved fixup while loading a module.
++!
++! This tests that the specification expression A%MAX_DEGREE in module BSR is
++! correctly loaded and resolved in program MAIN.
++!
++! Original testcase from Daniel Shapiro <shapero@uw.edu>
++! Reduced by Tobias Burnus <burnus@net-b.de> and Janus Weil <janus@gcc.gnu.org>
++
++module matrix
++  type :: sparse_matrix
++    integer :: max_degree
++  end type
++contains
++  subroutine init_interface (A)
++    class(sparse_matrix), intent(in) :: A
++  end subroutine
++  real function get_value_interface()
++  end function
++end module
++
++module ellpack
++  use matrix
++end module
++
++module bsr
++  use matrix
++  type, extends(sparse_matrix) :: bsr_matrix
++  contains
++    procedure :: get_neighbors
++  end type
++contains
++  function get_neighbors (A)
++    class(bsr_matrix), intent(in) :: A
++    integer :: get_neighbors(A%max_degree)
++  end function
++end module
++
++program main
++  use ellpack
++  use bsr
++end
 Index: gcc/testsuite/gfortran.dg/transfer_intrinsic_6.f90
 ===================================================================
 --- a/src/gcc/testsuite/gfortran.dg/transfer_intrinsic_6.f90	(.../tags/gcc_4_7_3_release)
@@ -11596,6 +12704,122 @@ Index: gcc/testsuite/gfortran.dg/namelist_78.f90
 +    if (der%d(1)%k%j /= 1) call abort
 +    if (der%d(2)%k%j /= 2) call abort
 +end program namelist
+Index: gcc/testsuite/gfortran.dg/ichar_3.f90
+===================================================================
+--- a/src/gcc/testsuite/gfortran.dg/ichar_3.f90	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gfortran.dg/ichar_3.f90	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,13 @@
++! { dg-do compile }
++!
++! PR fortran/59599
++! The call to ichar was triggering an ICE.
++!
++! Original testcase from Fran Martinez Fadrique <fmartinez@gmv.com>
++
++character(1) cpk(2)
++integer res(2)
++cpk = 'a'
++res = ichar( cpk, kind=1 )
++print *, ichar( cpk, kind=1 )
++end
+Index: gcc/testsuite/gfortran.dg/fmt_g_1.f90
+===================================================================
+--- a/src/gcc/testsuite/gfortran.dg/fmt_g_1.f90	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gfortran.dg/fmt_g_1.f90	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,11 @@
++! { dg-do run }
++! PR59771 Cleanup handling of Gw.0 and Gw.0Ee format
++! Test case prepared by Dominique d'Humieres <dominiq@lps.ens.fr>
++       PROGRAM FOO
++       character(len=60) :: buffer, buffer1
++
++       write (buffer ,'(6(1X,1PG9.0e2))') 0.0, 0.04, 0.06, 0.4, 0.6, 243.0
++       write (buffer1,'(6(1X,1PE9.0e2))') 0.0, 0.04, 0.06, 0.4, 0.6, 243.0
++
++       if (buffer /= buffer1) call abort
++       end
+Index: gcc/testsuite/gfortran.dg/elemental_subroutine_9.f90
+===================================================================
+--- a/src/gcc/testsuite/gfortran.dg/elemental_subroutine_9.f90	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gfortran.dg/elemental_subroutine_9.f90	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,39 @@
++! { dg-do run }
++!
++! PR fortran/59906
++!
++! Contributed by H Anlauf  <anlauf@gmx.de>
++!
++! Failed generate character scalar for scalarized loop for elemantal call.
++!
++program x
++  implicit none
++  call y('bbb')
++contains
++
++  subroutine y(str)
++    character(len=*), intent(in) :: str
++    character(len=len_trim(str)) :: str_aux
++    character(len=3) :: str3 = 'abc'
++
++    str_aux = str
++
++    ! Compiled but did not give correct result
++    if (any (str_cmp((/'aaa','bbb'/), str) .neqv. [.FALSE.,.TRUE.])) call abort
++
++    ! Did not compile
++    if (any (str_cmp((/'bbb', 'aaa'/), str_aux) .neqv. [.TRUE.,.FALSE.])) call abort
++
++    ! Verify patch
++    if (any (str_cmp((/'bbb', 'aaa'/), str3) .neqv. [.FALSE.,.FALSE.])) call abort
++    if (any (str_cmp((/'bbb', 'aaa'/), 'aaa') .neqv. [.FALSE.,.TRUE.])) call abort
++
++  end subroutine y
++
++  elemental logical function str_cmp(str1, str2)
++    character(len=*), intent(in) :: str1
++    character(len=*), intent(in) :: str2
++    str_cmp = (str1 == str2)
++  end function str_cmp
++
++end program x
+Index: gcc/testsuite/gcc.c-torture/execute/pr60017.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.c-torture/execute/pr60017.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gcc.c-torture/execute/pr60017.c	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,33 @@
++/* PR target/60017 */
++
++extern void abort (void);
++
++struct S0
++{
++  short m0;
++  short m1;
++};
++
++struct S1
++{
++  unsigned m0:1;
++  char m1[2][2];
++  struct S0 m2[2];
++};
++
++struct S1 x = { 1, {{2, 3}, {4, 5}}, {{6, 7}, {8, 9}} };
++
++struct S1 func (void)
++{
++  return x;
++}
++
++int main (void)
++{
++  struct S1 ret = func ();
++
++  if (ret.m2[1].m1 != 9)
++    abort ();
++
++  return 0;
++}
 Index: gcc/testsuite/gcc.c-torture/execute/pr57829.c
 ===================================================================
 --- a/src/gcc/testsuite/gcc.c-torture/execute/pr57829.c	(.../tags/gcc_4_7_3_release)
@@ -11853,6 +13077,48 @@ Index: gcc/testsuite/gnat.dg/in_out_parameter4.adb
 +begin
 +   S := Recurse (Val);
 +end;
+Index: gcc/testsuite/gnat.dg/opt32.adb
+===================================================================
+--- a/src/gcc/testsuite/gnat.dg/opt32.adb	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gnat.dg/opt32.adb	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,37 @@
++-- { dg-do compile }
++-- { dg-options "-O2" }
++
++with Ada.Containers; use Ada.Containers;
++with Ada.Containers.Vectors;
++
++function Opt32 return Natural is
++
++   package My_Vectors
++      is new Vectors (Index_Type => Natural, Element_Type => Integer);
++   use My_Vectors;
++
++   V : Vector;
++
++   function Sign_Changes return Natural is
++      Cur      : Cursor := To_Cursor (V, 0);
++      R        : Natural := 0;
++      Negative : Boolean;
++   begin
++      Negative := Element (Cur) < 0;
++
++      loop
++         Cur := Next (Cur);
++         exit when R > 100;
++
++         if (Element (Cur) < 0) /= Negative then
++            Negative := not Negative;
++            R := R + 1;
++         end if;
++      end loop;
++
++      return R;
++   end;
++
++begin
++   return Sign_Changes;
++end;
 Index: gcc/testsuite/gnat.dg/opt28_pkg.ads
 ===================================================================
 --- a/src/gcc/testsuite/gnat.dg/opt28_pkg.ads	(.../tags/gcc_4_7_3_release)
@@ -11976,6 +13242,26 @@ Index: gcc/testsuite/gcc.dg/atomic-store-6.c
 +  if (i != -1)
 +    __builtin_abort();
 +  return 0;
++}
+Index: gcc/testsuite/gcc.dg/pr59827.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.dg/pr59827.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/gcc.dg/pr59827.c	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,15 @@
++/* PR middle-end/59827 */
++/* { dg-do compile } */
++
++int
++foo (int p[2][]) /* { dg-error "array type has incomplete element type" } */
++{
++  return p[0][0];
++}
++
++void
++bar (void)
++{
++  int p[2][1];
++  foo (p); /* { dg-error "type of formal parameter 1 is incomplete" } */
 +}
 Index: gcc/testsuite/gcc.dg/pr59351.c
 ===================================================================
@@ -12161,7 +13447,95 @@ Index: gcc/testsuite/ChangeLog
 ===================================================================
 --- a/src/gcc/testsuite/ChangeLog	(.../tags/gcc_4_7_3_release)
 +++ b/src/gcc/testsuite/ChangeLog	(.../branches/gcc-4_7-branch)
-@@ -1,3 +1,320 @@
+@@ -1,3 +1,408 @@
++2014-02-22  Mikael Morin  <mikael@gcc.gnu.org>
++
++	PR fortran/59599
++	* gfortran.dg/ichar_3.f90: New test.
++
++2014-02-20  Janus Weil  <janus@gcc.gnu.org>
++
++	Backport from mainline
++	2014-02-17  Janus Weil  <janus@gcc.gnu.org>
++
++	PR fortran/55907
++	* gfortran.dg/init_flag_12.f90: New.
++
++2014-02-18  Kai Tietz  <ktietz@redhat.com>
++
++	PR target/60193
++	* gcc.target/i386/nest-1.c: New testcase.
++
++2014-02-18  Eric Botcazou  <ebotcazou@adacore.com>
++
++	* gnat.dg/opt32.adb: New test.
++
++2014-02-15  Jerry DeLisle  <jvdelisle@gcc.gnu>
++	    Dominique d'Humieres  <dominiq@lps.ens.fr>
++
++	Backport from mainline
++	PR libfortran/59771
++	PR libfortran/59774
++	PR libfortran/59836
++	* gfortran.dg/fmt_g_1.f90: New test.
++	* gfortran.dg/round_3.f08: New cases added.
++
++2014-02-08  Mikael Morin  <mikael@gcc.gnu.org>
++
++	PR fortran/57033
++	* gfortran.dg/default_initialization_7.f90: New test.
++
++2014-02-08  Paul Thomas  <pault@gcc.gnu.org>
++
++	PR fortran/59906
++	* gfortran.dg/elemental_subroutine_9.f90 : New test
++
++2014-02-04  Uros Bizjak  <ubizjak@gmail.com>
++
++	Backport from mainline
++	2014-02-02  Uros Bizjak  <ubizjak@gmail.com>
++
++	PR target/60017
++	* gcc.c-torture/execute/pr60017.c: New test.
++
++2014-02-03  Janus Weil  <janus@gcc.gnu.org>
++
++	PR fortran/59941
++	* gfortran.dg/typebound_proc_26.f90: New.
++
++2014-01-29  Markus Trippelsdorf  <markus@trippelsdorf.de>
++
++	Backport from mainline
++	2012-12-13  Jakub Jelinek  <jakub@redhat.com>
++
++	PR gcov-profile/55650
++	* g++.dg/other/pr55650.C: New test.
++	* g++.dg/other/pr55650.cc: New file.
++
++2014-01-26  Mikael Morin  <mikael@gcc.gnu.org>
++
++	PR fortran/58007
++	* gfortran.dg/unresolved_fixup_1.f90: New test.
++	* gfortran.dg/unresolved_fixup_2.f90: New test.
++
++2014-01-16  Jakub Jelinek  <jakub@redhat.com>
++
++	PR target/59839
++	* gcc.target/i386/pr59839.c: New test.
++
++	PR debug/54694
++	* gcc.target/i386/pr9771-1.c (main): Rename to...
++	(real_main): ... this.  Add __asm name "main".
++	(ASMNAME, ASMNAME2, STRING): Define.
++
++2014-01-16  Marek Polacek  <polacek@redhat.com>
++
++	Backport from mainline
++	2014-01-16  Marek Polacek  <polacek@redhat.com>
++
++	PR middle-end/59827
++	* gcc.dg/pr59827.c: New test.
++
 +2014-01-10  Richard Earnshaw  <rearnsha@arm.com>
 +
 +	PR rtl-optimization/54300
@@ -12482,7 +13856,7 @@ Index: gcc/testsuite/ChangeLog
  2013-04-11  Release Manager
  
  	* GCC 4.7.3 released.
-@@ -54,7 +371,7 @@
+@@ -54,7 +459,7 @@
  
  	Backport from mainline
  	2013-02-27  Andrey Belevantsev  <abel@ispras.ru>
@@ -12510,6 +13884,17 @@ Index: gcc/testsuite/g++.dg/debug/template2.C
 +
 +    array<int, n> a;
 +};
+Index: gcc/testsuite/g++.dg/ext/attrib48.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/ext/attrib48.C	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/g++.dg/ext/attrib48.C	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,6 @@
++// PR c++/54652
++
++typedef unsigned L __attribute__ ((aligned));
++typedef unsigned L __attribute__ ((aligned));
++
++L l;
 Index: gcc/testsuite/g++.dg/expr/const1.C
 ===================================================================
 --- a/src/gcc/testsuite/g++.dg/expr/const1.C	(.../tags/gcc_4_7_3_release)
@@ -12523,6 +13908,56 @@ Index: gcc/testsuite/g++.dg/expr/const1.C
 +  const unsigned long* const var=&ADDR;
 +  const unsigned long retval=var[1];
 +  return retval;
++}
+Index: gcc/testsuite/g++.dg/other/pr55650.cc
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/other/pr55650.cc	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/g++.dg/other/pr55650.cc	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,4 @@
++int
++main ()
++{
++}
+Index: gcc/testsuite/g++.dg/other/pr55650.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/other/pr55650.C	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/g++.dg/other/pr55650.C	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,21 @@
++// PR gcov-profile/55650
++// { dg-do link }
++// { dg-options "-O2 -fprofile-generate" }
++// { dg-additional-sources "pr55650.cc" }
++
++struct A
++{
++  virtual void foo ();
++};
++
++struct B : public A
++{
++  B ();
++  void foo () {}
++};
++
++inline A *
++bar ()
++{
++  return new B;
++}
+Index: gcc/testsuite/g++.dg/tm/pr60004.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/tm/pr60004.C	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/g++.dg/tm/pr60004.C	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,10 @@
++// { dg-do compile }
++// { dg-options "-fgnu-tm" }
++
++int a;
++int f() {
++    __transaction_atomic {
++        if (a == 5)
++            return 1;
++    }
 +}
 Index: gcc/testsuite/g++.dg/tm/noexcept-6.C
 ===================================================================
@@ -12654,6 +14089,22 @@ Index: gcc/testsuite/g++.dg/cpp0x/lambda/lambda-nullptr.C
 +  test<pdm>();
 +  test<pmf>();
 +}
+Index: gcc/testsuite/g++.dg/cpp0x/variadic149.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/cpp0x/variadic149.C	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/g++.dg/cpp0x/variadic149.C	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,11 @@
++// PR c++/60248
++// { dg-options "-std=c++11 -g -fabi-version=2" }
++
++template<int...> struct A {};
++
++template<> struct A<0>
++{
++  typedef enum { e } B;
++};
++
++A<0> a;
 Index: gcc/testsuite/g++.dg/cpp0x/enum18.C
 ===================================================================
 --- a/src/gcc/testsuite/g++.dg/cpp0x/enum18.C	(.../tags/gcc_4_7_3_release)
@@ -12665,6 +14116,32 @@ Index: gcc/testsuite/g++.dg/cpp0x/enum18.C
 -  ev.e::~e_u();	// { dg-error "e_u. has not been declared" }
 +  ev.e::~e_u();	// { dg-error "" }
  }
+Index: gcc/testsuite/g++.dg/cpp0x/noexcept22.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/cpp0x/noexcept22.C	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/g++.dg/cpp0x/noexcept22.C	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,21 @@
++// PR c++/60046
++// { dg-require-effective-target c++11 }
++
++constexpr bool foo () { return noexcept (true); }
++template <typename T>
++struct V
++{
++  void bar (V &) noexcept (foo ()) {}
++};
++template <typename T>
++struct W : public V <int>
++{
++  void bar (W &x) { V <int>::bar (x); }
++};
++
++int
++main ()
++{
++  W <int> a, b;
++  a.bar (b);
++}
 Index: gcc/testsuite/g++.dg/cpp0x/constexpr-array-ptr8.C
 ===================================================================
 --- a/src/gcc/testsuite/g++.dg/cpp0x/constexpr-array-ptr8.C	(.../tags/gcc_4_7_3_release)
@@ -12737,6 +14214,23 @@ Index: gcc/testsuite/g++.dg/cpp0x/decltype57.C
 +  typedef int I;
 +  decltype(i.I::~I())* p;
 +}
+Index: gcc/testsuite/g++.dg/cpp0x/initlist78.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/cpp0x/initlist78.C	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/g++.dg/cpp0x/initlist78.C	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,12 @@
++// PR c++/58639
++// { dg-require-effective-target c++11 }
++
++struct node {
++  node &parent;
++};
++
++struct vector {
++  node n;
++};
++
++vector v({});			// { dg-error "" }
 Index: gcc/testsuite/g++.dg/template/array26.C
 ===================================================================
 --- a/src/gcc/testsuite/g++.dg/template/array26.C	(.../tags/gcc_4_7_3_release)
@@ -12853,6 +14347,30 @@ Index: gcc/testsuite/g++.dg/template/inherit9.C
 +    int const i(B::goo(t));
 +  }
 +};
+Index: gcc/testsuite/g++.dg/template/partial15.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/template/partial15.C	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/testsuite/g++.dg/template/partial15.C	(.../branches/gcc-4_7-branch)
+@@ -0,0 +1,19 @@
++// PR c++/57043
++// { dg-do link }
++
++template<typename D> struct complex { };
++
++template<typename Tp>
++complex<Tp>
++pow(const complex<Tp>& x, const complex<Tp>& y) { return complex<Tp>(); }
++
++template<typename T, typename U>
++struct promote_2 { typedef T type; };
++
++template<typename Tp, typename Up>
++complex<typename promote_2<Tp, Up>::type>
++pow(const complex<Tp>& x, const complex<Up>& y);
++
++complex<double> (*powcc)(const complex<double>&, const complex<double>&) = pow;
++
++int main() {}
 Index: gcc/testsuite/objc.dg/no-extra-load.m
 ===================================================================
 --- a/src/gcc/testsuite/objc.dg/no-extra-load.m	(.../tags/gcc_4_7_3_release)
@@ -13695,6 +15213,23 @@ Index: gcc/cp/typeck.c
  	      || TREE_CODE (retval) == PARM_DECL)
  	  && DECL_CONTEXT (retval) == current_function_decl
  	  && !TREE_STATIC (retval)
+Index: gcc/cp/decl.c
+===================================================================
+--- a/src/gcc/cp/decl.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/cp/decl.c	(.../branches/gcc-4_7-branch)
+@@ -1815,9 +1815,9 @@
+       /* Merge the data types specified in the two decls.  */
+       newtype = merge_types (TREE_TYPE (newdecl), TREE_TYPE (olddecl));
+ 
+-      /* If merge_types produces a non-typedef type, just use the old type.  */
+-      if (TREE_CODE (newdecl) == TYPE_DECL
+-	  && newtype == DECL_ORIGINAL_TYPE (newdecl))
++      /* For typedefs use the old type, as the new type's DECL_NAME points
++	 at newdecl, which will be ggc_freed.  */
++      if (TREE_CODE (newdecl) == TYPE_DECL)
+ 	newtype = oldtype;
+ 
+       if (TREE_CODE (newdecl) == VAR_DECL)
 Index: gcc/cp/except.c
 ===================================================================
 --- a/src/gcc/cp/except.c	(.../tags/gcc_4_7_3_release)
@@ -13732,7 +15267,41 @@ Index: gcc/cp/ChangeLog
 ===================================================================
 --- a/src/gcc/cp/ChangeLog	(.../tags/gcc_4_7_3_release)
 +++ b/src/gcc/cp/ChangeLog	(.../branches/gcc-4_7-branch)
-@@ -1,3 +1,73 @@
+@@ -1,3 +1,107 @@
++2014-02-21  Jason Merrill  <jason@redhat.com>
++
++	PR c++/60248
++	* mangle.c (mangle_decl): Don't make an alias for a TYPE_DECL.
++
++2014-02-20  Kai Tietz  <ktietz@redhat.com>
++
++	PR c++/58873
++	* parser.c (cp_parser_functional_cast): Treat NULL_TREE
++	valued type argument as error_mark_node.
++
++	PR c++/58835
++	* semantics.c (finish_fname): Handle error_mark_node.
++
++2014-02-19  Jason Merrill  <jason@redhat.com>
++
++	PR c++/60046
++	* pt.c (maybe_instantiate_noexcept): Don't instantiate exception
++	spec from template context.
++
++2014-01-31  Jason Merrill  <jason@redhat.com>
++
++	PR c++/57043
++	* pt.c (fn_type_unification): Don't do DEDUCE_EXACT check
++	during partial ordering.
++
++2014-01-27  Jason Merrill  <jason@redhat.com>
++
++	PR c++/54652
++	* decl.c (duplicate_decls): Always use oldtype for TYPE_DECL.
++
++	PR c++/58639
++	* call.c (build_aggr_conv): Reject value-initialization of reference.
++
 +2013-10-25  Tom de Vries  <tom@codesourcery.com>
 +
 +	PR c++/58282
@@ -13831,7 +15400,32 @@ Index: gcc/cp/pt.c
      case IDENTIFIER_NODE:
        if (IDENTIFIER_TYPENAME_P (t))
  	{
-@@ -19545,7 +19552,7 @@
+@@ -14706,8 +14713,11 @@
+ 
+       /* If we're looking for an exact match, check that what we got
+ 	 is indeed an exact match.  It might not be if some template
+-	 parameters are used in non-deduced contexts.  */
+-      if (strict == DEDUCE_EXACT)
++	 parameters are used in non-deduced contexts.  But don't check
++	 for an exact match if we have dependent template arguments;
++	 in that case we're doing partial ordering, and we already know
++	 that we have two candidates that will provide the actual type.  */
++      if (strict == DEDUCE_EXACT && !any_dependent_template_arguments_p (targs))
+ 	{
+ 	  unsigned int i;
+ 
+@@ -18083,6 +18093,10 @@
+ {
+   tree fntype, spec, noex, clone;
+ 
++  /* Don't instantiate a noexcept-specification from template context.  */
++  if (processing_template_decl)
++    return;
++
+   if (DECL_CLONED_FUNCTION_P (fn))
+     fn = DECL_CLONED_FUNCTION (fn);
+   fntype = TREE_TYPE (fn);
+@@ -19545,7 +19559,7 @@
  any_type_dependent_elements_p (const_tree list)
  {
    for (; list; list = TREE_CHAIN (list))
@@ -13844,7 +15438,17 @@ Index: gcc/cp/semantics.c
 ===================================================================
 --- a/src/gcc/cp/semantics.c	(.../tags/gcc_4_7_3_release)
 +++ b/src/gcc/cp/semantics.c	(.../branches/gcc-4_7-branch)
-@@ -7412,15 +7412,17 @@
+@@ -2430,7 +2430,8 @@
+   tree decl;
+ 
+   decl = fname_decl (input_location, C_RID_CODE (id), id);
+-  if (processing_template_decl && current_function_decl)
++  if (processing_template_decl && current_function_decl
++      && decl != error_mark_node)
+     decl = DECL_NAME (decl);
+   return decl;
+ }
+@@ -7412,15 +7413,17 @@
  	    }
  	}
      }
@@ -13865,7 +15469,7 @@ Index: gcc/cp/semantics.c
  	sub = build1_loc (loc, INDIRECT_REF, TREE_TYPE (subtype), sub);
        type_domain = TYPE_DOMAIN (TREE_TYPE (sub));
        if (type_domain && TYPE_MIN_VALUE (type_domain))
-@@ -7457,11 +7459,6 @@
+@@ -7457,11 +7460,6 @@
      {
        tree sub = op0;
        STRIP_NOPS (sub);
@@ -13877,7 +15481,7 @@ Index: gcc/cp/semantics.c
        if (TREE_CODE (sub) == ADDR_EXPR)
  	{
  	  /* We couldn't fold to a constant value.  Make sure it's not
-@@ -8959,13 +8956,12 @@
+@@ -8959,13 +8957,12 @@
  insert_capture_proxy (tree var)
  {
    cp_binding_level *b;
@@ -13892,7 +15496,7 @@ Index: gcc/cp/semantics.c
      {
        cp_binding_level *n = b->level_chain;
        if (n->kind == sk_function_parms)
-@@ -8976,8 +8972,7 @@
+@@ -8976,8 +8973,7 @@
  
    /* And put a DECL_EXPR in the STATEMENT_LIST for the same block.  */
    var = build_stmt (DECL_SOURCE_LOCATION (var), DECL_EXPR, var);
@@ -13937,6 +15541,30 @@ Index: gcc/cp/parser.c
    if (quals >= 0)
      {
        /* DR 1207: 'this' is in scope in the trailing return type.  */
+@@ -21423,6 +21419,9 @@
+   tree cast;
+   bool nonconst_p;
+ 
++  if (!type)
++    type = error_mark_node;
++
+   if (cp_lexer_next_token_is (parser->lexer, CPP_OPEN_BRACE))
+     {
+       maybe_warn_cpp0x (CPP0X_INITIALIZER_LISTS);
+Index: gcc/cp/call.c
+===================================================================
+--- a/src/gcc/cp/call.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/cp/call.c	(.../branches/gcc-4_7-branch)
+@@ -894,6 +894,9 @@
+ 
+       if (i < CONSTRUCTOR_NELTS (ctor))
+ 	val = CONSTRUCTOR_ELT (ctor, i)->value;
++      else if (TREE_CODE (ftype) == REFERENCE_TYPE)
++	/* Value-initialization of reference is ill-formed.  */
++	return NULL;
+       else
+ 	{
+ 	  if (empty_ctor == NULL_TREE)
 Index: gcc/cp/cvt.c
 ===================================================================
 --- a/src/gcc/cp/cvt.c	(.../tags/gcc_4_7_3_release)
@@ -14016,6 +15644,18 @@ Index: gcc/cp/cvt.c
  	  if (winner)
  	    {
  	      if (complain)
+Index: gcc/cp/mangle.c
+===================================================================
+--- a/src/gcc/cp/mangle.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/cp/mangle.c	(.../branches/gcc-4_7-branch)
+@@ -3378,6 +3378,7 @@
+ 
+   if (G.need_abi_warning
+       /* Don't do this for a fake symbol we aren't going to emit anyway.  */
++      && TREE_CODE (decl) != TYPE_DECL
+       && !DECL_MAYBE_IN_CHARGE_CONSTRUCTOR_P (decl)
+       && !DECL_MAYBE_IN_CHARGE_DESTRUCTOR_P (decl))
+     {
 Index: gcc/cp/cp-tree.h
 ===================================================================
 --- a/src/gcc/cp/cp-tree.h	(.../tags/gcc_4_7_3_release)
@@ -14063,6 +15703,31 @@ Index: gcc/tree-ssa-ccp.c
      else
        gcc_assert (is_gimple_debug (stmt));
  }
+Index: gcc/sel-sched.c
+===================================================================
+--- a/src/gcc/sel-sched.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/sel-sched.c	(.../branches/gcc-4_7-branch)
+@@ -1263,7 +1263,7 @@
+ 
+       if (!HARD_FRAME_POINTER_IS_FRAME_POINTER)
+         add_to_hard_reg_set (&reg_rename_p->unavailable_hard_regs, 
+-			     Pmode, HARD_FRAME_POINTER_IS_FRAME_POINTER);
++			     Pmode, HARD_FRAME_POINTER_REGNUM);
+     }
+ 
+ #ifdef STACK_REGS
+Index: gcc/gimple-low.c
+===================================================================
+--- a/src/gcc/gimple-low.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/gimple-low.c	(.../branches/gcc-4_7-branch)
+@@ -249,6 +249,7 @@
+ 	    break;
+ 	  arg = gimple_call_arg (stmt, i);
+ 	  if (p == error_mark_node
++	      || DECL_ARG_TYPE (p) == error_mark_node
+ 	      || arg == error_mark_node
+ 	      || (!types_compatible_p (DECL_ARG_TYPE (p), TREE_TYPE (arg))
+ 		  && !fold_convertible_p (DECL_ARG_TYPE (p), arg)))
 Index: gcc/dwarf2out.c
 ===================================================================
 --- a/src/gcc/dwarf2out.c	(.../tags/gcc_4_7_3_release)
@@ -14136,7 +15801,14 @@ Index: gcc/ada/ChangeLog
 ===================================================================
 --- a/src/gcc/ada/ChangeLog	(.../tags/gcc_4_7_3_release)
 +++ b/src/gcc/ada/ChangeLog	(.../branches/gcc-4_7-branch)
-@@ -1,3 +1,27 @@
+@@ -1,3 +1,34 @@
++2014-01-12  Eric Botcazou  <ebotcazou@adacore.com>
++
++	PR ada/59772
++	* gcc-interface/cuintp.c (build_cst_from_int): Use 32-bit integer type
++	as intermediate type.
++	(UI_To_gnu): Likewise.
++
 +2013-12-12  Eric Botcazou  <ebotcazou@adacore.com>
 +
 +	* gcc-interface/Make-lang.in (ada/doctools/xgnatugn): Use gnatmake.
@@ -14218,6 +15890,55 @@ Index: gcc/ada/gcc-interface/utils.c
  	    }
      }
  }
+Index: gcc/ada/gcc-interface/cuintp.c
+===================================================================
+--- a/src/gcc/ada/gcc-interface/cuintp.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/ada/gcc-interface/cuintp.c	(.../branches/gcc-4_7-branch)
+@@ -6,7 +6,7 @@
+  *                                                                          *
+  *                          C Implementation File                           *
+  *                                                                          *
+- *          Copyright (C) 1992-2010, Free Software Foundation, Inc.         *
++ *          Copyright (C) 1992-2014, Free Software Foundation, Inc.         *
+  *                                                                          *
+  * GNAT is free software;  you can  redistribute it  and/or modify it under *
+  * terms of the  GNU General Public License as published  by the Free Soft- *
+@@ -59,8 +59,8 @@
+ static tree
+ build_cst_from_int (tree type, HOST_WIDE_INT low)
+ {
+-  if (TREE_CODE (type) == REAL_TYPE)
+-    return convert (type, build_int_cst (NULL_TREE, low));
++  if (SCALAR_FLOAT_TYPE_P (type))
++    return convert (type, build_int_cst (gnat_type_for_size (32, 0), low));
+   else
+     return build_int_cst_type (type, low);
+ }
+@@ -99,20 +99,13 @@
+       gcc_assert (Length > 0);
+ 
+       /* The computations we perform below always require a type at least as
+-	 large as an integer not to overflow.  REAL types are always fine, but
++	 large as an integer not to overflow.  FP types are always fine, but
+ 	 INTEGER or ENUMERAL types we are handed may be too short.  We use a
+ 	 base integer type node for the computations in this case and will
+-	 convert the final result back to the incoming type later on.
+-	 The base integer precision must be superior than 16.  */
++	 convert the final result back to the incoming type later on.  */
++      if (!SCALAR_FLOAT_TYPE_P (comp_type) && TYPE_PRECISION (comp_type) < 32)
++	comp_type = gnat_type_for_size (32, 0);
+ 
+-      if (TREE_CODE (comp_type) != REAL_TYPE
+-	  && TYPE_PRECISION (comp_type)
+-	     < TYPE_PRECISION (long_integer_type_node))
+-	{
+-	  comp_type = long_integer_type_node;
+-	  gcc_assert (TYPE_PRECISION (comp_type) > 16);
+-	}
+-
+       gnu_base = build_cst_from_int (comp_type, Base);
+ 
+       gnu_ret = build_cst_from_int (comp_type, First);
 Index: gcc/ada/gcc-interface/Make-lang.in
 ===================================================================
 --- a/src/gcc/ada/gcc-interface/Make-lang.in	(.../tags/gcc_4_7_3_release)
@@ -14294,6 +16015,28 @@ Index: gcc/c-decl.c
  
        type = TREE_TYPE (decl);
        TREE_TYPE (DECL_INITIAL (decl)) = type;
+Index: gcc/tree-eh.c
+===================================================================
+--- a/src/gcc/tree-eh.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/tree-eh.c	(.../branches/gcc-4_7-branch)
+@@ -1328,9 +1328,6 @@
+   x = gimple_seq_last_stmt (finally);
+   finally_loc = x ? gimple_location (x) : tf_loc;
+ 
+-  /* Lower the finally block itself.  */
+-  lower_eh_constructs_1 (state, finally);
+-
+   /* Prepare for switch statement generation.  */
+   nlabels = VEC_length (tree, tf->dest_array);
+   return_index = nlabels;
+@@ -1414,6 +1411,7 @@
+   x = gimple_build_label (finally_label);
+   gimple_seq_add_stmt (&tf->top_p_seq, x);
+ 
++  lower_eh_constructs_1 (state, finally);
+   gimple_seq_add_seq (&tf->top_p_seq, finally);
+ 
+   /* Redirect each incoming goto edge.  */
 Index: gcc/fortran/interface.c
 ===================================================================
 --- a/src/gcc/fortran/interface.c	(.../tags/gcc_4_7_3_release)
@@ -14308,6 +16051,41 @@ Index: gcc/fortran/interface.c
      {
        if (errmsg != NULL)
  	snprintf (errmsg, err_len, "Type/rank mismatch in argument '%s'",
+Index: gcc/fortran/trans-expr.c
+===================================================================
+--- a/src/gcc/fortran/trans-expr.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/fortran/trans-expr.c	(.../branches/gcc-4_7-branch)
+@@ -5595,7 +5595,13 @@
+       /* Returns a reference to the scalar evaluated outside the loop
+ 	 for this case.  */
+       gfc_conv_expr (se, expr);
+-      se->expr = gfc_build_addr_expr (NULL_TREE, se->expr);
++
++      if (expr->ts.type == BT_CHARACTER
++	  && expr->expr_type != EXPR_FUNCTION)
++	gfc_conv_string_parameter (se);
++      else
++	se->expr = gfc_build_addr_expr (NULL_TREE, se->expr);
++
+       return;
+     }
+ 
+Index: gcc/fortran/trans-array.c
+===================================================================
+--- a/src/gcc/fortran/trans-array.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/fortran/trans-array.c	(.../branches/gcc-4_7-branch)
+@@ -2465,6 +2465,11 @@
+ 		 a reference to the value.  */
+ 	      gfc_conv_expr (&se, expr);
+ 	    }
++
++	  /* Ensure that a pointer to the string is stored.  */
++	  if (expr->ts.type == BT_CHARACTER)
++	    gfc_conv_string_parameter (&se);
++
+ 	  gfc_add_block_to_block (&outer_loop->pre, &se.pre);
+ 	  gfc_add_block_to_block (&outer_loop->post, &se.post);
+ 	  if (gfc_is_class_scalar_expr (expr))
 Index: gcc/fortran/decl.c
 ===================================================================
 --- a/src/gcc/fortran/decl.c	(.../tags/gcc_4_7_3_release)
@@ -14357,7 +16135,61 @@ Index: gcc/fortran/ChangeLog
 ===================================================================
 --- a/src/gcc/fortran/ChangeLog	(.../tags/gcc_4_7_3_release)
 +++ b/src/gcc/fortran/ChangeLog	(.../branches/gcc-4_7-branch)
-@@ -1,3 +1,100 @@
+@@ -1,3 +1,154 @@
++2014-02-22  Mikael Morin  <mikael@gcc.gnu.org>
++
++	PR fortran/59599
++	* trans-intrinsic.c (gfc_conv_intrinsic_ichar): Calculate the
++	number of arguments.
++
++2014-02-20  Janus Weil  <janus@gcc.gnu.org>
++
++	Backport from mainline
++	2014-02-17  Janus Weil  <janus@gcc.gnu.org>
++
++	PR fortran/55907
++	* resolve.c (build_default_init_expr): Don't initialize character
++	variable if -fno-automatic is given.
++
++2014-02-08  Mikael Morin  <mikael@gcc.gnu.org>
++
++	PR fortran/57033
++	* primary.c (gfc_convert_to_structure_constructor): Avoid null pointer
++	dereference.
++
++2014-02-08  Paul Thomas  <pault@gcc.gnu.org>
++
++	PR fortran/59906
++	* trans-array.c (gfc_add_loop_ss_code): In the case of character
++	SS_REFERENCE, use gfc_conv_string_parameter to ensure that a
++	pointer to the string is stored.
++	* trans-expr.c (gfc_conv_expr_reference): Likewise, use
++	gfc_conv_string_parameter to ensure that a pointer to is passed
++	to the elemental function.
++
++2014-02-03  Janus Weil  <janus@gcc.gnu.org>
++
++	PR fortran/59941
++	* expr.c (replace_comp): Check for isym to avoid ICE.
++
++2014-01-27  Mikael Morin  <mikael@gcc.gnu.org>
++
++	PR fortran/58007
++	* module.c (skip_list): Don't use default argument value.
++	(load_derived_extensions, read_module): Update callers.
++
++2014-01-26  Mikael Morin  <mikael@gcc.gnu.org>
++
++	PR fortran/58007
++	* module.c (fp2, find_pointer2): Remove.
++	(mio_component_ref): Don't forcedfully set the containing derived type
++	symbol for loading.  Remove unused argument.
++	(mio_ref): Update caller
++	(skip_list): New argument nest_level.  Initialize level with the new
++	argument.
++	(read_module): Add forced pointer components association for derived
++	type symbols.
++
 +2014-01-11  Janus Weil  <janus@gcc.gnu.org>
 +
 +	Backport from mainline
@@ -14490,6 +16322,255 @@ Index: gcc/fortran/expr.c
  	}
        else
  	{
+@@ -4191,7 +4195,7 @@
+   gfc_component *comp;
+   comp = (gfc_component *)sym;
+   if ((expr->expr_type == EXPR_VARIABLE 
+-       || (expr->expr_type == EXPR_FUNCTION
++       || (expr->expr_type == EXPR_FUNCTION && !expr->value.function.isym
+ 	   && !gfc_is_intrinsic (expr->symtree->n.sym, 0, expr->where)))
+       && expr->symtree->n.sym->ns == comp->ts.interface->formal_ns)
+     {
+Index: gcc/fortran/module.c
+===================================================================
+--- a/src/gcc/fortran/module.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/fortran/module.c	(.../branches/gcc-4_7-branch)
+@@ -387,37 +387,6 @@
+ }
+ 
+ 
+-/* Recursive function to find a pointer within a tree by brute force.  */
+-
+-static pointer_info *
+-fp2 (pointer_info *p, const void *target)
+-{
+-  pointer_info *q;
+-
+-  if (p == NULL)
+-    return NULL;
+-
+-  if (p->u.pointer == target)
+-    return p;
+-
+-  q = fp2 (p->left, target);
+-  if (q != NULL)
+-    return q;
+-
+-  return fp2 (p->right, target);
+-}
+-
+-
+-/* During reading, find a pointer_info node from the pointer value.
+-   This amounts to a brute-force search.  */
+-
+-static pointer_info *
+-find_pointer2 (void *p)
+-{
+-  return fp2 (pi_root, p);
+-}
+-
+-
+ /* Resolve any fixups using a known pointer.  */
+ 
+ static void
+@@ -2500,45 +2469,13 @@
+    the namespace and is not loaded again.  */
+ 
+ static void
+-mio_component_ref (gfc_component **cp, gfc_symbol *sym)
++mio_component_ref (gfc_component **cp)
+ {
+-  char name[GFC_MAX_SYMBOL_LEN + 1];
+-  gfc_component *q;
+   pointer_info *p;
+ 
+   p = mio_pointer_ref (cp);
+   if (p->type == P_UNKNOWN)
+     p->type = P_COMPONENT;
+-
+-  if (iomode == IO_OUTPUT)
+-    mio_pool_string (&(*cp)->name);
+-  else
+-    {
+-      mio_internal_string (name);
+-
+-      if (sym && sym->attr.is_class)
+-	sym = sym->components->ts.u.derived;
+-
+-      /* It can happen that a component reference can be read before the
+-	 associated derived type symbol has been loaded. Return now and
+-	 wait for a later iteration of load_needed.  */
+-      if (sym == NULL)
+-	return;
+-
+-      if (sym->components != NULL && p->u.pointer == NULL)
+-	{
+-	  /* Symbol already loaded, so search by name.  */
+-	  q = gfc_find_component (sym, name, true, true);
+-
+-	  if (q)
+-	    associate_integer_pointer (p, q);
+-	}
+-
+-      /* Make sure this symbol will eventually be loaded.  */
+-      p = find_pointer2 (sym);
+-      if (p->u.rsym.state == UNUSED)
+-	p->u.rsym.state = NEEDED;
+-    }
+ }
+ 
+ 
+@@ -2920,7 +2857,7 @@
+ 
+     case REF_COMPONENT:
+       mio_symbol_ref (&r->u.c.sym);
+-      mio_component_ref (&r->u.c.component, r->u.c.sym);
++      mio_component_ref (&r->u.c.component);
+       break;
+ 
+     case REF_SUBSTRING:
+@@ -3775,7 +3712,9 @@
+ 
+ 
+ /* Unlike most other routines, the address of the symbol node is already
+-   fixed on input and the name/module has already been filled in.  */
++   fixed on input and the name/module has already been filled in.
++   If you update the symbol format here, don't forget to update read_module
++   as well (look for "seek to the symbol's component list").   */
+ 
+ static void
+ mio_symbol (gfc_symbol *sym)
+@@ -3920,14 +3859,17 @@
+ }
+ 
+ 
+-/* Skip a list between balanced left and right parens.  */
++/* Skip a list between balanced left and right parens.
++   By setting NEST_LEVEL to a non-zero value one assumes that a number of
++   NEST_LEVEL opening parens have been already parsed by hand, and the remaining
++   of the content is to be skipped here.   */
+ 
+ static void
+-skip_list (void)
++skip_list (int nest_level)
+ {
+   int level;
+ 
+-  level = 0;
++  level = nest_level;
+   do
+     {
+       switch (parse_atom ())
+@@ -4286,7 +4228,7 @@
+       if (!info || !derived)
+ 	{
+ 	  while (peek_atom () != ATOM_RPAREN)
+-	    skip_list ();
++	    skip_list (0);
+ 	  continue;
+ 	}
+ 
+@@ -4523,18 +4465,18 @@
+   gfc_symbol *sym;
+ 
+   get_module_locus (&operator_interfaces);	/* Skip these for now.  */
+-  skip_list ();
++  skip_list (0);
+ 
+   get_module_locus (&user_operators);
+-  skip_list ();
+-  skip_list ();
++  skip_list (0);
++  skip_list (0);
+ 
+   /* Skip commons, equivalences and derived type extensions for now.  */
+-  skip_list ();
+-  skip_list ();
++  skip_list (0);
++  skip_list (0);
+ 
+   get_module_locus (&extensions);
+-  skip_list ();
++  skip_list (0);
+ 
+   mio_lparen ();
+ 
+@@ -4561,7 +4503,6 @@
+       info->u.rsym.ns = atom_int;
+ 
+       get_module_locus (&info->u.rsym.where);
+-      skip_list ();
+ 
+       /* See if the symbol has already been loaded by a previous module.
+ 	 If so, we reference the existing symbol and prevent it from
+@@ -4572,11 +4513,57 @@
+ 
+       if (sym == NULL
+ 	  || (sym->attr.flavor == FL_VARIABLE && info->u.rsym.ns !=1))
+-	continue;
++	{
++	  skip_list (0);
++	  continue;
++	}
+ 
+       info->u.rsym.state = USED;
+       info->u.rsym.sym = sym;
++      /* The current symbol has already been loaded, so we can avoid loading
++	 it again.  However, if it is a derived type, some of its components
++	 can be used in expressions in the module.  To avoid the module loading
++	 failing, we need to associate the module's component pointer indexes
++	 with the existing symbol's component pointers.  */
++      if (sym->attr.flavor == FL_DERIVED)
++	{
++	  gfc_component *c;
+ 
++	  /* First seek to the symbol's component list.  */
++	  mio_lparen (); /* symbol opening.  */
++	  skip_list (0); /* skip symbol attribute.  */
++	  skip_list (0); /* typespec.  */
++	  require_atom (ATOM_INTEGER); /* namespace ref.  */
++	  require_atom (ATOM_INTEGER); /* common ref.  */
++	  skip_list (0); /* formal args.  */
++	  /* no value.  */
++	  skip_list (0); /* array_spec.  */
++	  require_atom (ATOM_INTEGER); /* result.  */
++	  /* not a cray pointer.  */
++
++	  mio_lparen (); /* component list opening.  */
++	  for (c = sym->components; c; c = c->next)
++	    {
++	      pointer_info *p;
++	      const char *comp_name;
++	      int n;
++
++	      mio_lparen (); /* component opening.  */
++	      mio_integer (&n);
++	      p = get_integer (n);
++	      if (p->u.pointer == NULL)
++		associate_integer_pointer (p, c);
++	      mio_pool_string (&comp_name);
++	      gcc_assert (comp_name == c->name);
++	      skip_list (1); /* component end.  */
++	    }
++	  mio_rparen (); /* component list closing.  */
++
++	  skip_list (1); /* symbol end.  */
++	}
++      else
++	skip_list (0);
++
+       /* Some symbols do not have a namespace (eg. formal arguments),
+ 	 so the automatic "unique symtree" mechanism must be suppressed
+ 	 by marking them as referenced.  */
+@@ -4738,7 +4725,7 @@
+ 
+ 	  if (u == NULL)
+ 	    {
+-	      skip_list ();
++	      skip_list (0);
+ 	      continue;
+ 	    }
+ 
 Index: gcc/fortran/resolve.c
 ===================================================================
 --- a/src/gcc/fortran/resolve.c	(.../tags/gcc_4_7_3_release)
@@ -14502,6 +16583,15 @@ Index: gcc/fortran/resolve.c
  	      && arg->next != NULL && arg->next->expr)
  	    {
  	      if (arg->next->expr->expr_type != EXPR_CONSTANT)
+@@ -10166,7 +10167,7 @@
+ 	  init_expr = NULL;
+ 	}
+       if (!init_expr && gfc_option.flag_init_character == GFC_INIT_CHARACTER_ON
+-	  && sym->ts.u.cl->length)
++	  && sym->ts.u.cl->length && gfc_option.flag_max_stack_var_size != 0)
+ 	{
+ 	  gfc_actual_arglist *arg;
+ 	  init_expr = gfc_get_expr ();
 Index: gcc/fortran/trans-io.c
 ===================================================================
 --- a/src/gcc/fortran/trans-io.c	(.../tags/gcc_4_7_3_release)
@@ -14750,11 +16840,37 @@ Index: gcc/fortran/check.c
    if (result_elt_size == 0)
      return FAILURE;
  
+Index: gcc/fortran/primary.c
+===================================================================
+--- a/src/gcc/fortran/primary.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/fortran/primary.c	(.../branches/gcc-4_7-branch)
+@@ -2525,7 +2525,8 @@
+       if (parent && !comp)
+ 	break;
+ 
+-      actual = actual->next;
++      if (actual)
++	actual = actual->next;
+     }
+ 
+   if (build_actual_constructor (&comp_head, &ctor_head, sym) == FAILURE)
 Index: gcc/fortran/trans-intrinsic.c
 ===================================================================
 --- a/src/gcc/fortran/trans-intrinsic.c	(.../tags/gcc_4_7_3_release)
 +++ b/src/gcc/fortran/trans-intrinsic.c	(.../branches/gcc-4_7-branch)
-@@ -5623,8 +5623,7 @@
+@@ -4665,8 +4665,10 @@
+ gfc_conv_intrinsic_ichar (gfc_se * se, gfc_expr * expr)
+ {
+   tree args[2], type, pchartype;
++  int nargs;
+ 
+-  gfc_conv_intrinsic_function_args (se, expr, args, 2);
++  nargs = gfc_intrinsic_argument_list_length (expr);
++  gfc_conv_intrinsic_function_args (se, expr, args, nargs);
+   gcc_assert (POINTER_TYPE_P (TREE_TYPE (args[1])));
+   pchartype = gfc_get_pchar_type (expr->value.function.actual->expr->ts.kind);
+   args[1] = fold_build1_loc (input_location, NOP_EXPR, pchartype, args[1]);
+@@ -5623,8 +5625,7 @@
  
    if (expr->ts.type == BT_CHARACTER)
      {
@@ -14764,7 +16880,7 @@ Index: gcc/fortran/trans-intrinsic.c
  
        ptr = convert (gfc_get_pchar_type (expr->ts.kind), source);
        tmpdecl = gfc_create_var (gfc_get_pchar_type (expr->ts.kind),
-@@ -5657,6 +5656,13 @@
+@@ -5657,6 +5658,13 @@
        tmp = build3_v (COND_EXPR, tmp, direct, indirect);
        gfc_add_expr_to_block (&se->pre, tmp);
  
@@ -14985,7 +17101,22 @@ Index: gcc/configure.ac
 ===================================================================
 --- a/src/gcc/configure.ac	(.../tags/gcc_4_7_3_release)
 +++ b/src/gcc/configure.ac	(.../branches/gcc-4_7-branch)
-@@ -5153,15 +5153,15 @@
+@@ -3740,8 +3740,13 @@
+ 
+     # These two are used unconditionally by i386.[ch]; it is to be defined
+     # to 1 if the feature is present, 0 otherwise.
++    as_ix86_gotoff_in_data_opt=
++    if test x$gas = xyes; then
++      as_ix86_gotoff_in_data_opt="--32"
++    fi
+     gcc_GAS_CHECK_FEATURE([GOTOFF in data],
+-        gcc_cv_as_ix86_gotoff_in_data, [2,11,0],,
++      gcc_cv_as_ix86_gotoff_in_data, [2,11,0],
++      [$as_ix86_gotoff_in_data_opt],
+ [	.text
+ .L0:
+ 	nop
+@@ -5153,15 +5158,15 @@
    AC_MSG_CHECKING([for exported symbols])
    if test "x$export_sym_check" != x; then
      echo "int main() {return 0;} int foobar() {return 0;}" > conftest.c
@@ -15038,7 +17169,17 @@ Index: gcc/coverage.c
 ===================================================================
 --- a/src/gcc/coverage.c	(.../tags/gcc_4_7_3_release)
 +++ b/src/gcc/coverage.c	(.../branches/gcc-4_7-branch)
-@@ -1099,6 +1099,9 @@
+@@ -988,6 +988,9 @@
+       /* The function is not being emitted, remove from list.  */
+       *fn_prev = fn->next;
+ 
++  if (functions_head == NULL)
++    return false;
++
+   for (ix = 0; ix != GCOV_COUNTERS; ix++)
+     if ((1u << ix) & prg_ctr_mask)
+       n_counters++;
+@@ -1099,6 +1102,9 @@
    memcpy (da_file_name + prefix_len, filename, len);
    strcpy (da_file_name + prefix_len + len, GCOV_DATA_SUFFIX);
  
@@ -15048,7 +17189,7 @@ Index: gcc/coverage.c
    /* Name of bbg file.  */
    if (flag_test_coverage && !flag_compare_debug)
      {
-@@ -1118,9 +1121,6 @@
+@@ -1118,9 +1124,6 @@
  	  gcov_write_unsigned (local_tick);
  	}
      }
@@ -15093,6 +17234,43 @@ Index: gcc/simplify-rtx.c
                && (mask & nonzero_bits (XEXP (op0, 0), mode)) == 0)
  	    return simplify_gen_binary (ASHIFTRT, mode,
  					plus_constant (XEXP (op0, 0), mask),
+Index: gcc/ipa-prop.c
+===================================================================
+--- a/src/gcc/ipa-prop.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/ipa-prop.c	(.../branches/gcc-4_7-branch)
+@@ -812,7 +812,8 @@
+     return;
+   parm = TREE_OPERAND (expr, 0);
+   index = ipa_get_param_decl_index (info, SSA_NAME_VAR (parm));
+-  gcc_assert (index >= 0);
++  if (index < 0)
++    return;
+ 
+   cond_bb = single_pred (assign_bb);
+   cond = last_stmt (cond_bb);
+Index: gcc/ira.c
+===================================================================
+--- a/src/gcc/ira.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/ira.c	(.../branches/gcc-4_7-branch)
+@@ -3788,6 +3788,18 @@
+   if (need_dce && optimize)
+     run_fast_dce ();
+ 
++  /* Diagnose uses of the hard frame pointer when it is used as a global
++     register.  Often we can get away with letting the user appropriate
++     the frame pointer, but we should let them know when code generation
++     makes that impossible.  */
++  if (global_regs[HARD_FRAME_POINTER_REGNUM] && frame_pointer_needed)
++    {
++      tree decl = global_regs_decl[HARD_FRAME_POINTER_REGNUM];
++      error_at (DECL_SOURCE_LOCATION (current_function_decl),
++                "frame pointer required, but reserved");
++      inform (DECL_SOURCE_LOCATION (decl), "for %qD", decl);
++    }
++
+   timevar_pop (TV_IRA);
+ }
+ 
 Index: gcc/sched-deps.c
 ===================================================================
 --- a/src/gcc/sched-deps.c	(.../tags/gcc_4_7_3_release)
@@ -15154,6 +17332,19 @@ Index: gcc/sched-deps.c
  	flush_pending_lists (deps, insn, true, true);
  
        reg_pending_barrier = NOT_A_BARRIER;
+Index: gcc/rtl.h
+===================================================================
+--- a/src/gcc/rtl.h	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/rtl.h	(.../branches/gcc-4_7-branch)
+@@ -2681,6 +2681,8 @@
+ #define fatal_insn_not_found(insn) \
+ 	_fatal_insn_not_found (insn, __FILE__, __LINE__, __FUNCTION__)
+ 
++/* reginfo.c */
++extern tree GTY(()) global_regs_decl[FIRST_PSEUDO_REGISTER];
+ 
+ 
+ #endif /* ! GCC_RTL_H */
 Index: gcc/tree-streamer-in.c
 ===================================================================
 --- a/src/gcc/tree-streamer-in.c	(.../tags/gcc_4_7_3_release)
@@ -15301,6 +17492,19 @@ Index: gcc/tlink.c
 +      exit (ret);
      }
  }
+Index: gcc/reginfo.c
+===================================================================
+--- a/src/gcc/reginfo.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/reginfo.c	(.../branches/gcc-4_7-branch)
+@@ -88,7 +88,7 @@
+ char global_regs[FIRST_PSEUDO_REGISTER];
+ 
+ /* Declaration for the global register. */
+-static tree GTY(()) global_regs_decl[FIRST_PSEUDO_REGISTER];
++tree global_regs_decl[FIRST_PSEUDO_REGISTER];
+ 
+ /* Same information as REGS_INVALIDATED_BY_CALL but in regset form to be used
+    in dataflow more conveniently.  */
 Index: gcc/Makefile.in
 ===================================================================
 --- a/src/gcc/Makefile.in	(.../tags/gcc_4_7_3_release)
@@ -15823,6 +18027,19 @@ Index: gcc/config/i386/i386.md
     && ix86_match_ccmode (peep2_next_insn (3),
  			 (GET_CODE (operands[3]) == PLUS
  			  || GET_CODE (operands[3]) == MINUS)
+Index: gcc/config/i386/f16cintrin.h
+===================================================================
+--- a/src/gcc/config/i386/f16cintrin.h	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/config/i386/f16cintrin.h	(.../branches/gcc-4_7-branch)
+@@ -35,7 +35,7 @@
+ extern __inline float __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+ _cvtsh_ss (unsigned short __S)
+ {
+-  __v8hi __H = __extension__ (__v8hi){ __S, 0, 0, 0, 0, 0, 0, 0 };
++  __v8hi __H = __extension__ (__v8hi){ (short) __S, 0, 0, 0, 0, 0, 0, 0 };
+   __v4sf __A = __builtin_ia32_vcvtph2ps (__H);
+   return __builtin_ia32_vec_ext_v4sf (__A, 0);
+ }
 Index: gcc/config/i386/t-rtems
 ===================================================================
 --- a/src/gcc/config/i386/t-rtems	(.../tags/gcc_4_7_3_release)
@@ -15881,7 +18098,7 @@ Index: gcc/config/i386/sse.md
    return \"vprot<ssemodesuffix>\t{%3, %1, %0|%0, %1, %3}\";
  }
    [(set_attr "type" "sseishft")
-@@ -11455,7 +11456,6 @@
+@@ -11455,21 +11456,18 @@
    [(set_attr "type" "ssecvt1")
     (set_attr "mode" "<MODE>")])
  
@@ -15889,14 +18106,17 @@ Index: gcc/config/i386/sse.md
  (define_expand "xop_vmfrcz<mode>2"
    [(set (match_operand:VF_128 0 "register_operand")
  	(vec_merge:VF_128
-@@ -11465,11 +11465,9 @@
- 	  (match_dup 3)
+ 	  (unspec:VF_128
+ 	   [(match_operand:VF_128 1 "nonimmediate_operand")]
+ 	   UNSPEC_FRCZ)
+-	  (match_dup 3)
++	  (match_dup 2)
  	  (const_int 1)))]
    "TARGET_XOP"
 -{
 -  operands[3] = CONST0_RTX (<MODE>mode);
 -})
-+  "operands[3] = CONST0_RTX (<MODE>mode);")
++  "operands[2] = CONST0_RTX (<MODE>mode);")
  
 -(define_insn "*xop_vmfrcz_<mode>"
 +(define_insn "*xop_vmfrcz<mode>2"
@@ -15943,8 +18163,63 @@ Index: gcc/config/i386/driver-i386.c
  };
  
  enum processor_signatures
-@@ -510,7 +513,10 @@
+@@ -466,6 +469,27 @@
+       has_fsgsbase = ebx & bit_FSGSBASE;
+     }
  
++  /* Check cpuid level of extended features.  */
++  __cpuid (0x80000000, ext_level, ebx, ecx, edx);
++
++  if (ext_level > 0x80000000)
++    {
++      __cpuid (0x80000001, eax, ebx, ecx, edx);
++
++      has_lahf_lm = ecx & bit_LAHF_LM;
++      has_sse4a = ecx & bit_SSE4a;
++      has_abm = ecx & bit_ABM;
++      has_lwp = ecx & bit_LWP;
++      has_fma4 = ecx & bit_FMA4;
++      has_xop = ecx & bit_XOP;
++      has_tbm = ecx & bit_TBM;
++      has_lzcnt = ecx & bit_LZCNT;
++
++      has_longmode = edx & bit_LM;
++      has_3dnowp = edx & bit_3DNOWP;
++      has_3dnow = edx & bit_3DNOW;
++    }
++
+   /* Get XCR_XFEATURE_ENABLED_MASK register with xgetbv.  */
+ #define XCR_XFEATURE_ENABLED_MASK	0x0
+ #define XSTATE_FP			0x1
+@@ -484,33 +508,16 @@
+       has_avx2 = 0;
+       has_fma = 0;
+       has_fma4 = 0;
++      has_f16c = 0;
+       has_xop = 0;
+     }
+ 
+-  /* Check cpuid level of extended features.  */
+-  __cpuid (0x80000000, ext_level, ebx, ecx, edx);
+-
+-  if (ext_level > 0x80000000)
+-    {
+-      __cpuid (0x80000001, eax, ebx, ecx, edx);
+-
+-      has_lahf_lm = ecx & bit_LAHF_LM;
+-      has_sse4a = ecx & bit_SSE4a;
+-      has_abm = ecx & bit_ABM;
+-      has_lwp = ecx & bit_LWP;
+-      has_fma4 = ecx & bit_FMA4;
+-      has_xop = ecx & bit_XOP;
+-      has_tbm = ecx & bit_TBM;
+-      has_lzcnt = ecx & bit_LZCNT;
+-
+-      has_longmode = edx & bit_LM;
+-      has_3dnowp = edx & bit_3DNOWP;
+-      has_3dnow = edx & bit_3DNOW;
+-    }
+-
    if (!arch)
      {
 -      if (vendor == SIG_AMD)
@@ -15955,7 +18230,7 @@ Index: gcc/config/i386/driver-i386.c
  	cache = detect_caches_amd (ext_level);
        else if (vendor == SIG_INTEL)
  	{
-@@ -549,6 +555,37 @@
+@@ -549,6 +556,37 @@
        else
  	processor = PROCESSOR_PENTIUM;
      }
@@ -15993,7 +18268,7 @@ Index: gcc/config/i386/driver-i386.c
    else
      {
        switch (family)
-@@ -593,13 +630,18 @@
+@@ -593,13 +631,18 @@
  	  /* Atom.  */
  	  cpu = "atom";
  	  break;
@@ -16014,7 +18289,7 @@ Index: gcc/config/i386/driver-i386.c
  	case 0x25:
  	case 0x2c:
  	case 0x2f:
-@@ -611,15 +653,11 @@
+@@ -611,15 +654,11 @@
  	  /* Sandy Bridge.  */
  	  cpu = "corei7-avx";
  	  break;
@@ -16056,7 +18331,41 @@ Index: gcc/config/i386/i386.c
        {"corei7-avx", PROCESSOR_COREI7_64, CPU_COREI7,
  	PTA_64BIT | PTA_MMX | PTA_SSE | PTA_SSE2 | PTA_SSE3
  	| PTA_SSSE3 | PTA_SSE4_1 | PTA_SSE4_2 | PTA_AVX
-@@ -6303,7 +6303,7 @@
+@@ -6078,25 +6078,28 @@
+     case CHImode:
+     case CQImode:
+       {
+-	int size = (bit_offset % 64)+ (int) GET_MODE_BITSIZE (mode);
++	int size = bit_offset + (int) GET_MODE_BITSIZE (mode);
+ 
+-	if (size <= 32)
++	/* Analyze last 128 bits only.  */
++	size = (size - 1) & 0x7f;
++
++	if (size < 32)
+ 	  {
+ 	    classes[0] = X86_64_INTEGERSI_CLASS;
+ 	    return 1;
+ 	  }
+-	else if (size <= 64)
++	else if (size < 64)
+ 	  {
+ 	    classes[0] = X86_64_INTEGER_CLASS;
+ 	    return 1;
+ 	  }
+-	else if (size <= 64+32)
++	else if (size < 64+32)
+ 	  {
+ 	    classes[0] = X86_64_INTEGER_CLASS;
+ 	    classes[1] = X86_64_INTEGERSI_CLASS;
+ 	    return 2;
+ 	  }
+-	else if (size <= 64+64)
++	else if (size < 64+64)
+ 	  {
+ 	    classes[0] = classes[1] = X86_64_INTEGER_CLASS;
+ 	    return 2;
+@@ -6303,7 +6306,7 @@
  
    /* Likewise, error if the ABI requires us to return values in the
       x87 registers and the user specified -mno-80387.  */
@@ -16065,7 +18374,16 @@ Index: gcc/config/i386/i386.c
      for (i = 0; i < n; i++)
        if (regclass[i] == X86_64_X87_CLASS
  	  || regclass[i] == X86_64_X87UP_CLASS
-@@ -7129,9 +7129,15 @@
+@@ -6357,7 +6360,7 @@
+     return gen_rtx_REG (XFmode, FIRST_STACK_REG);
+   if (n == 2 && regclass[0] == X86_64_INTEGER_CLASS
+       && regclass[1] == X86_64_INTEGER_CLASS
+-      && (mode == CDImode || mode == TImode || mode == TFmode)
++      && (mode == CDImode || mode == TImode)
+       && intreg[0] + 1 == intreg[1])
+     return gen_rtx_REG (mode, intreg[0]);
+ 
+@@ -7129,9 +7132,15 @@
    switch (regno)
      {
      case AX_REG:
@@ -16082,7 +18400,7 @@ Index: gcc/config/i386/i386.c
        /* TODO: The function should depend on current function ABI but
         builtins.c would need updating then. Therefore we use the
         default ABI.  */
-@@ -7139,10 +7145,12 @@
+@@ -7139,10 +7148,12 @@
  	return false;
        return TARGET_FLOAT_RETURNS_IN_80387;
  
@@ -16097,7 +18415,7 @@ Index: gcc/config/i386/i386.c
        if (TARGET_MACHO || TARGET_64BIT)
  	return false;
        return TARGET_MMX;
-@@ -8613,17 +8621,12 @@
+@@ -8613,17 +8624,12 @@
  
    if (!flag_pic)
      {
@@ -16119,7 +18437,7 @@ Index: gcc/config/i386/i386.c
        targetm.asm_out.internal_label (asm_out_file, "L",
  				      CODE_LABEL_NUMBER (XEXP (xops[2], 0)));
      }
-@@ -8636,12 +8639,18 @@
+@@ -8636,12 +8642,18 @@
        xops[2] = gen_rtx_SYMBOL_REF (Pmode, ggc_strdup (name));
        xops[2] = gen_rtx_MEM (QImode, xops[2]);
        output_asm_insn ("call\t%X2", xops);
@@ -16142,7 +18460,7 @@ Index: gcc/config/i386/i386.c
          targetm.asm_out.internal_label (asm_out_file, "L",
  					   CODE_LABEL_NUMBER (label));
  #endif
-@@ -8717,7 +8726,8 @@
+@@ -8717,7 +8729,8 @@
        && (df_regs_ever_live_p (REAL_PIC_OFFSET_TABLE_REGNUM)
  	  || crtl->profile
  	  || crtl->calls_eh_return
@@ -16152,26 +18470,25 @@ Index: gcc/config/i386/i386.c
      return ix86_select_alt_pic_regnum () == INVALID_REGNUM;
  
    if (crtl->calls_eh_return && maybe_eh_return)
-@@ -10421,14 +10431,15 @@
+@@ -10421,14 +10434,14 @@
  
        if (r10_live && eax_live)
          {
 -	  t = choose_baseaddr (m->fs.sp_offset - allocate);
-+	  t = plus_constant (stack_pointer_rtx, allocate);
++	  t = gen_rtx_PLUS (Pmode, stack_pointer_rtx, eax);
  	  emit_move_insn (r10, gen_frame_mem (Pmode, t));
 -	  t = choose_baseaddr (m->fs.sp_offset - allocate - UNITS_PER_WORD);
-+	  t = plus_constant (stack_pointer_rtx,
-+			     allocate - UNITS_PER_WORD);
++	  t = plus_constant (t, UNITS_PER_WORD);
  	  emit_move_insn (eax, gen_frame_mem (Pmode, t));
  	}
        else if (eax_live || r10_live)
  	{
 -	  t = choose_baseaddr (m->fs.sp_offset - allocate);
-+	  t = plus_constant (stack_pointer_rtx, allocate);
++	  t = gen_rtx_PLUS (Pmode, stack_pointer_rtx, eax);
  	  emit_move_insn ((eax_live ? eax : r10), gen_frame_mem (Pmode, t));
  	}
      }
-@@ -11424,30 +11435,6 @@
+@@ -11424,30 +11437,6 @@
      }
  }
  
@@ -16202,7 +18519,7 @@ Index: gcc/config/i386/i386.c
  /* Extract the parts of an RTL expression that is a valid memory address
     for an instruction.  Return 0 if the structure of the address is
     grossly off.  Return -1 if the address contains ASHIFT, so it is not
-@@ -11512,7 +11499,7 @@
+@@ -11512,7 +11501,7 @@
      base = addr;
    else if (GET_CODE (addr) == SUBREG)
      {
@@ -16211,7 +18528,7 @@ Index: gcc/config/i386/i386.c
  	base = addr;
        else
  	return 0;
-@@ -11570,7 +11557,7 @@
+@@ -11570,7 +11559,7 @@
  	      break;
  
  	    case SUBREG:
@@ -16220,7 +18537,7 @@ Index: gcc/config/i386/i386.c
  		return 0;
  	      /* FALLTHRU */
  
-@@ -11615,19 +11602,6 @@
+@@ -11615,19 +11604,6 @@
        scale = 1 << scale;
        retval = -1;
      }
@@ -16240,7 +18557,7 @@ Index: gcc/config/i386/i386.c
    else
      disp = addr;			/* displacement */
  
-@@ -11636,7 +11610,7 @@
+@@ -11636,7 +11612,7 @@
        if (REG_P (index))
  	;
        else if (GET_CODE (index) == SUBREG
@@ -16249,7 +18566,7 @@ Index: gcc/config/i386/i386.c
  	;
        else
  	return 0;
-@@ -12115,6 +12089,45 @@
+@@ -12115,6 +12091,45 @@
    return false;
  }
  
@@ -16295,7 +18612,7 @@ Index: gcc/config/i386/i386.c
  /* Recognizes RTL expressions that are valid memory addresses for an
     instruction.  The MODE argument is the machine mode for the MEM
     expression that wants to use this address.
-@@ -12130,6 +12143,7 @@
+@@ -12130,6 +12145,7 @@
    struct ix86_address parts;
    rtx base, index, disp;
    HOST_WIDE_INT scale;
@@ -16303,7 +18620,7 @@ Index: gcc/config/i386/i386.c
  
    if (ix86_decompose_address (addr, &parts) <= 0)
      /* Decomposition failed.  */
-@@ -12139,23 +12153,16 @@
+@@ -12139,23 +12155,16 @@
    index = parts.index;
    disp = parts.disp;
    scale = parts.scale;
@@ -16330,7 +18647,7 @@ Index: gcc/config/i386/i386.c
        if ((strict && ! REG_OK_FOR_BASE_STRICT_P (reg))
  	  || (! strict && ! REG_OK_FOR_BASE_NONSTRICT_P (reg)))
  	/* Base is not valid.  */
-@@ -12165,19 +12172,11 @@
+@@ -12165,19 +12174,11 @@
    /* Validate index register.  */
    if (index)
      {
@@ -16352,7 +18669,7 @@ Index: gcc/config/i386/i386.c
        if ((strict && ! REG_OK_FOR_INDEX_STRICT_P (reg))
  	  || (! strict && ! REG_OK_FOR_INDEX_NONSTRICT_P (reg)))
  	/* Index is not valid.  */
-@@ -12189,6 +12188,12 @@
+@@ -12189,6 +12190,12 @@
        && GET_MODE (base) != GET_MODE (index))
      return false;
  
@@ -16365,7 +18682,7 @@ Index: gcc/config/i386/i386.c
    /* Validate scale factor.  */
    if (scale != 1)
      {
-@@ -12310,6 +12315,12 @@
+@@ -12310,6 +12317,12 @@
  	       && !x86_64_immediate_operand (disp, VOIDmode))
  	/* Displacement is out of range.  */
  	return false;
@@ -16378,7 +18695,7 @@ Index: gcc/config/i386/i386.c
      }
  
    /* Everything looks valid.  */
-@@ -13652,8 +13663,6 @@
+@@ -13652,8 +13665,6 @@
  	 Those same assemblers have the same but opposite lossage on cmov.  */
        if (mode == CCmode)
  	suffix = fp ? "nbe" : "a";
@@ -16387,7 +18704,7 @@ Index: gcc/config/i386/i386.c
        else
  	gcc_unreachable ();
        break;
-@@ -13675,8 +13684,12 @@
+@@ -13675,8 +13686,12 @@
  	}
        break;
      case LTU:
@@ -16402,7 +18719,7 @@ Index: gcc/config/i386/i386.c
        break;
      case GE:
        switch (mode)
-@@ -13696,20 +13709,20 @@
+@@ -13696,20 +13711,20 @@
  	}
        break;
      case GEU:
@@ -16429,7 +18746,36 @@ Index: gcc/config/i386/i386.c
        else
  	gcc_unreachable ();
        break;
-@@ -18057,12 +18070,7 @@
+@@ -16973,17 +16988,24 @@
+   int ok;
+ 
+   /* FIXME: Handle zero-extended addresses.  */
+-  if (GET_CODE (operands[1]) == ZERO_EXTEND
+-      || GET_CODE (operands[1]) == AND)
++  if (SImode_address_operand (operands[1], VOIDmode))
+     return false;
+ 
+   /* Check we need to optimize.  */
+   if (!TARGET_OPT_AGU || optimize_function_for_size_p (cfun))
+     return false;
+ 
+-  /* Check it is correct to split here.  */
+-  if (!ix86_ok_to_clobber_flags(insn))
++  /* The "at least two components" test below might not catch simple
++     move insns if parts.base is non-NULL and parts.disp is const0_rtx
++     as the only components in the address, e.g. if the register is
++     %rbp or %r13.  As this test is much cheaper and moves are the
++     common case, do this check first.  */
++  if (REG_P (operands[1]))
+     return false;
++ 
++  /* Check if it is OK to split here.  */
++  if (!ix86_ok_to_clobber_flags (insn))
++    return false;
+ 
+   ok = ix86_decompose_address (operands[1], &parts);
+   gcc_assert (ok);
+@@ -18057,12 +18079,7 @@
  	return CCmode;
      case GTU:			/* CF=0 & ZF=0 */
      case LEU:			/* CF=1 | ZF=1 */
@@ -16443,7 +18789,7 @@ Index: gcc/config/i386/i386.c
        /* Codes possibly doable only with sign flag when
           comparing against zero.  */
      case GE:			/* SF=OF   or   SF=0 */
-@@ -20026,7 +20034,7 @@
+@@ -20026,7 +20043,7 @@
  	      vec[i * 2 + 1] = const1_rtx;
  	    }
  	  vt = gen_rtx_CONST_VECTOR (maskmode, gen_rtvec_v (w, vec));
@@ -16452,7 +18798,16 @@ Index: gcc/config/i386/i386.c
  	  t1 = expand_simple_binop (maskmode, PLUS, t1, vt, t1, 1,
  				    OPTAB_DIRECT);
  
-@@ -20223,7 +20231,7 @@
+@@ -20056,7 +20073,7 @@
+ 	  return;
+ 
+ 	case V8SFmode:
+-	  mask = gen_lowpart (V8SFmode, mask);
++	  mask = gen_lowpart (V8SImode, mask);
+ 	  if (one_operand_shuffle)
+ 	    emit_insn (gen_avx2_permvarv8sf (target, op0, mask));
+ 	  else
+@@ -20223,7 +20240,7 @@
        for (i = 0; i < 16; ++i)
  	vec[i] = GEN_INT (i/e * e);
        vt = gen_rtx_CONST_VECTOR (V16QImode, gen_rtvec_v (16, vec));
@@ -16461,7 +18816,7 @@ Index: gcc/config/i386/i386.c
        if (TARGET_XOP)
  	emit_insn (gen_xop_pperm (mask, mask, mask, vt));
        else
-@@ -20234,7 +20242,7 @@
+@@ -20234,7 +20251,7 @@
        for (i = 0; i < 16; ++i)
  	vec[i] = GEN_INT (i % e);
        vt = gen_rtx_CONST_VECTOR (V16QImode, gen_rtvec_v (16, vec));
@@ -16470,26 +18825,17 @@ Index: gcc/config/i386/i386.c
        emit_insn (gen_addv16qi3 (mask, mask, vt));
      }
  
-@@ -24258,8 +24266,17 @@
+@@ -24258,7 +24275,8 @@
  int
  ix86_data_alignment (tree type, int align)
  {
 -  int max_align = optimize_size ? BITS_PER_WORD : MIN (256, MAX_OFILE_ALIGNMENT);
-+  /* A data structure, equal or greater than the size of a cache line
-+     (64 bytes in the Pentium 4 and other recent Intel processors, including
-+     processors based on Intel Core microarchitecture) should be aligned
-+     so that its base address is a multiple of a cache line size.  */
- 
 +  int max_align
-+    = MIN ((unsigned) ix86_cost->prefetch_block * 8, MAX_OFILE_ALIGNMENT);
-+
-+  if (max_align < BITS_PER_WORD)
-+    max_align = BITS_PER_WORD;
-+
++    = optimize_size ? BITS_PER_WORD : MIN (256, MAX_OFILE_ALIGNMENT);
+ 
    if (AGGREGATE_TYPE_P (type)
        && TYPE_SIZE (type)
-       && TREE_CODE (TYPE_SIZE (type)) == INTEGER_CST
-@@ -27199,8 +27216,8 @@
+@@ -27199,8 +27217,8 @@
    { OPTION_MASK_ISA_XOP, CODE_FOR_xop_shlv8hi3,         "__builtin_ia32_vpshlw",      IX86_BUILTIN_VPSHLW,      UNKNOWN,      (int)MULTI_ARG_2_HI },
    { OPTION_MASK_ISA_XOP, CODE_FOR_xop_shlv16qi3,        "__builtin_ia32_vpshlb",      IX86_BUILTIN_VPSHLB,      UNKNOWN,      (int)MULTI_ARG_2_QI },
  
@@ -16500,6 +18846,241 @@ Index: gcc/config/i386/i386.c
    { OPTION_MASK_ISA_XOP, CODE_FOR_xop_frczv4sf2,         "__builtin_ia32_vfrczps",     IX86_BUILTIN_VFRCZPS,     UNKNOWN,      (int)MULTI_ARG_1_SF },
    { OPTION_MASK_ISA_XOP, CODE_FOR_xop_frczv2df2,         "__builtin_ia32_vfrczpd",     IX86_BUILTIN_VFRCZPD,     UNKNOWN,      (int)MULTI_ARG_1_DF },
    { OPTION_MASK_ISA_XOP, CODE_FOR_xop_frczv8sf2,         "__builtin_ia32_vfrczps256",  IX86_BUILTIN_VFRCZPS256,  UNKNOWN,      (int)MULTI_ARG_1_SF2 },
+@@ -29763,7 +29781,9 @@
+       mode4 = insn_data[icode].operand[5].mode;
+ 
+       if (target == NULL_RTX
+-	  || GET_MODE (target) != insn_data[icode].operand[0].mode)
++	  || GET_MODE (target) != insn_data[icode].operand[0].mode
++	  || !insn_data[icode].operand[0].predicate (target,
++						     GET_MODE (target)))
+ 	subtarget = gen_reg_rtx (insn_data[icode].operand[0].mode);
+       else
+ 	subtarget = target;
+@@ -36635,7 +36655,9 @@
+       else
+ 	dfinal.perm[i] = e;
+     }
+-  dfinal.op0 = gen_reg_rtx (dfinal.vmode);
++
++  if (!d->testing_p)
++    dfinal.op0 = gen_reg_rtx (dfinal.vmode);
+   dfinal.op1 = dfinal.op0;
+   dremap.target = dfinal.op0;
+ 
+@@ -36833,6 +36855,9 @@
+     return false;
+   gcc_assert (d->op0 != d->op1);
+ 
++  if (d->testing_p)
++    return true;
++
+   nelt = d->nelt;
+   eltsz = GET_MODE_SIZE (GET_MODE_INNER (d->vmode));
+ 
+@@ -37032,6 +37057,8 @@
+   switch (d->vmode)
+     {
+     case V4DFmode:
++      if (d->testing_p)
++	break;
+       t1 = gen_reg_rtx (V4DFmode);
+       t2 = gen_reg_rtx (V4DFmode);
+ 
+@@ -37051,6 +37078,8 @@
+       {
+ 	int mask = odd ? 0xdd : 0x88;
+ 
++	if (d->testing_p)
++	  break;
+ 	t1 = gen_reg_rtx (V8SFmode);
+ 	t2 = gen_reg_rtx (V8SFmode);
+ 	t3 = gen_reg_rtx (V8SFmode);
+@@ -37092,6 +37121,8 @@
+ 	return expand_vec_perm_pshufb2 (d);
+       else
+ 	{
++	  if (d->testing_p)
++	    break;
+ 	  /* We need 2*log2(N)-1 operations to achieve odd/even
+ 	     with interleave. */
+ 	  t1 = gen_reg_rtx (V8HImode);
+@@ -37113,6 +37144,8 @@
+ 	return expand_vec_perm_pshufb2 (d);
+       else
+ 	{
++	  if (d->testing_p)
++	    break;
+ 	  t1 = gen_reg_rtx (V16QImode);
+ 	  t2 = gen_reg_rtx (V16QImode);
+ 	  t3 = gen_reg_rtx (V16QImode);
+@@ -37145,6 +37178,9 @@
+ 	  return expand_vec_perm_even_odd_1 (&d_copy, odd);
+ 	}
+ 
++      if (d->testing_p)
++	break;
++
+       t1 = gen_reg_rtx (V4DImode);
+       t2 = gen_reg_rtx (V4DImode);
+ 
+@@ -37171,6 +37207,9 @@
+ 	  return expand_vec_perm_even_odd_1 (&d_copy, odd);
+ 	}
+ 
++      if (d->testing_p)
++	break;
++
+       t1 = gen_reg_rtx (V8SImode);
+       t2 = gen_reg_rtx (V8SImode);
+ 
+@@ -37263,6 +37302,8 @@
+     case V16QImode:
+       /* These can be implemented via interleave.  We save one insn by
+ 	 stopping once we have promoted to V4SImode and then use pshufd.  */
++      if (d->testing_p)
++	return true;
+       do
+ 	{
+ 	  rtx dest;
+Index: gcc/config/tilegx/tilegx.md
+===================================================================
+--- a/src/gcc/config/tilegx/tilegx.md	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/config/tilegx/tilegx.md	(.../branches/gcc-4_7-branch)
+@@ -4924,10 +4924,8 @@
+ 
+ ;; Network intrinsics
+ 
+-;; Note the "pseudo" text is handled specially by the
+-;; asm_output_opcode routine.  If the output is an empty string, the
+-;; instruction would bypass the asm_output_opcode routine, bypassing
+-;; the bundle handling code.
++;; Note the this barrier is of type "nothing," which is deleted after
++;; the final scheduling pass so that nothing is emitted for it.
+ (define_insn "tilegx_network_barrier"
+   [(unspec_volatile:SI [(const_int 0)] UNSPEC_NETWORK_BARRIER)]
+   ""
+Index: gcc/config/tilegx/tilegx-c.c
+===================================================================
+--- a/src/gcc/config/tilegx/tilegx-c.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/config/tilegx/tilegx-c.c	(.../branches/gcc-4_7-branch)
+@@ -48,6 +48,9 @@
+   if (TARGET_32BIT)
+     builtin_define ("__tilegx32__");
+ 
++  builtin_define ("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1");
++  builtin_define ("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2");
++
+   TILEGX_CPU_CPP_ENDIAN_BUILTINS ();
+   GNU_USER_TARGET_OS_CPP_BUILTINS ();
+ }
+Index: gcc/config/tilegx/sync.md
+===================================================================
+--- a/src/gcc/config/tilegx/sync.md	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/config/tilegx/sync.md	(.../branches/gcc-4_7-branch)
+@@ -151,15 +151,22 @@
+    (match_operand:SI 3 "const_int_operand" "")]         ;; model
+   ""
+ {
++  rtx addend;
+   enum memmodel model = (enum memmodel) INTVAL (operands[3]);
+ 
+   if (operands[2] != const0_rtx)
+-    emit_move_insn (operands[2], gen_rtx_NEG (<MODE>mode, operands[2]));
++    {
++       addend = gen_reg_rtx (<MODE>mode);
++       emit_move_insn (addend,
++                       gen_rtx_MINUS (<MODE>mode, const0_rtx, operands[2]));
++    }
++  else
++    addend = operands[2];
+ 
+   tilegx_pre_atomic_barrier (model);
+   emit_insn (gen_atomic_fetch_add_bare<mode> (operands[0],
+                                               operands[1],
+-                                              operands[2]));
++                                              addend));
+   tilegx_post_atomic_barrier (model);
+   DONE;
+ })
+Index: gcc/config/tilegx/tilegx.c
+===================================================================
+--- a/src/gcc/config/tilegx/tilegx.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/config/tilegx/tilegx.c	(.../branches/gcc-4_7-branch)
+@@ -678,6 +678,16 @@
+ }
+ 
+ 
++/* Implement TARGET_EXPAND_TO_RTL_HOOK.  */
++static void
++tilegx_expand_to_rtl_hook (void)
++{
++  /* Exclude earlier sets of crtl->uses_pic_offset_table, because we
++     only care about uses actually emitted.  */
++  crtl->uses_pic_offset_table = 0;
++}
++
++
+ /* Implement TARGET_SHIFT_TRUNCATION_MASK.  DImode shifts use the mode
+    matching insns and therefore guarantee that the shift count is
+    modulo 64.  SImode shifts sometimes use the 64 bit version so do
+@@ -3490,6 +3500,12 @@
+     }
+   if (!pat)
+     return NULL_RTX;
++
++  /* If we are generating a prefetch, tell the scheduler not to move
++     it around.  */
++  if (GET_CODE (pat) == PREFETCH)
++    PREFETCH_SCHEDULE_BARRIER_P (pat) = true;
++
+   emit_insn (pat);
+ 
+   if (nonvoid)
+@@ -4317,10 +4333,12 @@
+   basic_block bb;
+   FOR_EACH_BB (bb)
+     {
+-      rtx insn, next;
++      rtx insn, next, prev;
+       rtx end = NEXT_INSN (BB_END (bb));
+ 
+-      for (insn = next_insn_to_bundle (BB_HEAD (bb), end); insn; insn = next)
++      prev = NULL_RTX;
++      for (insn = next_insn_to_bundle (BB_HEAD (bb), end); insn;
++	   prev = insn, insn = next)
+ 	{
+ 	  next = next_insn_to_bundle (NEXT_INSN (insn), end);
+ 
+@@ -4345,6 +4363,18 @@
+ 		  PUT_MODE (insn, SImode);
+ 		}
+ 	    }
++
++	  /* Delete barrier insns, because they can mess up the
++	     emitting of bundle braces.  If it is end-of-bundle, then
++	     the previous insn must be marked end-of-bundle.  */
++	  if (get_attr_type (insn) == TYPE_NOTHING) {
++	    if (GET_MODE (insn) == QImode && prev != NULL
++		&& GET_MODE (prev) == SImode)
++	      {
++		PUT_MODE (prev, QImode);
++	      }
++	    delete_insn (insn);
++	  }
+ 	}
+     }
+ }
+@@ -5428,6 +5458,9 @@
+ #undef  TARGET_RTX_COSTS
+ #define TARGET_RTX_COSTS tilegx_rtx_costs
+ 
++#undef  TARGET_EXPAND_TO_RTL_HOOK
++#define TARGET_EXPAND_TO_RTL_HOOK tilegx_expand_to_rtl_hook
++
+ #undef  TARGET_SHIFT_TRUNCATION_MASK
+ #define TARGET_SHIFT_TRUNCATION_MASK tilegx_shift_truncation_mask
+ 
 Index: gcc/config/darwin-protos.h
 ===================================================================
 --- a/src/gcc/config/darwin-protos.h	(.../tags/gcc_4_7_3_release)
@@ -16754,6 +19335,70 @@ Index: gcc/config/darwin.h
  /* Globalizing directive for a label.  */
  #define GLOBAL_ASM_OP "\t.globl "
  #define TARGET_ASM_GLOBALIZE_LABEL darwin_globalize_label
+Index: gcc/config/tilepro/tilepro-c.c
+===================================================================
+--- a/src/gcc/config/tilepro/tilepro-c.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/config/tilepro/tilepro-c.c	(.../branches/gcc-4_7-branch)
+@@ -45,6 +45,11 @@
+   builtin_define ("__tile_chip__=1");
+   builtin_define ("__tile_chip_rev__=0");
+ 
++  builtin_define ("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1");
++  builtin_define ("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2");
++  builtin_define ("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4");
++  builtin_define ("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8");
++
+   TILEPRO_CPU_CPP_ENDIAN_BUILTINS ();
+   GNU_USER_TARGET_OS_CPP_BUILTINS ();
+ }
+Index: gcc/config/tilepro/tilepro.c
+===================================================================
+--- a/src/gcc/config/tilepro/tilepro.c	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/config/tilepro/tilepro.c	(.../branches/gcc-4_7-branch)
+@@ -3167,6 +3167,12 @@
+     }
+   if (!pat)
+     return NULL_RTX;
++
++  /* If we are generating a prefetch, tell the scheduler not to move
++     it around.  */
++  if (GET_CODE (pat) == PREFETCH)
++    PREFETCH_SCHEDULE_BARRIER_P (pat) = true;
++
+   emit_insn (pat);
+ 
+   if (nonvoid)
+Index: gcc/config/tilepro/tilepro.md
+===================================================================
+--- a/src/gcc/config/tilepro/tilepro.md	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/config/tilepro/tilepro.md	(.../branches/gcc-4_7-branch)
+@@ -796,7 +796,7 @@
+ 
+ (define_expand "ctzdi2"
+   [(set (match_operand:DI 0 "register_operand" "")
+-	(ctz:DI (match_operand:DI 1 "reg_or_0_operand" "")))]
++	(ctz:DI (match_operand:DI 1 "register_operand" "")))]
+   ""
+ {
+   rtx lo, hi, ctz_lo, ctz_hi, ctz_hi_plus_32, result;
+@@ -824,7 +824,7 @@
+ 
+ (define_expand "clzdi2"
+   [(set (match_operand:DI 0 "register_operand" "")
+-	(clz:DI (match_operand:DI 1 "reg_or_0_operand" "")))]
++	(clz:DI (match_operand:DI 1 "register_operand" "")))]
+   ""
+ {
+   rtx lo, hi, clz_lo, clz_hi, clz_lo_plus_32, result;
+@@ -852,7 +852,7 @@
+ 
+ (define_expand "ffsdi2"
+   [(set (match_operand:DI 0 "register_operand" "")
+-	(ffs:DI (match_operand:DI 1 "reg_or_0_operand" "")))]
++	(ffs:DI (match_operand:DI 1 "register_operand" "")))]
+   ""
+ {
+   rtx lo, hi, ctz_lo, ctz_hi, ctz_hi_plus_32, ctz, ctz_plus_1,ctz_cond;
 Index: gcc/config/arm/thumb2.md
 ===================================================================
 --- a/src/gcc/config/arm/thumb2.md	(.../tags/gcc_4_7_3_release)
@@ -16939,6 +19584,957 @@ Index: gcc/config/arm/neon.md
     (set_attr "neg_pool_range" "*,*,*,996,*,*,*,996,*")])
  
  (define_expand "movti"
+Index: gcc/config/arm/ldmstm.md
+===================================================================
+--- a/src/gcc/config/arm/ldmstm.md	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/config/arm/ldmstm.md	(.../branches/gcc-4_7-branch)
+@@ -23,15 +23,15 @@
+ 
+ (define_insn "*ldm4_ia"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (match_operand:SI 5 "s_register_operand" "rk")))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 4))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 8))))
+-     (set (match_operand:SI 4 "arm_hard_register_operand" "")
++     (set (match_operand:SI 4 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 12))))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 4"
+@@ -41,15 +41,15 @@
+ 
+ (define_insn "*thumb_ldm4_ia"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "low_register_operand" "")
+           (mem:SI (match_operand:SI 5 "s_register_operand" "l")))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "low_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 4))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "low_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 8))))
+-     (set (match_operand:SI 4 "arm_hard_register_operand" "")
++     (set (match_operand:SI 4 "low_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 12))))])]
+   "TARGET_THUMB1 && XVECLEN (operands[0], 0) == 4"
+@@ -60,15 +60,15 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 5 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 5) (const_int 16)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (match_dup 5)))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 4))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 8))))
+-     (set (match_operand:SI 4 "arm_hard_register_operand" "")
++     (set (match_operand:SI 4 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 12))))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 5"
+@@ -80,15 +80,15 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 5 "s_register_operand" "+&l")
+           (plus:SI (match_dup 5) (const_int 16)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "low_register_operand" "")
+           (mem:SI (match_dup 5)))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "low_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 4))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "low_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 8))))
+-     (set (match_operand:SI 4 "arm_hard_register_operand" "")
++     (set (match_operand:SI 4 "low_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 12))))])]
+   "TARGET_THUMB1 && XVECLEN (operands[0], 0) == 5"
+@@ -98,13 +98,13 @@
+ (define_insn "*stm4_ia"
+   [(match_parallel 0 "store_multiple_operation"
+     [(set (mem:SI (match_operand:SI 5 "s_register_operand" "rk"))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 4)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 8)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 12)))
+-          (match_operand:SI 4 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 4 "arm_hard_general_register_operand" ""))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 4"
+   "stm%(ia%)\t%5, {%1, %2, %3, %4}"
+   [(set_attr "type" "store4")
+@@ -115,13 +115,13 @@
+     [(set (match_operand:SI 5 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 5) (const_int 16)))
+      (set (mem:SI (match_dup 5))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 4)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 8)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 12)))
+-          (match_operand:SI 4 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 4 "arm_hard_general_register_operand" ""))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 5"
+   "stm%(ia%)\t%5!, {%1, %2, %3, %4}"
+   [(set_attr "type" "store4")
+@@ -132,29 +132,29 @@
+     [(set (match_operand:SI 5 "s_register_operand" "+&l")
+           (plus:SI (match_dup 5) (const_int 16)))
+      (set (mem:SI (match_dup 5))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "low_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 4)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "low_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 8)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))
++          (match_operand:SI 3 "low_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 12)))
+-          (match_operand:SI 4 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 4 "low_register_operand" ""))])]
+   "TARGET_THUMB1 && XVECLEN (operands[0], 0) == 5"
+   "stm%(ia%)\t%5!, {%1, %2, %3, %4}"
+   [(set_attr "type" "store4")])
+ 
+ (define_insn "*ldm4_ib"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_operand:SI 5 "s_register_operand" "rk")
+                   (const_int 4))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 8))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 12))))
+-     (set (match_operand:SI 4 "arm_hard_register_operand" "")
++     (set (match_operand:SI 4 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 16))))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 4"
+@@ -166,16 +166,16 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 5 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 5) (const_int 16)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 4))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 8))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 12))))
+-     (set (match_operand:SI 4 "arm_hard_register_operand" "")
++     (set (match_operand:SI 4 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int 16))))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 5"
+@@ -186,13 +186,13 @@
+ (define_insn "*stm4_ib"
+   [(match_parallel 0 "store_multiple_operation"
+     [(set (mem:SI (plus:SI (match_operand:SI 5 "s_register_operand" "rk") (const_int 4)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 8)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 12)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 16)))
+-          (match_operand:SI 4 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 4 "arm_hard_general_register_operand" ""))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 4"
+   "stm%(ib%)\t%5, {%1, %2, %3, %4}"
+   [(set_attr "type" "store4")
+@@ -203,13 +203,13 @@
+     [(set (match_operand:SI 5 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 5) (const_int 16)))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 4)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 8)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 12)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int 16)))
+-          (match_operand:SI 4 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 4 "arm_hard_general_register_operand" ""))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 5"
+   "stm%(ib%)\t%5!, {%1, %2, %3, %4}"
+   [(set_attr "type" "store4")
+@@ -217,16 +217,16 @@
+ 
+ (define_insn "*ldm4_da"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_operand:SI 5 "s_register_operand" "rk")
+                   (const_int -12))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int -8))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int -4))))
+-     (set (match_operand:SI 4 "arm_hard_register_operand" "")
++     (set (match_operand:SI 4 "arm_hard_general_register_operand" "")
+           (mem:SI (match_dup 5)))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 4"
+   "ldm%(da%)\t%5, {%1, %2, %3, %4}"
+@@ -237,16 +237,16 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 5 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 5) (const_int -16)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int -12))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int -8))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int -4))))
+-     (set (match_operand:SI 4 "arm_hard_register_operand" "")
++     (set (match_operand:SI 4 "arm_hard_general_register_operand" "")
+           (mem:SI (match_dup 5)))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 5"
+   "ldm%(da%)\t%5!, {%1, %2, %3, %4}"
+@@ -256,13 +256,13 @@
+ (define_insn "*stm4_da"
+   [(match_parallel 0 "store_multiple_operation"
+     [(set (mem:SI (plus:SI (match_operand:SI 5 "s_register_operand" "rk") (const_int -12)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int -8)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int -4)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (match_dup 5))
+-          (match_operand:SI 4 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 4 "arm_hard_general_register_operand" ""))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 4"
+   "stm%(da%)\t%5, {%1, %2, %3, %4}"
+   [(set_attr "type" "store4")
+@@ -273,13 +273,13 @@
+     [(set (match_operand:SI 5 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 5) (const_int -16)))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int -12)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int -8)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int -4)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (match_dup 5))
+-          (match_operand:SI 4 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 4 "arm_hard_general_register_operand" ""))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 5"
+   "stm%(da%)\t%5!, {%1, %2, %3, %4}"
+   [(set_attr "type" "store4")
+@@ -287,16 +287,16 @@
+ 
+ (define_insn "*ldm4_db"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_operand:SI 5 "s_register_operand" "rk")
+                   (const_int -16))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int -12))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int -8))))
+-     (set (match_operand:SI 4 "arm_hard_register_operand" "")
++     (set (match_operand:SI 4 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int -4))))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 4"
+@@ -308,16 +308,16 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 5 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 5) (const_int -16)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int -16))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int -12))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int -8))))
+-     (set (match_operand:SI 4 "arm_hard_register_operand" "")
++     (set (match_operand:SI 4 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 5)
+                   (const_int -4))))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 5"
+@@ -328,13 +328,13 @@
+ (define_insn "*stm4_db"
+   [(match_parallel 0 "store_multiple_operation"
+     [(set (mem:SI (plus:SI (match_operand:SI 5 "s_register_operand" "rk") (const_int -16)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int -12)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int -8)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int -4)))
+-          (match_operand:SI 4 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 4 "arm_hard_general_register_operand" ""))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 4"
+   "stm%(db%)\t%5, {%1, %2, %3, %4}"
+   [(set_attr "type" "store4")
+@@ -345,13 +345,13 @@
+     [(set (match_operand:SI 5 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 5) (const_int -16)))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int -16)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int -12)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int -8)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 5) (const_int -4)))
+-          (match_operand:SI 4 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 4 "arm_hard_general_register_operand" ""))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 5"
+   "stm%(db%)\t%5!, {%1, %2, %3, %4}"
+   [(set_attr "type" "store4")
+@@ -466,12 +466,12 @@
+ 
+ (define_insn "*ldm3_ia"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (match_operand:SI 4 "s_register_operand" "rk")))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int 4))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int 8))))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 3"
+@@ -481,12 +481,12 @@
+ 
+ (define_insn "*thumb_ldm3_ia"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "low_register_operand" "")
+           (mem:SI (match_operand:SI 4 "s_register_operand" "l")))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "low_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int 4))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "low_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int 8))))])]
+   "TARGET_THUMB1 && XVECLEN (operands[0], 0) == 3"
+@@ -497,12 +497,12 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 4 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 4) (const_int 12)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (match_dup 4)))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int 4))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int 8))))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 4"
+@@ -514,12 +514,12 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 4 "s_register_operand" "+&l")
+           (plus:SI (match_dup 4) (const_int 12)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "low_register_operand" "")
+           (mem:SI (match_dup 4)))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "low_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int 4))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "low_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int 8))))])]
+   "TARGET_THUMB1 && XVECLEN (operands[0], 0) == 4"
+@@ -529,11 +529,11 @@
+ (define_insn "*stm3_ia"
+   [(match_parallel 0 "store_multiple_operation"
+     [(set (mem:SI (match_operand:SI 4 "s_register_operand" "rk"))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int 4)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int 8)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 3"
+   "stm%(ia%)\t%4, {%1, %2, %3}"
+   [(set_attr "type" "store3")
+@@ -544,11 +544,11 @@
+     [(set (match_operand:SI 4 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 4) (const_int 12)))
+      (set (mem:SI (match_dup 4))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int 4)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int 8)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 4"
+   "stm%(ia%)\t%4!, {%1, %2, %3}"
+   [(set_attr "type" "store3")
+@@ -559,24 +559,24 @@
+     [(set (match_operand:SI 4 "s_register_operand" "+&l")
+           (plus:SI (match_dup 4) (const_int 12)))
+      (set (mem:SI (match_dup 4))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "low_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int 4)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "low_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int 8)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 3 "low_register_operand" ""))])]
+   "TARGET_THUMB1 && XVECLEN (operands[0], 0) == 4"
+   "stm%(ia%)\t%4!, {%1, %2, %3}"
+   [(set_attr "type" "store3")])
+ 
+ (define_insn "*ldm3_ib"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_operand:SI 4 "s_register_operand" "rk")
+                   (const_int 4))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int 8))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int 12))))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 3"
+@@ -588,13 +588,13 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 4 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 4) (const_int 12)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int 4))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int 8))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int 12))))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 4"
+@@ -605,11 +605,11 @@
+ (define_insn "*stm3_ib"
+   [(match_parallel 0 "store_multiple_operation"
+     [(set (mem:SI (plus:SI (match_operand:SI 4 "s_register_operand" "rk") (const_int 4)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int 8)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int 12)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 3"
+   "stm%(ib%)\t%4, {%1, %2, %3}"
+   [(set_attr "type" "store3")
+@@ -620,11 +620,11 @@
+     [(set (match_operand:SI 4 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 4) (const_int 12)))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int 4)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int 8)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int 12)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 4"
+   "stm%(ib%)\t%4!, {%1, %2, %3}"
+   [(set_attr "type" "store3")
+@@ -632,13 +632,13 @@
+ 
+ (define_insn "*ldm3_da"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_operand:SI 4 "s_register_operand" "rk")
+                   (const_int -8))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int -4))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (match_dup 4)))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 3"
+   "ldm%(da%)\t%4, {%1, %2, %3}"
+@@ -649,13 +649,13 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 4 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 4) (const_int -12)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int -8))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int -4))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (match_dup 4)))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 4"
+   "ldm%(da%)\t%4!, {%1, %2, %3}"
+@@ -665,11 +665,11 @@
+ (define_insn "*stm3_da"
+   [(match_parallel 0 "store_multiple_operation"
+     [(set (mem:SI (plus:SI (match_operand:SI 4 "s_register_operand" "rk") (const_int -8)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int -4)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (match_dup 4))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 3"
+   "stm%(da%)\t%4, {%1, %2, %3}"
+   [(set_attr "type" "store3")
+@@ -680,11 +680,11 @@
+     [(set (match_operand:SI 4 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 4) (const_int -12)))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int -8)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int -4)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (match_dup 4))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 4"
+   "stm%(da%)\t%4!, {%1, %2, %3}"
+   [(set_attr "type" "store3")
+@@ -692,13 +692,13 @@
+ 
+ (define_insn "*ldm3_db"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_operand:SI 4 "s_register_operand" "rk")
+                   (const_int -12))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int -8))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int -4))))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 3"
+@@ -710,13 +710,13 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 4 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 4) (const_int -12)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int -12))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int -8))))
+-     (set (match_operand:SI 3 "arm_hard_register_operand" "")
++     (set (match_operand:SI 3 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 4)
+                   (const_int -4))))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 4"
+@@ -727,11 +727,11 @@
+ (define_insn "*stm3_db"
+   [(match_parallel 0 "store_multiple_operation"
+     [(set (mem:SI (plus:SI (match_operand:SI 4 "s_register_operand" "rk") (const_int -12)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int -8)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int -4)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 3"
+   "stm%(db%)\t%4, {%1, %2, %3}"
+   [(set_attr "type" "store3")
+@@ -742,11 +742,11 @@
+     [(set (match_operand:SI 4 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 4) (const_int -12)))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int -12)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int -8)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 4) (const_int -4)))
+-          (match_operand:SI 3 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 3 "arm_hard_general_register_operand" ""))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 4"
+   "stm%(db%)\t%4!, {%1, %2, %3}"
+   [(set_attr "type" "store3")
+@@ -847,9 +847,9 @@
+ 
+ (define_insn "*ldm2_ia"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (match_operand:SI 3 "s_register_operand" "rk")))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 3)
+                   (const_int 4))))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 2"
+@@ -859,9 +859,9 @@
+ 
+ (define_insn "*thumb_ldm2_ia"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "low_register_operand" "")
+           (mem:SI (match_operand:SI 3 "s_register_operand" "l")))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "low_register_operand" "")
+           (mem:SI (plus:SI (match_dup 3)
+                   (const_int 4))))])]
+   "TARGET_THUMB1 && XVECLEN (operands[0], 0) == 2"
+@@ -872,9 +872,9 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 3 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 3) (const_int 8)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (match_dup 3)))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 3)
+                   (const_int 4))))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 3"
+@@ -886,9 +886,9 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 3 "s_register_operand" "+&l")
+           (plus:SI (match_dup 3) (const_int 8)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "low_register_operand" "")
+           (mem:SI (match_dup 3)))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "low_register_operand" "")
+           (mem:SI (plus:SI (match_dup 3)
+                   (const_int 4))))])]
+   "TARGET_THUMB1 && XVECLEN (operands[0], 0) == 3"
+@@ -898,9 +898,9 @@
+ (define_insn "*stm2_ia"
+   [(match_parallel 0 "store_multiple_operation"
+     [(set (mem:SI (match_operand:SI 3 "s_register_operand" "rk"))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 3) (const_int 4)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 2"
+   "stm%(ia%)\t%3, {%1, %2}"
+   [(set_attr "type" "store2")
+@@ -911,9 +911,9 @@
+     [(set (match_operand:SI 3 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 3) (const_int 8)))
+      (set (mem:SI (match_dup 3))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 3) (const_int 4)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 3"
+   "stm%(ia%)\t%3!, {%1, %2}"
+   [(set_attr "type" "store2")
+@@ -924,19 +924,19 @@
+     [(set (match_operand:SI 3 "s_register_operand" "+&l")
+           (plus:SI (match_dup 3) (const_int 8)))
+      (set (mem:SI (match_dup 3))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "low_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 3) (const_int 4)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 2 "low_register_operand" ""))])]
+   "TARGET_THUMB1 && XVECLEN (operands[0], 0) == 3"
+   "stm%(ia%)\t%3!, {%1, %2}"
+   [(set_attr "type" "store2")])
+ 
+ (define_insn "*ldm2_ib"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_operand:SI 3 "s_register_operand" "rk")
+                   (const_int 4))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 3)
+                   (const_int 8))))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 2"
+@@ -948,10 +948,10 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 3 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 3) (const_int 8)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 3)
+                   (const_int 4))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 3)
+                   (const_int 8))))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 3"
+@@ -962,9 +962,9 @@
+ (define_insn "*stm2_ib"
+   [(match_parallel 0 "store_multiple_operation"
+     [(set (mem:SI (plus:SI (match_operand:SI 3 "s_register_operand" "rk") (const_int 4)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 3) (const_int 8)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 2"
+   "stm%(ib%)\t%3, {%1, %2}"
+   [(set_attr "type" "store2")
+@@ -975,9 +975,9 @@
+     [(set (match_operand:SI 3 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 3) (const_int 8)))
+      (set (mem:SI (plus:SI (match_dup 3) (const_int 4)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 3) (const_int 8)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 3"
+   "stm%(ib%)\t%3!, {%1, %2}"
+   [(set_attr "type" "store2")
+@@ -985,10 +985,10 @@
+ 
+ (define_insn "*ldm2_da"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_operand:SI 3 "s_register_operand" "rk")
+                   (const_int -4))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (match_dup 3)))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 2"
+   "ldm%(da%)\t%3, {%1, %2}"
+@@ -999,10 +999,10 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 3 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 3) (const_int -8)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 3)
+                   (const_int -4))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (match_dup 3)))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 3"
+   "ldm%(da%)\t%3!, {%1, %2}"
+@@ -1012,9 +1012,9 @@
+ (define_insn "*stm2_da"
+   [(match_parallel 0 "store_multiple_operation"
+     [(set (mem:SI (plus:SI (match_operand:SI 3 "s_register_operand" "rk") (const_int -4)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (match_dup 3))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 2"
+   "stm%(da%)\t%3, {%1, %2}"
+   [(set_attr "type" "store2")
+@@ -1025,9 +1025,9 @@
+     [(set (match_operand:SI 3 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 3) (const_int -8)))
+      (set (mem:SI (plus:SI (match_dup 3) (const_int -4)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (match_dup 3))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))])]
+   "TARGET_ARM && XVECLEN (operands[0], 0) == 3"
+   "stm%(da%)\t%3!, {%1, %2}"
+   [(set_attr "type" "store2")
+@@ -1035,10 +1035,10 @@
+ 
+ (define_insn "*ldm2_db"
+   [(match_parallel 0 "load_multiple_operation"
+-    [(set (match_operand:SI 1 "arm_hard_register_operand" "")
++    [(set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_operand:SI 3 "s_register_operand" "rk")
+                   (const_int -8))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 3)
+                   (const_int -4))))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 2"
+@@ -1050,10 +1050,10 @@
+   [(match_parallel 0 "load_multiple_operation"
+     [(set (match_operand:SI 3 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 3) (const_int -8)))
+-     (set (match_operand:SI 1 "arm_hard_register_operand" "")
++     (set (match_operand:SI 1 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 3)
+                   (const_int -8))))
+-     (set (match_operand:SI 2 "arm_hard_register_operand" "")
++     (set (match_operand:SI 2 "arm_hard_general_register_operand" "")
+           (mem:SI (plus:SI (match_dup 3)
+                   (const_int -4))))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 3"
+@@ -1064,9 +1064,9 @@
+ (define_insn "*stm2_db"
+   [(match_parallel 0 "store_multiple_operation"
+     [(set (mem:SI (plus:SI (match_operand:SI 3 "s_register_operand" "rk") (const_int -8)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 3) (const_int -4)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 2"
+   "stm%(db%)\t%3, {%1, %2}"
+   [(set_attr "type" "store2")
+@@ -1077,9 +1077,9 @@
+     [(set (match_operand:SI 3 "s_register_operand" "+&rk")
+           (plus:SI (match_dup 3) (const_int -8)))
+      (set (mem:SI (plus:SI (match_dup 3) (const_int -8)))
+-          (match_operand:SI 1 "arm_hard_register_operand" ""))
++          (match_operand:SI 1 "arm_hard_general_register_operand" ""))
+      (set (mem:SI (plus:SI (match_dup 3) (const_int -4)))
+-          (match_operand:SI 2 "arm_hard_register_operand" ""))])]
++          (match_operand:SI 2 "arm_hard_general_register_operand" ""))])]
+   "TARGET_32BIT && XVECLEN (operands[0], 0) == 3"
+   "stm%(db%)\t%3!, {%1, %2}"
+   [(set_attr "type" "store2")
+Index: gcc/config/arm/predicates.md
+===================================================================
+--- a/src/gcc/config/arm/predicates.md	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/config/arm/predicates.md	(.../branches/gcc-4_7-branch)
+@@ -31,11 +31,11 @@
+ 	      || REGNO_REG_CLASS (REGNO (op)) != NO_REGS));
+ })
+ 
+-;; Any hard register.
+-(define_predicate "arm_hard_register_operand"
++;; Any general register.
++(define_predicate "arm_hard_general_register_operand"
+   (match_code "reg")
+ {
+-  return REGNO (op) < FIRST_PSEUDO_REGISTER;
++  return REGNO (op) <= LAST_ARM_REGNUM;
+ })
+ 
+ ;; A low register.
+Index: gcc/config/arm/arm-ldmstm.ml
+===================================================================
+--- a/src/gcc/config/arm/arm-ldmstm.ml	(.../tags/gcc_4_7_3_release)
++++ b/src/gcc/config/arm/arm-ldmstm.ml	(.../branches/gcc-4_7-branch)
+@@ -67,10 +67,13 @@
+     Printf.sprintf ("(match_operand:SI %d \"s_register_operand\" \"%s%s\")")
+       (nregs + 1) (inout_constr op_type) (constr thumb)
+ 
++let reg_predicate thumb =
++  if thumb then "low_register_operand" else "arm_hard_general_register_operand"
++
+ let write_ldm_set thumb nregs offset opnr first =
+   let indent = "     " in
+   Printf.printf "%s" (if first then "    [" else indent);
+-  Printf.printf "(set (match_operand:SI %d \"arm_hard_register_operand\" \"\")\n" opnr;
++  Printf.printf "(set (match_operand:SI %d \"%s\" \"\")\n" opnr (reg_predicate thumb);
+   Printf.printf "%s     (mem:SI " indent;
+   begin if offset != 0 then Printf.printf "(plus:SI " end;
+   Printf.printf "%s" (destreg nregs first IN thumb);
+@@ -84,7 +87,7 @@
+   begin if offset != 0 then Printf.printf "(plus:SI " end;
+   Printf.printf "%s" (destreg nregs first IN thumb);
+   begin if offset != 0 then Printf.printf " (const_int %d))" offset end;
+-  Printf.printf ")\n%s     (match_operand:SI %d \"arm_hard_register_operand\" \"\"))" indent opnr 
++  Printf.printf ")\n%s     (match_operand:SI %d \"%s\" \"\"))" indent opnr (reg_predicate thumb)
+ 
+ let write_ldm_peep_set extra_indent nregs opnr first =
+   let indent = "   " ^ extra_indent in
 Index: gcc/config/arm/arm.md
 ===================================================================
 --- a/src/gcc/config/arm/arm.md	(.../tags/gcc_4_7_3_release)
@@ -17245,6 +20841,25 @@ Index: gcc/config/pa/pa.c
  	    rtx dest = gen_rtx_REG (DFmode, i);
  	    emit_move_insn (dest, src);
  	  }
+@@ -7471,7 +7475,7 @@
+       if (!TARGET_LONG_CALLS && distance < MAX_PCREL17F_OFFSET)
+ 	return 8;
+ 
+-      if (TARGET_LONG_ABS_CALL && !flag_pic)
++      if (!flag_pic)
+ 	return 12;
+ 
+       return 24;
+@@ -8036,7 +8040,8 @@
+     return 12;
+ 
+   if (TARGET_FAST_INDIRECT_CALLS
+-      || (!TARGET_PORTABLE_RUNTIME
++      || (!TARGET_LONG_CALLS
++	  && !TARGET_PORTABLE_RUNTIME
+ 	  && ((TARGET_PA_20 && !TARGET_SOM && distance < 7600000)
+ 	      || distance < MAX_PCREL17F_OFFSET)))
+     return 8;
 Index: gcc/config/mips/driver-native.c
 ===================================================================
 --- a/src/gcc/config/mips/driver-native.c	(.../tags/gcc_4_7_3_release)
@@ -17407,7 +21022,18 @@ Index: libgfortran/ChangeLog
 ===================================================================
 --- a/src/libgfortran/ChangeLog	(.../tags/gcc_4_7_3_release)
 +++ b/src/libgfortran/ChangeLog	(.../branches/gcc-4_7-branch)
-@@ -1,3 +1,54 @@
+@@ -1,3 +1,65 @@
++2014-02-15  Jerry DeLisle  <jvdelisle@gcc.gnu>
++	    Dominique d'Humieres  <dominiq@lps.ens.fr>
++
++	Backport from mainline
++	PR libfortran/59771
++	PR libfortran/59774
++	PR libfortran/59836
++	* io/write_float.def (output_float): Fix wrong handling of the
++	Fw.0 format.
++	(output_float_FMT_G_): Fixes rounding issues with -m32.
++
 +2013-07-03  Uros Bizjak  <ubizjak@gmail.com>
 +
 +	Backport from mainline
@@ -17772,3 +21398,93 @@ Index: libgfortran/io/transfer.c
  	  {
  	    dtp->u.p.current_unit->endfile = AFTER_ENDFILE;
  	    dtp->u.p.current_unit->current_record = 0;
+Index: libgfortran/io/write_float.def
+===================================================================
+--- a/src/libgfortran/io/write_float.def	(.../tags/gcc_4_7_3_release)
++++ b/src/libgfortran/io/write_float.def	(.../branches/gcc-4_7-branch)
+@@ -273,7 +273,7 @@
+   updown:
+ 
+   rchar = '0';
+-  if (w > 0 && d == 0 && p == 0)
++  if (ft != FMT_F && w > 0 && d == 0 && p == 0)
+     nbefore = 1;
+   /* Scan for trailing zeros to see if we really need to round it.  */
+   for(i = nbefore + nafter; i < ndigits; i++)
+@@ -288,11 +288,20 @@
+   if (nbefore + nafter == 0)
+     {
+       ndigits = 0;
+-      if (nzero_real == d && digits[0] >= rchar)
++      if ((d == 0 || nzero_real == d) && digits[0] >= rchar)
+ 	{
+ 	  /* We rounded to zero but shouldn't have */
+-	  nzero--;
+-	  nafter = 1;
++	  if (d != 0)
++	    {
++	      nzero--;
++	      nafter = 1;
++	    }
++	  else
++	    {
++              /* Handle the case Fw.0 and value < 1.0 */
++	      nbefore = 1;
++	      digits--;
++	    }
+ 	  digits[0] = '1';
+ 	  ndigits = 1;
+ 	}
+@@ -828,12 +837,13 @@
+   int d = f->u.real.d;\
+   int w = f->u.real.w;\
+   fnode *newf;\
+-  GFC_REAL_ ## x rexp_d, r = 0.5;\
++  GFC_REAL_ ## x exp_d, r = 0.5, r_sc;\
+   int low, high, mid;\
+   int ubound, lbound;\
+   char *p, pad = ' ';\
+   int save_scale_factor, nb = 0;\
+   try result;\
++  volatile GFC_REAL_ ## x temp;\
+ \
+   save_scale_factor = dtp->u.p.scale_factor;\
+   newf = (fnode *) get_mem (sizeof (fnode));\
+@@ -853,10 +863,13 @@
+ 	break;\
+     }\
+ \
+-  rexp_d = calculate_exp_ ## x (-d);\
+-  if ((m > 0.0 && ((m < 0.1 - 0.1 * r * rexp_d) || (rexp_d * (m + r) >= 1.0)))\
++  exp_d = calculate_exp_ ## x (d);\
++  r_sc = (1 - r / exp_d);\
++  temp = 0.1 * r_sc;\
++  if ((m > 0.0 && ((m < temp) || (r >= (exp_d - m))))\
+       || ((m == 0.0) && !(compile_options.allow_std\
+-			  & (GFC_STD_F2003 | GFC_STD_F2008))))\
++			  & (GFC_STD_F2003 | GFC_STD_F2008)))\
++      ||  d == 0)\
+     { \
+       newf->format = FMT_E;\
+       newf->u.real.w = w;\
+@@ -874,10 +887,9 @@
+ \
+   while (low <= high)\
+     { \
+-      volatile GFC_REAL_ ## x temp;\
+       mid = (low + high) / 2;\
+ \
+-      temp = (calculate_exp_ ## x (mid - 1) * (1 - r * rexp_d));\
++      temp = (calculate_exp_ ## x (mid - 1) * r_sc);\
+ \
+       if (m < temp)\
+         { \
+Index: .
+===================================================================
+--- a/src/.	(.../tags/gcc_4_7_3_release)
++++ b/src/.	(.../branches/gcc-4_7-branch)
+
+Property changes on: .
+___________________________________________________________________
+Modified: svn:mergeinfo
+   Merged /trunk:r206124-206126
