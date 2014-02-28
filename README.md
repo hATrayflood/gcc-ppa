@@ -13,6 +13,12 @@ provides
     /usr/bin/gcc-4.7
     /usr/bin/g++-4.7
     # lucid
+    /usr/bin/gcc-4.7
+    /usr/bin/g++-4.7
+    /usr/bin/gcc-4.6
+    /usr/bin/g++-4.6
+    /usr/bin/gcc-4.5
+    /usr/bin/g++-4.5
     /usr/bin/gcc-4.2
     /usr/bin/g++-4.2
 
@@ -32,6 +38,8 @@ upstream
 --------
 http://packages.ubuntu.com/source/trusty/gcc-4.8  
 http://packages.ubuntu.com/source/trusty/gcc-4.7  
+http://packages.ubuntu.com/source/precise/gcc-4.6  
+http://packages.ubuntu.com/source/precise/gcc-4.5  
 http://old-releases.ubuntu.com/ubuntu/pool/main/g/gcc-4.2/  
 
 launchpad
