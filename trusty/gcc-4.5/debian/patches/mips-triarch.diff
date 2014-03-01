@@ -1,0 +1,63 @@
+# DP: Build a tri-arch compiler on mips-linux-gnu.
+# DP: http://gcc.gnu.org/ml/gcc-patches/2009-03/msg01047.html
+
+2009-06-13  Matthias Klose <doko@debian.org>
+	    Arthur Loiret  <aloiret@debian.org>
+
+	* config.gcc (mips*-*-linux*): If 'enabled_targets' is 'all', build
+	a tri-arch compiler defaulting to 32-bit (ABI o32). In this case:
+	(tm_file): Add mips/linux64.h.
+	(tmake_file): Add mips/t-linux64.
+	* config/mips/linux64.h (DRIVER_SELF_SPECS): Use MULTILIB_ABI_DEFAULT
+	instead of hardcoded mabi=n32.
+	* doc/install.texi: Add mips-linux to the list of targets supporting
+	--enable-targets=all. Document the effect on mips.
+
+Index: gcc/config.gcc
+===================================================================
+--- a/src/gcc/config.gcc	(revision 157384)
++++ b/src/gcc/config.gcc	(working copy)
+@@ -1731,8 +1731,12 @@
+ 	test x$with_llsc != x || with_llsc=yes
+ 	;;
+ mips*-*-linux*)				# Linux MIPS, either endian.
+-        tm_file="dbxelf.h elfos.h svr4.h linux.h glibc-stdint.h ${tm_file} mips/linux.h"
++	tm_file="dbxelf.h elfos.h svr4.h linux.h glibc-stdint.h ${tm_file} mips/linux.h"
+ 	tmake_file="${tmake_file} mips/t-libgcc-mips16"
++	if test x$enable_targets = xall; then
++		tm_file="${tm_file} mips/linux64.h"
++		tmake_file="${tmake_file} mips/t-linux64"
++	fi
+ 	case ${target} in
+         mipsisa32r2*)
+ 		tm_defines="${tm_defines} MIPS_ISA_DEFAULT=33"
+Index: gcc/config/mips/linux64.h
+===================================================================
+--- a/src/gcc/config/mips/linux64.h	(revision 157384)
++++ b/src/gcc/config/mips/linux64.h	(working copy)
+@@ -26,7 +26,7 @@
+   BASE_DRIVER_SELF_SPECS, \
+   LINUX_DRIVER_SELF_SPECS \
+   " %{!EB:%{!EL:%(endian_spec)}}" \
+-  " %{!mabi=*: -mabi=n32}"
++  " %{!mabi=*: -" MULTILIB_ABI_DEFAULT "}"
+ 
+ #undef LIB_SPEC
+ #define LIB_SPEC "\
+#Index: gcc/doc/install.texi
+#===================================================================
+#--- a/src/gcc/doc/install.texi	(revision 153447)
+#+++ b/src/gcc/doc/install.texi	(revision 153448)
+#@@ -1346,8 +1346,10 @@
+# option enables the 32-bit target to be a bi-arch compiler, which is
+# useful when you want a bi-arch compiler that defaults to 32-bit, and
+# you are building a bi-arch or multi-arch binutils in a combined tree.
+#-Currently, this option only affects sparc-linux, powerpc-linux and
+#-x86-linux.
+#+On mips-linux, this will build a tri-arch compiler (ABI o32/n32/64),
+#+defaulted to o32.
+#+Currently, this option only affects sparc-linux, powerpc-linux, x86-linux
+#+and mips-linux.
+# 
+# @item --enable-secureplt
+# This option enables @option{-msecure-plt} by default for powerpc-linux.

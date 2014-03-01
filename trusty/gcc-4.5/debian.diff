@@ -1,0 +1,252 @@
+diff -urN debian/changelog gcc-4.5-4.5.3.orig/debian/changelog
+--- debian/changelog	2014-02-20 18:00:08.421973186 +0900
++++ gcc-4.5-4.5.3.orig/debian/changelog	2014-03-02 00:21:12.846714602 +0900
+@@ -1,3 +1,9 @@
++gcc-4.5 (4.5.3-12ubuntu2trusty0) trusty; urgency=low
++
++  * ppa for trusty
++
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Thu, 27 Feb 2014 02:00:00 +0900
++
+ gcc-4.5 (4.5.3-12ubuntu2) precise; urgency=low
+ 
+   * Pursuant to the cross-distro consensus on the armhf linker path,
+diff -urN debian/control gcc-4.5-4.5.3.orig/debian/control
+--- debian/control	2014-02-20 18:00:08.433981620 +0900
++++ gcc-4.5-4.5.3.orig/debian/control	2014-03-02 04:51:59.140278224 +0900
+@@ -1,16 +1,12 @@
+ Source: gcc-4.5
+ Section: devel
+ Priority: optional
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-XSBC-Original-Maintainer: Debian GCC Maintainers <debian-gcc@lists.debian.org>
+-Uploaders: Matthias Klose <doko@debian.org>, Arthur Loiret <aloiret@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.9.2
+-Build-Depends: dpkg-dev (>= 1.16.0~ubuntu4), debhelper (>= 5.0.62), g++-multilib [amd64 i386 mips mipsel powerpc ppc64 s390 s390x sparc kfreebsd-amd64], libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6), libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 s390x], lib64gcc1 [i386 powerpc sparc s390], libc6-dev-mips64 [mips mipsel], libc6-dev-mipsn32 [mips mipsel], m4, libtool, autoconf2.64, automake (>= 1:1.11), automake (<< 1:1.12), libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], zlib1g-dev, gawk, lzma, xz-utils, patchutils, binutils (>= 2.20.1-14~) | binutils-multiarch (>= 2.20.1-14~), binutils-hppa64 (>= 2.20.1-14~) [hppa], gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, texinfo (>= 4.3), locales [!m68k !knetbsd-i386 !knetbsd-alpha], procps, sharutils, binutils-spu (>= 2.20.1-14~) [powerpc ppc64], newlib-spu (>= 1.16.0) [powerpc ppc64], libcloog-ppl-dev (>= 0.15.9-2~), libmpc-dev, libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), libelfg0-dev (>= 0.8.12), dejagnu [!m68k !hurd-i386 !hurd-alpha], autogen, realpath (>= 1.9.12), chrpath, lsb-release, make (>= 3.81), quilt
++Build-Depends: dpkg-dev (>= 1.16.0~ubuntu4), debhelper (>= 5.0.62), g++-multilib [amd64 i386 mips mipsel powerpc ppc64 s390 s390x sparc kfreebsd-amd64], libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6), libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 s390x], lib64gcc1 [i386 powerpc sparc s390], libc6-dev-mips64 [mips mipsel], libc6-dev-mipsn32 [mips mipsel], m4, libtool, autoconf2.64, automake (>= 1:1.11), libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], zlib1g-dev, gawk, lzma, xz-utils, patchutils, binutils (>= 2.20.1-14~) | binutils-multiarch (>= 2.20.1-14~), binutils-hppa64 (>= 2.20.1-14~) [hppa], gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, texinfo (>= 4.3), locales [!m68k !knetbsd-i386 !knetbsd-alpha], procps, sharutils, binutils-spu (>= 2.20.1-14~) [powerpc ppc64], newlib-spu (>= 1.16.0) [powerpc ppc64], libcloog-ppl-dev (>= 0.15.9-2~), libmpc-dev, libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), libelfg0-dev (>= 0.8.12), dejagnu [!m68k !hurd-i386 !hurd-alpha], autogen, realpath (>= 1.9.12), chrpath, lsb-release, make (>= 3.81), quilt
+ Build-Depends-Indep: doxygen (>= 1.4.2), graphviz (>= 2.2), gsfonts-x11, texlive-latex-base, 
+-Build-Conflicts: binutils-gold
+-Homepage: http://gcc.gnu.org/
+-XS-Vcs-Browser: http://svn.debian.org/viewsvn/gcccvs/branches/sid/gcc-4.5/
+-XS-Vcs-Svn: svn://svn.debian.org/svn/gcccvs/branches/sid/gcc-4.5
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-upper
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ Package: gcc-4.5-base
+ Architecture: any
+diff -urN debian/control.m4 gcc-4.5-4.5.3.orig/debian/control.m4
+--- debian/control.m4	2014-02-20 18:00:08.405972933 +0900
++++ gcc-4.5-4.5.3.orig/debian/control.m4	2014-03-02 04:50:33.993304227 +0900
+@@ -25,23 +25,7 @@
+ Source: SRCNAME
+ Section: devel
+ Priority: PRI(optional)
+-ifelse(DIST,`Ubuntu',`dnl
+-ifelse(regexp(SRCNAME, `gnat\|gdc-'),0,`dnl
+-Maintainer: Ubuntu MOTU Developers <ubuntu-motu@lists.ubuntu.com>
+-', `dnl
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-')dnl SRCNAME
+-XSBC-Original-Maintainer: MAINTAINER
+-', `dnl
+-Maintainer: MAINTAINER
+-')dnl DIST
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Uploaders: Ludovic Brenta <lbrenta@debian.org>
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Uploaders: Arthur Loiret <arthur.loiret@gmail.com>
+-', `dnl
+-Uploaders: Matthias Klose <doko@debian.org>, Arthur Loiret <aloiret@debian.org>
+-')dnl SRCNAME
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.9.2
+ ifdef(`TARGET',`dnl cross
+ Build-Depends: DPKG_BUILD_DEP debhelper (>= 5.0.62), dpkg-cross (>= 1.25.99), LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP LIBUNWIND_BUILD_DEP LIBATOMIC_OPS_BUILD_DEP AUTOGEN_BUILD_DEP CLOOG_BUILD_DEP AUTO_BUILD_DEP SOURCE_BUILD_DEP CROSS_BUILD_DEP MPFR_BUILD_DEP GMP_BUILD_DEP zlib1g-dev, gawk, lzma, xz-utils, patchutils, BINUTILS_BUILD_DEP, bison (>= 1:2.3), flex, realpath (>= 1.9.12), lsb-release, make (>= 3.81), quilt
+@@ -51,16 +35,8 @@
+ Build-Depends-Indep: LIBSTDCXX_BUILD_INDEP JAVA_BUILD_INDEP
+ ')dnl
+ ')dnl
+-Build-Conflicts: binutils-gold
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Homepage: http://gcc.gnu.org/
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Homepage: http://dgcc.sourceforge.net/
+-', `dnl
+-Homepage: http://gcc.gnu.org/
+-')dnl SRCNAME
+-XS-Vcs-Browser: http://svn.debian.org/viewsvn/gcccvs/branches/sid/gcc`'PV/
+-XS-Vcs-Svn: svn://svn.debian.org/svn/gcccvs/branches/sid/gcc`'PV
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-upper
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ ifelse(SRCNAME,gcc-snapshot,`dnl
+ Package: gcc-snapshot
+diff -urN debian/patches/i386-siginfo.diff gcc-4.5-4.5.3.orig/debian/patches/i386-siginfo.diff
+--- debian/patches/i386-siginfo.diff	1970-01-01 09:00:00.000000000 +0900
++++ gcc-4.5-4.5.3.orig/debian/patches/i386-siginfo.diff	2014-03-02 02:12:23.336052913 +0900
+@@ -0,0 +1,14 @@
++--- a/src/gcc/config/i386/linux-unwind.h	2009-11-13 15:58:12.000000000 +0900
+++++ b/src/gcc/config/i386/linux-unwind.h	2014-03-02 02:09:33.223209336 +0900
++@@ -133,9 +133,9 @@
++     {
++       struct rt_sigframe {
++ 	int sig;
++-	struct siginfo *pinfo;
+++	siginfo_t *pinfo;
++ 	void *puc;
++-	struct siginfo info;
+++	siginfo_t info;
++ 	struct ucontext uc;
++       } *rt_ = context->cfa;
++       /* The void * cast is necessary to avoid an aliasing warning.
+diff -urN debian/patches/makeinfo-itemx.diff gcc-4.5-4.5.3.orig/debian/patches/makeinfo-itemx.diff
+--- debian/patches/makeinfo-itemx.diff	1970-01-01 09:00:00.000000000 +0900
++++ gcc-4.5-4.5.3.orig/debian/patches/makeinfo-itemx.diff	2014-03-02 01:40:53.147350998 +0900
+@@ -0,0 +1,86 @@
++--- a/src/gcc/doc/cppopts.texi	2010-04-03 04:54:46.000000000 +0900
+++++ b/src/gcc/doc/cppopts.texi	2014-03-02 01:22:33.588399260 +0900
++@@ -760,7 +760,7 @@
++ Enable special code to work around file systems which only permit very
++ short file names, such as MS-DOS@.
++ 
++-@itemx --help
+++@item --help
++ @itemx --target-help
++ @opindex help
++ @opindex target-help
++--- a/src/gcc/doc/generic.texi	2010-07-07 05:23:53.000000000 +0900
+++++ b/src/gcc/doc/generic.texi	2014-03-02 01:25:35.071994828 +0900
++@@ -1407,13 +1407,13 @@
++ not matter.  The type of the operands and that of the result are
++ always of @code{BOOLEAN_TYPE} or @code{INTEGER_TYPE}.
++ 
++-@itemx POINTER_PLUS_EXPR
+++@item POINTER_PLUS_EXPR
++ This node represents pointer arithmetic.  The first operand is always
++ a pointer/reference type.  The second operand is always an unsigned
++ integer type compatible with sizetype.  This is the only binary
++ arithmetic operand that can operate on pointer types.
++ 
++-@itemx PLUS_EXPR
+++@item PLUS_EXPR
++ @itemx MINUS_EXPR
++ @itemx MULT_EXPR
++ These nodes represent various binary arithmetic operations.
++--- a/src/gcc/doc/invoke.texi	2011-03-24 07:03:29.000000000 +0900
+++++ b/src/gcc/doc/invoke.texi	2014-03-02 01:38:02.032988900 +0900
++@@ -4875,11 +4875,11 @@
++ @option{-fdump-rtl-ce3} enable dumping after the three
++ if conversion passes.
++ 
++-@itemx -fdump-rtl-cprop_hardreg
+++@item -fdump-rtl-cprop_hardreg
++ @opindex fdump-rtl-cprop_hardreg
++ Dump after hard register copy propagation.
++ 
++-@itemx -fdump-rtl-csa
+++@item -fdump-rtl-csa
++ @opindex fdump-rtl-csa
++ Dump after combining stack adjustments.
++ 
++@@ -4890,11 +4890,11 @@
++ @option{-fdump-rtl-cse1} and @option{-fdump-rtl-cse2} enable dumping after
++ the two common sub-expression elimination passes.
++ 
++-@itemx -fdump-rtl-dce
+++@item -fdump-rtl-dce
++ @opindex fdump-rtl-dce
++ Dump after the standalone dead code elimination passes.
++ 
++-@itemx -fdump-rtl-dbr
+++@item -fdump-rtl-dbr
++ @opindex fdump-rtl-dbr
++ Dump after delayed branch scheduling.
++ 
++@@ -4939,7 +4939,7 @@
++ @opindex fdump-rtl-initvals
++ Dump after the computation of the initial value sets.
++ 
++-@itemx -fdump-rtl-into_cfglayout
+++@item -fdump-rtl-into_cfglayout
++ @opindex fdump-rtl-into_cfglayout
++ Dump after converting to cfglayout mode.
++ 
++@@ -4969,7 +4969,7 @@
++ @opindex fdump-rtl-rnreg
++ Dump after register renumbering.
++ 
++-@itemx -fdump-rtl-outof_cfglayout
+++@item -fdump-rtl-outof_cfglayout
++ @opindex fdump-rtl-outof_cfglayout
++ Dump after converting from cfglayout mode.
++ 
++@@ -4981,7 +4981,7 @@
++ @opindex fdump-rtl-postreload
++ Dump after post-reload optimizations.
++ 
++-@itemx -fdump-rtl-pro_and_epilogue
+++@item -fdump-rtl-pro_and_epilogue
++ @opindex fdump-rtl-pro_and_epilogue
++ Dump after generating the function pro and epilogues.
++ 
+diff -urN debian/rules.conf gcc-4.5-4.5.3.orig/debian/rules.conf
+--- debian/rules.conf	2014-02-20 18:00:08.414512154 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.conf	2014-03-02 03:31:54.027709495 +0900
+@@ -264,7 +264,7 @@
+ endif
+ 
+ AUTO_BUILD_DEP := m4, libtool,
+-AUTO_BUILD_DEP += autoconf2.64, automake (>= 1:1.11), automake (<< 1:1.12),
++AUTO_BUILD_DEP += autoconf2.64, automake (>= 1:1.11),
+ 
+ ifneq ($(DEB_CROSS),yes)
+ LIBC_BUILD_DEP := libc6.1-dev (>= $(libc_dev_ver)) [alpha ia64] | libc0.3-dev (>= $(libc_dev_ver)) [hurd-i386] | libc0.1-dev (>= $(libc_dev_ver)) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= $(libc_dev_ver))
+diff -urN debian/rules.defs gcc-4.5-4.5.3.orig/debian/rules.defs
+--- debian/rules.defs	2014-02-20 18:00:08.409950985 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.defs	2014-03-02 03:29:21.946955400 +0900
+@@ -947,6 +947,7 @@
+ ifneq ($(findstring nocheck, $(DEB_BUILD_OPTIONS)),)
+   with_check := disabled by DEB_BUILD_OPTIONS
+ endif
++with_check := disabled for this build
+ 
+ # not a dependency on all archs, but if available, use it for the testsuite
+ ifneq (,$(wildcard /usr/bin/localedef))
+diff -urN debian/rules.parameters gcc-4.5-4.5.3.orig/debian/rules.parameters
+--- debian/rules.parameters	2014-02-20 18:00:08.414512154 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.parameters	2014-03-02 00:21:32.872821853 +0900
+@@ -2,15 +2,15 @@
+ GCC_VERSION	:= 4.5.3
+ NEXT_GCC_VERSION	:= 4.5.4
+ BASE_VERSION	:= 4.5
+-SOURCE_VERSION	:= 4.5.3-12ubuntu1
+-DEB_VERSION	:= 4.5.3-12ubuntu1
+-DEB_EVERSION	:= 1:4.5.3-12ubuntu1
++SOURCE_VERSION	:= 4.5.3-12ubuntu2trusty0
++DEB_VERSION	:= 4.5.3-12ubuntu2trusty0
++DEB_EVERSION	:= 1:4.5.3-12ubuntu2trusty0
+ GDC_BASE_VERSION  := 
+ DEB_GDC_VERSION	:= 
+ DEB_SOVERSION	:= 4.4
+ DEB_SOEVERSION	:= 1:4.4
+ DEB_LIBGCC_SOVERSION	:= 1:4.4
+-DEB_LIBGCC_VERSION	:= 1:4.5.3-12ubuntu1
++DEB_LIBGCC_VERSION	:= 1:4.5.3-12ubuntu2trusty0
+ DEB_STDCXX_SOVERSION	:= 4.4
+ DEB_GCJ_SOVERSION	:= 4.4
+ PKG_GCJ_EXT	:= 11
+diff -urN debian/rules.patch gcc-4.5-4.5.3.orig/debian/rules.patch
+--- debian/rules.patch	2014-02-20 18:00:08.446559546 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.patch	2014-03-02 04:27:41.752729427 +0900
+@@ -273,6 +273,10 @@
+ 
+ debian_patches += armhf-triplet-backport
+ 
++ifeq ($(distrelease),trusty)
++  debian_patches += makeinfo-itemx
++  debian_patches += i386-siginfo
++endif
+ 
+ series_stamp = $(stampdir)/02-series-stamp
+ series: $(series_stamp)

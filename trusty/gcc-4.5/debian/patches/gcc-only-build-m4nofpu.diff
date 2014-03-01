@@ -1,0 +1,23 @@
+# Debian/SH4 is multilib with m4 and m4-nofpu.
+# m4-nofpu was built to only support linux kernel builds.
+# Therefore, m4-nofpu is not necessary for other toolchains.
+# This gcc (only libgcc) builds m4-nofpu.
+
+diff --git a/src/config-ml.in b/src/config-ml.in
+index 87a60df..e3f8b88 100644
+--- a/src/config-ml.in
++++ b/src/config-ml.in
+@@ -486,6 +486,13 @@ powerpc*-*-* | rs6000*-*-*)
+ 	  *" 64 "*) ac_configure_args="${ac_configure_args} --host=powerpc64-linux-gnu"
+ 	esac
+ 	;;
++sh4*-*-*)
++	targetlib=$(basename `pwd`)
++	case "$targetlib" in
++	  libgcc) : ;;
++	  *) multidirs="" ;;
++	esac
++	;;
+ s390-*-*)
+ 	case " $multidirs " in
+ 	  *" 64 "*) ac_configure_args="${ac_configure_args} --host=s390x-linux-gnu"
