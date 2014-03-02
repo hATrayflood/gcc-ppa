@@ -7,6 +7,9 @@ Porting missing version of gcc from upper/lower LTS to LTS
 
 provides
 --------
+    # trusty
+    /usr/bin/gcc-4.5
+    /usr/bin/g++-4.5
     # precise
     /usr/bin/gcc-4.8
     /usr/bin/g++-4.8
