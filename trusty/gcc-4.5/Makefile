@@ -5,4 +5,4 @@ BASE_URL = http://archive.ubuntu.com/ubuntu/pool/main/g/gcc-4.5/
 
 include ../../build.mk
 
-PPA = gcc-gcc-lower
+PPA = gcc-lower
