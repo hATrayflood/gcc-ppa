@@ -16,6 +16,8 @@ provides
     /usr/bin/gcc-4.7
     /usr/bin/g++-4.7
     # lucid
+    /usr/bin/gcc-4.8
+    /usr/bin/g++-4.8
     /usr/bin/gcc-4.7
     /usr/bin/g++-4.7
     /usr/bin/gcc-4.6
