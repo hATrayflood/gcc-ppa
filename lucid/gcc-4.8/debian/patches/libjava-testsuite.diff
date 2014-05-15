@@ -1,0 +1,6 @@
+# DP: Mark libjava sourcelocation test as failing. PR libjava/55637
+
+--- a/src/libjava/testsuite/libjava.lang/sourcelocation.xfail
++++ b/src/libjava/testsuite/libjava.lang/sourcelocation.xfail
+@@ -0,0 +1 @@
++xfail-output

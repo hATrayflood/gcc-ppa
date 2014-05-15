@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "upgrade" ] || [ "$1" = "configure" ]; then
+    update-alternatives --quiet --remove powerpc64le-linux-gnu-g++ /usr/bin/powerpc64le-linux-gnu-g++-4.8
+fi
+
+#DEBHELPER#
+
+exit 0

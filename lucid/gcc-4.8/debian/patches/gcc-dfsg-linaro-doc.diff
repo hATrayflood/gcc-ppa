@@ -1,0 +1,6 @@
+Index: gcc-4.8-4.8.2/src/gcc/doc/arm-acle-intrinsics.texi
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ gcc-4.8-4.8.2/src/gcc/doc/arm-acle-intrinsics.texi	2014-03-18 18:42:11.027303768 +0000
+@@ -0,0 +1 @@
++@c This file is empty because the original one has a non DFSG free license (GFDL)
