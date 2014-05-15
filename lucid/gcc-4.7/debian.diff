@@ -1,19 +1,19 @@
 diff -urN debian/changelog gcc-4.7-4.7.3.orig/debian/changelog
---- debian/changelog	2014-02-26 03:56:47.602051866 +0900
-+++ gcc-4.7-4.7.3.orig/debian/changelog	2014-02-27 01:53:14.050952252 +0900
+--- debian/changelog	2014-05-15 19:48:05.046706397 +0900
++++ gcc-4.7-4.7.3.orig/debian/changelog	2014-05-15 19:51:37.113015630 +0900
 @@ -1,3 +1,9 @@
-+gcc-4.7 (4.7.3-11ubuntu1lucid1) lucid; urgency=medium
++gcc-4.7 (4.7.3-12ubuntu1lucid1) lucid; urgency=medium
 +
 +  * ppa for lucid
 +
-+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Thu, 27 Feb 2014 02:00:00 +0900
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Thu, 15 May 2014 20:00:00 +0900
 +
- gcc-4.7 (4.7.3-11ubuntu1) trusty; urgency=medium
+ gcc-4.7 (4.7.3-12ubuntu1) trusty; urgency=medium
  
    * Merge with Debian; remaining changes:
 diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
---- debian/control	2014-02-26 03:56:47.602051866 +0900
-+++ gcc-4.7-4.7.3.orig/debian/control	2014-02-27 01:56:58.918943418 +0900
+--- debian/control	2014-05-15 19:48:05.050963782 +0900
++++ gcc-4.7-4.7.3.orig/debian/control	2014-05-15 19:52:32.936012263 +0900
 @@ -1,39 +1,73 @@
  Source: gcc-4.7
  Section: devel
@@ -975,8 +975,8 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Architecture: all
  Section: doc
 diff -urN debian/control.m4 gcc-4.7-4.7.3.orig/debian/control.m4
---- debian/control.m4	2014-02-26 03:56:47.602051866 +0900
-+++ gcc-4.7-4.7.3.orig/debian/control.m4	2014-02-27 01:56:17.143599784 +0900
+--- debian/control.m4	2014-05-15 19:48:05.054725852 +0900
++++ gcc-4.7-4.7.3.orig/debian/control.m4	2014-05-09 17:45:51.364101257 +0900
 @@ -33,23 +33,7 @@
  Source: SRCNAME
  Section: devel
@@ -1039,8 +1039,8 @@ diff -urN debian/control.m4 gcc-4.7-4.7.3.orig/debian/control.m4
   This package contains files common to all languages and libraries
   contained in the GNU Compiler Collection (GCC).
 diff -urN debian/rules.conf gcc-4.7-4.7.3.orig/debian/rules.conf
---- debian/rules.conf	2014-02-26 03:56:47.773951300 +0900
-+++ gcc-4.7-4.7.3.orig/debian/rules.conf	2014-02-25 19:10:28.811910585 +0900
+--- debian/rules.conf	2014-05-15 19:48:05.667711861 +0900
++++ gcc-4.7-4.7.3.orig/debian/rules.conf	2014-05-09 17:45:51.403679788 +0900
 @@ -182,7 +182,7 @@
  # the safe side (something like newest( version in stable, versions for the
  # various platforms in INSTALL/specific.html) ).
@@ -1088,47 +1088,26 @@ diff -urN debian/rules.conf gcc-4.7-4.7.3.orig/debian/rules.conf
    ifeq (,$(filter $(distrelease),lenny etch dapper hardy jaunty karmic lucid maverick natty oneiric))
      LIBSTDCXX_BUILD_INDEP +=, xsltproc, libxml2-utils, docbook-xsl-ns
    endif
-diff -urN debian/rules.defs gcc-4.7-4.7.3.orig/debian/rules.defs
---- debian/rules.defs	2014-02-26 03:56:47.773951300 +0900
-+++ gcc-4.7-4.7.3.orig/debian/rules.defs	2014-02-25 18:46:58.311968025 +0900
-@@ -340,17 +340,6 @@
- # XXX: should with_common_libs be "yes" only if this is the default compiler
- # version on the targeted arch?
- 
--ifeq (,$(filter $(distrelease),etch lenny squeeze wheezy))
--  with_common_pkgs :=
--  with_common_libs :=
--else ifeq (,$(filter $(distrelease),dapper hardy jaunty karmic lucid maverick oneiric precise quantal raring))
--  with_common_pkgs :=
--  with_common_libs :=
--endif
--# PPA uploads ...
--with_common_pkgs :=
--with_common_libs :=
--
- # is this a multiarch-enabled build?
- ifeq (,$(filter $(distrelease),lenny etch squeeze dapper hardy jaunty karmic lucid maverick))
-   with_multiarch_lib := yes
 diff -urN debian/rules.parameters gcc-4.7-4.7.3.orig/debian/rules.parameters
---- debian/rules.parameters	2014-02-26 03:56:47.773951300 +0900
-+++ gcc-4.7-4.7.3.orig/debian/rules.parameters	2014-02-27 01:53:47.082931215 +0900
+--- debian/rules.parameters	2014-05-15 19:48:05.674782034 +0900
++++ gcc-4.7-4.7.3.orig/debian/rules.parameters	2014-05-15 19:52:33.043882677 +0900
 @@ -2,15 +2,15 @@
  GCC_VERSION	:= 4.7.3
  NEXT_GCC_VERSION	:= 4.7.4
  BASE_VERSION	:= 4.7
--SOURCE_VERSION	:= 4.7.3-10ubuntu1
--DEB_VERSION	:= 4.7.3-10ubuntu1
--DEB_EVERSION	:= 1:4.7.3-10ubuntu1
-+SOURCE_VERSION	:= 4.7.3-11ubuntu1lucid1
-+DEB_VERSION	:= 4.7.3-11ubuntu1lucid1
-+DEB_EVERSION	:= 1:4.7.3-11ubuntu1lucid1
+-SOURCE_VERSION	:= 4.7.3-12ubuntu1
+-DEB_VERSION	:= 4.7.3-12ubuntu1
+-DEB_EVERSION	:= 1:4.7.3-12ubuntu1
++SOURCE_VERSION	:= 4.7.3-12ubuntu1lucid1
++DEB_VERSION	:= 4.7.3-12ubuntu1lucid1
++DEB_EVERSION	:= 1:4.7.3-12ubuntu1lucid1
  GDC_BASE_VERSION  := 
  DEB_GDC_VERSION	:= 
  DEB_SOVERSION	:= 4.7
  DEB_SOEVERSION	:= 1:4.7
  DEB_LIBGCC_SOVERSION	:= 
--DEB_LIBGCC_VERSION	:= 1:4.7.3-10ubuntu1
-+DEB_LIBGCC_VERSION	:= 1:4.7.3-11ubuntu1lucid1
+-DEB_LIBGCC_VERSION	:= 1:4.7.3-12ubuntu1
++DEB_LIBGCC_VERSION	:= 1:4.7.3-12ubuntu1lucid1
  DEB_STDCXX_SOVERSION	:= 4.7
  DEB_GCJ_SOVERSION	:= 4.7
  PKG_GCJ_EXT	:= 13

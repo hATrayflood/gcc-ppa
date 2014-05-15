@@ -340,6 +340,17 @@ with_common_libs := yes
 # XXX: should with_common_libs be "yes" only if this is the default compiler
 # version on the targeted arch?
 
+ifeq (,$(filter $(distrelease),etch lenny squeeze wheezy))
+  with_common_pkgs :=
+  with_common_libs :=
+else ifeq (,$(filter $(distrelease),dapper hardy jaunty karmic lucid maverick oneiric precise quantal raring))
+  with_common_pkgs :=
+  with_common_libs :=
+endif
+# PPA uploads ...
+with_common_pkgs :=
+with_common_libs :=
+
 # is this a multiarch-enabled build?
 ifeq (,$(filter $(distrelease),lenny etch squeeze dapper hardy jaunty karmic lucid maverick))
   with_multiarch_lib := yes
