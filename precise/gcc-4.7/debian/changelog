@@ -1,3 +1,16 @@
+gcc-4.7 (4.7.3-12ubuntu1) trusty; urgency=medium
+
+  * Merge with Debian; remaining changes:
+    - Build from upstream source.
+
+ -- Matthias Klose <doko@ubuntu.com>  Thu, 20 Mar 2014 17:22:41 +0100
+
+gcc-4.7 (4.7.3-12) unstable; urgency=medium
+
+  * Update to SVN 20140320 (r208693) from the gcc-4_7-branch.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 20 Mar 2014 16:22:37 +0100
+
 gcc-4.7 (4.7.3-11ubuntu1) trusty; urgency=medium
 
   * Merge with Debian; remaining changes:
