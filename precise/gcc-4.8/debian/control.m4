@@ -51,7 +51,7 @@ Uploaders: Iain Buclaw <ibuclaw@ubuntu.com>, Matthias Klose <doko@debian.org>
 ', `dnl
 Uploaders: Matthias Klose <doko@debian.org>
 ')dnl SRCNAME
-Standards-Version: 3.9.4
+Standards-Version: 3.9.5
 ifdef(`TARGET',`dnl cross
 Build-Depends: debhelper (>= 5.0.62),
   LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP
@@ -702,7 +702,7 @@ Section: devel
 Priority: ifdef(`TARGET',`extra',`PRI(optional)')
 Depends: cpp`'PV`'TS (= ${gcc:Version}),ifenabled(`gccbase',` BASEDEP,')
   binutils`'TS (>= ${binutils:Version}),
-  depifenabled(`libgcc',`libdevdep(gcc`'PV-dev`',), ')${shlibs:Depends}, ${misc:Depends}
+  libdevdep(gcc`'PV-dev`',), ${shlibs:Depends}, ${misc:Depends}
 Recommends: ${dep:libcdev}
 Suggests: ${gcc:multilib}, gcc`'PV-doc (>= ${gcc:SoftVersion}), gcc`'PV-locales (>= ${gcc:SoftVersion}), libdbgdep(gcc`'GCC_SO-dbg,,>=,${libgcc:Version}), libdbgdep(gomp`'GOMP_SO-dbg,), libdbgdep(itm`'ITM_SO-dbg,), libdbgdep(atomic`'ATOMIC_SO-dbg,), libdbgdep(asan`'ASAN_SO-dbg,), libdbgdep(tsan`'TSAN_SO-dbg,), libdbgdep(backtrace`'BTRACE_SO-dbg,), libdbgdep(quadmath`'QMATH_SO-dbg,), ${dep:libcloog}, ${dep:gold}
 Provides: c-compiler`'TS
@@ -3894,6 +3894,7 @@ Section: libdevel
 Priority: PRI(optional)
 Depends: BASEDEP, zlib1g-dev, ${shlibs:Depends}, ${misc:Depends}
 Provides: libphobos-dev
+Replaces: gdc`'PV`'TS (<< 4.8.2-19)
 BUILT_USING`'dnl
 Description: Phobos D standard library
  This is the Phobos standard library that comes with the D2 compiler.

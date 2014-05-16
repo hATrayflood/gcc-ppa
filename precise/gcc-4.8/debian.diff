@@ -1,19 +1,19 @@
 diff -urN debian/changelog gcc-4.8-4.8.2.orig/debian/changelog
---- debian/changelog	2014-02-22 21:58:56.124055003 +0900
-+++ gcc-4.8-4.8.2.orig/debian/changelog	2014-02-22 22:06:58.642447638 +0900
+--- debian/changelog	2014-05-16 12:33:53.884309432 +0900
++++ gcc-4.8-4.8.2.orig/debian/changelog	2014-05-16 12:37:41.713439176 +0900
 @@ -1,3 +1,9 @@
-+gcc-4.8 (4.8.2-16ubuntu1precise1) precise; urgency=medium
++gcc-4.8 (4.8.2-19ubuntu1precise1) precise; urgency=medium
 +
 +  * ppa for precise
 +
-+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Sat, 22 Feb 2014 22:00:00 +0900
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Fri, 16 May 2014 12:40:00 +0900
 +
- gcc-4.8 (4.8.2-16ubuntu1) trusty; urgency=medium
+ gcc-4.8 (4.8.2-19ubuntu1) trusty; urgency=medium
  
-   * Stop building the libgcc1 packages, now built by gccgo-4.9.
+   * Merge with Debian; remaining changes:
 diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
---- debian/control	2014-02-22 21:58:56.128055016 +0900
-+++ gcc-4.8-4.8.2.orig/debian/control	2014-02-26 01:48:12.598758589 +0900
+--- debian/control	2014-05-16 12:33:53.888309454 +0900
++++ gcc-4.8-4.8.2.orig/debian/control	2014-05-16 12:49:55.805079343 +0900
 @@ -1,12 +1,10 @@
  Source: gcc-4.8
  Section: devel
@@ -22,7 +22,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 -XSBC-Original-Maintainer: Debian GCC Maintainers <debian-gcc@lists.debian.org>
 -Uploaders: Matthias Klose <doko@debian.org>
 +Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
- Standards-Version: 3.9.4
+ Standards-Version: 3.9.5
  Build-Depends: debhelper (>= 5.0.62), g++-multilib [amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32], 
 -  libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6), libc6-dev (>= 2.13-31) [armel armhf], libc6-dev-amd64 [i386 x32], libc6-dev-sparc64 [sparc], libc6-dev-sparc [sparc64], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64 x32], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 mipsn32 mipsn32el mips64 mips64el s390x sparc64 x32], libn32gcc1 [mips mipsel mips64 mips64el], lib64gcc1 [i386 mips mipsel mipsn32 mipsn32el powerpc sparc s390 x32], libc6-dev-mips64 [mips mipsel mipsn32 mipsn32el], libc6-dev-mipsn32 [mips mipsel mips64 mips64el], libc6-dev-mips32 [mipsn32 mipsn32el mips64 mips64el], libc6-dev-x32 [amd64 i386], libx32gcc1 [amd64 i386], libc6-dev-armhf [armel], libhfgcc1 [armel], libc6-dev-armel [armhf], libsfgcc1 [armhf], libc6.1-dbg [alpha ia64] | libc0.3-dbg [hurd-i386] | libc0.1-dbg [kfreebsd-i386 kfreebsd-amd64] | libc6-dbg, 
 +  libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6), libc6-dev (>= 2.13-31) [armel armhf], libc6-dev-amd64 [i386 x32], libc6-dev-sparc64 [sparc], libc6-dev-sparc [sparc64], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64 x32], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 mipsn32 mipsn32el mips64 mips64el s390x sparc64 x32], libn32gcc1 [mips mipsel mips64 mips64el], lib64gcc1 [i386 mips mipsel mipsn32 mipsn32el powerpc sparc s390 x32], libc6-dev-mips64 [mips mipsel mipsn32 mipsn32el], libc6-dev-mipsn32 [mips mipsel mips64 mips64el], libc6-dev-mips32 [mipsn32 mipsn32el mips64 mips64el], libc6-dev-armhf [armel], libhfgcc1 [armel], libc6-dev-armel [armhf], libsfgcc1 [armhf], libc6.1-dbg [alpha ia64] | libc0.3-dbg [hurd-i386] | libc0.1-dbg [kfreebsd-i386 kfreebsd-amd64] | libc6-dbg, 
@@ -269,15 +269,6 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
   This package contains the headers and static library files necessary for
   building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
  
-@@ -111,7 +263,7 @@
- Priority: optional
- Depends: cpp-4.8 (= ${gcc:Version}), gcc-4.8-base (= ${gcc:Version}),
-   binutils (>= ${binutils:Version}), 
--  ${shlibs:Depends}, ${misc:Depends}
-+  libgcc-4.8-dev (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
- Recommends: ${dep:libcdev}
- Suggests: ${gcc:multilib}, gcc-4.8-doc (>= ${gcc:SoftVersion}), gcc-4.8-locales (>= ${gcc:SoftVersion}), libgcc1-dbg (>= ${libgcc:Version}), libgomp1-dbg (>= ${gcc:Version}), libitm1-dbg (>= ${gcc:Version}), libatomic1-dbg (>= ${gcc:Version}), libasan0-dbg (>= ${gcc:Version}), libtsan0-dbg (>= ${gcc:Version}), libbacktrace1-dbg (>= ${gcc:Version}), libquadmath0-dbg (>= ${gcc:Version}), ${dep:libcloog}, ${dep:gold}
- Provides: c-compiler
 @@ -283,23 +435,6 @@
  Description: GCC OpenMP (GOMP) support library (n32 debug symbols)
   GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
@@ -562,8 +553,8 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfstdc++-4.8-dev
  Architecture: armel
 diff -urN debian/control.m4 gcc-4.8-4.8.2.orig/debian/control.m4
---- debian/control.m4	2014-02-22 21:58:56.128055016 +0900
-+++ gcc-4.8-4.8.2.orig/debian/control.m4	2014-02-17 20:12:53.308325747 +0900
+--- debian/control.m4	2014-05-16 12:33:53.892309481 +0900
++++ gcc-4.8-4.8.2.orig/debian/control.m4	2014-05-16 12:40:32.766287388 +0900
 @@ -34,23 +34,7 @@
  Source: SRCNAME
  Section: devel
@@ -586,7 +577,7 @@ diff -urN debian/control.m4 gcc-4.8-4.8.2.orig/debian/control.m4
 -Uploaders: Matthias Klose <doko@debian.org>
 -')dnl SRCNAME
 +Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
- Standards-Version: 3.9.4
+ Standards-Version: 3.9.5
  ifdef(`TARGET',`dnl cross
  Build-Depends: debhelper (>= 5.0.62),
 @@ -75,15 +59,8 @@
@@ -609,7 +600,7 @@ diff -urN debian/control.m4 gcc-4.8-4.8.2.orig/debian/control.m4
  Package: gcc-snapshot`'TS
 diff -urN debian/patches/libquadmath-fenv.diff gcc-4.8-4.8.2.orig/debian/patches/libquadmath-fenv.diff
 --- debian/patches/libquadmath-fenv.diff	1970-01-01 09:00:00.000000000 +0900
-+++ gcc-4.8-4.8.2.orig/debian/patches/libquadmath-fenv.diff	2014-02-15 05:16:09.516638768 +0900
++++ gcc-4.8-4.8.2.orig/debian/patches/libquadmath-fenv.diff	2014-05-09 17:45:51.572091814 +0900
 @@ -0,0 +1,57 @@
 +diff -urN a/src/libquadmath/Makefile.in b/src/libquadmath/Makefile.in
 +--- a/src/libquadmath/Makefile.in	2013-10-16 16:27:58.000000000 +0900
@@ -669,8 +660,8 @@ diff -urN debian/patches/libquadmath-fenv.diff gcc-4.8-4.8.2.orig/debian/patches
 ++ 	}
 ++ 
 diff -urN debian/rules.conf gcc-4.8-4.8.2.orig/debian/rules.conf
---- debian/rules.conf	2014-02-22 21:58:56.320055970 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules.conf	2014-02-23 09:21:30.928814778 +0900
+--- debian/rules.conf	2014-05-16 12:33:55.024315090 +0900
++++ gcc-4.8-4.8.2.orig/debian/rules.conf	2014-05-09 17:45:51.579114334 +0900
 @@ -354,8 +354,8 @@
    MPFR_BUILD_DEP = libmpfr-dev (>= 3.0.0-9~),
  endif
@@ -683,9 +674,9 @@ diff -urN debian/rules.conf gcc-4.8-4.8.2.orig/debian/rules.conf
  #CLOOG_RUNTIME_DEP = libisl10, libcloog-isl4
  
 diff -urN debian/rules.defs gcc-4.8-4.8.2.orig/debian/rules.defs
---- debian/rules.defs	2014-02-22 21:58:56.328056015 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules.defs	2014-02-26 01:46:58.513367423 +0900
-@@ -1206,6 +1206,7 @@
+--- debian/rules.defs	2014-05-16 12:33:55.032315130 +0900
++++ gcc-4.8-4.8.2.orig/debian/rules.defs	2014-05-16 12:45:29.819760384 +0900
+@@ -1199,6 +1199,7 @@
    endif
  endif
  #with_check := disabled for this upload
@@ -694,32 +685,32 @@ diff -urN debian/rules.defs gcc-4.8-4.8.2.orig/debian/rules.defs
  # not a dependency on all archs, but if available, use it for the testsuite
  ifneq (,$(wildcard /usr/bin/localedef))
 diff -urN debian/rules.parameters gcc-4.8-4.8.2.orig/debian/rules.parameters
---- debian/rules.parameters	2014-02-22 21:58:56.328056015 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules.parameters	2014-02-22 22:25:55.816086622 +0900
+--- debian/rules.parameters	2014-05-16 12:33:55.032315130 +0900
++++ gcc-4.8-4.8.2.orig/debian/rules.parameters	2014-05-16 12:49:55.817079408 +0900
 @@ -2,14 +2,14 @@
  GCC_VERSION	:= 4.8.2
  NEXT_GCC_VERSION	:= 4.8.3
  BASE_VERSION	:= 4.8
--SOURCE_VERSION	:= 4.8.2-16ubuntu1
--DEB_VERSION	:= 4.8.2-16ubuntu1
--DEB_EVERSION	:= 1:4.8.2-16ubuntu1
--DEB_GDC_VERSION	:= 4.8.2-16ubuntu1
-+SOURCE_VERSION	:= 4.8.2-16ubuntu1precise1
-+DEB_VERSION	:= 4.8.2-16ubuntu1precise1
-+DEB_EVERSION	:= 1:4.8.2-16ubuntu1precise1
-+DEB_GDC_VERSION	:= 4.8.2-16ubuntu1precise1
+-SOURCE_VERSION	:= 4.8.2-17ubuntu3~ppa2
+-DEB_VERSION	:= 4.8.2-17ubuntu3~ppa2
+-DEB_EVERSION	:= 1:4.8.2-17ubuntu3~ppa2
+-DEB_GDC_VERSION	:= 4.8.2-17ubuntu3~ppa2
++SOURCE_VERSION	:= 4.8.2-19ubuntu1precise1
++DEB_VERSION	:= 4.8.2-19ubuntu1precise1
++DEB_EVERSION	:= 1:4.8.2-19ubuntu1precise1
++DEB_GDC_VERSION	:= 4.8.2-19ubuntu1precise1
  DEB_SOVERSION	:= 4.8
  DEB_SOEVERSION	:= 1:4.8
  DEB_LIBGCC_SOVERSION	:= 
--DEB_LIBGCC_VERSION	:= 1:4.8.2-16ubuntu1
-+DEB_LIBGCC_VERSION	:= 1:4.8.2-16ubuntu1precise1
+-DEB_LIBGCC_VERSION	:= 1:4.8.2-17ubuntu3~ppa2
++DEB_LIBGCC_VERSION	:= 1:4.8.2-19ubuntu1precise1
  DEB_STDCXX_SOVERSION	:= 4.8
  DEB_GCJ_SOVERSION	:= 4.8
  PKG_GCJ_EXT	:= 14
 diff -urN debian/rules.patch gcc-4.8-4.8.2.orig/debian/rules.patch
---- debian/rules.patch	2014-02-22 21:58:56.328056015 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules.patch	2014-02-23 09:23:08.657299310 +0900
-@@ -354,6 +354,10 @@
+--- debian/rules.patch	2014-05-16 12:33:55.032315130 +0900
++++ gcc-4.8-4.8.2.orig/debian/rules.patch	2014-05-16 12:46:45.680136569 +0900
+@@ -321,6 +321,10 @@
  endif
  debian_patches += libgomp-kfreebsd-testsuite
  
@@ -731,9 +722,9 @@ diff -urN debian/rules.patch gcc-4.8-4.8.2.orig/debian/rules.patch
  series: $(series_stamp)
  $(series_stamp):
 diff -urN debian/rules2 gcc-4.8-4.8.2.orig/debian/rules2
---- debian/rules2	2014-02-22 21:58:56.328056015 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules2	2014-02-23 19:51:40.640303013 +0900
-@@ -1548,7 +1548,7 @@
+--- debian/rules2	2014-05-16 12:33:55.036315155 +0900
++++ gcc-4.8-4.8.2.orig/debian/rules2	2014-05-16 12:52:30.925848546 +0900
+@@ -1551,7 +1551,7 @@
  	    fi; \
  	    echo "Build Dependencies:" >> ts-include; \
  	    dpkg -l g++-* binutils* `echo '$(LIBC_DEP)' | awk '{print $$1}'` \
@@ -742,7 +733,7 @@ diff -urN debian/rules2 gcc-4.8-4.8.2.orig/debian/rules2
  	        | fgrep -v '<none>' >> ts-include; \
  	    echo '' >> ts-include; \
  	    cat ../$(patch_stamp) >> ts-include; \
-@@ -1624,7 +1624,7 @@
+@@ -1627,7 +1627,7 @@
  	    echo '' >> ts-include; \
  	    echo "Build Dependencies:" >> ts-include; \
  	    dpkg -l g++-* binutils* `echo '$(LIBC_DEP)' | awk '{print $$1}'` \

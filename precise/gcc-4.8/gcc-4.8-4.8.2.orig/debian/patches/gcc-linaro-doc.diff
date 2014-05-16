@@ -1,8 +1,10 @@
-# DP: Changes for the Linaro 4.8-2014.02 release (documentation).
+# DP: Changes for the Linaro 4.8-2014.03 release (documentation).
 
+Index: b/src/gcc/doc/extend.texi
+===================================================================
 --- a/src/gcc/doc/extend.texi
 +++ b/src/gcc/doc/extend.texi
-@@ -8792,6 +8792,7 @@
+@@ -8781,6 +8781,7 @@
  * Alpha Built-in Functions::
  * ARM iWMMXt Built-in Functions::
  * ARM NEON Intrinsics::
@@ -10,7 +12,7 @@
  * AVR Built-in Functions::
  * Blackfin Built-in Functions::
  * FR-V Built-in Functions::
-@@ -9057,6 +9058,14 @@
+@@ -9046,6 +9047,14 @@
  
  @include arm-neon-intrinsics.texi
  
@@ -25,7 +27,9 @@
  @node AVR Built-in Functions
  @subsection AVR Built-in Functions
  
---- a/src/gcc/doc/arm-acle-intrinsics.texi
+Index: b/src/gcc/doc/arm-acle-intrinsics.texi
+===================================================================
+--- /dev/null
 +++ b/src/gcc/doc/arm-acle-intrinsics.texi
 @@ -0,0 +1,55 @@
 +@c Copyright (C) 2013-2014 Free Software Foundation, Inc.
@@ -83,9 +87,11 @@
 +instructions for AArch32. One @code{crc32cw @var{w0}, @var{w0}, @var{x0}} instruction for
 +AArch64.
 +@end itemize
+Index: b/src/gcc/doc/tm.texi
+===================================================================
 --- a/src/gcc/doc/tm.texi
 +++ b/src/gcc/doc/tm.texi
-@@ -10926,10 +10926,18 @@
+@@ -10926,8 +10926,16 @@
  @samp{TARGET_INIT_BUILTINS}.  @var{fndecl} is the declaration of the
  built-in function.  @var{n_args} is the number of arguments passed to
  the function; the arguments themselves are pointed to by @var{argp}.
@@ -94,18 +100,18 @@
 +The result is another tree, valid for both GIMPLE and GENERIC,
 +containing a simplified expression for the call's result.  If
 +@var{ignore} is true the value will be ignored.
- @end deftypefn
- 
++@end deftypefn
++
 +@deftypefn {Target Hook} bool TARGET_GIMPLE_FOLD_BUILTIN (gimple_stmt_iterator *@var{gsi})
 +Fold a call to a machine specific built-in function that was set up
 +by @samp{TARGET_INIT_BUILTINS}.  @var{gsi} points to the gimple
 +statement holding the function call.  Returns true if any change
 +was made to the GIMPLE stream.
-+@end deftypefn
-+
+ @end deftypefn
+ 
  @deftypefn {Target Hook} int TARGET_COMPARE_VERSION_PRIORITY (tree @var{decl1}, tree @var{decl2})
- This hook is used to compare the target attributes in two functions to
- determine which function's features get higher priority.  This is used
+Index: b/src/gcc/doc/tm.texi.in
+===================================================================
 --- a/src/gcc/doc/tm.texi.in
 +++ b/src/gcc/doc/tm.texi.in
 @@ -10772,10 +10772,13 @@
@@ -124,6 +130,8 @@
  @hook TARGET_COMPARE_VERSION_PRIORITY
  This hook is used to compare the target attributes in two functions to
  determine which function's features get higher priority.  This is used
+Index: b/src/gcc/doc/invoke.texi
+===================================================================
 --- a/src/gcc/doc/invoke.texi
 +++ b/src/gcc/doc/invoke.texi
 @@ -418,7 +418,7 @@
@@ -146,7 +154,7 @@
  
  @emph{AVR Options}
  @gccoptlist{-mmcu=@var{mcu} -maccumulate-args -mbranch-cost=@var{cost} @gol
-@@ -6598,7 +6600,7 @@
+@@ -6590,7 +6592,7 @@
  @option{-Os} disables the following optimization flags:
  @gccoptlist{-falign-functions  -falign-jumps  -falign-loops @gol
  -falign-labels  -freorder-blocks  -freorder-blocks-and-partition @gol
@@ -155,7 +163,7 @@
  
  @item -Ofast
  @opindex Ofast
-@@ -7839,19 +7841,20 @@
+@@ -7831,19 +7833,20 @@
  Perform basic block vectorization on trees. This flag is enabled by default at
  @option{-O3} and when @option{-ftree-vectorize} is enabled.
  
@@ -188,7 +196,7 @@
  
  @item -ftree-vrp
  @opindex ftree-vrp
-@@ -9247,14 +9250,16 @@
+@@ -9239,13 +9242,15 @@
  
  @item vect-max-version-for-alignment-checks
  The maximum number of run-time checks that can be performed when
@@ -201,15 +209,14 @@
 -doing loop versioning for alias in the vectorizer.  See option
 -@option{-ftree-vect-loop-version} for more information.
 +doing loop versioning for alias in the vectorizer. 
- 
++
 +@item vect-max-peeling-for-alignment
 +The maximum number of loop peels to enhance access alignment
 +for vectorizer. Value -1 means 'no limit'.
-+
+ 
  @item max-iterations-to-track
  The maximum number of iterations of a loop the brute-force algorithm
- for analysis of the number of iterations of the loop tries to evaluate.
-@@ -10974,6 +10979,8 @@
+@@ -10966,6 +10971,8 @@
  the following:
  
  @table @samp
@@ -218,7 +225,7 @@
  @item crypto
  Enable Crypto extension.  This implies Advanced SIMD is enabled.
  @item fp
-@@ -11271,8 +11278,8 @@
+@@ -11263,8 +11270,8 @@
  @samp{arm1136j-s}, @samp{arm1136jf-s}, @samp{mpcore}, @samp{mpcorenovfp},
  @samp{arm1156t2-s}, @samp{arm1156t2f-s}, @samp{arm1176jz-s}, @samp{arm1176jzf-s},
  @samp{cortex-a5}, @samp{cortex-a7}, @samp{cortex-a8}, @samp{cortex-a9}, 
@@ -229,7 +236,7 @@
  @samp{cortex-m1},
  @samp{cortex-m0},
  @samp{cortex-m0plus},
-@@ -11325,9 +11332,12 @@
+@@ -11317,9 +11324,12 @@
  @samp{armv6}, @samp{armv6j},
  @samp{armv6t2}, @samp{armv6z}, @samp{armv6zk}, @samp{armv6-m},
  @samp{armv7}, @samp{armv7-a}, @samp{armv7-r}, @samp{armv7-m},
@@ -243,7 +250,7 @@
  @option{-march=native} causes the compiler to auto-detect the architecture
  of the build computer.  At present, this feature is only supported on
  Linux, and not all architectures are recognized.  If the auto-detect is
-@@ -11538,6 +11548,17 @@
+@@ -11527,6 +11537,17 @@
  preprocessor symbol @code{__ARM_FEATURE_UNALIGNED} will also be
  defined.
  
@@ -261,6 +268,8 @@
  @end table
  
  @node AVR Options
+Index: b/src/gcc/doc/arm-neon-intrinsics.texi
+===================================================================
 --- a/src/gcc/doc/arm-neon-intrinsics.texi
 +++ b/src/gcc/doc/arm-neon-intrinsics.texi
 @@ -4079,6 +4079,12 @@
@@ -762,7 +771,7 @@
  @end itemize
  
  
-@@ -10304,952 +10518,1317 @@
+@@ -10304,967 +10518,1292 @@
  
  
  @itemize @bullet
@@ -850,1054 +859,1075 @@
  
  
  @itemize @bullet
+-@item poly16x4_t vreinterpret_p16_u32 (uint32x2_t)
 +@item poly16x4_t vreinterpret_p16_u16 (uint16x4_t)
-+@end itemize
-+
-+
-+@itemize @bullet
- @item poly16x4_t vreinterpret_p16_u32 (uint32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x4_t vreinterpret_p16_u16 (uint16x4_t)
-+@item float32x2_t vreinterpret_f32_p8 (poly8x8_t)
++@item poly16x4_t vreinterpret_p16_u32 (uint32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x4_t vreinterpret_p16_u8 (uint8x8_t)
-+@item float32x2_t vreinterpret_f32_p16 (poly16x4_t)
++@item float32x2_t vreinterpret_f32_p8 (poly8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x4_t vreinterpret_p16_s32 (int32x2_t)
-+@item float32x2_t vreinterpret_f32_p64 (poly64x1_t)
++@item float32x2_t vreinterpret_f32_p16 (poly16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x4_t vreinterpret_p16_s16 (int16x4_t)
-+@item float32x2_t vreinterpret_f32_s64 (int64x1_t)
++@item float32x2_t vreinterpret_f32_p64 (poly64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x4_t vreinterpret_p16_s8 (int8x8_t)
-+@item float32x2_t vreinterpret_f32_u64 (uint64x1_t)
++@item float32x2_t vreinterpret_f32_s64 (int64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x4_t vreinterpret_p16_u64 (uint64x1_t)
-+@item float32x2_t vreinterpret_f32_s8 (int8x8_t)
++@item float32x2_t vreinterpret_f32_u64 (uint64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x4_t vreinterpret_p16_s64 (int64x1_t)
-+@item float32x2_t vreinterpret_f32_s16 (int16x4_t)
++@item float32x2_t vreinterpret_f32_s8 (int8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x4_t vreinterpret_p16_f32 (float32x2_t)
-+@item float32x2_t vreinterpret_f32_s32 (int32x2_t)
++@item float32x2_t vreinterpret_f32_s16 (int16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x4_t vreinterpret_p16_p8 (poly8x8_t)
-+@item float32x2_t vreinterpret_f32_u8 (uint8x8_t)
++@item float32x2_t vreinterpret_f32_s32 (int32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x8_t vreinterpretq_p16_u32 (uint32x4_t)
-+@item float32x2_t vreinterpret_f32_u16 (uint16x4_t)
++@item float32x2_t vreinterpret_f32_u8 (uint8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x8_t vreinterpretq_p16_u16 (uint16x8_t)
-+@item float32x2_t vreinterpret_f32_u32 (uint32x2_t)
++@item float32x2_t vreinterpret_f32_u16 (uint16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x8_t vreinterpretq_p16_u8 (uint8x16_t)
-+@item poly64x1_t vreinterpret_p64_p8 (poly8x8_t)
++@item float32x2_t vreinterpret_f32_u32 (uint32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x8_t vreinterpretq_p16_s32 (int32x4_t)
-+@item poly64x1_t vreinterpret_p64_p16 (poly16x4_t)
++@item poly64x1_t vreinterpret_p64_p8 (poly8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x8_t vreinterpretq_p16_s16 (int16x8_t)
-+@item poly64x1_t vreinterpret_p64_f32 (float32x2_t)
++@item poly64x1_t vreinterpret_p64_p16 (poly16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x8_t vreinterpretq_p16_s8 (int8x16_t)
-+@item poly64x1_t vreinterpret_p64_s64 (int64x1_t)
++@item poly64x1_t vreinterpret_p64_f32 (float32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x8_t vreinterpretq_p16_u64 (uint64x2_t)
-+@item poly64x1_t vreinterpret_p64_u64 (uint64x1_t)
++@item poly64x1_t vreinterpret_p64_s64 (int64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x8_t vreinterpretq_p16_s64 (int64x2_t)
-+@item poly64x1_t vreinterpret_p64_s8 (int8x8_t)
++@item poly64x1_t vreinterpret_p64_u64 (uint64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x8_t vreinterpretq_p16_f32 (float32x4_t)
-+@item poly64x1_t vreinterpret_p64_s16 (int16x4_t)
++@item poly64x1_t vreinterpret_p64_s8 (int8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item poly16x8_t vreinterpretq_p16_p8 (poly8x16_t)
-+@item poly64x1_t vreinterpret_p64_s32 (int32x2_t)
++@item poly64x1_t vreinterpret_p64_s16 (int16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x2_t vreinterpret_f32_u32 (uint32x2_t)
-+@item poly64x1_t vreinterpret_p64_u8 (uint8x8_t)
++@item poly64x1_t vreinterpret_p64_s32 (int32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x2_t vreinterpret_f32_u16 (uint16x4_t)
-+@item poly64x1_t vreinterpret_p64_u16 (uint16x4_t)
++@item poly64x1_t vreinterpret_p64_u8 (uint8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x2_t vreinterpret_f32_u8 (uint8x8_t)
-+@item poly64x1_t vreinterpret_p64_u32 (uint32x2_t)
++@item poly64x1_t vreinterpret_p64_u16 (uint16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x2_t vreinterpret_f32_s32 (int32x2_t)
-+@item int64x1_t vreinterpret_s64_p8 (poly8x8_t)
++@item poly64x1_t vreinterpret_p64_u32 (uint32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x2_t vreinterpret_f32_s16 (int16x4_t)
-+@item int64x1_t vreinterpret_s64_p16 (poly16x4_t)
++@item int64x1_t vreinterpret_s64_p8 (poly8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x2_t vreinterpret_f32_s8 (int8x8_t)
-+@item int64x1_t vreinterpret_s64_f32 (float32x2_t)
++@item int64x1_t vreinterpret_s64_p16 (poly16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x2_t vreinterpret_f32_u64 (uint64x1_t)
-+@item int64x1_t vreinterpret_s64_p64 (poly64x1_t)
++@item int64x1_t vreinterpret_s64_f32 (float32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x2_t vreinterpret_f32_s64 (int64x1_t)
-+@item int64x1_t vreinterpret_s64_u64 (uint64x1_t)
++@item int64x1_t vreinterpret_s64_p64 (poly64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x2_t vreinterpret_f32_p16 (poly16x4_t)
-+@item int64x1_t vreinterpret_s64_s8 (int8x8_t)
++@item int64x1_t vreinterpret_s64_u64 (uint64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x2_t vreinterpret_f32_p8 (poly8x8_t)
-+@item int64x1_t vreinterpret_s64_s16 (int16x4_t)
++@item int64x1_t vreinterpret_s64_s8 (int8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x4_t vreinterpretq_f32_u32 (uint32x4_t)
-+@item int64x1_t vreinterpret_s64_s32 (int32x2_t)
++@item int64x1_t vreinterpret_s64_s16 (int16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x4_t vreinterpretq_f32_u16 (uint16x8_t)
-+@item int64x1_t vreinterpret_s64_u8 (uint8x8_t)
++@item int64x1_t vreinterpret_s64_s32 (int32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x4_t vreinterpretq_f32_u8 (uint8x16_t)
-+@item int64x1_t vreinterpret_s64_u16 (uint16x4_t)
++@item int64x1_t vreinterpret_s64_u8 (uint8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x4_t vreinterpretq_f32_s32 (int32x4_t)
-+@item int64x1_t vreinterpret_s64_u32 (uint32x2_t)
++@item int64x1_t vreinterpret_s64_u16 (uint16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x4_t vreinterpretq_f32_s16 (int16x8_t)
-+@item uint64x1_t vreinterpret_u64_p8 (poly8x8_t)
++@item int64x1_t vreinterpret_s64_u32 (uint32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x4_t vreinterpretq_f32_s8 (int8x16_t)
-+@item uint64x1_t vreinterpret_u64_p16 (poly16x4_t)
++@item uint64x1_t vreinterpret_u64_p8 (poly8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x4_t vreinterpretq_f32_u64 (uint64x2_t)
-+@item uint64x1_t vreinterpret_u64_f32 (float32x2_t)
++@item uint64x1_t vreinterpret_u64_p16 (poly16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x4_t vreinterpretq_f32_s64 (int64x2_t)
-+@item uint64x1_t vreinterpret_u64_p64 (poly64x1_t)
++@item uint64x1_t vreinterpret_u64_f32 (float32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x4_t vreinterpretq_f32_p16 (poly16x8_t)
-+@item uint64x1_t vreinterpret_u64_s64 (int64x1_t)
++@item uint64x1_t vreinterpret_u64_p64 (poly64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item float32x4_t vreinterpretq_f32_p8 (poly8x16_t)
-+@item uint64x1_t vreinterpret_u64_s8 (int8x8_t)
++@item uint64x1_t vreinterpret_u64_s64 (int64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x1_t vreinterpret_s64_u32 (uint32x2_t)
-+@item uint64x1_t vreinterpret_u64_s16 (int16x4_t)
++@item uint64x1_t vreinterpret_u64_s8 (int8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x1_t vreinterpret_s64_u16 (uint16x4_t)
-+@item uint64x1_t vreinterpret_u64_s32 (int32x2_t)
++@item uint64x1_t vreinterpret_u64_s16 (int16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x1_t vreinterpret_s64_u8 (uint8x8_t)
-+@item uint64x1_t vreinterpret_u64_u8 (uint8x8_t)
++@item uint64x1_t vreinterpret_u64_s32 (int32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x1_t vreinterpret_s64_s32 (int32x2_t)
-+@item uint64x1_t vreinterpret_u64_u16 (uint16x4_t)
++@item uint64x1_t vreinterpret_u64_u8 (uint8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x1_t vreinterpret_s64_s16 (int16x4_t)
-+@item uint64x1_t vreinterpret_u64_u32 (uint32x2_t)
++@item uint64x1_t vreinterpret_u64_u16 (uint16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x1_t vreinterpret_s64_s8 (int8x8_t)
-+@item int8x8_t vreinterpret_s8_p8 (poly8x8_t)
++@item uint64x1_t vreinterpret_u64_u32 (uint32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x1_t vreinterpret_s64_u64 (uint64x1_t)
-+@item int8x8_t vreinterpret_s8_p16 (poly16x4_t)
++@item int8x8_t vreinterpret_s8_p8 (poly8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x1_t vreinterpret_s64_f32 (float32x2_t)
-+@item int8x8_t vreinterpret_s8_f32 (float32x2_t)
++@item int8x8_t vreinterpret_s8_p16 (poly16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x1_t vreinterpret_s64_p16 (poly16x4_t)
-+@item int8x8_t vreinterpret_s8_p64 (poly64x1_t)
++@item int8x8_t vreinterpret_s8_f32 (float32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x1_t vreinterpret_s64_p8 (poly8x8_t)
-+@item int8x8_t vreinterpret_s8_s64 (int64x1_t)
++@item int8x8_t vreinterpret_s8_p64 (poly64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x2_t vreinterpretq_s64_u32 (uint32x4_t)
-+@item int8x8_t vreinterpret_s8_u64 (uint64x1_t)
++@item int8x8_t vreinterpret_s8_s64 (int64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x2_t vreinterpretq_s64_u16 (uint16x8_t)
-+@item int8x8_t vreinterpret_s8_s16 (int16x4_t)
++@item int8x8_t vreinterpret_s8_u64 (uint64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x2_t vreinterpretq_s64_u8 (uint8x16_t)
-+@item int8x8_t vreinterpret_s8_s32 (int32x2_t)
++@item int8x8_t vreinterpret_s8_s16 (int16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x2_t vreinterpretq_s64_s32 (int32x4_t)
-+@item int8x8_t vreinterpret_s8_u8 (uint8x8_t)
++@item int8x8_t vreinterpret_s8_s32 (int32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x2_t vreinterpretq_s64_s16 (int16x8_t)
-+@item int8x8_t vreinterpret_s8_u16 (uint16x4_t)
++@item int8x8_t vreinterpret_s8_u8 (uint8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x2_t vreinterpretq_s64_s8 (int8x16_t)
-+@item int8x8_t vreinterpret_s8_u32 (uint32x2_t)
++@item int8x8_t vreinterpret_s8_u16 (uint16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x2_t vreinterpretq_s64_u64 (uint64x2_t)
-+@item int16x4_t vreinterpret_s16_p8 (poly8x8_t)
++@item int8x8_t vreinterpret_s8_u32 (uint32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x2_t vreinterpretq_s64_f32 (float32x4_t)
-+@item int16x4_t vreinterpret_s16_p16 (poly16x4_t)
++@item int16x4_t vreinterpret_s16_p8 (poly8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x2_t vreinterpretq_s64_p16 (poly16x8_t)
-+@item int16x4_t vreinterpret_s16_f32 (float32x2_t)
++@item int16x4_t vreinterpret_s16_p16 (poly16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int64x2_t vreinterpretq_s64_p8 (poly8x16_t)
-+@item int16x4_t vreinterpret_s16_p64 (poly64x1_t)
++@item int16x4_t vreinterpret_s16_f32 (float32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x1_t vreinterpret_u64_u32 (uint32x2_t)
-+@item int16x4_t vreinterpret_s16_s64 (int64x1_t)
++@item int16x4_t vreinterpret_s16_p64 (poly64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x1_t vreinterpret_u64_u16 (uint16x4_t)
-+@item int16x4_t vreinterpret_s16_u64 (uint64x1_t)
++@item int16x4_t vreinterpret_s16_s64 (int64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x1_t vreinterpret_u64_u8 (uint8x8_t)
-+@item int16x4_t vreinterpret_s16_s8 (int8x8_t)
++@item int16x4_t vreinterpret_s16_u64 (uint64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x1_t vreinterpret_u64_s32 (int32x2_t)
-+@item int16x4_t vreinterpret_s16_s32 (int32x2_t)
++@item int16x4_t vreinterpret_s16_s8 (int8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x1_t vreinterpret_u64_s16 (int16x4_t)
-+@item int16x4_t vreinterpret_s16_u8 (uint8x8_t)
++@item int16x4_t vreinterpret_s16_s32 (int32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x1_t vreinterpret_u64_s8 (int8x8_t)
-+@item int16x4_t vreinterpret_s16_u16 (uint16x4_t)
++@item int16x4_t vreinterpret_s16_u8 (uint8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x1_t vreinterpret_u64_s64 (int64x1_t)
-+@item int16x4_t vreinterpret_s16_u32 (uint32x2_t)
++@item int16x4_t vreinterpret_s16_u16 (uint16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x1_t vreinterpret_u64_f32 (float32x2_t)
-+@item int32x2_t vreinterpret_s32_p8 (poly8x8_t)
++@item int16x4_t vreinterpret_s16_u32 (uint32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x1_t vreinterpret_u64_p16 (poly16x4_t)
-+@item int32x2_t vreinterpret_s32_p16 (poly16x4_t)
++@item int32x2_t vreinterpret_s32_p8 (poly8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x1_t vreinterpret_u64_p8 (poly8x8_t)
-+@item int32x2_t vreinterpret_s32_f32 (float32x2_t)
++@item int32x2_t vreinterpret_s32_p16 (poly16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x2_t vreinterpretq_u64_u32 (uint32x4_t)
-+@item int32x2_t vreinterpret_s32_p64 (poly64x1_t)
++@item int32x2_t vreinterpret_s32_f32 (float32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x2_t vreinterpretq_u64_u16 (uint16x8_t)
-+@item int32x2_t vreinterpret_s32_s64 (int64x1_t)
++@item int32x2_t vreinterpret_s32_p64 (poly64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x2_t vreinterpretq_u64_u8 (uint8x16_t)
-+@item int32x2_t vreinterpret_s32_u64 (uint64x1_t)
++@item int32x2_t vreinterpret_s32_s64 (int64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x2_t vreinterpretq_u64_s32 (int32x4_t)
-+@item int32x2_t vreinterpret_s32_s8 (int8x8_t)
++@item int32x2_t vreinterpret_s32_u64 (uint64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x2_t vreinterpretq_u64_s16 (int16x8_t)
-+@item int32x2_t vreinterpret_s32_s16 (int16x4_t)
++@item int32x2_t vreinterpret_s32_s8 (int8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x2_t vreinterpretq_u64_s8 (int8x16_t)
-+@item int32x2_t vreinterpret_s32_u8 (uint8x8_t)
++@item int32x2_t vreinterpret_s32_s16 (int16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x2_t vreinterpretq_u64_s64 (int64x2_t)
-+@item int32x2_t vreinterpret_s32_u16 (uint16x4_t)
++@item int32x2_t vreinterpret_s32_u8 (uint8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x2_t vreinterpretq_u64_f32 (float32x4_t)
-+@item int32x2_t vreinterpret_s32_u32 (uint32x2_t)
++@item int32x2_t vreinterpret_s32_u16 (uint16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x2_t vreinterpretq_u64_p16 (poly16x8_t)
-+@item uint8x8_t vreinterpret_u8_p8 (poly8x8_t)
++@item int32x2_t vreinterpret_s32_u32 (uint32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint64x2_t vreinterpretq_u64_p8 (poly8x16_t)
-+@item uint8x8_t vreinterpret_u8_p16 (poly16x4_t)
++@item uint8x8_t vreinterpret_u8_p8 (poly8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x8_t vreinterpret_s8_u32 (uint32x2_t)
-+@item uint8x8_t vreinterpret_u8_f32 (float32x2_t)
++@item uint8x8_t vreinterpret_u8_p16 (poly16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x8_t vreinterpret_s8_u16 (uint16x4_t)
-+@item uint8x8_t vreinterpret_u8_p64 (poly64x1_t)
++@item uint8x8_t vreinterpret_u8_f32 (float32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x8_t vreinterpret_s8_u8 (uint8x8_t)
-+@item uint8x8_t vreinterpret_u8_s64 (int64x1_t)
++@item uint8x8_t vreinterpret_u8_p64 (poly64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x8_t vreinterpret_s8_s32 (int32x2_t)
-+@item uint8x8_t vreinterpret_u8_u64 (uint64x1_t)
++@item uint8x8_t vreinterpret_u8_s64 (int64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x8_t vreinterpret_s8_s16 (int16x4_t)
-+@item uint8x8_t vreinterpret_u8_s8 (int8x8_t)
++@item uint8x8_t vreinterpret_u8_u64 (uint64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x8_t vreinterpret_s8_u64 (uint64x1_t)
-+@item uint8x8_t vreinterpret_u8_s16 (int16x4_t)
++@item uint8x8_t vreinterpret_u8_s8 (int8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x8_t vreinterpret_s8_s64 (int64x1_t)
-+@item uint8x8_t vreinterpret_u8_s32 (int32x2_t)
++@item uint8x8_t vreinterpret_u8_s16 (int16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x8_t vreinterpret_s8_f32 (float32x2_t)
-+@item uint8x8_t vreinterpret_u8_u16 (uint16x4_t)
++@item uint8x8_t vreinterpret_u8_s32 (int32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x8_t vreinterpret_s8_p16 (poly16x4_t)
-+@item uint8x8_t vreinterpret_u8_u32 (uint32x2_t)
++@item uint8x8_t vreinterpret_u8_u16 (uint16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x8_t vreinterpret_s8_p8 (poly8x8_t)
-+@item uint16x4_t vreinterpret_u16_p8 (poly8x8_t)
++@item uint8x8_t vreinterpret_u8_u32 (uint32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x16_t vreinterpretq_s8_u32 (uint32x4_t)
-+@item uint16x4_t vreinterpret_u16_p16 (poly16x4_t)
++@item uint16x4_t vreinterpret_u16_p8 (poly8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x16_t vreinterpretq_s8_u16 (uint16x8_t)
-+@item uint16x4_t vreinterpret_u16_f32 (float32x2_t)
++@item uint16x4_t vreinterpret_u16_p16 (poly16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x16_t vreinterpretq_s8_u8 (uint8x16_t)
-+@item uint16x4_t vreinterpret_u16_p64 (poly64x1_t)
++@item uint16x4_t vreinterpret_u16_f32 (float32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x16_t vreinterpretq_s8_s32 (int32x4_t)
-+@item uint16x4_t vreinterpret_u16_s64 (int64x1_t)
++@item uint16x4_t vreinterpret_u16_p64 (poly64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x16_t vreinterpretq_s8_s16 (int16x8_t)
-+@item uint16x4_t vreinterpret_u16_u64 (uint64x1_t)
++@item uint16x4_t vreinterpret_u16_s64 (int64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x16_t vreinterpretq_s8_u64 (uint64x2_t)
-+@item uint16x4_t vreinterpret_u16_s8 (int8x8_t)
++@item uint16x4_t vreinterpret_u16_u64 (uint64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x16_t vreinterpretq_s8_s64 (int64x2_t)
-+@item uint16x4_t vreinterpret_u16_s16 (int16x4_t)
++@item uint16x4_t vreinterpret_u16_s8 (int8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x16_t vreinterpretq_s8_f32 (float32x4_t)
-+@item uint16x4_t vreinterpret_u16_s32 (int32x2_t)
++@item uint16x4_t vreinterpret_u16_s16 (int16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x16_t vreinterpretq_s8_p16 (poly16x8_t)
-+@item uint16x4_t vreinterpret_u16_u8 (uint8x8_t)
++@item uint16x4_t vreinterpret_u16_s32 (int32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int8x16_t vreinterpretq_s8_p8 (poly8x16_t)
-+@item uint16x4_t vreinterpret_u16_u32 (uint32x2_t)
++@item uint16x4_t vreinterpret_u16_u8 (uint8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x4_t vreinterpret_s16_u32 (uint32x2_t)
-+@item uint32x2_t vreinterpret_u32_p8 (poly8x8_t)
++@item uint16x4_t vreinterpret_u16_u32 (uint32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x4_t vreinterpret_s16_u16 (uint16x4_t)
-+@item uint32x2_t vreinterpret_u32_p16 (poly16x4_t)
++@item uint32x2_t vreinterpret_u32_p8 (poly8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x4_t vreinterpret_s16_u8 (uint8x8_t)
-+@item uint32x2_t vreinterpret_u32_f32 (float32x2_t)
++@item uint32x2_t vreinterpret_u32_p16 (poly16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x4_t vreinterpret_s16_s32 (int32x2_t)
-+@item uint32x2_t vreinterpret_u32_p64 (poly64x1_t)
++@item uint32x2_t vreinterpret_u32_f32 (float32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x4_t vreinterpret_s16_s8 (int8x8_t)
-+@item uint32x2_t vreinterpret_u32_s64 (int64x1_t)
++@item uint32x2_t vreinterpret_u32_p64 (poly64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x4_t vreinterpret_s16_u64 (uint64x1_t)
-+@item uint32x2_t vreinterpret_u32_u64 (uint64x1_t)
++@item uint32x2_t vreinterpret_u32_s64 (int64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x4_t vreinterpret_s16_s64 (int64x1_t)
-+@item uint32x2_t vreinterpret_u32_s8 (int8x8_t)
++@item uint32x2_t vreinterpret_u32_u64 (uint64x1_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x4_t vreinterpret_s16_f32 (float32x2_t)
-+@item uint32x2_t vreinterpret_u32_s16 (int16x4_t)
++@item uint32x2_t vreinterpret_u32_s8 (int8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x4_t vreinterpret_s16_p16 (poly16x4_t)
-+@item uint32x2_t vreinterpret_u32_s32 (int32x2_t)
++@item uint32x2_t vreinterpret_u32_s16 (int16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x4_t vreinterpret_s16_p8 (poly8x8_t)
-+@item uint32x2_t vreinterpret_u32_u8 (uint8x8_t)
++@item uint32x2_t vreinterpret_u32_s32 (int32x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x8_t vreinterpretq_s16_u32 (uint32x4_t)
-+@item uint32x2_t vreinterpret_u32_u16 (uint16x4_t)
++@item uint32x2_t vreinterpret_u32_u8 (uint8x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x8_t vreinterpretq_s16_u16 (uint16x8_t)
-+@item poly8x16_t vreinterpretq_p8_p16 (poly16x8_t)
++@item uint32x2_t vreinterpret_u32_u16 (uint16x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x8_t vreinterpretq_s16_u8 (uint8x16_t)
-+@item poly8x16_t vreinterpretq_p8_f32 (float32x4_t)
++@item poly8x16_t vreinterpretq_p8_p16 (poly16x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x8_t vreinterpretq_s16_s32 (int32x4_t)
-+@item poly8x16_t vreinterpretq_p8_p64 (poly64x2_t)
++@item poly8x16_t vreinterpretq_p8_f32 (float32x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x8_t vreinterpretq_s16_s8 (int8x16_t)
-+@item poly8x16_t vreinterpretq_p8_p128 (poly128_t)
++@item poly8x16_t vreinterpretq_p8_p64 (poly64x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x8_t vreinterpretq_s16_u64 (uint64x2_t)
-+@item poly8x16_t vreinterpretq_p8_s64 (int64x2_t)
++@item poly8x16_t vreinterpretq_p8_p128 (poly128_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x8_t vreinterpretq_s16_s64 (int64x2_t)
-+@item poly8x16_t vreinterpretq_p8_u64 (uint64x2_t)
++@item poly8x16_t vreinterpretq_p8_s64 (int64x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x8_t vreinterpretq_s16_f32 (float32x4_t)
-+@item poly8x16_t vreinterpretq_p8_s8 (int8x16_t)
++@item poly8x16_t vreinterpretq_p8_u64 (uint64x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x8_t vreinterpretq_s16_p16 (poly16x8_t)
-+@item poly8x16_t vreinterpretq_p8_s16 (int16x8_t)
++@item poly8x16_t vreinterpretq_p8_s8 (int8x16_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int16x8_t vreinterpretq_s16_p8 (poly8x16_t)
-+@item poly8x16_t vreinterpretq_p8_s32 (int32x4_t)
++@item poly8x16_t vreinterpretq_p8_s16 (int16x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x2_t vreinterpret_s32_u32 (uint32x2_t)
-+@item poly8x16_t vreinterpretq_p8_u8 (uint8x16_t)
++@item poly8x16_t vreinterpretq_p8_s32 (int32x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x2_t vreinterpret_s32_u16 (uint16x4_t)
-+@item poly8x16_t vreinterpretq_p8_u16 (uint16x8_t)
++@item poly8x16_t vreinterpretq_p8_u8 (uint8x16_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x2_t vreinterpret_s32_u8 (uint8x8_t)
-+@item poly8x16_t vreinterpretq_p8_u32 (uint32x4_t)
++@item poly8x16_t vreinterpretq_p8_u16 (uint16x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x2_t vreinterpret_s32_s16 (int16x4_t)
-+@item poly16x8_t vreinterpretq_p16_p8 (poly8x16_t)
++@item poly8x16_t vreinterpretq_p8_u32 (uint32x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x2_t vreinterpret_s32_s8 (int8x8_t)
-+@item poly16x8_t vreinterpretq_p16_f32 (float32x4_t)
++@item poly16x8_t vreinterpretq_p16_p8 (poly8x16_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x2_t vreinterpret_s32_u64 (uint64x1_t)
-+@item poly16x8_t vreinterpretq_p16_p64 (poly64x2_t)
++@item poly16x8_t vreinterpretq_p16_f32 (float32x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x2_t vreinterpret_s32_s64 (int64x1_t)
-+@item poly16x8_t vreinterpretq_p16_p128 (poly128_t)
++@item poly16x8_t vreinterpretq_p16_p64 (poly64x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x2_t vreinterpret_s32_f32 (float32x2_t)
-+@item poly16x8_t vreinterpretq_p16_s64 (int64x2_t)
++@item poly16x8_t vreinterpretq_p16_p128 (poly128_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x2_t vreinterpret_s32_p16 (poly16x4_t)
-+@item poly16x8_t vreinterpretq_p16_u64 (uint64x2_t)
++@item poly16x8_t vreinterpretq_p16_s64 (int64x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x2_t vreinterpret_s32_p8 (poly8x8_t)
-+@item poly16x8_t vreinterpretq_p16_s8 (int8x16_t)
++@item poly16x8_t vreinterpretq_p16_u64 (uint64x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x4_t vreinterpretq_s32_u32 (uint32x4_t)
-+@item poly16x8_t vreinterpretq_p16_s16 (int16x8_t)
++@item poly16x8_t vreinterpretq_p16_s8 (int8x16_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x4_t vreinterpretq_s32_u16 (uint16x8_t)
-+@item poly16x8_t vreinterpretq_p16_s32 (int32x4_t)
++@item poly16x8_t vreinterpretq_p16_s16 (int16x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x4_t vreinterpretq_s32_u8 (uint8x16_t)
-+@item poly16x8_t vreinterpretq_p16_u8 (uint8x16_t)
++@item poly16x8_t vreinterpretq_p16_s32 (int32x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x4_t vreinterpretq_s32_s16 (int16x8_t)
-+@item poly16x8_t vreinterpretq_p16_u16 (uint16x8_t)
++@item poly16x8_t vreinterpretq_p16_u8 (uint8x16_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x4_t vreinterpretq_s32_s8 (int8x16_t)
-+@item poly16x8_t vreinterpretq_p16_u32 (uint32x4_t)
++@item poly16x8_t vreinterpretq_p16_u16 (uint16x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x4_t vreinterpretq_s32_u64 (uint64x2_t)
-+@item float32x4_t vreinterpretq_f32_p8 (poly8x16_t)
++@item poly16x8_t vreinterpretq_p16_u32 (uint32x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x4_t vreinterpretq_s32_s64 (int64x2_t)
-+@item float32x4_t vreinterpretq_f32_p16 (poly16x8_t)
++@item float32x4_t vreinterpretq_f32_p8 (poly8x16_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x4_t vreinterpretq_s32_f32 (float32x4_t)
-+@item float32x4_t vreinterpretq_f32_p64 (poly64x2_t)
++@item float32x4_t vreinterpretq_f32_p16 (poly16x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x4_t vreinterpretq_s32_p16 (poly16x8_t)
-+@item float32x4_t vreinterpretq_f32_p128 (poly128_t)
++@item float32x4_t vreinterpretq_f32_p64 (poly64x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item int32x4_t vreinterpretq_s32_p8 (poly8x16_t)
-+@item float32x4_t vreinterpretq_f32_s64 (int64x2_t)
++@item float32x4_t vreinterpretq_f32_p128 (poly128_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x8_t vreinterpret_u8_u32 (uint32x2_t)
-+@item float32x4_t vreinterpretq_f32_u64 (uint64x2_t)
++@item float32x4_t vreinterpretq_f32_s64 (int64x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x8_t vreinterpret_u8_u16 (uint16x4_t)
-+@item float32x4_t vreinterpretq_f32_s8 (int8x16_t)
++@item float32x4_t vreinterpretq_f32_u64 (uint64x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x8_t vreinterpret_u8_s32 (int32x2_t)
-+@item float32x4_t vreinterpretq_f32_s16 (int16x8_t)
++@item float32x4_t vreinterpretq_f32_s8 (int8x16_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x8_t vreinterpret_u8_s16 (int16x4_t)
-+@item float32x4_t vreinterpretq_f32_s32 (int32x4_t)
++@item float32x4_t vreinterpretq_f32_s16 (int16x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x8_t vreinterpret_u8_s8 (int8x8_t)
-+@item float32x4_t vreinterpretq_f32_u8 (uint8x16_t)
++@item float32x4_t vreinterpretq_f32_s32 (int32x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x8_t vreinterpret_u8_u64 (uint64x1_t)
-+@item float32x4_t vreinterpretq_f32_u16 (uint16x8_t)
++@item float32x4_t vreinterpretq_f32_u8 (uint8x16_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x8_t vreinterpret_u8_s64 (int64x1_t)
-+@item float32x4_t vreinterpretq_f32_u32 (uint32x4_t)
++@item float32x4_t vreinterpretq_f32_u16 (uint16x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x8_t vreinterpret_u8_f32 (float32x2_t)
-+@item poly64x2_t vreinterpretq_p64_p8 (poly8x16_t)
++@item float32x4_t vreinterpretq_f32_u32 (uint32x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x8_t vreinterpret_u8_p16 (poly16x4_t)
-+@item poly64x2_t vreinterpretq_p64_p16 (poly16x8_t)
++@item poly64x2_t vreinterpretq_p64_p8 (poly8x16_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x8_t vreinterpret_u8_p8 (poly8x8_t)
-+@item poly64x2_t vreinterpretq_p64_f32 (float32x4_t)
++@item poly64x2_t vreinterpretq_p64_p16 (poly16x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x16_t vreinterpretq_u8_u32 (uint32x4_t)
-+@item poly64x2_t vreinterpretq_p64_p128 (poly128_t)
++@item poly64x2_t vreinterpretq_p64_f32 (float32x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x16_t vreinterpretq_u8_u16 (uint16x8_t)
-+@item poly64x2_t vreinterpretq_p64_s64 (int64x2_t)
++@item poly64x2_t vreinterpretq_p64_p128 (poly128_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x16_t vreinterpretq_u8_s32 (int32x4_t)
-+@item poly64x2_t vreinterpretq_p64_u64 (uint64x2_t)
++@item poly64x2_t vreinterpretq_p64_s64 (int64x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x16_t vreinterpretq_u8_s16 (int16x8_t)
-+@item poly64x2_t vreinterpretq_p64_s8 (int8x16_t)
++@item poly64x2_t vreinterpretq_p64_u64 (uint64x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x16_t vreinterpretq_u8_s8 (int8x16_t)
-+@item poly64x2_t vreinterpretq_p64_s16 (int16x8_t)
++@item poly64x2_t vreinterpretq_p64_s8 (int8x16_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x16_t vreinterpretq_u8_u64 (uint64x2_t)
-+@item poly64x2_t vreinterpretq_p64_s32 (int32x4_t)
++@item poly64x2_t vreinterpretq_p64_s16 (int16x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x16_t vreinterpretq_u8_s64 (int64x2_t)
-+@item poly64x2_t vreinterpretq_p64_u8 (uint8x16_t)
++@item poly64x2_t vreinterpretq_p64_s32 (int32x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x16_t vreinterpretq_u8_f32 (float32x4_t)
-+@item poly64x2_t vreinterpretq_p64_u16 (uint16x8_t)
++@item poly64x2_t vreinterpretq_p64_u8 (uint8x16_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint8x16_t vreinterpretq_u8_p16 (poly16x8_t)
++@item poly64x2_t vreinterpretq_p64_u16 (uint16x8_t)
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint8x16_t vreinterpretq_u8_p8 (poly8x16_t)
 +@item poly64x2_t vreinterpretq_p64_u32 (uint32x4_t)
  @end itemize
  
  
  @itemize @bullet
+-@item uint16x4_t vreinterpret_u16_u32 (uint32x2_t)
 +@item poly128_t vreinterpretq_p128_p8 (poly8x16_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x4_t vreinterpret_u16_u8 (uint8x8_t)
 +@item poly128_t vreinterpretq_p128_p16 (poly16x8_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x4_t vreinterpret_u16_s32 (int32x2_t)
 +@item poly128_t vreinterpretq_p128_f32 (float32x4_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x4_t vreinterpret_u16_s16 (int16x4_t)
 +@item poly128_t vreinterpretq_p128_p64 (poly64x2_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x4_t vreinterpret_u16_s8 (int8x8_t)
 +@item poly128_t vreinterpretq_p128_s64 (int64x2_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x4_t vreinterpret_u16_u64 (uint64x1_t)
 +@item poly128_t vreinterpretq_p128_u64 (uint64x2_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x4_t vreinterpret_u16_s64 (int64x1_t)
 +@item poly128_t vreinterpretq_p128_s8 (int8x16_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x4_t vreinterpret_u16_f32 (float32x2_t)
 +@item poly128_t vreinterpretq_p128_s16 (int16x8_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x4_t vreinterpret_u16_p16 (poly16x4_t)
 +@item poly128_t vreinterpretq_p128_s32 (int32x4_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x4_t vreinterpret_u16_p8 (poly8x8_t)
 +@item poly128_t vreinterpretq_p128_u8 (uint8x16_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x8_t vreinterpretq_u16_u32 (uint32x4_t)
 +@item poly128_t vreinterpretq_p128_u16 (uint16x8_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x8_t vreinterpretq_u16_u8 (uint8x16_t)
 +@item poly128_t vreinterpretq_p128_u32 (uint32x4_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x8_t vreinterpretq_u16_s32 (int32x4_t)
 +@item int64x2_t vreinterpretq_s64_p8 (poly8x16_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x8_t vreinterpretq_u16_s16 (int16x8_t)
 +@item int64x2_t vreinterpretq_s64_p16 (poly16x8_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x8_t vreinterpretq_u16_s8 (int8x16_t)
 +@item int64x2_t vreinterpretq_s64_f32 (float32x4_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x8_t vreinterpretq_u16_u64 (uint64x2_t)
 +@item int64x2_t vreinterpretq_s64_p64 (poly64x2_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x8_t vreinterpretq_u16_s64 (int64x2_t)
 +@item int64x2_t vreinterpretq_s64_p128 (poly128_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x8_t vreinterpretq_u16_f32 (float32x4_t)
 +@item int64x2_t vreinterpretq_s64_u64 (uint64x2_t)
-+@end itemize
-+
-+
-+@itemize @bullet
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint16x8_t vreinterpretq_u16_p16 (poly16x8_t)
 +@item int64x2_t vreinterpretq_s64_s8 (int8x16_t)
 +@end itemize
 +
@@ -2168,268 +2198,249 @@
 +
 +
 +@itemize @bullet
- @item uint8x16_t vreinterpretq_u8_p8 (poly8x16_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint16x4_t vreinterpret_u16_u32 (uint32x2_t)
++@item uint8x16_t vreinterpretq_u8_p8 (poly8x16_t)
++@end itemize
++
++
++@itemize @bullet
 +@item uint8x16_t vreinterpretq_u8_p16 (poly16x8_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint16x4_t vreinterpret_u16_u8 (uint8x8_t)
++@end itemize
++
++
++@itemize @bullet
 +@item uint8x16_t vreinterpretq_u8_f32 (float32x4_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint16x4_t vreinterpret_u16_s32 (int32x2_t)
++@end itemize
++
++
++@itemize @bullet
 +@item uint8x16_t vreinterpretq_u8_p64 (poly64x2_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint16x4_t vreinterpret_u16_s16 (int16x4_t)
++@end itemize
++
++
++@itemize @bullet
 +@item uint8x16_t vreinterpretq_u8_p128 (poly128_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint16x4_t vreinterpret_u16_s8 (int8x8_t)
++@end itemize
++
++
++@itemize @bullet
 +@item uint8x16_t vreinterpretq_u8_s64 (int64x2_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint16x4_t vreinterpret_u16_u64 (uint64x1_t)
++@end itemize
++
++
++@itemize @bullet
 +@item uint8x16_t vreinterpretq_u8_u64 (uint64x2_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint16x4_t vreinterpret_u16_s64 (int64x1_t)
++@end itemize
++
++
++@itemize @bullet
 +@item uint8x16_t vreinterpretq_u8_s8 (int8x16_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint16x4_t vreinterpret_u16_f32 (float32x2_t)
++@end itemize
++
++
++@itemize @bullet
 +@item uint8x16_t vreinterpretq_u8_s16 (int16x8_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint16x4_t vreinterpret_u16_p16 (poly16x4_t)
++@end itemize
++
++
++@itemize @bullet
 +@item uint8x16_t vreinterpretq_u8_s32 (int32x4_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint16x4_t vreinterpret_u16_p8 (poly8x8_t)
++@end itemize
++
++
++@itemize @bullet
 +@item uint8x16_t vreinterpretq_u8_u16 (uint16x8_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint16x8_t vreinterpretq_u16_u32 (uint32x4_t)
++@end itemize
++
++
++@itemize @bullet
 +@item uint8x16_t vreinterpretq_u8_u32 (uint32x4_t)
  @end itemize
  
  
- @itemize @bullet
--@item uint16x8_t vreinterpretq_u16_u8 (uint8x16_t)
-+@item uint16x8_t vreinterpretq_u16_p8 (poly8x16_t)
- @end itemize
+@@ -11274,82 +11813,82 @@
  
  
  @itemize @bullet
--@item uint16x8_t vreinterpretq_u16_s32 (int32x4_t)
+-@item uint32x2_t vreinterpret_u32_u16 (uint16x4_t)
 +@item uint16x8_t vreinterpretq_u16_p16 (poly16x8_t)
  @end itemize
  
  
  @itemize @bullet
--@item uint16x8_t vreinterpretq_u16_s16 (int16x8_t)
+-@item uint32x2_t vreinterpret_u32_u8 (uint8x8_t)
 +@item uint16x8_t vreinterpretq_u16_f32 (float32x4_t)
  @end itemize
  
  
  @itemize @bullet
--@item uint16x8_t vreinterpretq_u16_s8 (int8x16_t)
+-@item uint32x2_t vreinterpret_u32_s32 (int32x2_t)
 +@item uint16x8_t vreinterpretq_u16_p64 (poly64x2_t)
  @end itemize
  
  
  @itemize @bullet
--@item uint16x8_t vreinterpretq_u16_u64 (uint64x2_t)
-+@item uint16x8_t vreinterpretq_u16_p128 (poly128_t)
- @end itemize
- 
- 
-@@ -11259,77 +11838,77 @@
- 
- 
- @itemize @bullet
--@item uint16x8_t vreinterpretq_u16_f32 (float32x4_t)
-+@item uint16x8_t vreinterpretq_u16_u64 (uint64x2_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint16x8_t vreinterpretq_u16_p16 (poly16x8_t)
-+@item uint16x8_t vreinterpretq_u16_s8 (int8x16_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint16x8_t vreinterpretq_u16_p8 (poly8x16_t)
-+@item uint16x8_t vreinterpretq_u16_s16 (int16x8_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint32x2_t vreinterpret_u32_u16 (uint16x4_t)
-+@item uint16x8_t vreinterpretq_u16_s32 (int32x4_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint32x2_t vreinterpret_u32_u8 (uint8x8_t)
-+@item uint16x8_t vreinterpretq_u16_u8 (uint8x16_t)
- @end itemize
- 
- 
- @itemize @bullet
--@item uint32x2_t vreinterpret_u32_s32 (int32x2_t)
-+@item uint16x8_t vreinterpretq_u16_u32 (uint32x4_t)
- @end itemize
- 
- 
- @itemize @bullet
 -@item uint32x2_t vreinterpret_u32_s16 (int16x4_t)
-+@item uint32x4_t vreinterpretq_u32_p8 (poly8x16_t)
++@item uint16x8_t vreinterpretq_u16_p128 (poly128_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint32x2_t vreinterpret_u32_s8 (int8x8_t)
-+@item uint32x4_t vreinterpretq_u32_p16 (poly16x8_t)
++@item uint16x8_t vreinterpretq_u16_s64 (int64x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint32x2_t vreinterpret_u32_u64 (uint64x1_t)
-+@item uint32x4_t vreinterpretq_u32_f32 (float32x4_t)
++@item uint16x8_t vreinterpretq_u16_u64 (uint64x2_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint32x2_t vreinterpret_u32_s64 (int64x1_t)
-+@item uint32x4_t vreinterpretq_u32_p64 (poly64x2_t)
++@item uint16x8_t vreinterpretq_u16_s8 (int8x16_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint32x2_t vreinterpret_u32_f32 (float32x2_t)
-+@item uint32x4_t vreinterpretq_u32_p128 (poly128_t)
++@item uint16x8_t vreinterpretq_u16_s16 (int16x8_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint32x2_t vreinterpret_u32_p16 (poly16x4_t)
-+@item uint32x4_t vreinterpretq_u32_s64 (int64x2_t)
++@item uint16x8_t vreinterpretq_u16_s32 (int32x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint32x2_t vreinterpret_u32_p8 (poly8x8_t)
-+@item uint32x4_t vreinterpretq_u32_u64 (uint64x2_t)
++@item uint16x8_t vreinterpretq_u16_u8 (uint8x16_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint32x4_t vreinterpretq_u32_u16 (uint16x8_t)
-+@item uint32x4_t vreinterpretq_u32_s8 (int8x16_t)
++@item uint16x8_t vreinterpretq_u16_u32 (uint32x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint32x4_t vreinterpretq_u32_u8 (uint8x16_t)
-+@item uint32x4_t vreinterpretq_u32_s16 (int16x8_t)
++@item uint32x4_t vreinterpretq_u32_p8 (poly8x16_t)
  @end itemize
  
  
-@@ -11339,39 +11918,91 @@
+ @itemize @bullet
+-@item uint32x4_t vreinterpretq_u32_s32 (int32x4_t)
++@item uint32x4_t vreinterpretq_u32_p16 (poly16x8_t)
+ @end itemize
  
  
  @itemize @bullet
 -@item uint32x4_t vreinterpretq_u32_s16 (int16x8_t)
-+@item uint32x4_t vreinterpretq_u32_u8 (uint8x16_t)
++@item uint32x4_t vreinterpretq_u32_f32 (float32x4_t)
  @end itemize
  
  
  @itemize @bullet
 -@item uint32x4_t vreinterpretq_u32_s8 (int8x16_t)
-+@item uint32x4_t vreinterpretq_u32_u16 (uint16x8_t)
++@item uint32x4_t vreinterpretq_u32_p64 (poly64x2_t)
  @end itemize
  
  
-+
-+
-+
  @itemize @bullet
 -@item uint32x4_t vreinterpretq_u32_u64 (uint64x2_t)
-+@item poly128_t vldrq_p128(poly128_t const *)
++@item uint32x4_t vreinterpretq_u32_p128 (poly128_t)
  @end itemize
  
-+@itemize @bullet
-+@item void vstrq_p128(poly128_t *, poly128_t)
-+@end itemize
  
- @itemize @bullet
--@item uint32x4_t vreinterpretq_u32_s64 (int64x2_t)
-+@item uint64x1_t vceq_p64 (poly64x1_t, poly64x1_t)
- @end itemize
+@@ -11359,19 +11898,111 @@
  
-+@itemize @bullet
-+@item uint64x1_t vtst_p64 (poly64x1_t, poly64x1_t)
-+@end itemize
  
  @itemize @bullet
 -@item uint32x4_t vreinterpretq_u32_f32 (float32x4_t)
-+@item uint32_t vsha1h_u32 (uint32_t)
-+@*@emph{Form of expected instruction(s):} @code{sha1h.32 @var{q0}, @var{q1}}
++@item uint32x4_t vreinterpretq_u32_u64 (uint64x2_t)
  @end itemize
  
+ 
+ @itemize @bullet
+-@item uint32x4_t vreinterpretq_u32_p16 (poly16x8_t)
++@item uint32x4_t vreinterpretq_u32_s8 (int8x16_t)
+ @end itemize
+ 
+ 
+ @itemize @bullet
+-@item uint32x4_t vreinterpretq_u32_p8 (poly8x16_t)
++@item uint32x4_t vreinterpretq_u32_s16 (int16x8_t)
+ @end itemize
+ 
+ 
++@itemize @bullet
++@item uint32x4_t vreinterpretq_u32_s32 (int32x4_t)
++@end itemize
++
+ 
++@itemize @bullet
++@item uint32x4_t vreinterpretq_u32_u8 (uint8x16_t)
++@end itemize
++
++
++@itemize @bullet
++@item uint32x4_t vreinterpretq_u32_u16 (uint16x8_t)
++@end itemize
++
++
++
++
++
++@itemize @bullet
++@item poly128_t vldrq_p128(poly128_t const *)
++@end itemize
++
++@itemize @bullet
++@item void vstrq_p128(poly128_t *, poly128_t)
++@end itemize
++
++@itemize @bullet
++@item uint64x1_t vceq_p64 (poly64x1_t, poly64x1_t)
++@end itemize
++
++@itemize @bullet
++@item uint64x1_t vtst_p64 (poly64x1_t, poly64x1_t)
++@end itemize
++
++@itemize @bullet
++@item uint32_t vsha1h_u32 (uint32_t)
++@*@emph{Form of expected instruction(s):} @code{sha1h.32 @var{q0}, @var{q1}}
++@end itemize
++
 +@itemize @bullet
 +@item uint32x4_t vsha1cq_u32 (uint32x4_t, uint32_t, uint32x4_t)
 +@*@emph{Form of expected instruction(s):} @code{sha1c.32 @var{q0}, @var{q1}, @var{q2}}
 +@end itemize
- 
- @itemize @bullet
--@item uint32x4_t vreinterpretq_u32_p16 (poly16x8_t)
++
++@itemize @bullet
 +@item uint32x4_t vsha1pq_u32 (uint32x4_t, uint32_t, uint32x4_t)
 +@*@emph{Form of expected instruction(s):} @code{sha1p.32 @var{q0}, @var{q1}, @var{q2}}
- @end itemize
- 
++@end itemize
++
 +@itemize @bullet
 +@item uint32x4_t vsha1mq_u32 (uint32x4_t, uint32_t, uint32x4_t)
 +@*@emph{Form of expected instruction(s):} @code{sha1m.32 @var{q0}, @var{q1}, @var{q2}}
 +@end itemize
- 
- @itemize @bullet
--@item uint32x4_t vreinterpretq_u32_p8 (poly8x16_t)
++
++@itemize @bullet
 +@item uint32x4_t vsha1su0q_u32 (uint32x4_t, uint32x4_t, uint32x4_t)
 +@*@emph{Form of expected instruction(s):} @code{sha1su0.32 @var{q0}, @var{q1}, @var{q2}}
- @end itemize
- 
++@end itemize
++
 +@itemize @bullet
 +@item uint32x4_t vsha1su1q_u32 (uint32x4_t, uint32x4_t)
 +@*@emph{Form of expected instruction(s):} @code{sha1su1.32 @var{q0}, @var{q1}, @var{q2}}
 +@end itemize
- 
++
 +@itemize @bullet
 +@item uint32x4_t vsha256hq_u32 (uint32x4_t, uint32x4_t, uint32x4_t)
 +@*@emph{Form of expected instruction(s):} @code{sha256h.32 @var{q0}, @var{q1}, @var{q2}}
@@ -2449,17 +2460,19 @@
 +@item uint32x4_t vsha256su1q_u32 (uint32x4_t, uint32x4_t, uint32x4_t)
 +@*@emph{Form of expected instruction(s):} @code{sha256su1.32 @var{q0}, @var{q1}, @var{q2}}
 +@end itemize
- 
++
 +@itemize @bullet
 +@item poly128_t vmull_p64 (poly64_t a, poly64_t b)
 +@*@emph{Form of expected instruction(s):} @code{vmull.p64 @var{q0}, @var{d1}, @var{d2}}
 +@end itemize
- 
++
 +@itemize @bullet
 +@item poly128_t vmull_high_p64 (poly64x2_t a, poly64x2_t b)
 +@*@emph{Form of expected instruction(s):} @code{vmull.p64 @var{q0}, @var{d1}, @var{d2}}
 +@end itemize
-+
+ 
+Index: b/src/gcc/doc/md.texi
+===================================================================
 --- a/src/gcc/doc/md.texi
 +++ b/src/gcc/doc/md.texi
 @@ -1711,9 +1711,6 @@

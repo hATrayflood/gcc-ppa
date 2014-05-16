@@ -33,6 +33,8 @@ ifneq ($(GFDL_INVARIANT_FREE),yes)
 #	$(if $(with_linaro_branch),,svn-doc-updates) \
 
 else
+  debian_patches += \
+        $(if $(with_linaro_branch),gcc-dfsg-linaro-doc)
 endif
 debian_patches += \
 	gcc-gfdl-build
@@ -88,6 +90,10 @@ debian_patches += \
 	$(if $(with_linaro_branch),aarch64-call-frame-info) \
 	$(if $(with_linaro_branch),aarch64-abi-fix) \
 	fix-ffi_call_VFP-with-no-VFP-argument \
+	pr58595 \
+	$(if $(with_linaro_branch),pr60034) \
+	pr60609 \
+	gcc-rs6000-update \
 
 gdb_depends := $(shell dpkg -s gdb | grep '^Depends:.*libpython3')
 ifneq (,$(findstring libpython3,$(gdb_depends)))
@@ -220,45 +226,6 @@ ifeq ($(DEB_TARGET_ARCH),powerpcspe)
   debian_patches += powerpc_nofprs
 endif
 
-ifeq ($(with_ibm_branch),yes)
-  debian_patches += gcc-ppc64el
-  ifneq ($(GFDL_INVARIANT_FREE),yes)
-    debian_patches += gcc-ppc64el-doc
-  endif
-
-  # this will cause all the configure files to be updated once libtool is patched
-  autotools_files := \
-	./src/gnattools/configure.ac \
-	./src/libobjc/configure.ac \
-	./src/libatomic/configure.ac \
-	./src/libstdc++-v3/configure.ac \
-	./src/libgfortran/configure.ac \
-	./src/boehm-gc/configure.ac \
-	./src/libsanitizer/configure.ac \
-	./src/fixincludes/configure.ac \
-	./src/lto-plugin/configure.ac \
-	./src/libgcc/configure.ac \
-	./src/libiberty/configure.ac \
-	./src/libffi/configure.ac \
-	./src/zlib/configure.ac \
-	./src/libbacktrace/configure.ac \
-	./src/libjava/classpath/configure.ac \
-	./src/libjava/libltdl/configure.ac \
-	./src/libjava/configure.ac \
-	./src/libitm/configure.ac \
-	./src/intl/configure.ac \
-	./src/libquadmath/configure.ac \
-	./src/libada/configure.ac \
-	./src/libdecnumber/configure.ac \
-	./src/gcc/configure.ac \
-	./src/libgo/configure.ac \
-	./src/libcpp/configure.ac \
-	./src/configure.ac \
-	./src/libssp/configure.ac \
-	./src/libmudflap/configure.ac \
-	./src/libgomp/configure.ac
-endif
-
 #debian_patches += link-libs
 
 # all patches below this line are applied for gcc-snapshot builds as well
@@ -316,7 +283,7 @@ endif
 debian_patches += ada-mips
 debian_patches += libffi-ro-eh_frame_sect
 
-debian_patches += gcc-multiarch$(if $(with_ibm_branch),-ibm)
+debian_patches += gcc-multiarch
 ifeq ($(with_multiarch_lib),yes)
   ifneq ($(single_package),yes)
     debian_patches += libjava-multiarch
@@ -337,7 +304,7 @@ ifeq ($(biarch64),yes)
     debian_patches += cross-biarch
   endif
 endif
-debian_patches += gcc-multilib-multiarch$(if $(with_ibm_branch),-ibm)
+debian_patches += gcc-multilib-multiarch
 
 ifneq (,$(filter $(derivative),Ubuntu))
   ifeq (,$(filter $(distrelease),dapper hardy intrepid jaunty karmic lucid maverick))
@@ -368,7 +335,7 @@ endif
 	sed -r 's/(.)$$/\1 -p1/' -i $(series_file)
 	touch $@
 
-autotools_files += $(addprefix ./,$(foreach file,$(shell lsdiff --no-filename \
+autotools_files = $(addprefix ./,$(foreach file,$(shell lsdiff --no-filename \
 	$(foreach patch,$(debian_patches),$(patchdir)/$(patch).diff) \
 	| sed -r 's:[^/]+/src/:src/:' | sort | uniq),$(shell echo $(file) \
 	| egrep 'configure\.(ac|in)|Makefile\.(am|in)|acinclude.m4')))

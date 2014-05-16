@@ -318,11 +318,6 @@ ifeq ($(distribution)-$(DEB_TARGET_ARCH),Debian-arm64)
   with_linaro_branch = yes
 endif
 
-ifneq (,$(filter $(DEB_TARGET_ARCH),ppc64el))
-  with_ibm_branch = yes
-endif
-  with_ibm_branch = yes
-
 # check if we're building for armel or armhf
 ifeq ($(DEB_TARGET_ARCH),armhf)
   float_abi := hard
@@ -800,14 +795,16 @@ ifeq ($(with_d)-$(with_separate_gdc),yes-yes)
 endif
 
 ifeq ($(with_d),yes)
-  libphobos_archs = amd64 i386 x32 kfreebsd-amd64 kfreebsd-i386
+  libphobos_archs = armel armhf amd64 i386 x32 kfreebsd-amd64 kfreebsd-i386
   ifneq (,$(filter $(DEB_TARGET_ARCH), $(libphobos_archs)))
     with_libphobos := yes
   endif
 
-  libphobos_no_cpus := alpha avr arm arm64 hppa ia64 m68k mips mipsel mips64 mips64el mipsn32 mipsn32el powerpc powerpcspe ppc64 s390 s390x sh4 sparc sparc64
+  libphobos_no_cpus := alpha avr arm64 hppa ia64 m68k \
+	mips mipsel mips64 mips64el mipsn32 mipsn32el \
+	powerpc powerpcspe ppc64 ppc64el s390 s390x sh4 sparc sparc64
   libphobos_no_systems := gnu kfreebsd-gnu
-  ifneq (,$(findstring $(DEB_TARGET_ARCH_CPU),$(libphobos_no_cpus)))
+  ifneq (,$(filter $(DEB_TARGET_ARCH_CPU),$(libphobos_no_cpus)))
     with_libphobos := disabled for cpu $(DEB_TARGET_ARCH_CPU)
   endif
   ifneq (,$(findstring $(DEB_TARGET_GNU_SYSTEM),$(libphobos_no_systems)))
@@ -955,9 +952,6 @@ ifeq ($(with_ssp),yes)
     ifneq (,$(findstring gcc-4, $(PKGSOURCE)))
       with_ssp_default := yes
     endif
-    ifeq ($(DEB_TARGET_ARCH),arm64)
-      with_ssp_default :=
-    endif
   endif
 endif
 
@@ -970,10 +964,7 @@ ifneq (,$(filter $(DEB_TARGET_ARCH),$(gomp_no_archs)))
 endif
 
 # itm --------------------
-itm_archs = amd64 i386 x32
-ifeq ($(with_ibm_branch),yes)
-  itm_archs += ppc64 ppc64el
-endif
+itm_archs = amd64 i386 x32 ppc64 ppc64el
 ifneq (,$(filter $(DEB_TARGET_ARCH),$(itm_archs)))
   with_itm := yes
 endif
@@ -1124,8 +1115,10 @@ else
       with_libgcc := yes
     endif
     ifneq (,$(filter $(distrelease),trusty))
-      # built from the gccgo-4.9 package
-      with_libgcc :=
+      # built from the gccgo-4.9 package, but not for cross builds
+      ifneq ($(DEB_CROSS),yes)
+        with_libgcc :=
+      endif
     endif
   endif
 

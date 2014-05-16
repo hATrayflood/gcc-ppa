@@ -1,3 +1,113 @@
+gcc-4.8 (4.8.2-19ubuntu1) trusty; urgency=medium
+
+  * Merge with Debian; remaining changes:
+    - Build from the upstream source.
+    - Don't build the libgcc packages, now built from gcc-4.9.
+
+ -- Matthias Klose <doko@ubuntu.com>  Fri, 04 Apr 2014 19:36:41 +0200
+
+gcc-4.8 (4.8.2-19) unstable; urgency=medium
+
+  * Update to SVN 20140404 (r209122) from the gcc-4_8-branch.
+    - Fix PR rtl-optimization/60700 (wrong code on x86),
+      PR rtl-optimization/57637 (wrong code on ARM in SPEC2000),
+      PR target/60039 (SH), PR ada/60703.
+
+  [ Matthias Klose ]
+  * Include include and include-fixed header files into the stage1
+    gcc-4.8 package.
+  * Explicitly configure with --disable-multilib on sparc64 when no
+    multilibs are requested (Helmut Grohne). Closes: #743342.
+  * Fix PR target/60034 (AArch64), taken from the trunk. LP: #1270789.
+  * Update ada-ppc64.diff from the gnat-4.9 package, fixing the gnat build
+    on powerpc.
+  * Fix PR target/60609 (ARM), proposed patch (Charles Baylis). LP: #1295653.
+  * Build libphobos for armel and armhf.
+  * Include the gnu triplet prefixed gcov and gcc-{ar,nm,ranlib} binaries.
+  * Stop building ppc64el from the ibm branch, now integrated in the fsf
+    branch.
+
+  [ Iain Buclaw ]
+  * Update the GDC frontend (20140401).
+
+ -- Matthias Klose <doko@debian.org>  Fri, 04 Apr 2014 19:32:58 +0200
+
+gcc-4.8 (4.8.2-17ubuntu2) trusty; urgency=medium
+
+  * Update to SVN 20140329 (r208938) from the gcc-4_8-branch.
+    - Fix PR libstdc++/60658 (std::atomic<T*> is unexpectedly not lock-free),
+      PR libstdc++/59548 (abort in debug mode),
+      PR rtl-optimization/60601 (ice), PR tree-optimization/60429 (wrong code
+      building Qt with -O3), PR rtl-optimization/60452 (wrong code with -O1
+      and large offsets in the frame),
+      PR ipa/60419 (ice-on-valid-code with -O3, LP: #1286343),
+      PR fortran/60522 (ice-on-valid-code), PR fortran/60576 (wrong code),
+      PR fortran/60677 (wrong code).
+  * Don't ignore DEB_CROSS_NO_BIARCH=yes ignored for DEB_TARGET_ARCH=x32.
+    (Helmut Grohne). Closes: #742358.
+  * debian/patches/ada-ppc64.diff: Fix for ppc64el (Ulrich Weigand).
+  * Avoid clobbering stack pointer via P8 fusion peephole. fixing Ada build
+    on ppc64el (Ulrich Weigand).
+  * Fix cross building targeting x32 (Helmut Grohne). Closes: #742539.
+
+ -- Matthias Klose <doko@ubuntu.com>  Sat, 29 Mar 2014 16:32:05 +0100
+
+gcc-4.8 (4.8.2-17ubuntu1) trusty; urgency=medium
+
+  * Merge with Debian; remaining changes:
+    - Build from the upstream source.
+
+ -- Matthias Klose <doko@ubuntu.com>  Fri, 21 Mar 2014 17:46:46 +0100
+
+gcc-4.8 (4.8.2-17) unstable; urgency=medium
+
+  * Update to SVN 20140320 (r208738) from the gcc-4_8-branch.
+  * Update the Linaro support to the 4.8-2014.03 release.
+  * Update the ibm branch to SVN 20140320 (r208622).
+  * Fix PR target/58595, ARM TLS handling. Taken from the trunk.
+  * Create a dummy arm-acle-intrinsics.texi exists for AArch64 builds
+    (Wookey). Closes: #742165.
+
+ -- Matthias Klose <doko@debian.org>  Fri, 21 Mar 2014 10:47:08 +0100
+
+gcc-4.8 (4.8.2-16ubuntu6) trusty; urgency=medium
+
+  * Update to SVN 20140306 (r208384) from the gcc-4_8-branch.
+  * Update the ibm branch to SVN 20140306 (r208322).
+  * Fix PR target/58595, ARM TLS handling. Taken from the trunk.
+
+ -- Matthias Klose <doko@ubuntu.com>  Thu, 06 Mar 2014 15:30:27 +0100
+
+gcc-4.8 (4.8.2-16ubuntu5) trusty; urgency=medium
+
+  * Update to SVN 20140303 (r208303) from the gcc-4_8-branch.
+  * Update the ibm branch to SVN 20140304 (r208291).
+
+ -- Matthias Klose <doko@ubuntu.com>  Tue, 04 Mar 2014 10:28:21 +0100
+
+gcc-4.8 (4.8.2-16ubuntu4) trusty; urgency=medium
+
+  * Update to SVN 20140226 (r208166) from the gcc-4_8-branch.
+  * Update the ibm branch to SVN 20140226 (r208166).
+
+ -- Matthias Klose <doko@ubuntu.com>  Wed, 26 Feb 2014 08:53:56 +0100
+
+gcc-4.8 (4.8.2-16ubuntu3) trusty; urgency=medium
+
+  * Update the ibm branch to SVN 20140224 (r208054).
+  * Re-add gcc-4.8 dependency on libgcc-4.8-dev. LP: #1283850.
+
+ -- Matthias Klose <doko@ubuntu.com>  Mon, 24 Feb 2014 11:40:55 +0100
+
+gcc-4.8 (4.8.2-16ubuntu2) trusty; urgency=medium
+
+  * Update to SVN 20140221 (r208010) from the gcc-4_8-branch.
+  * Update the ibm branch to SVN 20140221 (r207920).
+  * Enable SSP by default on AArch64.
+  * Build libgcc packages for cross builds in trusty.
+
+ -- Matthias Klose <doko@ubuntu.com>  Fri, 21 Feb 2014 19:42:07 +0100
+
 gcc-4.8 (4.8.2-16ubuntu1) trusty; urgency=medium
 
   * Stop building the libgcc1 packages, now built by gccgo-4.9.

@@ -36,6 +36,17 @@ files_gcc = \
 	$(shell test -e $(d)/$(gcc_lib_dir)/SYSCALLS.c.X \
 		&& echo $(gcc_lib_dir)/SYSCALLS.c.X)
 
+ifeq ($(DEB_STAGE),stage1)
+    files_gcc += \
+	$(gcc_lib_dir)/include \
+	$(shell for h in \
+		  README limits.h syslimits.h; \
+		do \
+		  test -e $(d)/$(gcc_lib_dir)/include-fixed/$$h \
+		    && echo $(gcc_lib_dir)/include-fixed/$$h; \
+		done)
+endif
+
 ifneq ($(GFDL_INVARIANT_FREE),yes)
     files_gcc += \
 	$(PF)/share/man/man1/$(cmd_prefix){gcc,gcov}$(pkg_ver).1
@@ -91,21 +102,19 @@ endif
 	DH_COMPAT=2 dh_movefiles -p$(p_gcc) $(files_gcc)
 
 ifneq ($(DEB_CROSS),yes)
-	ln -sf gcc$(pkg_ver) \
-	    $(d_gcc)/$(PF)/bin/$(DEB_TARGET_GNU_TYPE)-gcc$(pkg_ver)
-	ln -sf gcc$(pkg_ver) \
-	    $(d_gcc)/$(PF)/bin/$(TARGET_ALIAS)-gcc$(pkg_ver)
-	for i in ar ranlib nm; do \
-	  ln -sf gcc-$$i$(pkg_ver) \
-	    $(d_gcc)/$(PF)/bin/$(DEB_TARGET_GNU_TYPE)-gcc-$$i$(pkg_ver); \
-	  ln -sf gcc-$$i$(pkg_ver) \
-	    $(d_gcc)/$(PF)/bin/$(TARGET_ALIAS)-gcc-$$i$(pkg_ver); \
+	for i in gcc gcov gcc-ar gcc-nm gcc-ranlib; do \
+	  ln -sf $$i$(pkg_ver) \
+	    $(d_gcc)/$(PF)/bin/$(DEB_TARGET_GNU_TYPE)-$$i$(pkg_ver); \
+	  ln -sf $$i$(pkg_ver) \
+	    $(d_gcc)/$(PF)/bin/$(TARGET_ALIAS)-$$i$(pkg_ver); \
 	done
 ifneq ($(GFDL_INVARIANT_FREE),yes)
-	ln -sf gcc$(pkg_ver).1 \
-	    $(d_gcc)/$(PF)/share/man/man1/$(DEB_TARGET_GNU_TYPE)-gcc$(pkg_ver).1
-	ln -sf gcc$(pkg_ver).1 \
-	    $(d_gcc)/$(PF)/share/man/man1/$(TARGET_ALIAS)-gcc$(pkg_ver).1
+	for i in gcc gcov gcc-ar gcc-nm gcc-ranlib; do \
+	  ln -sf gcc$(pkg_ver).1 \
+	    $(d_gcc)/$(PF)/share/man/man1/$(DEB_TARGET_GNU_TYPE)-$$i$(pkg_ver).1; \
+	  ln -sf $$i$(pkg_ver).1 \
+	    $(d_gcc)/$(PF)/share/man/man1/$(TARGET_ALIAS)-$$i$(pkg_ver).1; \
+	done
 endif
 endif
 

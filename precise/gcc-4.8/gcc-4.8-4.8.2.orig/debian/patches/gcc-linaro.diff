@@ -1,12 +1,16 @@
-# DP: Changes for the Linaro 4.8-2014.02 release.
+# DP: Changes for the Linaro 4.8-2014.03 release.
 
-LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
-    svn://gcc.gnu.org/svn/gcc/branches/linaro/gcc-4_8-branch@207760 \
+LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@208264 \
+    svn://gcc.gnu.org/svn/gcc/branches/linaro/gcc-4_8-branch@208576 \
  | filterdiff --remove-timestamps --addoldprefix=a/src/ --addnewprefix=b/src/
 
 --- a/src/libitm/ChangeLog.linaro
 +++ b/src/libitm/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -56,7 +60,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libgomp/ChangeLog.linaro
 +++ b/src/libgomp/ChangeLog.linaro
-@@ -0,0 +1,55 @@
+@@ -0,0 +1,59 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -122,7 +130,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    use omp_lib
 --- a/src/libquadmath/ChangeLog.linaro
 +++ b/src/libquadmath/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -185,7 +197,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
      current_++;
 --- a/src/libsanitizer/ChangeLog.linaro
 +++ b/src/libsanitizer/ChangeLog.linaro
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,66 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -261,7 +277,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  	;;
 --- a/src/zlib/ChangeLog.linaro
 +++ b/src/zlib/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -311,7 +331,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libstdc++-v3/ChangeLog.linaro
 +++ b/src/libstdc++-v3/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -372,7 +396,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    arm*-*-*)
 --- a/src/intl/ChangeLog.linaro
 +++ b/src/intl/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -422,7 +450,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/ChangeLog.linaro
 +++ b/src/ChangeLog.linaro
-@@ -0,0 +1,55 @@
+@@ -0,0 +1,59 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -480,7 +512,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libmudflap/ChangeLog.linaro
 +++ b/src/libmudflap/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -530,7 +566,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/boehm-gc/ChangeLog.linaro
 +++ b/src/boehm-gc/ChangeLog.linaro
-@@ -0,0 +1,60 @@
+@@ -0,0 +1,64 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -661,7 +701,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  #   define MACH_TYPE "ARM32"
 --- a/src/include/ChangeLog.linaro
 +++ b/src/include/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -711,7 +755,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libiberty/ChangeLog.linaro
 +++ b/src/libiberty/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -761,7 +809,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/lto-plugin/ChangeLog.linaro
 +++ b/src/lto-plugin/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -811,7 +863,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/contrib/regression/ChangeLog.linaro
 +++ b/src/contrib/regression/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -873,7 +929,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    arm-linux-androideabi arm-uclinux_eabi arm-eabi \
 --- a/src/contrib/ChangeLog.linaro
 +++ b/src/contrib/ChangeLog.linaro
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,58 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -930,7 +990,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/contrib/reghunt/ChangeLog.linaro
 +++ b/src/contrib/reghunt/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -980,7 +1044,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libatomic/ChangeLog.linaro
 +++ b/src/libatomic/ChangeLog.linaro
-@@ -0,0 +1,55 @@
+@@ -0,0 +1,59 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1052,7 +1120,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  	config_path="${config_path} linux/arm posix"
 --- a/src/config/ChangeLog.linaro
 +++ b/src/config/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1102,7 +1174,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libbacktrace/ChangeLog.linaro
 +++ b/src/libbacktrace/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1152,7 +1228,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libjava/libltdl/ChangeLog.linaro
 +++ b/src/libjava/libltdl/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1229,7 +1309,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  	can_unwind_signal=no
 --- a/src/libjava/ChangeLog.linaro
 +++ b/src/libjava/ChangeLog.linaro
-@@ -0,0 +1,55 @@
+@@ -0,0 +1,59 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1287,7 +1371,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libjava/classpath/ChangeLog.linaro
 +++ b/src/libjava/classpath/ChangeLog.linaro
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,58 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1421,7 +1509,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +#endif
 --- a/src/gnattools/ChangeLog.linaro
 +++ b/src/gnattools/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1471,7 +1563,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/maintainer-scripts/ChangeLog.linaro
 +++ b/src/maintainer-scripts/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1532,7 +1628,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    arm*-*-*)
 --- a/src/libgcc/ChangeLog.linaro
 +++ b/src/libgcc/ChangeLog.linaro
-@@ -0,0 +1,57 @@
+@@ -0,0 +1,61 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1605,7 +1705,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  typedef int TItype __attribute__ ((mode (TI)));
 --- a/src/libgcc/config/libbid/ChangeLog.linaro
 +++ b/src/libgcc/config/libbid/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1655,7 +1759,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libdecnumber/ChangeLog.linaro
 +++ b/src/libdecnumber/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1706,7 +1814,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 --- a/src/gcc/LINARO-VERSION
 +++ b/src/gcc/LINARO-VERSION
 @@ -0,0 +1 @@
-+4.8-2014.02
++4.8-2014.03
 --- a/src/gcc/targhooks.c
 +++ b/src/gcc/targhooks.c
 @@ -1042,20 +1042,17 @@
@@ -1768,7 +1876,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  							   HOST_WIDE_INT,
 --- a/src/gcc/c-family/ChangeLog.linaro
 +++ b/src/gcc/c-family/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1818,7 +1930,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/gcc/java/ChangeLog.linaro
 +++ b/src/gcc/java/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1868,7 +1984,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/gcc/c/ChangeLog.linaro
 +++ b/src/gcc/c/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -1918,7 +2038,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/gcc/target.def
 +++ b/src/gcc/target.def
-@@ -1289,13 +1289,24 @@
+@@ -1289,7 +1289,8 @@
   "",
   tree, (unsigned int /*location_t*/ loc, tree fndecl, void *arglist), NULL)
  
@@ -1928,6 +2048,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  DEFHOOK
  (fold_builtin,
   "",
+@@ -1296,6 +1297,16 @@
   tree, (tree fndecl, int n_args, tree *argp, bool ignore),
   hook_tree_tree_int_treep_bool_null)
  
@@ -2053,7 +2174,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  
  fi
  
-@@ -25949,8 +25950,9 @@
+@@ -25984,8 +25985,9 @@
  # ??? Once 2.11 is released, probably need to add first known working
  # version to the per-target configury.
  case "$cpu_type" in
@@ -2160,7 +2281,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
      return 0;
 --- a/src/gcc/objc/ChangeLog.linaro
 +++ b/src/gcc/objc/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -2248,7 +2373,16 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  		      break;
 --- a/src/gcc/ChangeLog.linaro
 +++ b/src/gcc/ChangeLog.linaro
-@@ -0,0 +1,3054 @@
+@@ -0,0 +1,3063 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++	* LINARO-VERSION: Update.
++
++2014-02-13  Yvan Roux  <yvan.roux@linaro.org>
++
++	* LINARO-VERSION: Bump version.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -14322,7 +14456,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +/* { dg-final { cleanup-saved-temps } } */
 --- a/src/gcc/testsuite/gcc.target/aarch64/vect-fp.x
 +++ b/src/gcc/testsuite/gcc.target/aarch64/vect-fp.x
-@@ -7,13 +7,23 @@
+@@ -7,6 +7,16 @@
  extern float fabsf (float);
  extern double fabs (double);
  
@@ -14339,6 +14473,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  #define DEF3(fname, type, op) \
  			void  fname##_##type (pR##type a,   \
  					      pR##type b,   \
+@@ -13,7 +23,7 @@
  					      pR##type c)   \
  			{				    \
  			  int i; 			    \
@@ -15063,7 +15198,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  proc check_effective_target_vxworks_kernel { } {
 --- a/src/gcc/testsuite/ChangeLog.linaro
 +++ b/src/gcc/testsuite/ChangeLog.linaro
-@@ -0,0 +1,974 @@
+@@ -0,0 +1,978 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -16586,7 +16725,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  /* { dg-output "    #1 0x\[0-9a-f\]+ (in _*main (\[^\n\r]*null-deref-1.c:15|\[^\n\r]*:0)|\[(\])\[^\n\r]*(\n|\r\n|\r)" } */
 --- a/src/gcc/objcp/ChangeLog.linaro
 +++ b/src/gcc/objcp/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -16636,7 +16779,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/gcc/cp/ChangeLog.linaro
 +++ b/src/gcc/cp/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -16747,7 +16894,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
     DEFINE_PREDICATE and DEFINE_SPECIAL_PREDICATE is that genrecog will
 --- a/src/gcc/go/ChangeLog.linaro
 +++ b/src/gcc/go/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -16843,7 +16994,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
        break;
 --- a/src/gcc/ada/ChangeLog.linaro
 +++ b/src/gcc/ada/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -16914,7 +17069,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  /* On the x86 -fsplit-stack and -fstack-protector both use the same
 --- a/src/gcc/fortran/ChangeLog.linaro
 +++ b/src/gcc/fortran/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -16973,7 +17132,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  ACX_BUGURL([http://gcc.gnu.org/bugs.html])
  
  # Sanity check enable_languages in case someone does not run the toplevel
-@@ -4191,8 +4191,9 @@
+@@ -4202,8 +4202,9 @@
  # ??? Once 2.11 is released, probably need to add first known working
  # version to the per-target configury.
  case "$cpu_type" in
@@ -16985,70 +17144,9 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
      insn="nop"
      ;;
    ia64 | s390)
---- a/src/gcc/function.c
-+++ b/src/gcc/function.c
-@@ -5509,22 +5509,45 @@
- 	 except for any part that overlaps SRC (next loop).  */
-       bb_uses = &DF_LR_BB_INFO (bb)->use;
-       bb_defs = &DF_LR_BB_INFO (bb)->def;
--      for (i = dregno; i < end_dregno; i++)
-+      if (df_live)
- 	{
--	  if (REGNO_REG_SET_P (bb_uses, i) || REGNO_REG_SET_P (bb_defs, i))
--	    next_block = NULL;
--	  CLEAR_REGNO_REG_SET (live_out, i);
--	  CLEAR_REGNO_REG_SET (live_in, i);
-+	  for (i = dregno; i < end_dregno; i++)
-+	    {
-+	      if (REGNO_REG_SET_P (bb_uses, i) || REGNO_REG_SET_P (bb_defs, i)
-+		  || REGNO_REG_SET_P (&DF_LIVE_BB_INFO (bb)->gen, i))
-+		next_block = NULL;
-+	      CLEAR_REGNO_REG_SET (live_out, i);
-+	      CLEAR_REGNO_REG_SET (live_in, i);
-+	    }
-+
-+	  /* Check whether BB clobbers SRC.  We need to add INSN to BB if so.
-+	     Either way, SRC is now live on entry.  */
-+	  for (i = sregno; i < end_sregno; i++)
-+	    {
-+	      if (REGNO_REG_SET_P (bb_defs, i)
-+		  || REGNO_REG_SET_P (&DF_LIVE_BB_INFO (bb)->gen, i))
-+		next_block = NULL;
-+	      SET_REGNO_REG_SET (live_out, i);
-+	      SET_REGNO_REG_SET (live_in, i);
-+	    }
- 	}
-+      else
-+	{
-+	  /* DF_LR_BB_INFO (bb)->def does not comprise the DF_REF_PARTIAL and
-+	     DF_REF_CONDITIONAL defs.  So if DF_LIVE doesn't exist, i.e.
-+	     at -O1, just give up searching NEXT_BLOCK.  */
-+	  next_block = NULL;
-+	  for (i = dregno; i < end_dregno; i++)
-+	    {
-+	      CLEAR_REGNO_REG_SET (live_out, i);
-+	      CLEAR_REGNO_REG_SET (live_in, i);
-+	    }
- 
--      /* Check whether BB clobbers SRC.  We need to add INSN to BB if so.
--	 Either way, SRC is now live on entry.  */
--      for (i = sregno; i < end_sregno; i++)
--	{
--	  if (REGNO_REG_SET_P (bb_defs, i))
--	    next_block = NULL;
--	  SET_REGNO_REG_SET (live_out, i);
--	  SET_REGNO_REG_SET (live_in, i);
-+	  for (i = sregno; i < end_sregno; i++)
-+	    {
-+	      SET_REGNO_REG_SET (live_out, i);
-+	      SET_REGNO_REG_SET (live_in, i);
-+	    }
- 	}
- 
-       /* If we don't need to add the move to BB, look for a single
 --- a/src/gcc/tree-vectorizer.h
 +++ b/src/gcc/tree-vectorizer.h
-@@ -833,6 +833,14 @@
+@@ -838,6 +838,14 @@
    return (DR_MISALIGNMENT (data_ref_info) != -1);
  }
  
@@ -17092,7 +17190,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  #endif /* ! GCC_FLAG_TYPES_H */
 --- a/src/gcc/tree-vect-data-refs.c
 +++ b/src/gcc/tree-vect-data-refs.c
-@@ -1321,7 +1321,7 @@
+@@ -1328,7 +1328,7 @@
        *new_slot = slot;
      }
  
@@ -17101,7 +17199,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
      slot->count += VECT_MAX_COST;
  }
  
-@@ -1431,7 +1431,7 @@
+@@ -1438,7 +1438,7 @@
     res.peel_info.dr = NULL;
     res.body_cost_vec = stmt_vector_for_cost();
  
@@ -17110,7 +17208,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
       {
         res.inside_cost = INT_MAX;
         res.outside_cost = INT_MAX;
-@@ -1661,7 +1661,7 @@
+@@ -1668,7 +1668,7 @@
                   vectorization factor.
                   We do this automtically for cost model, since we calculate cost
                   for every peeling option.  */
@@ -17119,7 +17217,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
                  possible_npeel_number = vf /nelements;
  
                /* Handle the aligned case. We may decide to align some other
-@@ -1669,7 +1669,7 @@
+@@ -1676,7 +1676,7 @@
                if (DR_MISALIGNMENT (dr) == 0)
                  {
                    npeel_tmp = 0;
@@ -17128,7 +17226,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
                      possible_npeel_number++;
                  }
  
-@@ -1919,6 +1919,30 @@
+@@ -1926,6 +1926,30 @@
  
        if (do_peeling)
          {
@@ -17159,7 +17257,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  	  stmt_info_for_cost *si;
  	  void *data = LOOP_VINFO_TARGET_COST_DATA (loop_vinfo);
  
-@@ -1972,16 +1996,14 @@
+@@ -1979,16 +2003,14 @@
    /* (2) Versioning to force alignment.  */
  
    /* Try versioning if:
@@ -17542,7 +17640,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  						      m, INSERT);
 --- a/src/gcc/lto/ChangeLog.linaro
 +++ b/src/gcc/lto/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -17592,7 +17694,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/gcc/po/ChangeLog.linaro
 +++ b/src/gcc/po/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -17682,7 +17788,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  Common Report Var(flag_tree_scev_cprop) Init(1) Optimization
 --- a/src/gcc/combine.c
 +++ b/src/gcc/combine.c
-@@ -11992,6 +11992,13 @@
+@@ -11996,6 +11996,13 @@
  	    }
  	}
  
@@ -17854,7 +17960,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  #define STARTFILE_SPEC \
 --- a/src/gcc/config/i386/i386.c
 +++ b/src/gcc/config/i386/i386.c
-@@ -42247,20 +42247,17 @@
+@@ -42262,20 +42262,17 @@
    unsigned *cost = (unsigned *) data;
    unsigned retval = 0;
  
@@ -19025,7 +19131,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
        swap_bsl_operands = 1;
        break;
      case UNORDERED:
-@@ -1723,20 +2045,36 @@
+@@ -1723,9 +2045,9 @@
       swap_bsl_operands = 1;
       /* Fall through.  */
      case ORDERED:
@@ -19038,6 +19144,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
        break;
      default:
        gcc_unreachable ();
+@@ -1732,11 +2054,27 @@
      }
  
    if (swap_bsl_operands)
@@ -20734,7 +20841,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
  vclz_s8 (int8x8_t a)
  {
-@@ -5915,100 +5401,12 @@
+@@ -5915,72 +5401,6 @@
  
  /* vcvt_f32_f16 not supported */
  
@@ -20807,6 +20914,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  /* vcvt_high_f16_f32 not supported */
  
  /* vcvt_high_f32_f16 not supported */
+@@ -5987,28 +5407,6 @@
  
  static float32x2_t vdup_n_f32 (float32_t);
  
@@ -22425,7 +22533,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  __extension__ static __inline poly8x8_t __attribute__ ((__always_inline__))
  vrev16_p8 (poly8x8_t a)
  {
-@@ -14842,178 +13047,14 @@
+@@ -14842,171 +13047,6 @@
    return result;
  }
  
@@ -22597,6 +22705,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  #define vrshrn_high_n_s16(a, b, c)                                      \
    __extension__                                                         \
      ({                                                                  \
+@@ -15013,7 +13053,8 @@
         int16x8_t b_ = (b);                                              \
         int8x8_t a_ = (a);                                               \
         int8x16_t result = vcombine_s8                                   \
@@ -26738,7 +26847,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
     (set_attr "mode" "<MODE>")
     (set_attr "simd_mode" "<MODE>")]
  )
-@@ -797,26 +827,28 @@
+@@ -797,8 +827,8 @@
  )
  
  (define_insn "*movsi_aarch64"
@@ -26749,6 +26858,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    "(register_operand (operands[0], SImode)
      || aarch64_reg_or_zero (operands[1], SImode))"
    "@
+@@ -805,18 +835,20 @@
     mov\\t%w0, %w1
     mov\\t%w0, %1
     ldr\\t%w0, %1
@@ -26773,7 +26883,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    "(register_operand (operands[0], DImode)
      || aarch64_reg_or_zero (operands[1], DImode))"
    "@
-@@ -825,17 +857,19 @@
+@@ -825,7 +857,9 @@
     mov\\t%x0, %1
     mov\\t%x0, %1
     ldr\\t%x0, %1
@@ -26783,6 +26893,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
     adr\\t%x0, %a1
     adrp\\t%x0, %A1
     fmov\\t%d0, %x1
+@@ -832,10 +866,10 @@
     fmov\\t%x0, %d1
     fmov\\t%d0, %d1
     movi\\t%d0, %1"
@@ -27545,7 +27656,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    T_HI,
    T_QI,
    T_MAX
-@@ -72,180 +74,259 @@
+@@ -72,172 +74,251 @@
  #define oi_UP	 T_OI
  #define xi_UP	 T_XI
  #define si_UP    T_SI
@@ -27942,6 +28053,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  
  static aarch64_simd_builtin_datum aarch64_simd_builtin_data[] = {
  #include "aarch64-simd-builtins.def"
+@@ -244,8 +325,8 @@
  };
  
  #undef VAR1
@@ -29394,7 +29506,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    SYMBOL_FORCE_TO_MEM
  };
  
-@@ -126,35 +146,66 @@
+@@ -126,25 +146,55 @@
    const int FP2FP;
  };
  
@@ -29450,6 +29562,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  bool aarch64_pad_arg_upward (enum machine_mode, const_tree);
  bool aarch64_pad_reg_upward (enum machine_mode, const_tree, bool);
  bool aarch64_regno_ok_for_base_p (int, bool);
+@@ -151,10 +201,11 @@
  bool aarch64_regno_ok_for_index_p (int, bool);
  bool aarch64_simd_imm_scalar_p (rtx x, enum machine_mode mode);
  bool aarch64_simd_imm_zero_p (rtx, enum machine_mode);
@@ -30423,7 +30536,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    else
      {
        x = aarch64_emit_move (x, value);
-@@ -672,15 +832,16 @@
+@@ -672,7 +832,7 @@
  static rtx
  aarch64_add_offset (enum machine_mode mode, rtx temp, rtx reg, HOST_WIDE_INT offset)
  {
@@ -30432,6 +30545,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
      {
        rtx high;
        /* Load the full offset into a register.  This
+@@ -679,8 +839,9 @@
           might be improvable in the future.  */
        high = GEN_INT (offset);
        offset = 0;
@@ -30514,7 +30628,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    split_const (x, &x, &offset);
    return aarch64_classify_symbol (x, context);
  }
-@@ -3087,17 +3255,19 @@
+@@ -3087,10 +3255,11 @@
    if ((GET_MODE (x) == SImode || GET_MODE (x) == DImode)
        && y == const0_rtx
        && (code == EQ || code == NE || code == LT || code == GE)
@@ -30528,6 +30642,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
       the comparison will have to be swapped when we emit the assembly
       code.  */
    if ((GET_MODE (x) == SImode || GET_MODE (x) == DImode)
+@@ -3097,7 +3266,8 @@
        && (GET_CODE (y) == REG || GET_CODE (y) == SUBREG)
        && (GET_CODE (x) == ASHIFT || GET_CODE (x) == ASHIFTRT
  	  || GET_CODE (x) == LSHIFTRT
@@ -31021,7 +31136,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
        eshift = (SHIFT);					\
        emvn = (NEG);					\
        break;						\
-@@ -6112,36 +6355,25 @@
+@@ -6112,7 +6355,6 @@
    unsigned int i, elsize = 0, idx = 0, n_elts = CONST_VECTOR_NUNITS (op);
    unsigned int innersize = GET_MODE_SIZE (GET_MODE_INNER (mode));
    unsigned char bytes[16];
@@ -31029,6 +31144,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    int immtype = -1, matches;
    unsigned int invmask = inverse ? 0xff : 0;
    int eshift, emvn;
+@@ -6119,29 +6361,19 @@
  
    if (GET_MODE_CLASS (mode) == MODE_VECTOR_FLOAT)
      {
@@ -31920,7 +32036,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 --- a/src/gcc/config/arm/cortex-a15.md
 +++ b/src/gcc/config/arm/cortex-a15.md
-@@ -61,14 +61,16 @@
+@@ -61,7 +61,9 @@
  ;; Simple ALU without shift
  (define_insn_reservation "cortex_a15_alu" 2
    (and (eq_attr "tune" "cortexa15")
@@ -31931,6 +32047,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
              (eq_attr "neon_type" "none")))
    "ca15_issue1,(ca15_sx1,ca15_sx1_alu)|(ca15_sx2,ca15_sx2_alu)")
  
+@@ -68,7 +70,7 @@
  ;; ALU ops with immediate shift
  (define_insn_reservation "cortex_a15_alu_shift" 3
    (and (eq_attr "tune" "cortexa15")
@@ -32188,7 +32305,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
   "e_1,e_2,e_3,e_wb")
  
  (define_bypass 2 "11_mult5"
-@@ -211,14 +213,14 @@
+@@ -211,7 +213,7 @@
  ;; The same idea, then the 32-bit result is added to a 64-bit quantity.
  (define_insn_reservation "11_mult6" 4
   (and (eq_attr "tune" "arm1136js,arm1136jfs")
@@ -32197,6 +32314,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
   "e_1*2,e_2,e_3,e_wb*2")
  
  ;; Signed 32x32 multiply, then the most significant 32 bits are extracted
+@@ -218,7 +220,7 @@
  ;; and are available after the memory stage.
  (define_insn_reservation "11_mult7" 4
   (and (eq_attr "tune" "arm1136js,arm1136jfs")
@@ -32207,7 +32325,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  (define_bypass 3 "11_mult6,11_mult7"
 --- a/src/gcc/config/arm/marvell-pj4.md
 +++ b/src/gcc/config/arm/marvell-pj4.md
-@@ -41,64 +41,68 @@
+@@ -41,41 +41,39 @@
  
  (define_insn_reservation "pj4_alu_e1" 1
    (and (eq_attr "tune" "marvell_pj4")
@@ -32261,6 +32379,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
         (eq_attr "conds" "set")
         (eq_attr "shift" "1"))  "pj4_is,(pj4_alu1,pj4_w1+pj4_cp)|(pj4_alu2,pj4_w2+pj4_cp)")
  
+@@ -82,13 +80,15 @@
  (define_insn_reservation "pj4_alu_shift" 1
    (and (eq_attr "tune" "marvell_pj4")
         (not (eq_attr "conds" "set"))
@@ -32278,6 +32397,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
                                 "pj4_is,(pj4_alu1,nothing,pj4_w1+pj4_cp)|(pj4_alu2,nothing,pj4_w2+pj4_cp)")
  
  (define_bypass 2 "pj4_alu_shift,pj4_shift"
+@@ -95,10 +95,14 @@
                   "pj4_ir_mul,pj4_ir_div,pj4_core_to_vfp")
  
  (define_insn_reservation "pj4_ir_mul" 3
@@ -32597,7 +32717,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    "TARGET_THUMB2 && ! TARGET_IWMMXT
     && !(TARGET_HARD_FLOAT && TARGET_VFP)
     && (   register_operand (operands[0], SImode)
-@@ -176,16 +301,19 @@
+@@ -176,6 +301,7 @@
    "@
     mov%?\\t%0, %1
     mov%?\\t%0, %1
@@ -32605,6 +32725,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
     mvn%?\\t%0, #%B1
     movw%?\\t%0, %1
     ldr%?\\t%0, %1
+@@ -182,10 +308,12 @@
     ldr%?\\t%0, %1
     str%?\\t%1, %0
     str%?\\t%1, %0"
@@ -33401,7 +33522,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  };
  
  const struct tune_params arm_cortex_a15_tune =
-@@ -1031,13 +1062,14 @@
+@@ -1031,7 +1062,7 @@
    arm_9e_rtx_costs,
    NULL,
    1,						/* Constant limit.  */
@@ -33410,6 +33531,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    ARM_PREFETCH_NOT_BENEFICIAL,
    false,					/* Prefer constant pool.  */
    arm_default_branch_cost,
+@@ -1038,6 +1069,7 @@
    true,						/* Prefer LDRD/STRD.  */
    {true, true},					/* Prefer non short circuit.  */
    &arm_default_vec_cost,                        /* Vectorizer costs.  */
@@ -34803,7 +34925,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    T_V2SI,
    T_V2SF,
    T_DI,
-@@ -19393,14 +20283,15 @@
+@@ -19393,8 +20283,8 @@
  #define TYPE_MODE_BIT(X) (1 << (X))
  
  #define TB_DREG (TYPE_MODE_BIT (T_V8QI) | TYPE_MODE_BIT (T_V4HI)	\
@@ -34814,6 +34936,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  #define TB_QREG (TYPE_MODE_BIT (T_V16QI) | TYPE_MODE_BIT (T_V8HI)	\
  		 | TYPE_MODE_BIT (T_V4SI) | TYPE_MODE_BIT (T_V4SF)	\
  		 | TYPE_MODE_BIT (T_V2DI) | TYPE_MODE_BIT (T_TI))
+@@ -19401,6 +20291,7 @@
  
  #define v8qi_UP  T_V8QI
  #define v4hi_UP  T_V4HI
@@ -36487,7 +36610,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    { 0x00005FFF, 0x00000000, 0x00000000, 0x00000000 }, /* GENERAL_REGS */ \
    { 0x00007FFF, 0x00000000, 0x00000000, 0x00000000 }, /* CORE_REGS */	\
    { 0xFFFF0000, 0x00000000, 0x00000000, 0x00000000 }, /* VFP_D0_D7_REGS  */ \
-@@ -1639,7 +1670,7 @@
+@@ -1643,7 +1674,7 @@
     frame.  */
  #define EXIT_IGNORE_STACK 1
  
@@ -36498,7 +36621,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
     You should override this if you define FUNCTION_EXTRA_EPILOGUE.  */
 --- a/src/gcc/config/arm/cortex-a8.md
 +++ b/src/gcc/config/arm/cortex-a8.md
-@@ -85,30 +85,27 @@
+@@ -85,22 +85,19 @@
  ;; (source read in E2 and destination available at the end of that cycle).
  (define_insn_reservation "cortex_a8_alu" 2
    (and (eq_attr "tune" "cortexa8")
@@ -36526,6 +36649,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    "cortex_a8_default")
  
  ;; Move instructions.
+@@ -107,8 +104,8 @@
  
  (define_insn_reservation "cortex_a8_mov" 1
    (and (eq_attr "tune" "cortexa8")
@@ -36892,7 +37016,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +CRYPTO2 (vmullp64, VMULLP64, uti, udi, udi)
 --- a/src/gcc/config/arm/unspecs.md
 +++ b/src/gcc/config/arm/unspecs.md
-@@ -139,12 +139,37 @@
+@@ -139,6 +139,10 @@
    VUNSPEC_ATOMIC_OP	; Represent an atomic operation.
    VUNSPEC_LL		; Represent a load-register-exclusive.
    VUNSPEC_SC		; Represent a store-register-exclusive.
@@ -36903,6 +37027,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  ])
  
  ;; Enumerators for NEON unspecs.
+@@ -145,6 +149,27 @@
  (define_c_enum "unspec" [
    UNSPEC_ASHIFT_SIGNED
    UNSPEC_ASHIFT_UNSIGNED
@@ -37282,7 +37407,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  ;; SImode moves
  ;; ??? For now do not allow loading constants into vfp regs.  This causes
  ;; problems because small constants get converted into adds.
-@@ -78,62 +53,67 @@
+@@ -78,9 +53,8 @@
      }
    "
    [(set_attr "predicable" "yes")
@@ -37293,6 +37418,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
     (set_attr "pool_range"     "*,*,*,*,4096,*,*,*,*,1020,*")
     (set_attr "neg_pool_range" "*,*,*,*,4084,*,*,*,*,1008,*")]
  )
+@@ -87,9 +61,12 @@
  
  ;; See thumb2.md:thumb2_movsi_insn for an explanation of the split
  ;; high/low register alternatives for loads and stores here.
@@ -37307,6 +37433,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    "TARGET_THUMB2 && TARGET_VFP && TARGET_HARD_FLOAT
     && (   s_register_operand (operands[0], SImode)
         || s_register_operand (operands[1], SImode))"
+@@ -96,25 +73,27 @@
    "*
    switch (which_alternative)
      {
@@ -37343,6 +37470,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
        return output_move_vfp (operands);
      default:
        gcc_unreachable ();
+@@ -121,11 +100,12 @@
      }
    "
    [(set_attr "predicable" "yes")
@@ -37360,6 +37488,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  )
  
  
+@@ -132,8 +112,8 @@
  ;; DImode moves
  
  (define_insn "*movdi_vfp"
@@ -38580,7 +38709,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
               | QI | HI | SI | SF
  
  type opcode =
-@@ -284,26 +289,31 @@
+@@ -284,18 +289,23 @@
    | Fixed_core_reg
      (* Mark that the intrinsic requires __ARM_FEATURE_string to be defined.  *)
    | Requires_feature of string
@@ -38607,6 +38736,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    | Cast (a, b) -> raise (MixedMode (a, b))
    | NoElts -> failwith "No elts"
  
+@@ -302,8 +312,8 @@
  let rec elt_class = function
      S8 | S16 | S32 | S64 -> Signed
    | U8 | U16 | U32 | U64 -> Unsigned
@@ -38634,7 +38764,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    | Int, 8 -> I8
    | Int, 16 -> I16
    | Int, 32 -> I32
-@@ -384,27 +397,39 @@
+@@ -384,20 +397,28 @@
    in
      scan ((Array.length operands) - 1)
  
@@ -38667,6 +38797,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    | All (_, (Corereg | PtrTo _ | CstPtrTo _)) ->
        [| QI; HI; if flt then SF else SI; DI |].(idx)
    | Long | Wide | Wide_lane | Wide_scalar
+@@ -404,7 +425,11 @@
    | Long_imm ->
        [| V8QI; V4HI; V2SI; DI |].(idx)
    | Narrow | Narrow_imm -> [| V16QI; V8HI; V4SI; V2DI |].(idx)
@@ -38765,7 +38896,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
        [No_op], (* Not really, but it can yield various things that are too
                    hard for the test generator at this time.  *)
        Use_operands [| Dreg; Corereg |], "vcreate", create_vector,
-@@ -1127,12 +1172,25 @@
+@@ -1127,6 +1172,12 @@
        Use_operands [| Dreg; Corereg |], "vdup_n", bits_1,
        pf_su_8_32;
      Vdup_n,
@@ -38778,6 +38909,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
        [No_op;
         Instruction_name ["vmov"];
         Disassembles_as [Use_operands [| Dreg; Corereg; Corereg |]]],
+@@ -1133,6 +1184,13 @@
        Use_operands [| Dreg; Corereg |], "vdup_n", notype_1,
        [S64; U64];
      Vdup_n,
@@ -38791,7 +38923,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
        [Disassembles_as [Use_operands [| Qreg;
                                          Alternatives [ Corereg;
                                                         Element_of_dreg ] |]]],
-@@ -1185,21 +1243,33 @@
+@@ -1185,6 +1243,9 @@
        [Disassembles_as [Use_operands [| Dreg; Element_of_dreg |]]],
        Unary_scalar Dreg, "vdup_lane", bits_2, pf_su_8_32;
      Vdup_lane,
@@ -38801,6 +38933,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
        [No_op; Const_valuator (fun _ -> 0)],
        Unary_scalar Dreg, "vdup_lane", bits_2, [S64; U64];
      Vdup_lane,
+@@ -1191,15 +1252,24 @@
        [Disassembles_as [Use_operands [| Qreg; Element_of_dreg |]]],
        Unary_scalar Qreg, "vdupQ_lane", bits_2, pf_su_8_32;
      Vdup_lane,
@@ -38949,7 +39082,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
        [Disassembles_as [Use_operands [| VecArray (1, Dreg);
                                          CstPtrTo Corereg |]]],
        Use_operands [| Dreg; CstPtrTo Corereg |], "vld1_dup",
-@@ -1485,16 +1608,32 @@
+@@ -1485,6 +1608,12 @@
      (* Treated identically to vld1_dup above as we now
         do a single load followed by a duplicate.  *)
      Vldx_dup 1,
@@ -38962,6 +39095,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
        [Disassembles_as [Use_operands [| VecArray (1, Dreg);
                                          CstPtrTo Corereg |]]],
        Use_operands [| Qreg; CstPtrTo Corereg |], "vld1Q_dup",
+@@ -1491,10 +1620,20 @@
        bits_1, [S64; U64];
  
      (* VST1 variants.  *)
@@ -39496,7 +39630,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  (define_memory_constraint "Ua"
   "@internal
    An address valid for loading/storing register exclusive"
-@@ -385,9 +417,16 @@
+@@ -385,6 +417,12 @@
  						   0)
  		   && GET_CODE (XEXP (op, 0)) != POST_INC")))
  
@@ -39509,6 +39643,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  ;; We used to have constraint letters for S and R in ARM state, but
  ;; all uses of these now appear to have been removed.
  
+@@ -391,3 +429,4 @@
  ;; Additionally, we used to have a Q constraint in Thumb state, but
  ;; this wasn't really a valid memory constraint.  Again, all uses of
  ;; this now seem to have been removed.
@@ -42709,7 +42844,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
  vreinterpretq_s32_p8 (poly8x16_t __a)
  {
-@@ -11975,184 +12957,190 @@
+@@ -11975,109 +12957,111 @@
    return (int32x4_t)__builtin_neon_vreinterpretv4siv8hi ((int16x8_t) __a);
  }
  
@@ -42869,6 +43004,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  vreinterpretq_u8_u64 (uint64x2_t __a)
  {
    return (uint8x16_t)__builtin_neon_vreinterpretv16qiv2di ((int64x2_t) __a);
+@@ -12084,75 +13068,79 @@
  }
  
  __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
@@ -43321,7 +43457,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  #endif
 --- a/src/gcc/config/arm/arm-ldmstm.ml
 +++ b/src/gcc/config/arm/arm-ldmstm.ml
-@@ -149,12 +149,15 @@
+@@ -149,6 +149,8 @@
    | IA, true, true -> true
    | _ -> false
  
@@ -43330,6 +43466,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  let target addrmode thumb =
    match addrmode, thumb with
      IA, true -> "TARGET_THUMB1"
+@@ -155,6 +157,7 @@
    | IA, false -> "TARGET_32BIT"
    | DB, false -> "TARGET_32BIT"
    | _, false -> "TARGET_ARM"
@@ -45119,7 +45256,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +   (set_attr "predicable_short_it" "no")])
 --- a/src/gcc/config/arm/fa726te.md
 +++ b/src/gcc/config/arm/fa726te.md
-@@ -78,15 +78,15 @@
+@@ -78,7 +78,8 @@
  ;; Move instructions.
  (define_insn_reservation "726te_shift_op" 1
    (and (eq_attr "tune" "fa726te")
@@ -45129,6 +45266,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    "fa726te_issue+(fa726te_alu0_pipe|fa726te_alu1_pipe)")
  
  ;; ALU operations with no shifted operand will finished in 1 cycle
+@@ -85,8 +86,7 @@
  ;; Other ALU instructions 2 cycles.
  (define_insn_reservation "726te_alu_op" 1
   (and (eq_attr "tune" "fa726te")
@@ -45820,7 +45958,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  )
  
  (define_insn "*addsi3_compare0_scratch"
-@@ -827,24 +1076,27 @@
+@@ -827,7 +1076,7 @@
     cmn%?\\t%0, %1"
    [(set_attr "conds" "set")
     (set_attr "predicable" "yes")
@@ -45829,6 +45967,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
     ]
  )
  
+@@ -834,17 +1083,20 @@
  (define_insn "*compare_negsi_si"
    [(set (reg:CC_Z CC_REGNUM)
  	(compare:CC_Z
@@ -46117,7 +46256,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    [(set_attr "conds" "clob")
     (set_attr "length" "8")]
  )
-@@ -1108,55 +1460,113 @@
+@@ -1108,7 +1460,7 @@
    [(set_attr "length" "4")]
  )
  
@@ -46126,6 +46265,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    [(set (match_operand:DI           0 "s_register_operand" "=&r,&r")
  	(minus:DI (match_operand:DI 1 "s_register_operand"  "0,r")
  		  (zero_extend:DI
+@@ -1115,12 +1467,25 @@
  		   (match_operand:SI 2 "s_register_operand"  "r,r"))))
     (clobber (reg:CC CC_REGNUM))]
    "TARGET_32BIT"
@@ -46153,6 +46293,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    [(set (match_operand:DI            0 "s_register_operand" "=&r,&r")
  	(minus:DI (match_operand:DI  1 "s_register_operand"  "0,r")
  		  (sign_extend:DI
+@@ -1127,12 +1492,26 @@
  		   (match_operand:SI 2 "s_register_operand"  "r,r"))))
     (clobber (reg:CC CC_REGNUM))]
    "TARGET_32BIT"
@@ -46181,6 +46322,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    [(set (match_operand:DI            0 "s_register_operand" "=&r,&r")
  	(minus:DI (zero_extend:DI
  		   (match_operand:SI 2 "s_register_operand"  "r,r"))
+@@ -1139,12 +1518,26 @@
  		  (match_operand:DI  1 "s_register_operand" "0,r")))
     (clobber (reg:CC CC_REGNUM))]
    "TARGET_ARM"
@@ -46209,6 +46351,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    [(set (match_operand:DI            0 "s_register_operand" "=&r,&r")
  	(minus:DI (sign_extend:DI
  		   (match_operand:SI 2 "s_register_operand"   "r,r"))
+@@ -1151,12 +1544,29 @@
  		  (match_operand:DI  1 "s_register_operand"  "0,r")))
     (clobber (reg:CC CC_REGNUM))]
    "TARGET_ARM"
@@ -46707,7 +46850,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  )
  
  (define_insn "*maddhisi4tt"
-@@ -1848,22 +2281,24 @@
+@@ -1848,8 +2281,9 @@
  		 (match_operand:SI 3 "s_register_operand" "r")))]
    "TARGET_DSP_MULTIPLY"
    "smlatt%?\\t%0, %1, %2, %3"
@@ -46719,6 +46862,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  )
  
  (define_insn "maddhidi4"
+@@ -1856,14 +2290,15 @@
    [(set (match_operand:DI 0 "s_register_operand" "=r")
  	(plus:DI
  	  (mult:DI (sign_extend:DI
@@ -46867,7 +47011,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  )
  
  (define_insn "*andsi3_compare0_scratch"
-@@ -2209,14 +2685,14 @@
+@@ -2209,7 +2685,7 @@
     bic%.\\t%2, %0, #%B1
     tst%?\\t%0, %1"
    [(set_attr "conds" "set")
@@ -46876,6 +47020,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  )
  
  (define_insn "*zeroextractsi_compare0_scratch"
+@@ -2216,7 +2692,7 @@
    [(set (reg:CC_NOOV CC_REGNUM)
  	(compare:CC_NOOV (zero_extract:SI
  			  (match_operand:SI 0 "s_register_operand" "r")
@@ -46936,7 +47081,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  (define_insn_and_split "*anddi_notsesidi_di"
    [(set (match_operand:DI 0 "s_register_operand" "=&r,&r")
  	(and:DI (not:DI (sign_extend:DI
-@@ -2745,16 +3225,18 @@
+@@ -2745,9 +3225,10 @@
      operands[1] = gen_lowpart (SImode, operands[1]);
    }"
    [(set_attr "length" "8")
@@ -46949,6 +47094,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  (define_insn "andsi_notsi_si"
    [(set (match_operand:SI 0 "s_register_operand" "=r")
  	(and:SI (not:SI (match_operand:SI 2 "s_register_operand" "r"))
+@@ -2754,7 +3235,8 @@
  		(match_operand:SI 1 "s_register_operand" "r")))]
    "TARGET_32BIT"
    "bic%?\\t%0, %1, %2"
@@ -48248,7 +48394,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  )
  
  (define_expand "thumb_movhi_clobber"
-@@ -6449,26 +7269,27 @@
+@@ -6449,10 +7269,9 @@
    "
  )
  
@@ -48261,6 +48407,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    "TARGET_32BIT
     && (   register_operand (operands[0], QImode)
         || register_operand (operands[1], QImode))"
+@@ -6459,16 +7278,18 @@
    "@
     mov%?\\t%0, %1
     mov%?\\t%0, %1
@@ -48811,7 +48958,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
      if (operands[2] == NULL_RTX)
        operands[2] = const0_rtx;
    }"
-@@ -8519,47 +9481,67 @@
+@@ -8519,6 +9481,10 @@
    "TARGET_32BIT"
    "
    {
@@ -48822,6 +48969,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
      if (operands[3] == NULL_RTX)
        operands[3] = const0_rtx;
    }"
+@@ -8525,13 +9491,21 @@
  )
  
  (define_insn "*sibcall_insn"
@@ -48846,6 +48994,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    "
    [(set_attr "type" "call")]
  )
+@@ -8538,28 +9512,36 @@
  
  (define_insn "*sibcall_value_insn"
   [(set (match_operand 0 "" "")
@@ -48906,7 +49055,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    "*
    {
      if (arm_ccfsm_state == 2)
-@@ -8598,20 +9580,21 @@
+@@ -8598,7 +9580,8 @@
          arm_ccfsm_state += 2;
          return \"\";
        }
@@ -48916,6 +49065,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    }"
    [(set_attr "conds" "use")
     (set_attr "length" "12")
+@@ -8605,13 +9588,13 @@
     (set_attr "type" "load1")]
  )
  
@@ -49251,7 +49401,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  	(and:SI (match_operator:SI 3 "arm_comparison_operator"
  		 [(match_operand:SI 1 "s_register_operand" "r,r,0")
  		  (match_operand:SI 2 "arm_add_operand" "rIL,0,rIL")])
-@@ -9822,28 +10917,117 @@
+@@ -9822,7 +10917,7 @@
    "")
  ;; ??? The conditional patterns above need checking for Thumb-2 usefulness
  
@@ -49260,6 +49410,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
    [(set (match_operand:SI 0 "s_register_operand" "=r")
  	(neg:SI (match_operator 3 "arm_comparison_operator"
  		 [(match_operand:SI 1 "s_register_operand" "r")
+@@ -9829,21 +10924,110 @@
  		  (match_operand:SI 2 "arm_rhs_operand" "rI")])))
     (clobber (reg:CC CC_REGNUM))]
    "TARGET_ARM"
@@ -50513,7 +50664,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
     "cortex_a9_p0_shift | cortex_a9_p1_shift")
  
  ;; Loads have a latency of 4 cycles.
-@@ -130,29 +129,29 @@
+@@ -130,7 +129,7 @@
  ;; We get 16*16 multiply / mac results in 3 cycles.
  (define_insn_reservation "cortex_a9_mult16" 3
    (and (eq_attr "tune" "cortexa9")
@@ -50522,6 +50673,7 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
         "cortex_a9_mult16")
  
  ;; The 16*16 mac is slightly different that it
+@@ -137,22 +136,22 @@
  ;; reserves M1 and M2 in the same cycle.
  (define_insn_reservation "cortex_a9_mac16" 3
    (and (eq_attr "tune" "cortexa9")
@@ -50839,7 +50991,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  	 "The maximum memory locations recorded by cselib",
 --- a/src/libobjc/ChangeLog.linaro
 +++ b/src/libobjc/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -50889,7 +51045,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libgfortran/ChangeLog.linaro
 +++ b/src/libgfortran/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -50939,7 +51099,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libada/ChangeLog.linaro
 +++ b/src/libada/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -50989,7 +51153,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libffi/ChangeLog.linaro
 +++ b/src/libffi/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -51039,7 +51207,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libssp/ChangeLog.linaro
 +++ b/src/libssp/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -51115,7 +51287,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
  	hppa*64*-*-* | \
 --- a/src/libcpp/ChangeLog.linaro
 +++ b/src/libcpp/ChangeLog.linaro
-@@ -0,0 +1,55 @@
+@@ -0,0 +1,59 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -51173,7 +51349,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/libcpp/po/ChangeLog.linaro
 +++ b/src/libcpp/po/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.
@@ -51223,7 +51403,11 @@ LANG=C svn diff svn://gcc.gnu.org/svn/gcc/branches/gcc-4_8-branch@207411 \
 +	GCC Linaro 4.8-2013.04 released.
 --- a/src/fixincludes/ChangeLog.linaro
 +++ b/src/fixincludes/ChangeLog.linaro
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,51 @@
++2014-03-11  Yvan Roux  <yvan.roux@linaro.org>
++
++	GCC Linaro 4.8-2014.03 released.
++
 +2014-02-11  Yvan Roux  <yvan.roux@linaro.org>
 +
 +	GCC Linaro 4.8-2014.02 released.

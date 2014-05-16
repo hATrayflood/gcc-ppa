@@ -25,6 +25,7 @@ debian-chmod:
 # ---------------------------------------------------------------------------
 
 gfdl_texinfo_files = \
+	gcc/doc/arm-acle-intrinsics.texi \
 	gcc/doc/arm-neon-intrinsics.texi \
 	gcc/doc/avr-mmcu.texi \
 	gcc/doc/bugreport.texi \

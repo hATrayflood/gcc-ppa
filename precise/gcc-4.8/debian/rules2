@@ -334,7 +334,7 @@ ifneq (,$(filter $(DEB_TARGET_GNU_TYPE), i486-linux-gnu i586-linux-gnu i686-linu
     endif
 endif
 
-ifneq (,$(filter $(DEB_TARGET_GNU_TYPE), x86_64-linux-gnu x86_64-kfreebsd-gnu s390x-linux-gnu))
+ifneq (,$(filter $(DEB_TARGET_GNU_TYPE), x86_64-linux-gnu x86_64-linux-gnux32 x86_64-kfreebsd-gnu s390x-linux-gnu sparc64-linux-gnuA))
     ifneq ($(biarch32),yes)
       CONFARGS += --disable-multilib
     endif
@@ -505,11 +505,14 @@ endif
 ifeq ($(DEB_TARGET_ARCH),amd64)
   CONFARGS += --with-abi=m64
 endif
+ifeq ($(DEB_TARGET_ARCH),x32)
+  CONFARGS += --with-abi=mx32
+endif
 ifeq ($(multilib),yes)
   ifneq (,$(filter $(DEB_TARGET_ARCH), amd64 i386))
     CONFARGS += --with-multilib-list=m32,m64$(if $(filter yes,$(biarchx32)),$(COMMA)mx32)
   else ifeq ($(DEB_TARGET_ARCH),x32)
-    CONFARGS += --with-abi=mx32 --with-multilib-list=mx32,m64,m32
+    CONFARGS += --with-multilib-list=mx32,m64,m32
   endif
 endif
 

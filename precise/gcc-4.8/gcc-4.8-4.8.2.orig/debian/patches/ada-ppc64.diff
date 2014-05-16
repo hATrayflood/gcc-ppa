@@ -11,7 +11,7 @@
 -    ifeq ($(strip $(shell $(GCC_FOR_TARGET) $(GNATLIBCFLAGS) -print-multi-os-directory)),../lib64)
 -      LIBGNAT_TARGET_PAIRS = \
 -      $(LIBGNAT_TARGET_PAIRS_COMMON) $(LIBGNAT_TARGET_PAIRS_64)
-+    ifeq ($(strip $(filter-out powerpc64,$(arch))),)
++    ifeq ($(strip $(filter-out powerpc64 powerpc64le,$(target_cpu))),)
 +      ifeq ($(strip $(MULTISUBDIR)),/32)
 +        LIBGNAT_TARGET_PAIRS = \
 +        $(LIBGNAT_TARGET_PAIRS_COMMON) $(LIBGNAT_TARGET_PAIRS_32)

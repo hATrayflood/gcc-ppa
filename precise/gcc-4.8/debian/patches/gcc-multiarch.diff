@@ -87,9 +87,9 @@ Index: b/src/gcc/config/rs6000/t-linux64
 --- a/src/gcc/config/rs6000/t-linux64
 +++ b/src/gcc/config/rs6000/t-linux64
 @@ -30,3 +30,5 @@
- MULTILIB_EXTRA_OPTS     = fPIC
- MULTILIB_OSDIRNAMES	= ../lib64$(call if_multiarch,:powerpc64-linux-gnu)
- MULTILIB_OSDIRNAMES    += $(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:powerpc-linux-gnu)
+ MULTILIB_EXTRA_OPTS := 
+ MULTILIB_OSDIRNAMES := m64=../lib64$(call if_multiarch,:powerpc64-linux-gnu)
+ MULTILIB_OSDIRNAMES += m32=$(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:powerpc-linux-gnu)
 +
 +MULTIARCH_DIRNAME = $(call if_multiarch,powerpc$(if $(findstring 64,$(target)),64)-linux-gnu)
 Index: b/src/gcc/config/i386/t-linux64
@@ -142,7 +142,7 @@ Index: b/src/gcc/config.gcc
  		mips64el-st-linux-gnu)
  			tm_file="${tm_file} mips/st.h"
  			tmake_file="${tmake_file} mips/t-st"
-@@ -3723,7 +3726,7 @@
+@@ -3746,7 +3749,7 @@
  	i[34567]86-*-darwin* | x86_64-*-darwin*)
  		;;
  	i[34567]86-*-linux* | x86_64-*-linux*)
@@ -174,16 +174,3 @@ Index: b/src/gcc/config/aarch64/t-aarch64-linux
  AARCH_BE = $(if $(findstring TARGET_BIG_ENDIAN_DEFAULT=1, $(tm_defines)),_be)
 -MULTILIB_OSDIRNAMES = .=../lib64$(call if_multiarch,:aarch64$(AARCH_BE)-linux-gnu)
 +MULTILIB_OSDIRNAMES = .=../lib$(call if_multiarch,:aarch64$(AARCH_BE)-linux-gnu)
-Index: b/src/gcc/Makefile.in
-===================================================================
---- a/src/gcc/Makefile.in
-+++ b/src/gcc/Makefile.in
-@@ -1829,7 +1829,7 @@
- 	    "$(MULTILIB_EXCLUSIONS)" \
- 	    "$(MULTILIB_OSDIRNAMES)" \
- 	    "$(MULTILIB_REQUIRED)" \
--	    "$(MULTIARCH_DIRNAME)" \
-+	    "$(if $(MULTILIB_OSDIRNAMES),,$(MULTIARCH_DIRNAME))" \
- 	    "$(MULTILIB_REUSE)" \
- 	    "@enable_multilib@" \
- 	    > tmp-mlib.h; \
