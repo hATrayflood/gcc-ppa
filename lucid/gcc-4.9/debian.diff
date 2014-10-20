@@ -1,0 +1,1699 @@
+diff -urN debian/changelog gcc-4.9-4.9.1.orig/debian/changelog
+--- debian/changelog	2014-10-19 06:23:27.344682365 +0900
++++ gcc-4.9-4.9.1.orig/debian/changelog	2014-10-19 20:10:06.043201968 +0900
+@@ -1,3 +1,9 @@
++gcc-4.9 (4.9.1-16ubuntu6lucid0) lucid; urgency=medium
++
++  * ppa for lucid
++
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Sun, 19 Oct 2014 6:30:00 +0900
++
+ gcc-4.9 (4.9.1-16ubuntu6) utopic; urgency=medium
+ 
+   * Update to SVN 20141011 (r216116) from the gcc-4_9-branch.
+diff -urN debian/control gcc-4.9-4.9.1.orig/debian/control
+--- debian/control	2014-10-19 06:23:27.348684386 +0900
++++ gcc-4.9-4.9.1.orig/debian/control	2014-10-20 12:52:50.755777772 +0900
+@@ -1,37 +1,33 @@
+ Source: gcc-4.9
+ Section: devel
+ Priority: optional
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-XSBC-Original-Maintainer: Debian GCC Maintainers <debian-gcc@lists.debian.org>
+-Uploaders: Matthias Klose <doko@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.9.5
+-Build-Depends: debhelper (>= 5.0.62), dpkg-dev (>= 1.16.0~ubuntu4), g++-multilib [amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32], 
+-  libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6), libc6-dev (>= 2.13-31) [armel armhf], libc6-dev-amd64 [i386 x32], libc6-dev-sparc64 [sparc], libc6-dev-sparc [sparc64], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64 x32], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 mipsn32 mipsn32el mips64 mips64el s390x sparc64 x32], libn32gcc1 [mips mipsel mips64 mips64el], lib64gcc1 [i386 mips mipsel mipsn32 mipsn32el powerpc sparc s390 x32], libc6-dev-mips64 [mips mipsel mipsn32 mipsn32el], libc6-dev-mipsn32 [mips mipsel mips64 mips64el], libc6-dev-mips32 [mipsn32 mipsn32el mips64 mips64el], libc6-dev-x32 [amd64 i386], libx32gcc1 [amd64 i386], libc6-dev-armhf [armel], libhfgcc1 [armel], libc6-dev-armel [armhf], libsfgcc1 [armhf], libc6.1-dbg [alpha ia64] | libc0.3-dbg [hurd-i386] | libc0.1-dbg [kfreebsd-i386 kfreebsd-amd64] | libc6-dbg, 
++Build-Depends: debhelper (>= 5.0.62), dpkg-dev (>= 1.14.15), g++-multilib [amd64 i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32], 
++  libc6.1-dev (>= 2.11) [alpha ia64] | libc0.3-dev (>= 2.11) [hurd-i386] | libc0.1-dev (>= 2.11) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.11), libc6-dev-amd64 [i386 x32], libc6-dev-sparc64 [sparc], libc6-dev-sparc [sparc64], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64 x32], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 mipsn32 mipsn32el mips64 mips64el s390x sparc64 x32], libn32gcc1 [mips mipsel mips64 mips64el], lib64gcc1 [i386 mips mipsel mipsn32 mipsn32el powerpc sparc s390 x32], libc6-dev-mips64 [mips mipsel mipsn32 mipsn32el], libc6-dev-mipsn32 [mips mipsel mips64 mips64el], libc6-dev-mips32 [mipsn32 mipsn32el mips64 mips64el], libc6.1-dbg [alpha ia64] | libc0.3-dbg [hurd-i386] | libc0.1-dbg [kfreebsd-i386 kfreebsd-amd64] | libc6-dbg, 
+   kfreebsd-kernel-headers (>= 0.84) [kfreebsd-any], 
+   m4, libtool, autoconf2.64, 
+   libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], 
+   autogen, gawk, lzma, xz-utils, patchutils, 
+-  zlib1g-dev, systemtap-sdt-dev [linux-any kfreebsd-any hurd-any], 
+-  binutils (>= 2.22) | binutils-multiarch (>= 2.22), binutils-hppa64 (>= 2.22) [hppa], 
++  zlib1g-dev, 
++  binutils (>= 2.20.1) | binutils-multiarch (>= 2.20.1), binutils-hppa64 (>= 2.20.1) [hppa], 
+   gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, 
+   gdb, 
+   texinfo (>= 4.3), locales, sharutils, 
+   procps, zlib1g-dev, libantlr-java, python, libffi-dev, fastjar, libmagic-dev, libecj-java (>= 3.3.0-2), zip, libasound2-dev [ !hurd-any !kfreebsd-any], libxtst-dev, libxt-dev, libgtk2.0-dev (>= 2.4.4-2), libart-2.0-dev, libcairo2-dev, netbase, 
+-  libcloog-isl-dev (>= 0.18), libmpc-dev (>= 1.0), libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), 
++  libcloog-ppl-dev (>= 0.15.8), libmpc-dev, libmpfr-dev, libgmp3-dev | libgmp-dev (>= 2:5.0.1~), 
+   dejagnu [!m68k], realpath (>= 1.9.12), chrpath, lsb-release, quilt
+-Build-Depends-Indep: doxygen (>= 1.7.2), graphviz (>= 2.2), ghostscript, texlive-latex-base, xsltproc, libxml2-utils, docbook-xsl-ns, 
+-Homepage: http://gcc.gnu.org/
+-Vcs-Browser: http://svn.debian.org/viewsvn/gcccvs/branches/sid/gcc-4.9/
+-Vcs-Svn: svn://anonscm.debian.org/gcccvs/branches/sid/gcc-4.9
++Build-Depends-Indep: doxygen (>= 1.6.3), graphviz (>= 2.2), ghostscript, texlive-latex-base, 
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-upper
++Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ Package: gcc-4.9-base
+ Architecture: any
+-Multi-Arch: same
+ Section: libs
+ Priority: required
+ Depends: ${misc:Depends}
+ Replaces: ${base:Replaces}
+-Breaks: gcc-4.4-base (<< 4.4.7), gcj-4.4-base (<< 4.4.6-9~), gnat-4.4-base (<< 4.4.6-3~), gcj-4.6-base (<< 4.6.1-4~), gnat-4.6 (<< 4.6.1-5~), dehydra (<= 0.9.hg20110609-2)
++Breaks: gcc-4.4-base (<< 4.4.3), gcj-4.4-base (<< 4.4.3), gnat-4.4-base (<< 4.4.3), gcj-4.6-base (<< 4.6.1-4~), gnat-4.6 (<< 4.6.1-5~), dehydra (<= 0.9.hg20110609-2)
+ Description: GCC, the GNU Compiler Collection (base package)
+  This package contains files common to all languages and libraries
+  contained in the GNU Compiler Collection (GCC).
+@@ -42,9 +38,6 @@
+ Priority: required
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Provides: libgcc1-armel [armel], libgcc1-armhf [armhf]
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+-Breaks: ${multiarch:breaks}
+ Description: GCC support library
+  Shared version of the support library, a library of internal subroutines
+  that GCC uses to overcome shortcomings of particular machines, or
+@@ -56,7 +49,6 @@
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libgcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
+ Provides: libgcc1-dbg-armel [armel], libgcc1-dbg-armhf [armhf]
+-Multi-Arch: same
+ Description: GCC support library (debug symbols)
+  Debug symbols for the GCC support library.
+ 
+@@ -65,9 +57,6 @@
+ Section: libs
+ Priority: required
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+-Breaks: ${multiarch:breaks}
+ Description: GCC support library
+  Shared version of the support library, a library of internal subroutines
+  that GCC uses to overcome shortcomings of particular machines, or
+@@ -78,7 +67,6 @@
+ Section: debug
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libgcc2 (= ${gcc:Version}), ${misc:Depends}
+-Multi-Arch: same
+ Description: GCC support library (debug symbols)
+  Debug symbols for the GCC support library.
+ 
+@@ -91,7 +79,6 @@
+  ${dep:libatomic}, ${dep:libbtrace}, ${dep:libasan}, ${dep:liblsan},
+  ${dep:libtsan}, ${dep:libubsan}, ${dep:libcilkrts}, ${dep:libvtv},
+  ${dep:libqmath}, ${dep:libunwinddev}, ${shlibs:Depends}, ${misc:Depends}
+-Multi-Arch: same
+ Replaces: gccgo-4.9 (<< ${gcc:Version})
+ Description: GCC support library (development files)
+  This package contains the headers and static library files necessary for
+@@ -99,9 +86,6 @@
+ 
+ Package: libgcc4
+ Architecture: hppa
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+-Breaks: ${multiarch:breaks}
+ Section: libs
+ Priority: required
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+@@ -112,7 +96,6 @@
+ 
+ Package: libgcc4-dbg
+ Architecture: hppa
+-Multi-Arch: same
+ Section: debug
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libgcc4 (= ${gcc:Version}), ${misc:Depends}
+@@ -187,76 +170,6 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
+-Package: libhfgcc1
+-Architecture: armel
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
+-Conflicts: libgcc1-armhf [armel]
+-Description: GCC support library (hard float ABI)
+- Shared version of the support library, a library of internal subroutines
+- that GCC uses to overcome shortcomings of particular machines, or
+- special needs for some languages.
+-
+-Package: libhfgcc1-dbg
+-Architecture: armel
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfgcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
+-Conflicts: libgcc1-dbg-armhf [armel]
+-Description: GCC support library (debug symbols)
+- Debug symbols for the GCC support library.
+-
+-Package: libhfgcc-4.9-dev
+-Architecture: armel
+-Section: libdevel
+-Priority: optional
+-Recommends: ${dep:libcdev}
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libgccbiarch}, ${dep:libsspbiarch},
+- ${dep:libgompbiarch}, ${dep:libitmbiarch}, ${dep:libatomicbiarch},
+- ${dep:libbtracebiarch}, ${dep:libasanbiarch}, ${dep:liblsanbiarch},
+- ${dep:libtsanbiarch}, ${dep:libubsanbiarch},
+- ${dep:libvtvbiarch}, ${dep:libcilkrtsbiarch},
+- ${dep:libqmathbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GCC support library (hard float ABI development files)
+- This package contains the headers and static library files necessary for
+- building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+-
+-Package: libsfgcc1
+-Architecture: armhf
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
+-Conflicts: libgcc1-armel [armhf]
+-Description: GCC support library (soft float ABI)
+- Shared version of the support library, a library of internal subroutines
+- that GCC uses to overcome shortcomings of particular machines, or
+- special needs for some languages.
+-
+-Package: libsfgcc1-dbg
+-Architecture: armhf
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfgcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
+-Conflicts: libgcc1-dbg-armel [armhf]
+-Description: GCC support library (debug symbols)
+- Debug symbols for the GCC support library.
+-
+-Package: libsfgcc-4.9-dev
+-Architecture: armhf
+-Section: libdevel
+-Priority: optional
+-Recommends: ${dep:libcdev}
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libgccbiarch}, ${dep:libsspbiarch},
+- ${dep:libgompbiarch}, ${dep:libitmbiarch}, ${dep:libatomicbiarch},
+- ${dep:libbtracebiarch}, ${dep:libasanbiarch}, ${dep:liblsanbiarch},
+- ${dep:libtsanbiarch}, ${dep:libubsanbiarch},
+- ${dep:libvtvbiarch}, ${dep:libcilkrtsbiarch},
+- ${dep:libqmathbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GCC support library (soft float ABI development files)
+- This package contains the headers and static library files necessary for
+- building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+-
+ Package: libn32gcc1
+ Architecture: mips mipsel mips64 mips64el
+ Section: libs
+@@ -291,39 +204,6 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
+-Package: libx32gcc1
+-Architecture: amd64 i386
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
+-Description: GCC support library (x32)
+- Shared version of the support library, a library of internal subroutines
+- that GCC uses to overcome shortcomings of particular machines, or
+- special needs for some languages.
+-
+-Package: libx32gcc1-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
+-Description: GCC support library (debug symbols)
+- Debug symbols for the GCC support library.
+-
+-Package: libx32gcc-4.9-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Recommends: ${dep:libcdev}
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libgccbiarch}, ${dep:libsspbiarch},
+- ${dep:libgompbiarch}, ${dep:libitmbiarch}, ${dep:libatomicbiarch},
+- ${dep:libbtracebiarch}, ${dep:libasanbiarch}, ${dep:liblsanbiarch},
+- ${dep:libtsanbiarch}, ${dep:libubsanbiarch},
+- ${dep:libvtvbiarch}, ${dep:libcilkrtsbiarch},
+- ${dep:libqmathbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GCC support library (x32 development files)
+- This package contains the headers and static library files necessary for
+- building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+-
+ Package: gcc-4.9
+ Architecture: any
+ Section: devel
+@@ -350,7 +230,7 @@
+  This is the GNU C compiler, a fairly portable optimizing compiler for C.
+ 
+ Package: gcc-4.9-multilib
+-Architecture: amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32
++Architecture: amd64 i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32
+ Section: devel
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), gcc-4.9 (= ${gcc:Version}), ${dep:libcbiarchdev}, ${dep:libgccbiarchdev}, ${shlibs:Depends}, ${misc:Depends}
+@@ -364,7 +244,7 @@
+ Architecture: any
+ Section: devel
+ Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), gcc-4.9 (= ${gcc:Version}), libgmp-dev (>= 2:5.0.1~), ${shlibs:Depends}, ${misc:Depends}
++Depends: gcc-4.9-base (= ${gcc:Version}), gcc-4.9 (= ${gcc:Version}), libgmp3-dev | libgmp-dev (>= 2:5.0.1~), ${shlibs:Depends}, ${misc:Depends}
+ Description: Files for GNU GCC plugin development.
+  This package contains (header) files for GNU GCC plugin development. It
+  is only used for the development of GCC plugins, but not needed to run
+@@ -425,7 +305,7 @@
+  This is the GNU C++ compiler, a fairly portable optimizing compiler for C++.
+ 
+ Package: g++-4.9-multilib
+-Architecture: amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32
++Architecture: amd64 i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32
+ Section: devel
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), g++-4.9 (= ${gcc:Version}), gcc-4.9-multilib (= ${gcc:Version}), ${dep:libcxxbiarchdev}, ${shlibs:Depends}, ${misc:Depends}
+@@ -440,9 +320,6 @@
+ Section: libs
+ Architecture: any
+ Provides: libgomp1-armel [armel], libgomp1-armhf [armhf]
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+-Breaks: ${multiarch:breaks}
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Description: GCC OpenMP (GOMP) support library
+@@ -455,7 +332,6 @@
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libgomp1 (= ${gcc:Version}), ${misc:Depends}
+ Provides: libgomp1-dbg-armel [armel], libgomp1-dbg-armhf [armhf]
+-Multi-Arch: same
+ Description: GCC OpenMP (GOMP) support library (debug symbols)
+  GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+  in the GNU Compiler Collection.
+@@ -514,67 +390,10 @@
+ Description: GCC OpenMP (GOMP) support library (n32 debug symbols)
+  GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+ 
+-Package: libx32gomp1
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GCC OpenMP (GOMP) support library (x32)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+- in the GNU Compiler Collection.
+-
+-Package: libx32gomp1-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32gomp1 (= ${gcc:Version}), ${misc:Depends}
+-Description: GCC OpenMP (GOMP) support library (x32 debug symbols)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+-
+-Package: libhfgomp1
+-Section: libs
+-Architecture: armel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libgomp1-armhf [armel]
+-Description: GCC OpenMP (GOMP) support library (hard float ABI)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+- in the GNU Compiler Collection.
+-
+-Package: libhfgomp1-dbg
+-Architecture: armel
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfgomp1 (= ${gcc:Version}), ${misc:Depends}
+-Conflicts: libgomp1-dbg-armhf [armel]
+-Description: GCC OpenMP (GOMP) support library (hard float ABI debug symbols)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+-
+-Package: libsfgomp1
+-Section: libs
+-Architecture: armhf
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libgomp1-armel [armhf]
+-Description: GCC OpenMP (GOMP) support library (soft float ABI)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+- in the GNU Compiler Collection.
+-
+-Package: libsfgomp1-dbg
+-Architecture: armhf
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfgomp1 (= ${gcc:Version}), ${misc:Depends}
+-Conflicts: libgomp1-dbg-armel [armhf]
+-Description: GCC OpenMP (GOMP) support library (soft float ABI debug symbols)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+-
+ Package: libitm1
+ Section: libs
+ Architecture: any
+ Provides: libitm1-armel [armel], libitm1-armhf [armhf]
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Description: GNU Transactional Memory Library
+@@ -588,7 +407,6 @@
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libitm1 (= ${gcc:Version}), ${misc:Depends}
+ Provides: libitm1-dbg-armel [armel], libitm1-dbg-armhf [armhf]
+-Multi-Arch: same
+ Description: GNU Transactional Memory Library (debug symbols)
+  GNU Transactional Memory Library (libitm) provides transaction support for
+  accesses to the memory of a process, enabling easy-to-use synchronization of
+@@ -657,74 +475,10 @@
+ # accesses to the memory of a process, enabling easy-to-use synchronization of
+ # accesses to shared memory by several threads.
+ 
+-Package: libx32itm1
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GNU Transactional Memory Library (x32)
+- This manual documents the usage and internals of libitm. It provides
+- transaction support for accesses to the memory of a process, enabling
+- easy-to-use synchronization of accesses to shared memory by several threads.
+-
+-Package: libx32itm1-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32itm1 (= ${gcc:Version}), ${misc:Depends}
+-Description: GNU Transactional Memory Library (x32 debug symbols)
+- This manual documents the usage and internals of libitm. It provides
+- transaction support for accesses to the memory of a process, enabling
+- easy-to-use synchronization of accesses to shared memory by several threads.
+-
+-Package: libhfitm1
+-Section: libs
+-Architecture: armel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libitm1-armhf [armel]
+-Description: GNU Transactional Memory Library (hard float ABI)
+- GNU Transactional Memory Library (libitm) provides transaction support for
+- accesses to the memory of a process, enabling easy-to-use synchronization of
+- accesses to shared memory by several threads.
+-
+-Package: libhfitm1-dbg
+-Architecture: armel
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfitm1 (= ${gcc:Version}), ${misc:Depends}
+-Conflicts: libitm1-armel [armhf]
+-Description: GNU Transactional Memory Library (hard float ABI debug symbols)
+- GNU Transactional Memory Library (libitm) provides transaction support for
+- accesses to the memory of a process, enabling easy-to-use synchronization of
+- accesses to shared memory by several threads.
+-
+-Package: libsfitm1
+-Section: libs
+-Architecture: armhf
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GNU Transactional Memory Library (soft float ABI)
+- GNU Transactional Memory Library (libitm) provides transaction support for
+- accesses to the memory of a process, enabling easy-to-use synchronization of
+- accesses to shared memory by several threads.
+-
+-Package: libsfitm1-dbg
+-Architecture: armhf
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfitm1 (= ${gcc:Version}), ${misc:Depends}
+-Description: GNU Transactional Memory Library (soft float ABI debug symbols)
+- GNU Transactional Memory Library (libitm) provides transaction support for
+- accesses to the memory of a process, enabling easy-to-use synchronization of
+- accesses to shared memory by several threads.
+-
+ Package: libatomic1
+ Section: libs
+ Architecture: any
+ Provides: libatomic1-armel [armel], libatomic1-armhf [armhf]
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Description: support library providing __atomic built-in functions
+@@ -737,7 +491,6 @@
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libatomic1 (= ${gcc:Version}), ${misc:Depends}
+ Provides: libatomic1-dbg-armel [armel], libatomic1-dbg-armhf [armhf]
+-Multi-Arch: same
+ Description: support library providing __atomic built-in functions (debug symbols)
+  library providing __atomic built-in functions. When an atomic call cannot
+  be turned into lock-free instructions, GCC will make calls into this library.
+@@ -797,68 +550,10 @@
+  library providing __atomic built-in functions. When an atomic call cannot
+  be turned into lock-free instructions, GCC will make calls into this library.
+ 
+-Package: libx32atomic1
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: support library providing __atomic built-in functions (x32)
+- library providing __atomic built-in functions. When an atomic call cannot
+- be turned into lock-free instructions, GCC will make calls into this library.
+-
+-Package: libx32atomic1-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32atomic1 (= ${gcc:Version}), ${misc:Depends}
+-Description: support library providing __atomic built-in functions (x32 debug symbols)
+- library providing __atomic built-in functions. When an atomic call cannot
+- be turned into lock-free instructions, GCC will make calls into this library.
+-
+-Package: libhfatomic1
+-Section: libs
+-Architecture: armel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libatomic1-armhf [armel]
+-Description: support library providing __atomic built-in functions (hard float ABI)
+- library providing __atomic built-in functions. When an atomic call cannot
+- be turned into lock-free instructions, GCC will make calls into this library.
+-
+-Package: libhfatomic1-dbg
+-Architecture: armel
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfatomic1 (= ${gcc:Version}), ${misc:Depends}
+-Conflicts: libatomic1-armel [armhf]
+-Description: support library providing __atomic built-in functions (hard float ABI debug symbols)
+- library providing __atomic built-in functions. When an atomic call cannot
+- be turned into lock-free instructions, GCC will make calls into this library.
+-
+-Package: libsfatomic1
+-Section: libs
+-Architecture: armhf
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: support library providing __atomic built-in functions (soft float ABI)
+- library providing __atomic built-in functions. When an atomic call cannot
+- be turned into lock-free instructions, GCC will make calls into this library.
+-
+-Package: libsfatomic1-dbg
+-Architecture: armhf
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfatomic1 (= ${gcc:Version}), ${misc:Depends}
+-Description: support library providing __atomic built-in functions (soft float ABI debug symbols)
+- library providing __atomic built-in functions. When an atomic call cannot
+- be turned into lock-free instructions, GCC will make calls into this library.
+-
+ Package: libasan1
+ Section: libs
+ Architecture: any
+ Provides: libasan1-armel [armel], libasan1-armhf [armhf]
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Description: AddressSanitizer -- a fast memory error detector
+@@ -871,7 +566,6 @@
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libasan1 (= ${gcc:Version}), ${misc:Depends}
+ Provides: libasan1-dbg-armel [armel], libasan1-dbg-armhf [armhf]
+-Multi-Arch: same
+ Description: AddressSanitizer -- a fast memory error detector (debug symbols)
+  AddressSanitizer (ASan) is a fast memory error detector.  It finds
+  use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+@@ -933,67 +627,9 @@
+ # AddressSanitizer (ASan) is a fast memory error detector.  It finds
+ # use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+ 
+-Package: libx32asan1
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: AddressSanitizer -- a fast memory error detector (x32)
+- AddressSanitizer (ASan) is a fast memory error detector.  It finds
+- use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+-
+-Package: libx32asan1-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32asan1 (= ${gcc:Version}), ${misc:Depends}
+-Description: AddressSanitizer -- a fast memory error detector (x32 debug symbols)
+- AddressSanitizer (ASan) is a fast memory error detector.  It finds
+- use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+-
+-Package: libhfasan1
+-Section: libs
+-Architecture: armel
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libasan1-armhf [armel]
+-Description: AddressSanitizer -- a fast memory error detector (hard float ABI)
+- AddressSanitizer (ASan) is a fast memory error detector.  It finds
+- use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+-
+-Package: libhfasan1-dbg
+-Architecture: armel
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfasan1 (= ${gcc:Version}), ${misc:Depends}
+-Conflicts: libasan1-armel [armhf]
+-Description: AddressSanitizer -- a fast memory error detector (hard float ABI debug symbols)
+- AddressSanitizer (ASan) is a fast memory error detector.  It finds
+- use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+-
+-Package: libsfasan1
+-Section: libs
+-Architecture: armhf
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: AddressSanitizer -- a fast memory error detector (soft float ABI)
+- AddressSanitizer (ASan) is a fast memory error detector.  It finds
+- use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+-
+-Package: libsfasan1-dbg
+-Architecture: armhf
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfasan1 (= ${gcc:Version}), ${misc:Depends}
+-Description: AddressSanitizer -- a fast memory error detector (soft float ABI debug symbols)
+- AddressSanitizer (ASan) is a fast memory error detector.  It finds
+- use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+-
+ Package: liblsan0
+ Section: libs
+ Architecture: any
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Description: LeakSanitizer -- a memory leak detector (runtime)
+@@ -1005,7 +641,6 @@
+ Section: debug
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), liblsan0 (= ${gcc:Version}), ${misc:Depends}
+-Multi-Arch: same
+ Description: LeakSanitizer -- a memory leak detector (debug symbols)
+  LeakSanitizer (Lsan) is a memory leak detector which is integrated
+  into AddressSanitizer.
+@@ -1069,30 +704,10 @@
+ # LeakSanitizer (Lsan) is a memory leak detector which is integrated
+ # into AddressSanitizer.
+ 
+-Package: libx32lsan0
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: LeakSanitizer -- a memory leak detector (x32)
+- LeakSanitizer (Lsan) is a memory leak detector which is integrated
+- into AddressSanitizer.
+-
+-Package: libx32lsan0-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32lsan0 (= ${gcc:Version}), ${misc:Depends}
+-Description: LeakSanitizer -- a memory leak detector (x32 debug symbols)
+- LeakSanitizer (Lsan) is a memory leak detector which is integrated
+- into AddressSanitizer.
+-
+ Package: libtsan0
+ Section: libs
+ Architecture: any
+ Provides: libtsan0-armel [armel], libtsan0-armhf [armhf]
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Description: ThreadSanitizer -- a Valgrind-based detector of data races (runtime)
+@@ -1105,7 +720,6 @@
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libtsan0 (= ${gcc:Version}), ${misc:Depends}
+ Provides: libtsan0-dbg-armel [armel], libtsan0-dbg-armhf [armhf]
+-Multi-Arch: same
+ Description: ThreadSanitizer -- a Valgrind-based detector of data races (debug symbols)
+  ThreadSanitizer (Tsan) is a data race detector for C/C++ programs. 
+  The Linux and Mac versions are based on Valgrind. 
+@@ -1114,8 +728,6 @@
+ Section: libs
+ Architecture: any
+ Provides: libubsan0-armel [armel], libubsan0-armhf [armhf]
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Description: UBSan -- undefined behaviour sanitizer (runtime)
+@@ -1129,7 +741,6 @@
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libubsan0 (= ${gcc:Version}), ${misc:Depends}
+ Provides: libubsan0-dbg-armel [armel], libubsan0-dbg-armhf [armhf]
+-Multi-Arch: same
+ Description: UBSan -- undefined behaviour sanitizer (debug symbols)
+  UndefinedBehaviorSanitizer can be enabled via -fsanitize=undefined.
+  Various computations will be instrumented to detect undefined behavior
+@@ -1198,74 +809,10 @@
+ # Various computations will be instrumented to detect undefined behavior
+ # at runtime. Available for C and C++.
+ 
+-Package: libx32ubsan0
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: UBSan -- undefined behaviour sanitizer (x32)
+- UndefinedBehaviorSanitizer can be enabled via -fsanitize=undefined.
+- Various computations will be instrumented to detect undefined behavior
+- at runtime. Available for C and C++.
+-
+-Package: libx32ubsan0-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32ubsan0 (= ${gcc:Version}), ${misc:Depends}
+-Description: UBSan -- undefined behaviour sanitizer (x32 debug symbols)
+- UndefinedBehaviorSanitizer can be enabled via -fsanitize=undefined.
+- Various computations will be instrumented to detect undefined behavior
+- at runtime. Available for C and C++.
+-
+-Package: libhfubsan0
+-Section: libs
+-Architecture: armel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libubsan0-armhf [armel]
+-Description: UBSan -- undefined behaviour sanitizer (hard float ABI)
+- UndefinedBehaviorSanitizer can be enabled via -fsanitize=undefined.
+- Various computations will be instrumented to detect undefined behavior
+- at runtime. Available for C and C++.
+-
+-Package: libhfubsan0-dbg
+-Architecture: armel
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfubsan0 (= ${gcc:Version}), ${misc:Depends}
+-Conflicts: libubsan0-armel [armhf]
+-Description: UBSan -- undefined behaviour sanitizer (hard float ABI debug symbols)
+- UndefinedBehaviorSanitizer can be enabled via -fsanitize=undefined.
+- Various computations will be instrumented to detect undefined behavior
+- at runtime. Available for C and C++.
+-
+-Package: libsfubsan0
+-Section: libs
+-Architecture: armhf
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: UBSan -- undefined behaviour sanitizer (soft float ABI)
+- UndefinedBehaviorSanitizer can be enabled via -fsanitize=undefined.
+- Various computations will be instrumented to detect undefined behavior
+- at runtime. Available for C and C++.
+-
+-Package: libsfubsan0-dbg
+-Architecture: armhf
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfubsan0 (= ${gcc:Version}), ${misc:Depends}
+-Description: UBSan -- undefined behaviour sanitizer (soft float ABI debug symbols)
+- UndefinedBehaviorSanitizer can be enabled via -fsanitize=undefined.
+- Various computations will be instrumented to detect undefined behavior
+- at runtime. Available for C and C++.
+-
+ Package: libcilkrts5
+ Section: libs
+ Architecture: any
+ Provides: libcilkrts5-armel [armel], libcilkrts5-armhf [armhf]
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Description: Intel Cilk Plus language extensions (runtime)
+@@ -1278,7 +825,6 @@
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libcilkrts5 (= ${gcc:Version}), ${misc:Depends}
+ Provides: libcilkrts5-dbg-armel [armel], libcilkrts5-dbg-armhf [armhf]
+-Multi-Arch: same
+ Description: Intel Cilk Plus language extensions (debug symbols)
+  Intel Cilk Plus is an extension to the C and C++ languages to support
+  data and task parallelism.
+@@ -1320,29 +866,9 @@
+  Intel Cilk Plus is an extension to the C and C++ languages to support
+  data and task parallelism.
+ 
+-Package: libx32cilkrts5
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: Intel Cilk Plus language extensions (x32)
+- Intel Cilk Plus is an extension to the C and C++ languages to support
+- data and task parallelism.
+-
+-Package: libx32cilkrts5-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32cilkrts5 (= ${gcc:Version}), ${misc:Depends}
+-Description: Intel Cilk Plus language extensions (x32 debug symbols)
+- Intel Cilk Plus is an extension to the C and C++ languages to support
+- data and task parallelism.
+-
+ Package: libquadmath0
+ Section: libs
+ Architecture: any
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Description: GCC Quad-Precision Math Library
+@@ -1355,7 +881,6 @@
+ Section: debug
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libquadmath0 (= ${gcc:Version}), ${misc:Depends}
+-Multi-Arch: same
+ Description: GCC Quad-Precision Math Library (debug symbols)
+  A library, which provides quad-precision mathematical functions on targets
+  supporting the __float128 datatype.
+@@ -1420,63 +945,6 @@
+ # A library, which provides quad-precision mathematical functions on targets
+ # supporting the __float128 datatype.
+ 
+-Package: libx32quadmath0
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GCC Quad-Precision Math Library (x32)
+- A library, which provides quad-precision mathematical functions on targets
+- supporting the __float128 datatype. The library is used to provide on such
+- targets the REAL(16) type in the GNU Fortran compiler.
+-
+-Package: libx32quadmath0-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32quadmath0 (= ${gcc:Version}), ${misc:Depends}
+-Description: GCC Quad-Precision Math Library (x32 debug symbols)
+- A library, which provides quad-precision mathematical functions on targets
+- supporting the __float128 datatype.
+-
+-Package: libhfquadmath0
+-Section: libs
+-Architecture: armel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GCC Quad-Precision Math Library (hard float ABI)
+- A library, which provides quad-precision mathematical functions on targets
+- supporting the __float128 datatype. The library is used to provide on such
+- targets the REAL(16) type in the GNU Fortran compiler.
+-
+-Package: libhfquadmath0-dbg
+-Architecture: armel
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfquadmath0 (= ${gcc:Version}), ${misc:Depends}
+-Description: GCC Quad-Precision Math Library (hard float ABI debug symbols)
+- A library, which provides quad-precision mathematical functions on targets
+- supporting the __float128 datatype.
+-
+-Package: libsfquadmath0
+-Section: libs
+-Architecture: armhf
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GCC Quad-Precision Math Library (soft float ABI)
+- A library, which provides quad-precision mathematical functions on targets
+- supporting the __float128 datatype. The library is used to provide on such
+- targets the REAL(16) type in the GNU Fortran compiler.
+-
+-Package: libsfquadmath0-dbg
+-Architecture: armhf
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfquadmath0 (= ${gcc:Version}), ${misc:Depends}
+-Description: GCC Quad-Precision Math Library (hard float ABI debug symbols)
+- A library, which provides quad-precision mathematical functions on targets
+- supporting the __float128 datatype.
+-
+ Package: gobjc++-4.9
+ Architecture: any
+ Priority: optional
+@@ -1489,7 +957,7 @@
+  gcc backend to generate optimized code.
+ 
+ Package: gobjc++-4.9-multilib
+-Architecture: amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32
++Architecture: amd64 i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32
+ Section: devel
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), gobjc++-4.9 (= ${gcc:Version}), g++-4.9-multilib (= ${gcc:Version}), gobjc-4.9-multilib (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+@@ -1512,7 +980,7 @@
+  gcc backend to generate optimized code.
+ 
+ Package: gobjc-4.9-multilib
+-Architecture: amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32
++Architecture: amd64 i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32
+ Section: devel
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), gobjc-4.9 (= ${gcc:Version}), gcc-4.9-multilib (= ${gcc:Version}), ${dep:libobjcbiarchdev}, ${shlibs:Depends}, ${misc:Depends}
+@@ -1528,7 +996,6 @@
+ Section: libdevel
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), libgcc-4.9-dev (= ${gcc:Version}), libobjc4 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Multi-Arch: same
+ Description: Runtime library for GNU Objective-C applications (development files)
+  This package contains the headers and static library files needed to build
+  GNU ObjC applications.
+@@ -1560,39 +1027,10 @@
+  This package contains the headers and static library files needed to build
+  GNU ObjC applications.
+ 
+-Package: libx32objc-4.9-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32gcc-4.9-dev (= ${gcc:Version}), libx32objc4 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Objective-C applications (x32 development files)
+- This package contains the headers and static library files needed to build
+- GNU ObjC applications.
+-
+-Package: libhfobjc-4.9-dev
+-Architecture: armel
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfgcc-4.9-dev (= ${gcc:Version}), libhfobjc4 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Objective-C applications (hard float ABI development files)
+- This package contains the headers and static library files needed to build
+- GNU ObjC applications.
+-
+-Package: libsfobjc-4.9-dev
+-Architecture: armhf
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfgcc-4.9-dev (= ${gcc:Version}), libsfobjc4 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Objective-C applications (soft float development files)
+- This package contains the headers and static library files needed to build
+- GNU ObjC applications.
+-
+ Package: libobjc4
+ Section: libs
+ Architecture: any
+ Provides: libobjc4-armel [armel], libobjc4-armhf [armhf]
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Description: Runtime library for GNU Objective-C applications
+@@ -1602,7 +1040,6 @@
+ Section: debug
+ Architecture: any
+ Provides: libobjc4-dbg-armel [armel], libobjc4-dbg-armhf [armhf]
+-Multi-Arch: same
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libobjc4 (= ${gcc:Version}), libgcc1-dbg (>= ${libgcc:Version}), ${misc:Depends}
+ Description: Runtime library for GNU Objective-C applications (debug symbols)
+@@ -1657,58 +1094,6 @@
+ Description: Runtime library for GNU Objective-C applications (n32 debug symbols)
+  Library needed for GNU ObjC applications linked against the shared library.
+ 
+-Package: libx32objc4
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Objective-C applications (x32)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+-Package: libx32objc4-dbg
+-Section: debug
+-Architecture: amd64 i386
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32objc4 (= ${gcc:Version}), libx32gcc1-dbg (>= ${gcc:EpochVersion}), ${misc:Depends}
+-Description: Runtime library for GNU Objective-C applications (x32 debug symbols)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+-Package: libhfobjc4
+-Section: libs
+-Architecture: armel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libobjc4-armhf [armel]
+-Description: Runtime library for GNU Objective-C applications (hard float ABI)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+-Package: libhfobjc4-dbg
+-Section: debug
+-Architecture: armel
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfobjc4 (= ${gcc:Version}), libhfgcc1-dbg (>= ${gcc:EpochVersion}), ${misc:Depends}
+-Conflicts: libobjc4-dbg-armhf [armel]
+-Description: Runtime library for GNU Objective-C applications (hard float ABI debug symbols)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+-Package: libsfobjc4
+-Section: libs
+-Architecture: armhf
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libobjc4-armel [armhf]
+-Description: Runtime library for GNU Objective-C applications (soft float ABI)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+-Package: libsfobjc4-dbg
+-Section: debug
+-Architecture: armhf
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfobjc4 (= ${gcc:Version}), libsfgcc1-dbg (>= ${gcc:EpochVersion}), ${misc:Depends}
+-Conflicts: libobjc4-dbg-armel [armhf]
+-Description: Runtime library for GNU Objective-C applications (soft float ABI debug symbols)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+ Package: gfortran-4.9
+ Architecture: any
+ Priority: optional
+@@ -1721,7 +1106,7 @@
+  gcc backend to generate optimized code.
+ 
+ Package: gfortran-4.9-multilib
+-Architecture: amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32
++Architecture: amd64 i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32
+ Section: devel
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), gfortran-4.9 (= ${gcc:Version}), gcc-4.9-multilib (= ${gcc:Version}), ${dep:libgfortranbiarchdev}, ${shlibs:Depends}, ${misc:Depends}
+@@ -1745,7 +1130,6 @@
+ Section: libdevel
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), libgcc-4.9-dev (= ${gcc:Version}), libgfortran3 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Multi-Arch: same
+ Description: Runtime library for GNU Fortran applications (development files)
+  This package contains the headers and static library files needed to build
+  GNU Fortran applications.
+@@ -1777,40 +1161,10 @@
+  This package contains the headers and static library files needed to build
+  GNU Fortran applications.
+ 
+-Package: libx32gfortran-4.9-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32gcc-4.9-dev (= ${gcc:Version}), libx32gfortran3 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Fortran applications (x32 development files)
+- This package contains the headers and static library files needed to build
+- GNU Fortran applications.
+-
+-Package: libhfgfortran-4.9-dev
+-Architecture: armel
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfgcc-4.9-dev (= ${gcc:Version}), libhfgfortran3 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Fortran applications (hard float ABI development files)
+- This package contains the headers and static library files needed to build
+- GNU Fortran applications.
+-
+-Package: libsfgfortran-4.9-dev
+-Architecture: armhf
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfgcc-4.9-dev (= ${gcc:Version}), libsfgfortran3 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Fortran applications (soft float ABI development files)
+- This package contains the headers and static library files needed to build
+- GNU Fortran applications.
+-
+ Package: libgfortran3
+ Section: libs
+ Architecture: any
+ Provides: libgfortran3-armel [armel], libgfortran3-armhf [armhf]
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+-Breaks: ${multiarch:breaks}
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Description: Runtime library for GNU Fortran applications
+@@ -1821,7 +1175,6 @@
+ Section: debug
+ Architecture: any
+ Provides: libgfortran3-dbg-armel [armel], libgfortran3-dbg-armhf [armhf]
+-Multi-Arch: same
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libgfortran3 (= ${gcc:Version}), libgcc1-dbg (>= ${libgcc:Version}), ${misc:Depends}
+ Description: Runtime library for GNU Fortran applications (debug symbols)
+@@ -1883,64 +1236,6 @@
+  Library needed for GNU Fortran applications linked against the
+  shared library.
+ 
+-Package: libx32gfortran3
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Fortran applications (x32)
+- Library needed for GNU Fortran applications linked against the
+- shared library.
+-
+-Package: libx32gfortran3-dbg
+-Section: debug
+-Architecture: amd64 i386
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32gfortran3 (= ${gcc:Version}), ${misc:Depends}
+-Description: Runtime library for GNU Fortran applications (x32 debug symbols)
+- Library needed for GNU Fortran applications linked against the
+- shared library.
+-
+-Package: libhfgfortran3
+-Section: libs
+-Architecture: armel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libgfortran3-armhf [armel]
+-Description: Runtime library for GNU Fortran applications (hard float ABI)
+- Library needed for GNU Fortran applications linked against the
+- shared library.
+-
+-Package: libhfgfortran3-dbg
+-Section: debug
+-Architecture: armel
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfgfortran3 (= ${gcc:Version}), ${misc:Depends}
+-Conflicts: libgfortran3-dbg-armhf [armel]
+-Description: Runtime library for GNU Fortran applications (hard float ABI debug symbols)
+- Library needed for GNU Fortran applications linked against the
+- shared library.
+-
+-Package: libsfgfortran3
+-Section: libs
+-Architecture: armhf
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libgfortran3-armel [armhf]
+-Description: Runtime library for GNU Fortran applications (soft float ABI)
+- Library needed for GNU Fortran applications linked against the
+- shared library.
+-
+-Package: libsfgfortran3-dbg
+-Section: debug
+-Architecture: armhf
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfgfortran3 (= ${gcc:Version}), ${misc:Depends}
+-Conflicts: libgfortran3-dbg-armel [armhf]
+-Description: Runtime library for GNU Fortran applications (hard float ABI debug symbols)
+- Library needed for GNU Fortran applications linked against the
+- shared library.
+-
+ Package: gccgo-4.9
+ Architecture: any
+ Priority: optional
+@@ -1952,7 +1247,7 @@
+  by the gcc compiler. It uses the gcc backend to generate optimized code.
+ 
+ Package: gccgo-4.9-multilib
+-Architecture: amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32
++Architecture: amd64 i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32
+ Section: devel
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), gccgo-4.9 (= ${gcc:Version}), gcc-4.9-multilib (= ${gcc:Version}), ${dep:libgobiarch}, ${shlibs:Depends}, ${misc:Depends}
+@@ -1976,8 +1271,6 @@
+ Section: libs
+ Architecture: any
+ Provides: libgo5-armel [armel], libgo5-armhf [armhf]
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Replaces: libgo3
+@@ -1989,7 +1282,6 @@
+ Section: debug
+ Architecture: any
+ Provides: libgo5-dbg-armel [armel], libgo5-dbg-armhf [armhf]
+-Multi-Arch: same
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libgo5 (= ${gcc:Version}), ${misc:Depends}
+ Description: Runtime library for GNU Go applications (debug symbols)
+@@ -2054,25 +1346,6 @@
+  Library needed for GNU Go applications linked against the
+  shared library.
+ 
+-Package: libx32go5
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Replaces: libx32go3
+-Description: Runtime library for GNU Go applications (x32)
+- Library needed for GNU Go applications linked against the
+- shared library.
+-
+-Package: libx32go5-dbg
+-Section: debug
+-Architecture: amd64 i386
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32go5 (= ${gcc:Version}), ${misc:Depends}
+-Description: Runtime library for GNU Go applications (x32 debug symbols)
+- Library needed for GNU Go applications linked against the
+- shared library.
+-
+ Package: gcj-4.9
+ Section: java
+ Architecture: any
+@@ -2139,8 +1412,6 @@
+ Section: libs
+ Architecture: any
+ Priority: optional
+-Pre-Depends: multiarch-support
+-Multi-Arch: same
+ Depends: gcc-4.9-base (>= ${gcc:SoftVersion}), libgcj-common (>= 1:4.1.1-21), ${shlibs:Depends}, ${misc:Depends}
+ Recommends: gcj-4.9-jre-lib (>= ${gcj:SoftVersion})
+ Suggests: libgcj15-dbg (>= ${gcc:Version}), libgcj15-awt (= ${gcj:Version})
+@@ -2164,8 +1435,6 @@
+ Section: libs
+ Architecture: any
+ Priority: optional
+-Pre-Depends: multiarch-support
+-Multi-Arch: same
+ Depends: gcc-4.9-base (>= ${gcc:SoftVersion}), libgcj15 (= ${gcj:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Suggests: ${pkg:gcjqt}
+ Description: AWT peer runtime libraries for use with gcj
+@@ -2176,7 +1445,6 @@
+ Package: libgcj15-dev
+ Section: libdevel
+ Architecture: any
+-Multi-Arch: same
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), libgcj15-awt (= ${gcj:Version}), libgcj-bc, ${pkg:gcjgtk}, ${pkg:gcjqt}, zlib1g-dev, ${shlibs:Depends}, ${misc:Depends}
+ Suggests: libgcj-doc
+@@ -2189,8 +1457,6 @@
+ Section: debug
+ Architecture: any
+ Priority: extra
+-Pre-Depends: multiarch-support
+-Multi-Arch: same
+ Depends: gcc-4.9-base (= ${gcc:Version}), libgcj15 (= ${gcj:Version}), ${misc:Depends}
+ Recommends: binutils, libc6-dbg | libc-dbg
+ Description: Debugging symbols for libraries provided in libgcj15-dev
+@@ -2225,9 +1491,6 @@
+ Priority: important
+ Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libc}, ${shlibs:Depends}, ${misc:Depends}
+ Provides: libstdc++6-armel [armel], libstdc++6-armhf [armhf]
+-Multi-Arch: same
+-Pre-Depends: multiarch-support
+-Breaks: ${multiarch:breaks}
+ Conflicts: scim (<< 1.4.2-1)
+ Replaces: libstdc++6-4.9-dbg (<< 4.9.0-3)
+ Description: GNU Standard C++ Library v3
+@@ -2274,50 +1537,8 @@
+  was included up to g++-2.95. The first version of libstdc++-v3 appeared
+  in g++-3.0.
+ 
+-Package: libx32stdc++6
+-Architecture: amd64 i386
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32gcc1 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: GNU Standard C++ Library v3 (x32)
+- This package contains an additional runtime library for C++ programs
+- built with the GNU compiler.
+- .
+- libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+- was included up to g++-2.95. The first version of libstdc++-v3 appeared
+- in g++-3.0.
+-
+-Package: libhfstdc++6
+-Architecture: armel
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfgcc1 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libstdc++6-armhf [armel]
+-Description: GNU Standard C++ Library v3 (hard float ABI)
+- This package contains an additional runtime library for C++ programs
+- built with the GNU compiler.
+- .
+- libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+- was included up to g++-2.95. The first version of libstdc++-v3 appeared
+- in g++-3.0.
+-
+-Package: libsfstdc++6
+-Architecture: armhf
+-Section: libs
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfgcc1 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libstdc++6-armel [armhf]
+-Description: GNU Standard C++ Library v3 (soft float ABI)
+- This package contains an additional runtime library for C++ programs
+- built with the GNU compiler.
+- .
+- libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+- was included up to g++-2.95. The first version of libstdc++-v3 appeared
+- in g++-3.0.
+-
+ Package: libstdc++-4.9-dev
+ Architecture: any
+-Multi-Arch: same
+ Section: libdevel
+ Priority: optional
+ Depends: gcc-4.9-base (= ${gcc:Version}), libgcc-4.9-dev (= ${gcc:Version}),
+@@ -2337,7 +1558,6 @@
+ 
+ Package: libstdc++-4.9-pic
+ Architecture: any
+-Multi-Arch: same
+ Section: libdevel
+ Priority: extra
+ Depends: gcc-4.9-base (= ${gcc:Version}), libstdc++6 (>= ${gcc:Version}),
+@@ -2355,7 +1575,6 @@
+ Depends: gcc-4.9-base (= ${gcc:Version}), libstdc++6 (>= ${gcc:Version}),
+  libgcc1-dbg (>= ${libgcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+ Provides: libstdc++6-4.9-dbg-armel [armel], libstdc++6-4.9-dbg-armhf [armhf]
+-Multi-Arch: same
+ Recommends: libstdc++-4.9-dev (= ${gcc:Version})
+ Conflicts: libstdc++5-dbg, libstdc++5-3.3-dbg, libstdc++6-dbg,
+  libstdc++6-4.0-dbg, libstdc++6-4.1-dbg, libstdc++6-4.2-dbg,
+@@ -2452,85 +1671,6 @@
+  This package contains the shared library of libstdc++ compiled with
+  debugging symbols.
+ 
+-Package: libx32stdc++-4.9-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32gcc-4.9-dev (= ${gcc:Version}), libx32stdc++6 (>= ${gcc:Version}),
+- libstdc++-4.9-dev (= ${gcc:Version}), ${misc:Depends}
+-Description: GNU Standard C++ Library v3 (development files)
+- This package contains the headers and static library files necessary for
+- building C++ programs which use libstdc++.
+- .
+- libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+- was included up to g++-2.95. The first version of libstdc++-v3 appeared
+- in g++-3.0.
+-
+-Package: libx32stdc++6-4.9-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libx32stdc++6 (>= ${gcc:Version}),
+- libstdc++-4.9-dev (= ${gcc:Version}), libx32gcc1-dbg (>= ${gcc:EpochVersion}),
+- ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libx32stdc++6-dbg, libx32stdc++6-4.6-dbg,
+- libx32stdc++6-4.7-dbg, libx32stdc++6-4.8-dbg
+-Description: GNU Standard C++ Library v3 (debugging files)
+- This package contains the shared library of libstdc++ compiled with
+- debugging symbols.
+-
+-Package: libhfstdc++-4.9-dev
+-Architecture: armel
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfgcc-4.9-dev (= ${gcc:Version}),
+- libhfstdc++6 (>= ${gcc:Version}), libstdc++-4.9-dev (= ${gcc:Version}), ${misc:Depends}
+-Description: GNU Standard C++ Library v3 (development files)
+- This package contains the headers and static library files necessary for
+- building C++ programs which use libstdc++.
+- .
+- libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+- was included up to g++-2.95. The first version of libstdc++-v3 appeared
+- in g++-3.0.
+-
+-Package: libhfstdc++6-4.9-dbg
+-Architecture: armel
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libhfstdc++6 (>= ${gcc:Version}),
+- libstdc++-4.9-dev (= ${gcc:Version}), libhfgcc1-dbg (>= ${gcc:EpochVersion}),
+- ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libhfstdc++6-dbg, libhfstdc++6-4.3-dbg, libhfstdc++6-4.4-dbg, libhfstdc++6-4.5-dbg, libhfstdc++6-4.6-dbg, libhfstdc++6-4.7-dbg, libhfstdc++6-4.8-dbg, libstdc++6-armhf [armel]
+-Description: GNU Standard C++ Library v3 (debugging files)
+- This package contains the shared library of libstdc++ compiled with
+- debugging symbols.
+-
+-Package: libsfstdc++-4.9-dev
+-Architecture: armhf
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfgcc-4.9-dev (= ${gcc:Version}),
+- libsfstdc++6 (>= ${gcc:Version}), libstdc++-4.9-dev (= ${gcc:Version}), ${misc:Depends}
+-Description: GNU Standard C++ Library v3 (development files)
+- This package contains the headers and static library files necessary for
+- building C++ programs which use libstdc++.
+- .
+- libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+- was included up to g++-2.95. The first version of libstdc++-v3 appeared
+- in g++-3.0.
+-
+-Package: libsfstdc++6-4.9-dbg
+-Architecture: armhf
+-Section: debug
+-Priority: extra
+-Depends: gcc-4.9-base (= ${gcc:Version}), libsfstdc++6 (>= ${gcc:Version}),
+- libstdc++-4.9-dev (= ${gcc:Version}), libsfgcc1-dbg (>= ${gcc:EpochVersion}),
+- ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libsfstdc++6-dbg, libsfstdc++6-4.3-dbg, libsfstdc++6-4.4-dbg, libsfstdc++6-4.5-dbg, libsfstdc++6-4.6-dbg, libsfstdc++6-4.7-dbg, libsfstdc++6-4.8-dbg, libstdc++6-armel [armhf]
+-Description: GNU Standard C++ Library v3 (debugging files)
+- This package contains the shared library of libstdc++ compiled with
+- debugging symbols.
+-
+ Package: libstdc++-4.9-doc
+ Architecture: all
+ Section: doc
+diff -urN debian/control.m4 gcc-4.9-4.9.1.orig/debian/control.m4
+--- debian/control.m4	2014-10-19 06:23:27.348684386 +0900
++++ gcc-4.9-4.9.1.orig/debian/control.m4	2014-10-19 20:12:15.672041102 +0900
+@@ -35,23 +35,7 @@
+ Source: SRCNAME
+ Section: devel
+ Priority: PRI(optional)
+-ifelse(DIST,`Ubuntu',`dnl
+-ifelse(regexp(SRCNAME, `gnat\|gdc-'),0,`dnl
+-Maintainer: Ubuntu MOTU Developers <ubuntu-motu@lists.ubuntu.com>
+-', `dnl
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-')dnl SRCNAME
+-XSBC-Original-Maintainer: MAINTAINER
+-', `dnl
+-Maintainer: MAINTAINER
+-')dnl DIST
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Uploaders: Ludovic Brenta <lbrenta@debian.org>
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Uploaders: Iain Buclaw <ibuclaw@ubuntu.com>, Matthias Klose <doko@debian.org>
+-', `dnl
+-Uploaders: Matthias Klose <doko@debian.org>
+-')dnl SRCNAME
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.9.5
+ ifdef(`TARGET',`dnl cross
+ Build-Depends: debhelper (>= 5.0.62), DPKG_BUILD_DEP
+@@ -80,15 +64,8 @@
+   CHECK_BUILD_DEP realpath (>= 1.9.12), chrpath, lsb-release, quilt
+ Build-Depends-Indep: LIBSTDCXX_BUILD_INDEP JAVA_BUILD_INDEP
+ ')dnl
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Homepage: http://gcc.gnu.org/
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Homepage: http://gdcproject.org/
+-', `dnl
+-Homepage: http://gcc.gnu.org/
+-')dnl SRCNAME
+-Vcs-Browser: http://svn.debian.org/viewsvn/gcccvs/branches/sid/gcc`'PV/
+-Vcs-Svn: svn://anonscm.debian.org/gcccvs/branches/sid/gcc`'PV
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-upper
++Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ ifelse(regexp(SRCNAME, `gcc-snapshot'),0,`dnl
+ Package: gcc-snapshot`'TS
+@@ -140,7 +117,7 @@
+ Priority: PRI(required)
+ Depends: ${misc:Depends}
+ Replaces: ${base:Replaces}
+-Breaks: gcc-4.4-base (<< 4.4.7), gcj-4.4-base (<< 4.4.6-9~), gnat-4.4-base (<< 4.4.6-3~), gcj-4.6-base (<< 4.6.1-4~), gnat-4.6 (<< 4.6.1-5~), dehydra (<= 0.9.hg20110609-2)
++Breaks: gcc-4.4-base (<< 4.4.3), gcj-4.4-base (<< 4.4.3), gnat-4.4-base (<< 4.4.3), gcj-4.6-base (<< 4.6.1-4~), gnat-4.6 (<< 4.6.1-5~), dehydra (<= 0.9.hg20110609-2)
+ BUILT_USING`'dnl
+ Description: GCC, the GNU Compiler Collection (base package)
+  This package contains files common to all languages and libraries
+diff -urN debian/cpp-4.9-i586-linux-gnu.preinst gcc-4.9-4.9.1.orig/debian/cpp-4.9-i586-linux-gnu.preinst
+--- debian/cpp-4.9-i586-linux-gnu.preinst	1970-01-01 09:00:00.000000000 +0900
++++ gcc-4.9-4.9.1.orig/debian/cpp-4.9-i586-linux-gnu.preinst	2014-10-19 06:23:27.352686412 +0900
+@@ -0,0 +1,11 @@
++#!/bin/sh
++
++set -e
++
++if [ "$1" = "upgrade" ] || [ "$1" = "configure" ]; then
++    update-alternatives --quiet --remove i586-linux-gnu-cpp /usr/bin/i586-linux-gnu-cpp-4.9
++fi
++
++#DEBHELPER#
++
++exit 0
+diff -urN debian/g++-4.9-i586-linux-gnu.preinst gcc-4.9-4.9.1.orig/debian/g++-4.9-i586-linux-gnu.preinst
+--- debian/g++-4.9-i586-linux-gnu.preinst	1970-01-01 09:00:00.000000000 +0900
++++ gcc-4.9-4.9.1.orig/debian/g++-4.9-i586-linux-gnu.preinst	2014-10-19 06:23:27.352686412 +0900
+@@ -0,0 +1,11 @@
++#!/bin/sh
++
++set -e
++
++if [ "$1" = "upgrade" ] || [ "$1" = "configure" ]; then
++    update-alternatives --quiet --remove i586-linux-gnu-g++ /usr/bin/i586-linux-gnu-g++-4.9
++fi
++
++#DEBHELPER#
++
++exit 0
+diff -urN debian/gcc-4.9-i586-linux-gnu.preinst gcc-4.9-4.9.1.orig/debian/gcc-4.9-i586-linux-gnu.preinst
+--- debian/gcc-4.9-i586-linux-gnu.preinst	1970-01-01 09:00:00.000000000 +0900
++++ gcc-4.9-4.9.1.orig/debian/gcc-4.9-i586-linux-gnu.preinst	2014-10-19 06:23:27.352686412 +0900
+@@ -0,0 +1,12 @@
++#!/bin/sh
++
++set -e
++
++if [ "$1" = "upgrade" ] || [ "$1" = "configure" ]; then
++    update-alternatives --quiet --remove i586-linux-gnu-gcc /usr/bin/i586-linux-gnu-gcc-4.9
++    update-alternatives --quiet --remove i586-linux-gnu-gcov /usr/bin/i586-linux-gnu-gcov-4.9
++fi
++
++#DEBHELPER#
++
++exit 0
+diff -urN debian/gfortran-4.9-i586-linux-gnu.preinst gcc-4.9-4.9.1.orig/debian/gfortran-4.9-i586-linux-gnu.preinst
+--- debian/gfortran-4.9-i586-linux-gnu.preinst	1970-01-01 09:00:00.000000000 +0900
++++ gcc-4.9-4.9.1.orig/debian/gfortran-4.9-i586-linux-gnu.preinst	2014-10-19 06:23:27.360690441 +0900
+@@ -0,0 +1,11 @@
++#!/bin/sh
++
++set -e
++
++if [ "$1" = "upgrade" ] || [ "$1" = "configure" ]; then
++    update-alternatives --quiet --remove i586-linux-gnu-gfortran /usr/bin/i586-linux-gnu-gfortran-4.9
++fi
++
++#DEBHELPER#
++
++exit 0
+diff -urN debian/patches/ada-libgnatprj.diff gcc-4.9-4.9.1.orig/debian/patches/ada-libgnatprj.diff
+--- debian/patches/ada-libgnatprj.diff	2014-10-19 06:23:27.416718719 +0900
++++ gcc-4.9-4.9.1.orig/debian/patches/ada-libgnatprj.diff	2014-10-19 20:18:02.351410006 +0900
+@@ -1497,7 +1497,7 @@
+  # these libraries are used by various programs built for the host environment
+  #
+ -host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc isl cloog libelf libiconv libada libgnatvsn"
+-+host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc isl cloog libelf libiconv libada libgnatvsn libgnatprj"
+++host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc ppl cloog libelf libiconv libada libgnatvsn libgnatprj"
+  
+  # these tools are built for the host environment
+  # Note, the powerpc-eabi build depends on sim occurring before gdb in order to
+diff -urN debian/patches/ada-libgnatvsn.diff gcc-4.9-4.9.1.orig/debian/patches/ada-libgnatvsn.diff
+--- debian/patches/ada-libgnatvsn.diff	2014-10-19 06:23:27.416718719 +0900
++++ gcc-4.9-4.9.1.orig/debian/patches/ada-libgnatvsn.diff	2014-10-19 20:16:44.621400932 +0900
+@@ -1578,7 +1578,7 @@
+  # these libraries are used by various programs built for the host environment
+  #
+ -host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc isl cloog libelf libiconv libada"
+-+host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc isl cloog libelf libiconv libada libgnatvsn"
+++host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc ppl cloog libelf libiconv libada libgnatvsn"
+  
+  # these tools are built for the host environment
+  # Note, the powerpc-eabi build depends on sim occurring before gdb in order to
+diff -urN debian/patches/ada-link-lib.diff gcc-4.9-4.9.1.orig/debian/patches/ada-link-lib.diff
+--- debian/patches/ada-link-lib.diff	2014-10-19 06:23:27.420720740 +0900
++++ gcc-4.9-4.9.1.orig/debian/patches/ada-link-lib.diff	2014-10-19 20:17:44.081457807 +0900
+@@ -1913,7 +1913,7 @@
+  # these libraries are used by various programs built for the host environment
+  #
+ -host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc isl cloog libelf libiconv"
+-+host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc isl cloog libelf libiconv libada"
+++host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc ppl cloog libelf libiconv libada"
+  
+  # these tools are built for the host environment
+  # Note, the powerpc-eabi build depends on sim occurring before gdb in order to
+diff -urN debian/patches/gcc-cloog-dl.diff gcc-4.9-4.9.1.orig/debian/patches/gcc-cloog-dl.diff
+--- debian/patches/gcc-cloog-dl.diff	2014-10-19 06:23:27.428724784 +0900
++++ gcc-4.9-4.9.1.orig/debian/patches/gcc-cloog-dl.diff	2014-05-15 17:20:03.002605182 +0900
+@@ -1,7 +1,7 @@
+ # DP: Link against -ldl instead of -lcloog -lppl. Exit with an error when using
+ # DP: the Graphite loop transformation infrastructure without having the
+-# DP: libcloog-ppl0 package installed. Packages using these optimizations
+-# DP: should build-depend on libcloog-ppl0.
++# DP: libcloog-ppl[01] package installed. Packages using these optimizations
++# DP: should build-depend on libcloog-ppl1 | libcloog-ppl0.
+ 
+ 2011-01-04  Jakub Jelinek  <jakub@redhat.com>
+ 
+@@ -22,7 +22,7 @@
+ ===================================================================
+ --- a/src/gcc/Makefile.in
+ +++ b/src/gcc/Makefile.in
+-@@ -965,6 +965,8 @@
++@@ -980,6 +980,8 @@
+  PLUGIN_H = plugin.h $(GCC_PLUGIN_H)
+  PLUGIN_VERSION_H = plugin-version.h configargs.h
+  LIBFUNCS_H = libfuncs.h $(HASHTAB_H)
+@@ -31,7 +31,7 @@
+  
+  #
+  # Now figure out from those variables how to compile and link.
+-@@ -1019,7 +1021,7 @@
++@@ -1034,7 +1036,7 @@
+  # and the system's installed libraries.
+  LIBS = @LIBS@ libcommon.a $(CPPLIB) $(LIBINTL) $(LIBICONV) $(LIBIBERTY) \
+  	$(LIBDECNUMBER) $(HOST_LIBS)
+@@ -40,7 +40,7 @@
+  	$(ZLIB)
+  # Any system libraries needed just for GNAT.
+  SYSLIBS = @GNAT_LIBEXC@
+-@@ -2605,40 +2607,40 @@
++@@ -2621,40 +2623,40 @@
+     $(TREE_FLOW_H) $(CFGLOOP_H) $(TREE_DATA_REF_H) tree-pass.h value-prof.h
+  graphite.o : graphite.c $(CONFIG_H) $(SYSTEM_H) coretypes.h $(DIAGNOSTIC_CORE_H) \
+     $(TREE_FLOW_H) $(TREE_DUMP_H) $(CFGLOOP_H) $(TREE_DATA_REF_H) sese.h \
+@@ -95,7 +95,7 @@
+     graphite-sese-to-poly.h
+  tree-vect-loop.o: tree-vect-loop.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
+     $(TM_H) $(GGC_H) $(TREE_H) $(BASIC_BLOCK_H) $(DIAGNOSTIC_H) $(TREE_FLOW_H) \
+-@@ -3457,6 +3459,15 @@
++@@ -3473,6 +3475,15 @@
+  	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) \
+  	  $< $(OUTPUT_OPTION)
+  
+@@ -399,7 +399,7 @@
+ ===================================================================
+ --- a/src/gcc/graphite.c
+ +++ b/src/gcc/graphite.c
+-@@ -56,6 +56,35 @@
++@@ -56,6 +56,37 @@
+  
+  CloogState *cloog_state;
+  
+@@ -412,7 +412,9 @@
+ +
+ +  if (cloog_pointers__.inited)
+ +    return cloog_pointers__.h != NULL;
+-+  h = dlopen ("libcloog-isl.so.4", RTLD_LAZY);
+++  h = dlopen ("libcloog-ppl.so.1", RTLD_LAZY);
+++  if (!h)
+++    h = dlopen ("libcloog-ppl.so.0", RTLD_LAZY);
+ +  cloog_pointers__.h = h;
+ +  if (h == NULL)
+ +    return false;
+@@ -435,13 +437,13 @@
+  /* Print global statistics to FILE.  */
+  
+  static void
+-@@ -201,6 +230,12 @@
++@@ -201,6 +232,12 @@
+        return false;
+      }
+  
+ +  if (!init_cloog_pointers ())
+ +    {
+-+      sorry ("Graphite loop optimizations can only be used if the libcloog-isl4 package is installed");
+++      sorry ("Graphite loop optimizations can only be used if the libcloog-ppl1 or libcloog-ppl0 package is installed");
+ +      return false;
+ +    }
+ +
+diff -urN debian/rules.conf gcc-4.9-4.9.1.orig/debian/rules.conf
+--- debian/rules.conf	2014-10-19 06:23:27.484753064 +0900
++++ gcc-4.9-4.9.1.orig/debian/rules.conf	2014-10-19 20:21:03.351486571 +0900
+@@ -195,7 +195,7 @@
+ ifeq ($(trunk_build),yes)
+   BINUTILSBDV = 2.23
+ else
+-  BINUTILSBDV = 2.22
++  BINUTILSBDV = 2.20.1
+   ifneq (,$(filter $(distrelease),jessie sid saucy))
+     BINUTILSBDV = 2.23.52
+   endif
+@@ -364,8 +364,8 @@
+   MPFR_BUILD_DEP = libmpfr-dev (>= 3.0.0-9~),
+ endif
+ 
+-PPL_BUILD_DEP = libisl-dev,
+-CLOOG_BUILD_DEP = libcloog-isl-dev (>= 0.18),
++PPL_BUILD_DEP = libppl0.10-dev,
++CLOOG_BUILD_DEP = libcloog-ppl-dev (>= 0.15.8),
+ # FIXME: currently not dl'opened.
+ #CLOOG_RUNTIME_DEP = libisl10, libcloog-isl4
+ 
+@@ -437,7 +437,7 @@
+ endif
+ #JAVA_BUILD_INDEP := gcj-$(BASE_VERSION)-jdk
+ ifeq ($(single_package),yes)
+-  LIBSTDCXX_BUILD_INDEP = doxygen (>= 1.7.2), graphviz (>= 2.2), ghostscript, texlive-latex-base
++  LIBSTDCXX_BUILD_INDEP = doxygen (>= 1.6.3), graphviz (>= 2.2), ghostscript, texlive-latex-base
+   LIBSTDCXX_BUILD_INDEP +=, xsltproc, libxml2-utils, docbook-xsl-ns
+   JAVA_BUILD_INDEP :=
+ endif
+@@ -461,7 +461,7 @@
+ endif
+ 
+ ifeq ($(PKGSOURCE),gcc-$(BASE_VERSION))
+-  LIBSTDCXX_BUILD_INDEP = doxygen (>= 1.7.2), graphviz (>= 2.2), ghostscript, texlive-latex-base
++  LIBSTDCXX_BUILD_INDEP = doxygen (>= 1.6.3), graphviz (>= 2.2), ghostscript, texlive-latex-base
+   ifeq (,$(filter $(distrelease),lenny etch dapper hardy jaunty karmic lucid maverick natty oneiric))
+     LIBSTDCXX_BUILD_INDEP +=, xsltproc, libxml2-utils, docbook-xsl-ns
+   endif
+diff -urN debian/rules.defs gcc-4.9-4.9.1.orig/debian/rules.defs
+--- debian/rules.defs	2014-10-19 06:23:27.492757098 +0900
++++ gcc-4.9-4.9.1.orig/debian/rules.defs	2014-10-19 21:54:38.371890877 +0900
+@@ -117,10 +117,6 @@
+ DEB_TARGET_GNU_SYSTEM	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_GNU_SYSTEM)
+ DEB_TARGET_MULTIARCH	?= $(call vafilt,$(TARGET_VARS),DEB_HOST_MULTIARCH)
+ 
+-ifeq ($(DEB_TARGET_GNU_TYPE),i486-linux-gnu)
+-  DEB_TARGET_GNU_TYPE	= i586-linux-gnu
+-endif
+-
+ ifeq ($(DEB_TARGET_ARCH),)
+   $(error Invalid architecure.)
+ endif
+@@ -1276,6 +1272,7 @@
+     with_check := disabled for $(DEB_HOST_ARCH), testsuite timeouts with expect
+   endif
+ endif
++with_check := disabled for this upload
+ 
+ # not a dependency on all archs, but if available, use it for the testsuite
+ ifneq (,$(wildcard /usr/bin/localedef))
+diff -urN debian/rules.parameters gcc-4.9-4.9.1.orig/debian/rules.parameters
+--- debian/rules.parameters	2014-10-19 06:23:27.492757098 +0900
++++ gcc-4.9-4.9.1.orig/debian/rules.parameters	2014-10-19 20:19:22.003514878 +0900
+@@ -2,14 +2,14 @@
+ GCC_VERSION	:= 4.9.1
+ NEXT_GCC_VERSION	:= 4.9.2
+ BASE_VERSION	:= 4.9
+-SOURCE_VERSION	:= 4.9.1-16ubuntu6
+-DEB_VERSION	:= 4.9.1-16ubuntu6
+-DEB_EVERSION	:= 1:4.9.1-16ubuntu6
+-DEB_GDC_VERSION	:= 4.9.1-16ubuntu6
++SOURCE_VERSION	:= 4.9.1-16ubuntu6lucid0
++DEB_VERSION	:= 4.9.1-16ubuntu6lucid0
++DEB_EVERSION	:= 1:4.9.1-16ubuntu6lucid0
++DEB_GDC_VERSION	:= 4.9.1-16ubuntu6lucid0
+ DEB_SOVERSION	:= 4.9
+ DEB_SOEVERSION	:= 1:4.9
+ DEB_LIBGCC_SOVERSION	:= 
+-DEB_LIBGCC_VERSION	:= 1:4.9.1-16ubuntu6
++DEB_LIBGCC_VERSION	:= 1:4.9.1-16ubuntu6lucid0
+ DEB_STDCXX_SOVERSION	:= 4.9
+ DEB_GCJ_SOVERSION	:= 4.9
+ PKG_GCJ_EXT	:= 15
+diff -urN debian/rules2 gcc-4.9-4.9.1.orig/debian/rules2
+--- debian/rules2	2014-10-19 06:23:27.496759125 +0900
++++ gcc-4.9-4.9.1.orig/debian/rules2	2014-10-19 20:15:38.023599222 +0900
+@@ -1568,7 +1568,7 @@
+ 	    fi; \
+ 	    echo "Build Dependencies:" >> ts-include; \
+ 	    dpkg -l g++-* binutils* `echo '$(LIBC_DEP)' | awk '{print $$1}'` \
+-		libgmp*-dev libmpfr-dev libmpc-dev libisl-dev libcloog-isl-dev \
++		libgmp*-dev libmpfr-dev libmpc-dev libppl*-dev libcloog-ppl-dev \
+ 	        | fgrep -v '<none>' >> ts-include; \
+ 	    echo '' >> ts-include; \
+ 	    cat ../$(patch_stamp) >> ts-include; \
+@@ -1644,7 +1644,7 @@
+ 	    echo '' >> ts-include; \
+ 	    echo "Build Dependencies:" >> ts-include; \
+ 	    dpkg -l g++-* binutils* `echo '$(LIBC_DEP)' | awk '{print $$1}'` \
+-		libgmp*-dev libmpfr-dev libmpc-dev libisl*-dev libcloog-isl-dev \
++		libgmp*-dev libmpfr-dev libmpc-dev libppl*-dev libcloog-ppl-dev \
+ 	        | fgrep -v '<none>' >> ts-include; \
+ 	    echo '' >> ts-include; \
+ 	    echo 'Results for the installed GCC-3.3 compilers' >> ts-include; \

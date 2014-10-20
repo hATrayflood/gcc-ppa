@@ -4,12 +4,12 @@ sudo sh << EOC
 apt-get -y install meld
 apt-get -y install gnupg-agent
 apt-get -y install devscripts
+apt-get -y install debhelper
 apt-get -y install quilt
 apt-get -y install autoconf2.13
 apt-get -y install autoconf2.59
 apt-get -y install autoconf2.64
 apt-get -y install sharutils
-apt-get -y install debhelper
 
 apt-get -y install g++-multilib
 apt-get -y install libc6-dbg
@@ -43,9 +43,9 @@ apt-get -y install realpath
 apt-get -y install chrpath
 apt-get -y install doxygen
 apt-get -y install graphviz
+apt-get -y install gsfonts-x11
 apt-get -y install texlive-latex-base
 apt-get -y install xsltproc
 apt-get -y install libxml2-utils
 apt-get -y install docbook-xsl-ns
-apt-get -y install gsfonts-x11
 EOC

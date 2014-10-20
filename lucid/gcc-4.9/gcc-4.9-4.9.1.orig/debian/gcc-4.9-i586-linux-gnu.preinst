@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "upgrade" ] || [ "$1" = "configure" ]; then
+    update-alternatives --quiet --remove i586-linux-gnu-gcc /usr/bin/i586-linux-gnu-gcc-4.9
+    update-alternatives --quiet --remove i586-linux-gnu-gcov /usr/bin/i586-linux-gnu-gcov-4.9
+fi
+
+#DEBHELPER#
+
+exit 0

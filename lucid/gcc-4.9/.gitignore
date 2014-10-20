@@ -1,0 +1,5 @@
+*.deb
+gcc-4.9_4.9.1-*
+gcc-4.9_4.9.1.orig.*
+gcc-4.9-4.9.1.orig/*
+!gcc-4.9-4.9.1.orig/debian
