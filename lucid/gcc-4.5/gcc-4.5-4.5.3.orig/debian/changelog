@@ -1,8 +1,8 @@
-gcc-4.5 (4.5.3-12ubuntu2lucid1) lucid; urgency=low
+gcc-4.5 (4.5.3-12ubuntu2lucid2) lucid; urgency=low
 
   * ppa for lucid
 
- -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Thu, 27 Feb 2014 02:00:00 +0900
+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Wed, 22 Oct 2014 04:30:00 +0900
 
 gcc-4.5 (4.5.3-12ubuntu2) precise; urgency=low
 

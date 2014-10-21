@@ -1,19 +1,19 @@
 diff -urN debian/changelog gcc-4.5-4.5.3.orig/debian/changelog
---- debian/changelog	2014-02-20 18:00:08.421973186 +0900
-+++ gcc-4.5-4.5.3.orig/debian/changelog	2014-02-27 02:09:51.063516743 +0900
+--- debian/changelog	2014-05-09 17:45:51.151132460 +0900
++++ gcc-4.5-4.5.3.orig/debian/changelog	2014-10-22 04:34:41.028175877 +0900
 @@ -1,3 +1,9 @@
-+gcc-4.5 (4.5.3-12ubuntu2lucid1) lucid; urgency=low
++gcc-4.5 (4.5.3-12ubuntu2lucid2) lucid; urgency=low
 +
 +  * ppa for lucid
 +
-+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Thu, 27 Feb 2014 02:00:00 +0900
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Wed, 22 Oct 2014 04:30:00 +0900
 +
  gcc-4.5 (4.5.3-12ubuntu2) precise; urgency=low
  
    * Pursuant to the cross-distro consensus on the armhf linker path,
 diff -urN debian/control gcc-4.5-4.5.3.orig/debian/control
---- debian/control	2014-02-20 18:00:08.433981620 +0900
-+++ gcc-4.5-4.5.3.orig/debian/control	2014-02-27 02:11:41.898958807 +0900
+--- debian/control	2014-05-09 17:45:51.151132460 +0900
++++ gcc-4.5-4.5.3.orig/debian/control	2014-10-22 07:50:36.782213285 +0900
 @@ -1,20 +1,16 @@
  Source: gcc-4.5
  Section: devel
@@ -66,8 +66,8 @@ diff -urN debian/control gcc-4.5-4.5.3.orig/debian/control
  Depends: gcc-4.5-base (= ${gcc:Version}), libobjc2 (= ${gcc:Version}), libgcc1-dbg, ${misc:Depends}
  Description: Runtime library for GNU Objective-C applications (debug symbols)
 diff -urN debian/control.m4 gcc-4.5-4.5.3.orig/debian/control.m4
---- debian/control.m4	2014-02-20 18:00:08.405972933 +0900
-+++ gcc-4.5-4.5.3.orig/debian/control.m4	2014-02-27 02:11:03.459454160 +0900
+--- debian/control.m4	2014-05-09 17:45:51.151132460 +0900
++++ gcc-4.5-4.5.3.orig/debian/control.m4	2014-05-09 17:45:51.200091917 +0900
 @@ -25,23 +25,7 @@
  Source: SRCNAME
  Section: devel
@@ -112,8 +112,8 @@ diff -urN debian/control.m4 gcc-4.5-4.5.3.orig/debian/control.m4
  ifelse(SRCNAME,gcc-snapshot,`dnl
  Package: gcc-snapshot
 diff -urN debian/rules.conf gcc-4.5-4.5.3.orig/debian/rules.conf
---- debian/rules.conf	2014-02-20 18:00:08.414512154 +0900
-+++ gcc-4.5-4.5.3.orig/debian/rules.conf	2014-02-20 17:57:46.845954776 +0900
+--- debian/rules.conf	2014-05-09 17:45:51.192100974 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.conf	2014-05-09 17:45:51.232287726 +0900
 @@ -126,7 +126,7 @@
  # See http://gcc.gnu.org/ml/gcc-patches/2008-09/msg01713.html
  BINUTILSV      = 2.20.51.20100418~
@@ -135,8 +135,8 @@ diff -urN debian/rules.conf gcc-4.5-4.5.3.orig/debian/rules.conf
  ELF_BUILD_DEP = libelfg0-dev (>= 0.8.12),
  
 diff -urN debian/rules.defs gcc-4.5-4.5.3.orig/debian/rules.defs
---- debian/rules.defs	2014-02-20 18:00:08.409950985 +0900
-+++ gcc-4.5-4.5.3.orig/debian/rules.defs	2014-02-25 19:08:53.172942322 +0900
+--- debian/rules.defs	2014-05-09 17:45:51.196104159 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.defs	2014-05-09 17:45:51.232287726 +0900
 @@ -297,6 +297,10 @@
  # XXX: should with_common_libs be "yes" only if this is the default compiler
  # version on the targeted arch?
@@ -157,8 +157,8 @@ diff -urN debian/rules.defs gcc-4.5-4.5.3.orig/debian/rules.defs
  # not a dependency on all archs, but if available, use it for the testsuite
  ifneq (,$(wildcard /usr/bin/localedef))
 diff -urN debian/rules.parameters gcc-4.5-4.5.3.orig/debian/rules.parameters
---- debian/rules.parameters	2014-02-20 18:00:08.414512154 +0900
-+++ gcc-4.5-4.5.3.orig/debian/rules.parameters	2014-02-27 02:11:41.914952390 +0900
+--- debian/rules.parameters	2014-05-09 17:45:51.196104159 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.parameters	2014-10-22 07:50:36.793460035 +0900
 @@ -2,15 +2,15 @@
  GCC_VERSION	:= 4.5.3
  NEXT_GCC_VERSION	:= 4.5.4
@@ -166,22 +166,22 @@ diff -urN debian/rules.parameters gcc-4.5-4.5.3.orig/debian/rules.parameters
 -SOURCE_VERSION	:= 4.5.3-12ubuntu1
 -DEB_VERSION	:= 4.5.3-12ubuntu1
 -DEB_EVERSION	:= 1:4.5.3-12ubuntu1
-+SOURCE_VERSION	:= 4.5.3-12ubuntu2lucid1
-+DEB_VERSION	:= 4.5.3-12ubuntu2lucid1
-+DEB_EVERSION	:= 1:4.5.3-12ubuntu2lucid1
++SOURCE_VERSION	:= 4.5.3-12ubuntu2lucid2
++DEB_VERSION	:= 4.5.3-12ubuntu2lucid2
++DEB_EVERSION	:= 1:4.5.3-12ubuntu2lucid2
  GDC_BASE_VERSION  := 
  DEB_GDC_VERSION	:= 
  DEB_SOVERSION	:= 4.4
  DEB_SOEVERSION	:= 1:4.4
  DEB_LIBGCC_SOVERSION	:= 1:4.4
 -DEB_LIBGCC_VERSION	:= 1:4.5.3-12ubuntu1
-+DEB_LIBGCC_VERSION	:= 1:4.5.3-12ubuntu2lucid1
++DEB_LIBGCC_VERSION	:= 1:4.5.3-12ubuntu2lucid2
  DEB_STDCXX_SOVERSION	:= 4.4
  DEB_GCJ_SOVERSION	:= 4.4
  PKG_GCJ_EXT	:= 11
 diff -urN debian/rules.patch gcc-4.5-4.5.3.orig/debian/rules.patch
---- debian/rules.patch	2014-02-20 18:00:08.446559546 +0900
-+++ gcc-4.5-4.5.3.orig/debian/rules.patch	2014-02-26 01:19:11.416729506 +0900
+--- debian/rules.patch	2014-05-09 17:45:51.196104159 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.patch	2014-05-09 17:45:51.232287726 +0900
 @@ -250,11 +250,7 @@
  debian_patches += $(if $(with_linaro_branch),,gcc-powerpc-undef)
  debian_patches += gcc-only-build-m4nofpu

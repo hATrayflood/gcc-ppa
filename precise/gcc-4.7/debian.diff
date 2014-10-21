@@ -1,19 +1,19 @@
 diff -urN debian/changelog gcc-4.7-4.7.3.orig/debian/changelog
---- debian/changelog	2014-05-16 11:43:57.913453225 +0900
-+++ gcc-4.7-4.7.3.orig/debian/changelog	2014-05-16 11:46:42.142267578 +0900
+--- debian/changelog	2014-05-16 19:40:09.905281923 +0900
++++ gcc-4.7-4.7.3.orig/debian/changelog	2014-10-22 04:39:00.719795876 +0900
 @@ -1,3 +1,9 @@
-+gcc-4.7 (4.7.3-12ubuntu1precise1) precise; urgency=medium
++gcc-4.7 (4.7.3-12ubuntu1precise2) precise; urgency=medium
 +
 +  * ppa for precise
 +
-+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Fri, 16 May 2014 11:50:00 +0900
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Wed, 22 Oct 2014 04:30:00 +0900
 +
  gcc-4.7 (4.7.3-12ubuntu1) trusty; urgency=medium
  
    * Merge with Debian; remaining changes:
 diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
---- debian/control	2014-05-16 11:43:57.921453261 +0900
-+++ gcc-4.7-4.7.3.orig/debian/control	2014-05-16 18:25:09.111108440 +0900
+--- debian/control	2014-05-16 19:40:09.905281923 +0900
++++ gcc-4.7-4.7.3.orig/debian/control	2014-10-22 07:58:58.152123513 +0900
 @@ -1,12 +1,10 @@
  Source: gcc-4.7
  Section: devel
@@ -158,7 +158,7 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Package: libhfstdc++6-4.7-dev
  Architecture: armel
 diff -urN debian/control.m4 gcc-4.7-4.7.3.orig/debian/control.m4
---- debian/control.m4	2014-05-16 11:43:57.921453261 +0900
+--- debian/control.m4	2014-05-16 19:40:09.905281923 +0900
 +++ gcc-4.7-4.7.3.orig/debian/control.m4	2014-05-09 17:45:51.440316258 +0900
 @@ -33,23 +33,7 @@
  Source: SRCNAME
@@ -213,8 +213,8 @@ diff -urN debian/control.m4 gcc-4.7-4.7.3.orig/debian/control.m4
  ifelse(regexp(SRCNAME, `gcc-snapshot'),0,`dnl
  Package: gcc-snapshot`'TS
 diff -urN debian/rules.parameters gcc-4.7-4.7.3.orig/debian/rules.parameters
---- debian/rules.parameters	2014-05-16 11:43:58.685457047 +0900
-+++ gcc-4.7-4.7.3.orig/debian/rules.parameters	2014-05-16 11:47:21.242461474 +0900
+--- debian/rules.parameters	2014-05-16 19:40:10.525594983 +0900
++++ gcc-4.7-4.7.3.orig/debian/rules.parameters	2014-10-22 07:58:58.168115585 +0900
 @@ -2,15 +2,15 @@
  GCC_VERSION	:= 4.7.3
  NEXT_GCC_VERSION	:= 4.7.4
@@ -222,16 +222,16 @@ diff -urN debian/rules.parameters gcc-4.7-4.7.3.orig/debian/rules.parameters
 -SOURCE_VERSION	:= 4.7.3-12ubuntu1
 -DEB_VERSION	:= 4.7.3-12ubuntu1
 -DEB_EVERSION	:= 1:4.7.3-12ubuntu1
-+SOURCE_VERSION	:= 4.7.3-12ubuntu1precise1
-+DEB_VERSION	:= 4.7.3-12ubuntu1precise1
-+DEB_EVERSION	:= 1:4.7.3-12ubuntu1precise1
++SOURCE_VERSION	:= 4.7.3-12ubuntu1precise2
++DEB_VERSION	:= 4.7.3-12ubuntu1precise2
++DEB_EVERSION	:= 1:4.7.3-12ubuntu1precise2
  GDC_BASE_VERSION  := 
  DEB_GDC_VERSION	:= 
  DEB_SOVERSION	:= 4.7
  DEB_SOEVERSION	:= 1:4.7
  DEB_LIBGCC_SOVERSION	:= 
 -DEB_LIBGCC_VERSION	:= 1:4.7.3-12ubuntu1
-+DEB_LIBGCC_VERSION	:= 1:4.7.3-12ubuntu1precise1
++DEB_LIBGCC_VERSION	:= 1:4.7.3-12ubuntu1precise2
  DEB_STDCXX_SOVERSION	:= 4.7
  DEB_GCJ_SOVERSION	:= 4.7
  PKG_GCJ_EXT	:= 13

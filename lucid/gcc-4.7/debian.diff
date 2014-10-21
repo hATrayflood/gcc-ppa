@@ -1,20 +1,20 @@
 diff -urN debian/changelog gcc-4.7-4.7.3.orig/debian/changelog
 --- debian/changelog	2014-05-15 19:48:05.046706397 +0900
-+++ gcc-4.7-4.7.3.orig/debian/changelog	2014-05-15 19:51:37.113015630 +0900
++++ gcc-4.7-4.7.3.orig/debian/changelog	2014-10-22 04:35:36.887933393 +0900
 @@ -1,3 +1,9 @@
-+gcc-4.7 (4.7.3-12ubuntu1lucid1) lucid; urgency=medium
++gcc-4.7 (4.7.3-12ubuntu1lucid2) lucid; urgency=medium
 +
 +  * ppa for lucid
 +
-+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Thu, 15 May 2014 20:00:00 +0900
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Wed, 22 Oct 2014 04:30:00 +0900
 +
  gcc-4.7 (4.7.3-12ubuntu1) trusty; urgency=medium
  
    * Merge with Debian; remaining changes:
 diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
 --- debian/control	2014-05-15 19:48:05.050963782 +0900
-+++ gcc-4.7-4.7.3.orig/debian/control	2014-05-15 19:52:32.936012263 +0900
-@@ -1,39 +1,73 @@
++++ gcc-4.7-4.7.3.orig/debian/control	2014-10-22 07:52:24.692344167 +0900
+@@ -1,35 +1,31 @@
  Source: gcc-4.7
  Section: devel
  Priority: optional
@@ -59,49 +59,7 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Description: GCC, the GNU Compiler Collection (base package)
   This package contains files common to all languages and libraries
   contained in the GNU Compiler Collection (GCC).
- 
-+Package: libgcc1
-+Architecture: any
-+Section: libs
-+Priority: required
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-+Provides: libgcc1-armel [armel], libgcc1-armhf [armhf]
-+Description: GCC support library
-+ Shared version of the support library, a library of internal subroutines
-+ that GCC uses to overcome shortcomings of particular machines, or
-+ special needs for some languages.
-+
-+Package: libgcc1-dbg
-+Architecture: any
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libgcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
-+Provides: libgcc1-dbg-armel [armel], libgcc1-dbg-armhf [armhf]
-+Description: GCC support library (debug symbols)
-+ Debug symbols for the GCC support library.
-+
-+Package: libgcc2
-+Architecture: m68k
-+Section: libs
-+Priority: required
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-+Description: GCC support library
-+ Shared version of the support library, a library of internal subroutines
-+ that GCC uses to overcome shortcomings of particular machines, or
-+ special needs for some languages.
-+
-+Package: libgcc2-dbg
-+Architecture: m68k
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libgcc2 (= ${gcc:EpochVersion}), ${misc:Depends}
-+Description: GCC support library (debug symbols)
-+ Debug symbols for the GCC support library.
-+
- Package: libgcc-4.7-dev
- Architecture: any
- Section: libdevel
-@@ -41,11 +75,47 @@
+@@ -41,7 +37,6 @@
  Recommends: ${dep:libcdev}
  Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libgcc}, ${dep:libssp}, ${dep:libgomp}, ${dep:libitm}, ${dep:libqmath}, ${dep:libunwinddev}, ${shlibs:Depends}, ${misc:Depends}
  Replaces: gcc-4.7 (<< ${gcc:SplitVersion})
@@ -109,97 +67,21 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Description: GCC support library (development files)
   This package contains the headers and static library files necessary for
   building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
- 
-+Package: libgcc4
-+Architecture: hppa
-+Section: libs
-+Priority: required
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-+Description: GCC support library
-+ Shared version of the support library, a library of internal subroutines
-+ that GCC uses to overcome shortcomings of particular machines, or
-+ special needs for some languages.
-+
-+Package: libgcc4-dbg
-+Architecture: hppa
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libgcc4 (= ${gcc:EpochVersion}), ${misc:Depends}
-+Description: GCC support library (debug symbols)
-+ Debug symbols for the GCC support library.
-+
-+Package: lib64gcc1
-+Architecture: i386 powerpc sparc s390 mips mipsel x32
-+Section: libs
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
-+Conflicts: libgcc1 (<= 1:3.3-0pre9)
-+Description: GCC support library (64bit)
-+ Shared version of the support library, a library of internal subroutines
-+ that GCC uses to overcome shortcomings of particular machines, or
-+ special needs for some languages.
-+
-+Package: lib64gcc1-dbg
-+Architecture: i386 powerpc sparc s390 mips mipsel x32
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib64gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
-+Description: GCC support library (debug symbols)
-+ Debug symbols for the GCC support library.
-+
- Package: lib64gcc-4.7-dev
- Architecture: i386 powerpc sparc s390 mips mipsel x32
- Section: libdevel
-@@ -57,6 +127,25 @@
-  This package contains the headers and static library files necessary for
-  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
- 
-+Package: lib32gcc1
-+Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
-+Section: libs
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
-+Conflicts: ${confl:lib32}
-+Description: GCC support library (32 bit Version)
-+ Shared version of the support library, a library of internal subroutines
-+ that GCC uses to overcome shortcomings of particular machines, or
-+ special needs for some languages.
-+
-+Package: lib32gcc1-dbg
-+Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib32gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
-+Description: GCC support library (debug symbols)
-+ Debug symbols for the GCC support library.
-+
- Package: lib32gcc-4.7-dev
- Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
- Section: libdevel
-@@ -68,27 +157,24 @@
+@@ -68,28 +63,6 @@
   This package contains the headers and static library files necessary for
   building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
  
 -Package: libhfgcc-4.7-dev
 -Architecture: armel
 -Section: libdevel
-+Package: libn32gcc1
-+Architecture: mips mipsel
-+Section: libs
- Priority: optional
+-Priority: optional
 -Recommends: ${dep:libcdev}
 -Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libgccbiarch}, ${dep:libsspbiarch}, ${dep:libgompbiarch}, ${dep:libitmbiarch}, ${dep:libqmathbiarch}, ${shlibs:Depends}, ${misc:Depends}
 -Replaces: gcc-4.7-multilib (<< ${gcc:SplitVersion})
 -Description: GCC support library (hard float ABI development files)
 - This package contains the headers and static library files necessary for
 - building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
-+Conflicts: libgcc1 (<= 1:3.3-0pre9)
-+Description: GCC support library (n32)
-+ Shared version of the support library, a library of internal subroutines
-+ that GCC uses to overcome shortcomings of particular machines, or
-+ special needs for some languages.
- 
+-
 -Package: libsfgcc-4.7-dev
 -Architecture: armhf
 -Section: libdevel
@@ -210,17 +92,11 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
 -Description: GCC support library (soft float ABI development files)
 - This package contains the headers and static library files necessary for
 - building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
-+Package: libn32gcc1-dbg
-+Architecture: mips mipsel
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libn32gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
-+Description: GCC support library (debug symbols)
-+ Debug symbols for the GCC support library.
- 
+-
  Package: libn32gcc-4.7-dev
  Architecture: mips mipsel
-@@ -101,17 +187,6 @@
+ Section: libdevel
+@@ -101,17 +74,6 @@
   This package contains the headers and static library files necessary for
   building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
  
@@ -238,7 +114,7 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Package: gcc-4.7
  Architecture: any
  Section: devel
-@@ -124,7 +199,7 @@
+@@ -124,7 +86,7 @@
   This is the GNU C compiler, a fairly portable optimizing compiler for C.
  
  Package: gcc-4.7-multilib
@@ -247,7 +123,7 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Section: devel
  Priority: optional
  Depends: gcc-4.7-base (= ${gcc:Version}), gcc-4.7 (= ${gcc:Version}), ${dep:libcbiarchdev}, ${dep:libgccbiarchdev}, ${shlibs:Depends}, ${misc:Depends}
-@@ -139,7 +214,7 @@
+@@ -139,7 +101,7 @@
  Architecture: any
  Section: devel
  Priority: optional
@@ -256,7 +132,7 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Description: Files for GNU GCC plugin development.
   This package contains (header) files for GNU GCC plugin development. It
   is only used for the development of GCC plugins, but not needed to run
-@@ -228,7 +303,7 @@
+@@ -228,7 +190,7 @@
   This is the GNU C++ compiler, a fairly portable optimizing compiler for C++.
  
  Package: g++-4.7-multilib
@@ -265,248 +141,7 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Section: devel
  Priority: optional
  Depends: gcc-4.7-base (= ${gcc:Version}), g++-4.7 (= ${gcc:Version}), gcc-4.7-multilib (= ${gcc:Version}), ${dep:libcxxbiarchdev}, ${shlibs:Depends}, ${misc:Depends}
-@@ -239,6 +314,240 @@
-  On architectures with multilib support, the package contains files
-  and dependencies for the non-default multilib architecture(s).
- 
-+Package: libgomp1
-+Section: libs
-+Architecture: any
-+Provides: libgomp1-armel [armel], libgomp1-armhf [armhf]
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-+Description: GCC OpenMP (GOMP) support library
-+ GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
-+ in the GNU Compiler Collection.
-+
-+Package: libgomp1-dbg
-+Architecture: any
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libgomp1 (= ${gcc:Version}), ${misc:Depends}
-+Provides: libgomp1-dbg-armel [armel], libgomp1-dbg-armhf [armhf]
-+Description: GCC OpenMP (GOMP) support library (debug symbols)
-+ GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
-+ in the GNU Compiler Collection.
-+
-+Package: lib32gomp1
-+Section: libs
-+Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Conflicts: ${confl:lib32}
-+Description: GCC OpenMP (GOMP) support library (32bit)
-+ GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
-+ in the GNU Compiler Collection.
-+
-+Package: lib32gomp1-dbg
-+Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib32gomp1 (= ${gcc:Version}), ${misc:Depends}
-+Description: GCC OpenMP (GOMP) support library (32 bit debug symbols)
-+ GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
-+ in the GNU Compiler Collection.
-+
-+Package: lib64gomp1
-+Section: libs
-+Architecture: i386 powerpc sparc s390 mips mipsel x32
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Description: GCC OpenMP (GOMP) support library (64bit)
-+ GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
-+ in the GNU Compiler Collection.
-+
-+Package: lib64gomp1-dbg
-+Architecture: i386 powerpc sparc s390 mips mipsel x32
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib64gomp1 (= ${gcc:Version}), ${misc:Depends}
-+Description: GCC OpenMP (GOMP) support library (64bit debug symbols)
-+ GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
-+ in the GNU Compiler Collection.
-+
-+Package: libn32gomp1
-+Section: libs
-+Architecture: mips mipsel
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Description: GCC OpenMP (GOMP) support library (n32)
-+ GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
-+ in the GNU Compiler Collection.
-+
-+Package: libn32gomp1-dbg
-+Architecture: mips mipsel
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libn32gomp1 (= ${gcc:Version}), ${misc:Depends}
-+Description: GCC OpenMP (GOMP) support library (n32 debug symbols)
-+ GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
-+
-+Package: libitm1
-+Section: libs
-+Architecture: any
-+Provides: libitm1-armel [armel], libitm1-armhf [armhf]
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-+Description: GNU Transactional Memory Library
-+ GNU Transactional Memory Library (libitm) provides transaction support for
-+ accesses to the memory of a process, enabling easy-to-use synchronization of
-+ accesses to shared memory by several threads.
-+
-+Package: libitm1-dbg
-+Architecture: any
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libitm1 (= ${gcc:Version}), ${misc:Depends}
-+Provides: libitm1-dbg-armel [armel], libitm1-dbg-armhf [armhf]
-+Description: GNU Transactional Memory Library (debug symbols)
-+ GNU Transactional Memory Library (libitm) provides transaction support for
-+ accesses to the memory of a process, enabling easy-to-use synchronization of
-+ accesses to shared memory by several threads.
-+
-+Package: lib32itm1
-+Section: libs
-+Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Conflicts: ${confl:lib32}
-+Description: GNU Transactional Memory Library (32bit)
-+ GNU Transactional Memory Library (libitm) provides transaction support for
-+ accesses to the memory of a process, enabling easy-to-use synchronization of
-+ accesses to shared memory by several threads.
-+
-+Package: lib32itm1-dbg
-+Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib32itm1 (= ${gcc:Version}), ${misc:Depends}
-+Description: GNU Transactional Memory Library (32 bit debug symbols)
-+ GNU Transactional Memory Library (libitm) provides transaction support for
-+ accesses to the memory of a process, enabling easy-to-use synchronization of
-+ accesses to shared memory by several threads.
-+
-+Package: lib64itm1
-+Section: libs
-+Architecture: i386 powerpc sparc s390 mips mipsel x32
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Description: GNU Transactional Memory Library (64bit)
-+ GNU Transactional Memory Library (libitm) provides transaction support for
-+ accesses to the memory of a process, enabling easy-to-use synchronization of
-+ accesses to shared memory by several threads.
-+
-+Package: lib64itm1-dbg
-+Architecture: i386 powerpc sparc s390 mips mipsel x32
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib64itm1 (= ${gcc:Version}), ${misc:Depends}
-+Description: GNU Transactional Memory Library (64bit debug symbols)
-+ GNU Transactional Memory Library (libitm) provides transaction support for
-+ accesses to the memory of a process, enabling easy-to-use synchronization of
-+ accesses to shared memory by several threads.
-+
-+Package: libn32itm1
-+Section: libs
-+Architecture: mips mipsel
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Description: GNU Transactional Memory Library (n32)
-+ GNU Transactional Memory Library (libitm) provides transaction support for
-+ accesses to the memory of a process, enabling easy-to-use synchronization of
-+ accesses to shared memory by several threads.
-+
-+Package: libn32itm1-dbg
-+Architecture: mips mipsel
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libn32itm1 (= ${gcc:Version}), ${misc:Depends}
-+Description: GNU Transactional Memory Library (n32 debug symbols)
-+ GNU Transactional Memory Library (libitm) provides transaction support for
-+ accesses to the memory of a process, enabling easy-to-use synchronization of
-+ accesses to shared memory by several threads.
-+
-+Package: libquadmath0
-+Section: libs
-+Architecture: any
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-+Description: GCC Quad-Precision Math Library
-+ A library, which provides quad-precision mathematical functions on targets
-+ supporting the __float128 datatype. The library is used to provide on such
-+ targets the REAL(16) type in the GNU Fortran compiler.
-+
-+Package: libquadmath0-dbg
-+Architecture: any
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libquadmath0 (= ${gcc:Version}), ${misc:Depends}
-+Description: GCC Quad-Precision Math Library (debug symbols)
-+ A library, which provides quad-precision mathematical functions on targets
-+ supporting the __float128 datatype.
-+
-+Package: lib32quadmath0
-+Section: libs
-+Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Conflicts: ${confl:lib32}
-+Description: GCC Quad-Precision Math Library (32bit)
-+ A library, which provides quad-precision mathematical functions on targets
-+ supporting the __float128 datatype. The library is used to provide on such
-+ targets the REAL(16) type in the GNU Fortran compiler.
-+
-+Package: lib32quadmath0-dbg
-+Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib32quadmath0 (= ${gcc:Version}), ${misc:Depends}
-+Description: GCC Quad-Precision Math Library (32 bit debug symbols)
-+ A library, which provides quad-precision mathematical functions on targets
-+ supporting the __float128 datatype.
-+
-+Package: lib64quadmath0
-+Section: libs
-+Architecture: i386 powerpc sparc s390 mips mipsel x32
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Description: GCC Quad-Precision Math Library  (64bit)
-+ A library, which provides quad-precision mathematical functions on targets
-+ supporting the __float128 datatype. The library is used to provide on such
-+ targets the REAL(16) type in the GNU Fortran compiler.
-+
-+Package: lib64quadmath0-dbg
-+Architecture: i386 powerpc sparc s390 mips mipsel x32
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib64quadmath0 (= ${gcc:Version}), ${misc:Depends}
-+Description: GCC Quad-Precision Math Library  (64bit debug symbols)
-+ A library, which provides quad-precision mathematical functions on targets
-+ supporting the __float128 datatype.
-+
-+Package: libn32quadmath0
-+Section: libs
-+Architecture: mips mipsel
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Description: GCC Quad-Precision Math Library (n32)
-+ A library, which provides quad-precision mathematical functions on targets
-+ supporting the __float128 datatype. The library is used to provide on such
-+ targets the REAL(16) type in the GNU Fortran compiler.
-+
-+Package: libn32quadmath0-dbg
-+Architecture: mips mipsel
-+Section: debug
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libn32quadmath0 (= ${gcc:Version}), ${misc:Depends}
-+Description: GCC Quad-Precision Math Library (n32 debug symbols)
-+ A library, which provides quad-precision mathematical functions on targets
-+ supporting the __float128 datatype.
-+
- Package: gobjc++-4.7
- Architecture: any
- Priority: optional
-@@ -251,7 +560,7 @@
+@@ -251,7 +213,7 @@
   gcc backend to generate optimized code.
  
  Package: gobjc++-4.7-multilib
@@ -515,7 +150,7 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Section: devel
  Priority: optional
  Depends: gcc-4.7-base (= ${gcc:Version}), gobjc++-4.7 (= ${gcc:Version}), g++-4.7-multilib (= ${gcc:Version}), gobjc-4.7-multilib (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-@@ -274,7 +583,7 @@
+@@ -274,7 +236,7 @@
   gcc backend to generate optimized code.
  
  Package: gobjc-4.7-multilib
@@ -524,7 +159,7 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Section: devel
  Priority: optional
  Depends: gcc-4.7-base (= ${gcc:Version}), gobjc-4.7 (= ${gcc:Version}), gcc-4.7-multilib (= ${gcc:Version}), ${dep:libobjcbiarchdev}, ${shlibs:Depends}, ${misc:Depends}
-@@ -291,7 +600,6 @@
+@@ -291,7 +253,6 @@
  Priority: optional
  Depends: gcc-4.7-base (= ${gcc:Version}), libgcc-4.7-dev (= ${gcc:Version}), libobjc4 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
  Replaces: gobjc-4.7 (<< ${gcc:SplitVersion})
@@ -532,104 +167,44 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Description: Runtime library for GNU Objective-C applications (development files)
   This package contains the headers and static library files needed to build
   GNU ObjC applications.
-@@ -326,35 +634,72 @@
+@@ -326,36 +287,6 @@
   This package contains the headers and static library files needed to build
   GNU ObjC applications.
  
 -Package: libx32objc-4.7-dev
 -Architecture: amd64 i386
 -Section: libdevel
-+Package: libobjc4
-+Section: libs
-+Architecture: any
-+Provides: libobjc4-armel [armel], libobjc4-armhf [armhf]
- Priority: optional
+-Priority: optional
 -Depends: gcc-4.7-base (= ${gcc:Version}), libx32gcc-4.7-dev (= ${gcc:Version}), libx32objc4 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
 -Replaces: gobjc-4.7-multilib (<< ${gcc:SplitVersion})
 -Description: Runtime library for GNU Objective-C applications (x32 development files)
 - This package contains the headers and static library files needed to build
 - GNU ObjC applications.
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-+Description: Runtime library for GNU Objective-C applications
-+ Library needed for GNU ObjC applications linked against the shared library.
- 
+-
 -Package: libhfobjc-4.7-dev
 -Architecture: armel
 -Section: libdevel
-+Package: libobjc4-dbg
-+Section: debug
-+Architecture: any
-+Provides: libobjc4-dbg-armel [armel], libobjc4-dbg-armhf [armhf]
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libobjc4 (= ${gcc:Version}), libgcc1-dbg (>= ${libgcc:Version}), ${misc:Depends}
-+Description: Runtime library for GNU Objective-C applications (debug symbols)
-+ Library needed for GNU ObjC applications linked against the shared library.
-+
-+Package: lib64objc4
-+Section: libs
-+Architecture: i386 powerpc sparc s390 mips mipsel x32
- Priority: optional
+-Priority: optional
 -Depends: gcc-4.7-base (= ${gcc:Version}), libhfgcc-4.7-dev (= ${gcc:Version}), libhfobjc4 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
 -Replaces: gobjc-4.7-multilib (<< ${gcc:SplitVersion})
 -Description: Runtime library for GNU Objective-C applications (hard float ABI development files)
 - This package contains the headers and static library files needed to build
 - GNU ObjC applications.
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Description: Runtime library for GNU Objective-C applications (64bit)
-+ Library needed for GNU ObjC applications linked against the shared library.
- 
+-
 -Package: libsfobjc-4.7-dev
 -Architecture: armhf
 -Section: libdevel
-+Package: lib64objc4-dbg
-+Section: debug
-+Architecture: i386 powerpc sparc s390 mips mipsel x32
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib64objc4 (= ${gcc:Version}), lib64gcc1-dbg (>= ${gcc:EpochVersion}), ${misc:Depends}
-+Description: Runtime library for GNU Objective-C applications (64 bit debug symbols)
-+ Library needed for GNU ObjC applications linked against the shared library.
-+
-+Package: lib32objc4
-+Section: libs
-+Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
- Priority: optional
+-Priority: optional
 -Depends: gcc-4.7-base (= ${gcc:Version}), libsfgcc-4.7-dev (= ${gcc:Version}), libsfobjc4 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
 -Replaces: gobjc-4.7-multilib (<< ${gcc:SplitVersion})
 -Description: Runtime library for GNU Objective-C applications (soft float development files)
 - This package contains the headers and static library files needed to build
 - GNU ObjC applications.
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Conflicts: ${confl:lib32}
-+Description: Runtime library for GNU Objective-C applications (32bit)
-+ Library needed for GNU ObjC applications linked against the shared library.
-+
-+Package: lib32objc4-dbg
-+Section: debug
-+Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib32objc4 (= ${gcc:Version}), lib32gcc1-dbg (>= ${gcc:EpochVersion}), ${misc:Depends}
-+Description: Runtime library for GNU Objective-C applications (32 bit debug symbols)
-+ Library needed for GNU ObjC applications linked against the shared library.
-+
-+Package: libn32objc4
-+Section: libs
-+Architecture: mips mipsel
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Description: Runtime library for GNU Objective-C applications (n32)
-+ Library needed for GNU ObjC applications linked against the shared library.
-+
-+Package: libn32objc4-dbg
-+Section: debug
-+Architecture: mips mipsel
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libn32objc4 (= ${gcc:Version}), libn32gcc1-dbg (>= ${gcc:EpochVersion}), ${misc:Depends}
-+Description: Runtime library for GNU Objective-C applications (n32 debug symbols)
-+ Library needed for GNU ObjC applications linked against the shared library.
- 
+-
  Package: gfortran-4.7
  Architecture: any
-@@ -368,7 +713,7 @@
+ Priority: optional
+@@ -368,7 +299,7 @@
   gcc backend to generate optimized code.
  
  Package: gfortran-4.7-multilib
@@ -638,7 +213,7 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Section: devel
  Priority: optional
  Depends: gcc-4.7-base (= ${gcc:Version}), gfortran-4.7 (= ${gcc:Version}), gcc-4.7-multilib (= ${gcc:Version}), ${dep:libgfortranbiarchdev}, ${shlibs:Depends}, ${misc:Depends}
-@@ -394,7 +739,6 @@
+@@ -394,7 +325,6 @@
  Depends: gcc-4.7-base (= ${gcc:Version}), libgfortran3 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
  Replaces: gfortran-4.7 (<< ${gcc:SplitVersion})
  Breaks: gfortran-4.7 (<< ${gcc:SplitVersion})
@@ -646,115 +221,47 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Description: Runtime library for GNU Fortran applications (development files)
   This package contains the headers and static library files needed to build
   GNU Fortran applications.
-@@ -432,38 +776,80 @@
+@@ -432,39 +362,6 @@
   This package contains the headers and static library files needed to build
   GNU Fortran applications.
  
 -Package: libx32gfortran-4.7-dev
 -Architecture: amd64 i386
 -Section: libdevel
-+Package: libgfortran3
-+Section: libs
-+Architecture: any
-+Provides: libgfortran3-armel [armel], libgfortran3-armhf [armhf]
- Priority: optional
+-Priority: optional
 -Depends: gcc-4.7-base (= ${gcc:Version}), libx32gfortran3 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
 -Replaces: gfortran-4.7-multilib (<< ${gcc:SplitVersion})
 -Breaks: gfortran-4.7-multilib (<< ${gcc:SplitVersion})
 -Description: Runtime library for GNU Fortran applications (x32 development files)
 - This package contains the headers and static library files needed to build
 - GNU Fortran applications.
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-+Description: Runtime library for GNU Fortran applications
-+ Library needed for GNU Fortran applications linked against the
-+ shared library.
- 
+-
 -Package: libhfgfortran-4.7-dev
 -Architecture: armel
 -Section: libdevel
-+Package: libgfortran3-dbg
-+Section: debug
-+Architecture: any
-+Provides: libgfortran3-dbg-armel [armel], libgfortran3-dbg-armhf [armhf]
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libgfortran3 (= ${gcc:Version}), libgcc1-dbg (>= ${libgcc:Version}), ${misc:Depends}
-+Description: Runtime library for GNU Fortran applications (debug symbols)
-+ Library needed for GNU Fortran applications linked against the
-+ shared library.
-+
-+Package: lib64gfortran3
-+Section: libs
-+Architecture: i386 powerpc sparc s390 mips mipsel x32
- Priority: optional
+-Priority: optional
 -Depends: gcc-4.7-base (= ${gcc:Version}), libhfgfortran3 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
 -Replaces: gfortran-4.7-multilib (<< ${gcc:SplitVersion})
 -Breaks: gfortran-4.7-multilib (<< ${gcc:SplitVersion})
 -Description: Runtime library for GNU Fortran applications (hard float ABI development files)
 - This package contains the headers and static library files needed to build
 - GNU Fortran applications.
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Description: Runtime library for GNU Fortran applications (64bit)
-+ Library needed for GNU Fortran applications linked against the
-+ shared library.
- 
+-
 -Package: libsfgfortran-4.7-dev
 -Architecture: armhf
 -Section: libdevel
-+Package: lib64gfortran3-dbg
-+Section: debug
-+Architecture: i386 powerpc sparc s390 mips mipsel x32
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib64gfortran3 (= ${gcc:Version}), ${misc:Depends}
-+Description: Runtime library for GNU Fortran applications (64bit debug symbols)
-+ Library needed for GNU Fortran applications linked against the
-+ shared library.
-+
-+Package: lib32gfortran3
-+Section: libs
-+Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
- Priority: optional
+-Priority: optional
 -Depends: gcc-4.7-base (= ${gcc:Version}), libsfgfortran3 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
 -Replaces: gfortran-4.7-multilib (<< ${gcc:SplitVersion})
 -Breaks: gfortran-4.7-multilib (<< ${gcc:SplitVersion})
 -Description: Runtime library for GNU Fortran applications (soft float ABI development files)
 - This package contains the headers and static library files needed to build
 - GNU Fortran applications.
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Conflicts: ${confl:lib32}
-+Description: Runtime library for GNU Fortran applications (32bit)
-+ Library needed for GNU Fortran applications linked against the
-+ shared library.
-+
-+Package: lib32gfortran3-dbg
-+Section: debug
-+Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib32gfortran3 (= ${gcc:Version}), ${misc:Depends}
-+Description: Runtime library for GNU Fortran applications (32 bit debug symbols)
-+ Library needed for GNU Fortran applications linked against the
-+ shared library.
-+
-+Package: libn32gfortran3
-+Section: libs
-+Architecture: mips mipsel
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
-+Description: Runtime library for GNU Fortran applications (n32)
-+ Library needed for GNU Fortran applications linked against the
-+ shared library.
-+
-+Package: libn32gfortran3-dbg
-+Section: debug
-+Architecture: mips mipsel
-+Priority: extra
-+Depends: gcc-4.7-base (= ${gcc:Version}), libn32gfortran3 (= ${gcc:Version}), ${misc:Depends}
-+Description: Runtime library for GNU Fortran applications (n32 debug symbols)
-+ Library needed for GNU Fortran applications linked against the
-+ shared library.
- 
+-
  Package: gccgo-4.7
  Architecture: any
-@@ -477,7 +863,7 @@
+ Priority: optional
+@@ -477,7 +374,7 @@
   by the gcc compiler. It uses the gcc backend to generate optimized code.
  
  Package: gccgo-4.7-multilib
@@ -763,7 +270,7 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Section: devel
  Priority: optional
  Depends: gcc-4.7-base (= ${gcc:Version}), gccgo-4.7 (= ${gcc:Version}), gcc-4.7-multilib (= ${gcc:Version}), ${dep:libgobiarch}, ${shlibs:Depends}, ${misc:Depends}
-@@ -500,8 +886,6 @@
+@@ -500,8 +397,6 @@
  Package: libgo0
  Section: libs
  Architecture: any
@@ -772,7 +279,7 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Provides: libgo0-armel [armel], libgo0-armhf [armhf]
  Priority: optional
  Depends: gcc-4.7-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-@@ -512,7 +896,6 @@
+@@ -512,7 +407,6 @@
  Package: libgo0-dbg
  Section: debug
  Architecture: any
@@ -780,82 +287,35 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Provides: libgo0-dbg-armel [armel], libgo0-dbg-armhf [armhf]
  Priority: extra
  Depends: gcc-4.7-base (= ${gcc:Version}), libgo0 (= ${gcc:Version}), ${misc:Depends}
-@@ -575,27 +958,59 @@
+@@ -575,27 +469,8 @@
   Library needed for GNU Go applications linked against the
   shared library.
  
 -Package: libx32go0
-+Package: libstdc++6
-+Architecture: any
- Section: libs
+-Section: libs
 -Architecture: amd64 i386
 -Priority: optional
 -Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
 -Description: Runtime library for GNU Go applications (x32)
 - Library needed for GNU Go applications linked against the
 - shared library.
-+Priority: important
-+Depends: gcc-4.7-base (= ${gcc:Version}), ${dep:libc}, ${shlibs:Depends}, ${misc:Depends}
-+Provides: libstdc++6-armel [armel], libstdc++6-armhf [armhf]
-+Conflicts: scim (<< 1.4.2-1)
-+Description: GNU Standard C++ Library v3
-+ This package contains an additional runtime library for C++ programs
-+ built with the GNU compiler.
-+ .
-+ libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
-+ was included up to g++-2.95. The first version of libstdc++-v3 appeared
-+ in g++-3.0.
- 
+-
 -Package: libx32go0-dbg
 -Section: debug
 -Architecture: amd64 i386
-+Package: lib32stdc++6
-+Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32
-+Section: libs
- Priority: extra
+-Priority: extra
 -Depends: gcc-4.7-base (= ${gcc:Version}), libx32go0 (= ${gcc:Version}), ${misc:Depends}
 -Description: Runtime library for GNU Go applications (x32 debug symbols)
 - Library needed for GNU Go applications linked against the
 - shared library.
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib32gcc1 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-+Conflicts: ${confl:lib32}
-+Description: GNU Standard C++ Library v3 (32 bit Version)
-+ This package contains an additional runtime library for C++ programs
-+ built with the GNU compiler.
-+
-+Package: lib64stdc++6
-+Architecture: i386 powerpc sparc s390 mips mipsel x32
-+Section: libs
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), lib64gcc1 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-+Description: GNU Standard C++ Library v3 (64bit)
-+ This package contains an additional runtime library for C++ programs
-+ built with the GNU compiler.
-+ .
-+ libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
-+ was included up to g++-2.95. The first version of libstdc++-v3 appeared
-+ in g++-3.0.
-+
-+Package: libn32stdc++6
-+Architecture: mips mipsel
-+Section: libs
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), libn32gcc1 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-+Description: GNU Standard C++ Library v3 (n32)
-+ This package contains an additional runtime library for C++ programs
-+ built with the GNU compiler.
-+ .
-+ libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
-+ was included up to g++-2.95. The first version of libstdc++-v3 appeared
-+ in g++-3.0.
- 
+-
  Package: libstdc++6-4.7-dev
  Architecture: any
 -Multi-Arch: same
  Section: libdevel
  Priority: optional
  Depends: gcc-4.7-base (= ${gcc:Version}), libgcc-4.7-dev (= ${gcc:Version}), libstdc++6 (>= ${gcc:Version}), ${dep:libcdev}, ${misc:Depends}
-@@ -613,7 +1028,6 @@
+@@ -613,7 +488,6 @@
  
  Package: libstdc++6-4.7-pic
  Architecture: any
@@ -863,7 +323,7 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Section: libdevel
  Priority: extra
  Depends: gcc-4.7-base (= ${gcc:Version}), libstdc++6 (>= ${gcc:Version}), libstdc++6-4.7-dev (= ${gcc:Version}), ${misc:Depends}
-@@ -628,7 +1042,6 @@
+@@ -628,7 +502,6 @@
  Section: debug
  Priority: extra
  Depends: gcc-4.7-base (= ${gcc:Version}), libstdc++6 (>= ${gcc:Version}), libgcc1-dbg (>= ${libgcc:Version}), ${shlibs:Depends}, ${misc:Depends}
@@ -871,7 +331,7 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
  Provides: libstdc++6-4.7-dbg-armel [armel], libstdc++6-4.7-dbg-armhf [armhf]
  Recommends: libstdc++6-4.7-dev (= ${gcc:Version})
  Conflicts: libstdc++5-dbg, libstdc++5-3.3-dbg, libstdc++6-dbg, libstdc++6-4.0-dbg, libstdc++6-4.1-dbg, libstdc++6-4.2-dbg, libstdc++6-4.3-dbg, libstdc++6-4.4-dbg, libstdc++6-4.5-dbg, libstdc++6-4.6-dbg
-@@ -711,81 +1124,6 @@
+@@ -711,81 +584,6 @@
   This package contains the shared library of libstdc++ compiled with
   debugging symbols.
  
@@ -951,27 +411,6 @@ diff -urN debian/control gcc-4.7-4.7.3.orig/debian/control
 - debugging symbols.
 -
  Package: libstdc++6-4.7-doc
- Architecture: all
- Section: doc
-@@ -809,6 +1147,20 @@
-  These are versions of basic static libraries such as libgcc.a compiled
-  with the -msoft-float option, for CPUs without a floating-point unit.
- 
-+Package: fixincludes
-+Architecture: any
-+Priority: optional
-+Depends: gcc-4.7-base (= ${gcc:Version}), gcc-4.7 (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
-+Description: Fix non-ANSI header files
-+ FixIncludes was created to fix non-ANSI system header files. Many
-+ system manufacturers supply proprietary headers that are not ANSI compliant.
-+ The GNU compilers cannot compile non-ANSI headers. Consequently, the
-+ FixIncludes shell script was written to fix the header files.
-+ .
-+ Not all packages with header files are installed on the system, when the
-+ package is built, so we make fixincludes available at build time of other
-+ packages, such that checking tools like lintian can make use of it.
-+
- Package: gcc-4.7-doc
  Architecture: all
  Section: doc
 diff -urN debian/control.m4 gcc-4.7-4.7.3.orig/debian/control.m4
@@ -1090,7 +529,7 @@ diff -urN debian/rules.conf gcc-4.7-4.7.3.orig/debian/rules.conf
    endif
 diff -urN debian/rules.parameters gcc-4.7-4.7.3.orig/debian/rules.parameters
 --- debian/rules.parameters	2014-05-15 19:48:05.674782034 +0900
-+++ gcc-4.7-4.7.3.orig/debian/rules.parameters	2014-05-15 19:52:33.043882677 +0900
++++ gcc-4.7-4.7.3.orig/debian/rules.parameters	2014-10-22 07:52:24.772253276 +0900
 @@ -2,15 +2,15 @@
  GCC_VERSION	:= 4.7.3
  NEXT_GCC_VERSION	:= 4.7.4
@@ -1098,16 +537,16 @@ diff -urN debian/rules.parameters gcc-4.7-4.7.3.orig/debian/rules.parameters
 -SOURCE_VERSION	:= 4.7.3-12ubuntu1
 -DEB_VERSION	:= 4.7.3-12ubuntu1
 -DEB_EVERSION	:= 1:4.7.3-12ubuntu1
-+SOURCE_VERSION	:= 4.7.3-12ubuntu1lucid1
-+DEB_VERSION	:= 4.7.3-12ubuntu1lucid1
-+DEB_EVERSION	:= 1:4.7.3-12ubuntu1lucid1
++SOURCE_VERSION	:= 4.7.3-12ubuntu1lucid2
++DEB_VERSION	:= 4.7.3-12ubuntu1lucid2
++DEB_EVERSION	:= 1:4.7.3-12ubuntu1lucid2
  GDC_BASE_VERSION  := 
  DEB_GDC_VERSION	:= 
  DEB_SOVERSION	:= 4.7
  DEB_SOEVERSION	:= 1:4.7
  DEB_LIBGCC_SOVERSION	:= 
 -DEB_LIBGCC_VERSION	:= 1:4.7.3-12ubuntu1
-+DEB_LIBGCC_VERSION	:= 1:4.7.3-12ubuntu1lucid1
++DEB_LIBGCC_VERSION	:= 1:4.7.3-12ubuntu1lucid2
  DEB_STDCXX_SOVERSION	:= 4.7
  DEB_GCJ_SOVERSION	:= 4.7
  PKG_GCJ_EXT	:= 13
