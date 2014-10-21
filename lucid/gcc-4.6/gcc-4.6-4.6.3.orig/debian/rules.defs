@@ -861,7 +861,7 @@ else
   endif
 
   # libmudflap --------------
-  ifeq ($(with_mudflap)-$(with_common_libs),yes-yes)
+  ifeq ($(with_mudflap),yes)
       with_libmudflap := yes
   endif
 
