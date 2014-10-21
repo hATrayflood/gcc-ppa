@@ -146,6 +146,85 @@ Description: GNU C++ compiler (multilib files)
  On architectures with multilib support, the package contains files
  and dependencies for the non-default multilib architecture(s).
 
+Package: libmudflap0
+Architecture: any
+Multi-Arch: same
+Pre-Depends: multiarch-support
+Section: libs
+Priority: optional
+Depends: gcc-4.5-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+Description: GCC mudflap shared support libraries
+ The libmudflap libraries are used by GCC for instrumenting pointer and array
+ dereferencing operations.
+
+Package: libmudflap0-dbg
+Architecture: any
+Multi-Arch: same
+Section: debug
+Priority: extra
+Depends: gcc-4.5-base (= ${gcc:Version}), libmudflap0 (= ${gcc:Version}), ${misc:Depends}
+Description: GCC mudflap shared support libraries (debug symbols)
+ The libmudflap libraries are used by GCC for instrumenting pointer and array
+ dereferencing operations.
+
+Package: lib32mudflap0
+Architecture: amd64 ppc64 kfreebsd-amd64 s390x
+Section: libs
+Priority: optional
+Depends: gcc-4.5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+Replaces: libmudflap0 (<< 4.1)
+Conflicts: ${confl:lib32}
+Description: GCC mudflap shared support libraries (32bit)
+ The libmudflap libraries are used by GCC for instrumenting pointer and array
+ dereferencing operations.
+
+Package: lib32mudflap0-dbg
+Architecture: amd64 ppc64 kfreebsd-amd64 s390x
+Section: debug
+Priority: extra
+Depends: gcc-4.5-base (= ${gcc:Version}), lib32mudflap0 (= ${gcc:Version}), ${misc:Depends}
+Description: GCC mudflap shared support libraries (32 bit debug symbols)
+ The libmudflap libraries are used by GCC for instrumenting pointer and array
+ dereferencing operations.
+
+Package: lib64mudflap0
+Architecture: i386 powerpc sparc s390 mips mipsel
+Section: libs
+Priority: optional
+Depends: gcc-4.5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+Replaces: libmudflap0 (<< 4.1)
+Description: GCC mudflap shared support libraries (64bit)
+ The libmudflap libraries are used by GCC for instrumenting pointer and array
+ dereferencing operations.
+
+Package: lib64mudflap0-dbg
+Architecture: i386 powerpc sparc s390 mips mipsel
+Section: debug
+Priority: extra
+Depends: gcc-4.5-base (= ${gcc:Version}), lib64mudflap0 (= ${gcc:Version}), ${misc:Depends}
+Description: GCC mudflap shared support libraries (64 bit debug symbols)
+ The libmudflap libraries are used by GCC for instrumenting pointer and array
+ dereferencing operations.
+
+Package: libn32mudflap0
+Architecture: mips mipsel
+Section: libs
+Priority: optional
+Depends: gcc-4.5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+Replaces: libmudflap0 (<< 4.1)
+Description: GCC mudflap shared support libraries (n32)
+ The libmudflap libraries are used by GCC for instrumenting pointer and array
+ dereferencing operations.
+
+Package: libn32mudflap0-dbg
+Architecture: mips mipsel
+Section: debug
+Priority: extra
+Depends: gcc-4.5-base (= ${gcc:Version}), libn32mudflap0 (= ${gcc:Version}), ${misc:Depends}
+Description: GCC mudflap shared support libraries (n32 debug symbols)
+ The libmudflap libraries are used by GCC for instrumenting pointer and array
+ dereferencing operations.
+
 Package: libmudflap0-4.5-dev
 Architecture: any
 Section: libdevel

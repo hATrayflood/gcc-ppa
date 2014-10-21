@@ -1,6 +1,6 @@
 diff -urN debian/changelog gcc-4.5-4.5.3.orig/debian/changelog
---- debian/changelog	2014-02-20 18:00:08.421973186 +0900
-+++ gcc-4.5-4.5.3.orig/debian/changelog	2014-03-02 14:14:31.497623667 +0900
+--- debian/changelog	2014-05-09 17:45:51.583459570 +0900
++++ gcc-4.5-4.5.3.orig/debian/changelog	2014-05-09 17:45:51.612079270 +0900
 @@ -1,3 +1,9 @@
 +gcc-4.5 (4.5.3-12ubuntu2trusty1) trusty; urgency=low
 +
@@ -12,8 +12,8 @@ diff -urN debian/changelog gcc-4.5-4.5.3.orig/debian/changelog
  
    * Pursuant to the cross-distro consensus on the armhf linker path,
 diff -urN debian/control gcc-4.5-4.5.3.orig/debian/control
---- debian/control	2014-02-20 18:00:08.433981620 +0900
-+++ gcc-4.5-4.5.3.orig/debian/control	2014-03-02 14:15:26.961898711 +0900
+--- debian/control	2014-05-09 17:45:51.583459570 +0900
++++ gcc-4.5-4.5.3.orig/debian/control	2014-10-21 21:08:53.030311392 +0900
 @@ -1,16 +1,12 @@
  Source: gcc-4.5
  Section: devel
@@ -35,9 +35,95 @@ diff -urN debian/control gcc-4.5-4.5.3.orig/debian/control
  
  Package: gcc-4.5-base
  Architecture: any
+@@ -150,6 +146,85 @@
+  On architectures with multilib support, the package contains files
+  and dependencies for the non-default multilib architecture(s).
+ 
++Package: libmudflap0
++Architecture: any
++Multi-Arch: same
++Pre-Depends: multiarch-support
++Section: libs
++Priority: optional
++Depends: gcc-4.5-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
++Description: GCC mudflap shared support libraries
++ The libmudflap libraries are used by GCC for instrumenting pointer and array
++ dereferencing operations.
++
++Package: libmudflap0-dbg
++Architecture: any
++Multi-Arch: same
++Section: debug
++Priority: extra
++Depends: gcc-4.5-base (= ${gcc:Version}), libmudflap0 (= ${gcc:Version}), ${misc:Depends}
++Description: GCC mudflap shared support libraries (debug symbols)
++ The libmudflap libraries are used by GCC for instrumenting pointer and array
++ dereferencing operations.
++
++Package: lib32mudflap0
++Architecture: amd64 ppc64 kfreebsd-amd64 s390x
++Section: libs
++Priority: optional
++Depends: gcc-4.5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
++Replaces: libmudflap0 (<< 4.1)
++Conflicts: ${confl:lib32}
++Description: GCC mudflap shared support libraries (32bit)
++ The libmudflap libraries are used by GCC for instrumenting pointer and array
++ dereferencing operations.
++
++Package: lib32mudflap0-dbg
++Architecture: amd64 ppc64 kfreebsd-amd64 s390x
++Section: debug
++Priority: extra
++Depends: gcc-4.5-base (= ${gcc:Version}), lib32mudflap0 (= ${gcc:Version}), ${misc:Depends}
++Description: GCC mudflap shared support libraries (32 bit debug symbols)
++ The libmudflap libraries are used by GCC for instrumenting pointer and array
++ dereferencing operations.
++
++Package: lib64mudflap0
++Architecture: i386 powerpc sparc s390 mips mipsel
++Section: libs
++Priority: optional
++Depends: gcc-4.5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
++Replaces: libmudflap0 (<< 4.1)
++Description: GCC mudflap shared support libraries (64bit)
++ The libmudflap libraries are used by GCC for instrumenting pointer and array
++ dereferencing operations.
++
++Package: lib64mudflap0-dbg
++Architecture: i386 powerpc sparc s390 mips mipsel
++Section: debug
++Priority: extra
++Depends: gcc-4.5-base (= ${gcc:Version}), lib64mudflap0 (= ${gcc:Version}), ${misc:Depends}
++Description: GCC mudflap shared support libraries (64 bit debug symbols)
++ The libmudflap libraries are used by GCC for instrumenting pointer and array
++ dereferencing operations.
++
++Package: libn32mudflap0
++Architecture: mips mipsel
++Section: libs
++Priority: optional
++Depends: gcc-4.5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
++Replaces: libmudflap0 (<< 4.1)
++Description: GCC mudflap shared support libraries (n32)
++ The libmudflap libraries are used by GCC for instrumenting pointer and array
++ dereferencing operations.
++
++Package: libn32mudflap0-dbg
++Architecture: mips mipsel
++Section: debug
++Priority: extra
++Depends: gcc-4.5-base (= ${gcc:Version}), libn32mudflap0 (= ${gcc:Version}), ${misc:Depends}
++Description: GCC mudflap shared support libraries (n32 debug symbols)
++ The libmudflap libraries are used by GCC for instrumenting pointer and array
++ dereferencing operations.
++
+ Package: libmudflap0-4.5-dev
+ Architecture: any
+ Section: libdevel
 diff -urN debian/control.m4 gcc-4.5-4.5.3.orig/debian/control.m4
---- debian/control.m4	2014-02-20 18:00:08.405972933 +0900
-+++ gcc-4.5-4.5.3.orig/debian/control.m4	2014-03-02 04:50:33.993304227 +0900
+--- debian/control.m4	2014-05-09 17:45:51.583459570 +0900
++++ gcc-4.5-4.5.3.orig/debian/control.m4	2014-05-09 17:45:51.612079270 +0900
 @@ -25,23 +25,7 @@
  Source: SRCNAME
  Section: devel
@@ -84,7 +170,7 @@ diff -urN debian/control.m4 gcc-4.5-4.5.3.orig/debian/control.m4
  Package: gcc-snapshot
 diff -urN debian/patches/i386-siginfo.diff gcc-4.5-4.5.3.orig/debian/patches/i386-siginfo.diff
 --- debian/patches/i386-siginfo.diff	1970-01-01 09:00:00.000000000 +0900
-+++ gcc-4.5-4.5.3.orig/debian/patches/i386-siginfo.diff	2014-03-02 02:12:23.336052913 +0900
++++ gcc-4.5-4.5.3.orig/debian/patches/i386-siginfo.diff	2014-05-09 17:45:51.639122322 +0900
 @@ -0,0 +1,14 @@
 +--- a/src/gcc/config/i386/linux-unwind.h	2009-11-13 15:58:12.000000000 +0900
 ++++ b/src/gcc/config/i386/linux-unwind.h	2014-03-02 02:09:33.223209336 +0900
@@ -102,7 +188,7 @@ diff -urN debian/patches/i386-siginfo.diff gcc-4.5-4.5.3.orig/debian/patches/i38
 +       /* The void * cast is necessary to avoid an aliasing warning.
 diff -urN debian/patches/makeinfo-itemx.diff gcc-4.5-4.5.3.orig/debian/patches/makeinfo-itemx.diff
 --- debian/patches/makeinfo-itemx.diff	1970-01-01 09:00:00.000000000 +0900
-+++ gcc-4.5-4.5.3.orig/debian/patches/makeinfo-itemx.diff	2014-03-02 01:40:53.147350998 +0900
++++ gcc-4.5-4.5.3.orig/debian/patches/makeinfo-itemx.diff	2014-05-09 17:45:51.639122322 +0900
 @@ -0,0 +1,86 @@
 +--- a/src/gcc/doc/cppopts.texi	2010-04-03 04:54:46.000000000 +0900
 ++++ b/src/gcc/doc/cppopts.texi	2014-03-02 01:22:33.588399260 +0900
@@ -191,8 +277,8 @@ diff -urN debian/patches/makeinfo-itemx.diff gcc-4.5-4.5.3.orig/debian/patches/m
 + Dump after generating the function pro and epilogues.
 + 
 diff -urN debian/rules.conf gcc-4.5-4.5.3.orig/debian/rules.conf
---- debian/rules.conf	2014-02-20 18:00:08.414512154 +0900
-+++ gcc-4.5-4.5.3.orig/debian/rules.conf	2014-03-02 03:31:54.027709495 +0900
+--- debian/rules.conf	2014-05-09 17:45:51.608136816 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.conf	2014-05-09 17:45:51.643563752 +0900
 @@ -264,7 +264,7 @@
  endif
  
@@ -203,8 +289,17 @@ diff -urN debian/rules.conf gcc-4.5-4.5.3.orig/debian/rules.conf
  ifneq ($(DEB_CROSS),yes)
  LIBC_BUILD_DEP := libc6.1-dev (>= $(libc_dev_ver)) [alpha ia64] | libc0.3-dev (>= $(libc_dev_ver)) [hurd-i386] | libc0.1-dev (>= $(libc_dev_ver)) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= $(libc_dev_ver))
 diff -urN debian/rules.defs gcc-4.5-4.5.3.orig/debian/rules.defs
---- debian/rules.defs	2014-02-20 18:00:08.409950985 +0900
-+++ gcc-4.5-4.5.3.orig/debian/rules.defs	2014-03-02 03:29:21.946955400 +0900
+--- debian/rules.defs	2014-05-09 17:45:51.608136816 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.defs	2014-10-21 19:34:08.969529519 +0900
+@@ -820,7 +820,7 @@
+   endif
+ 
+   # libmudflap --------------
+-  ifeq ($(with_mudflap)-$(with_common_libs),yes-yes)
++  ifeq ($(with_mudflap),yes)
+       with_libmudflap := yes
+   endif
+ 
 @@ -947,6 +947,7 @@
  ifneq ($(findstring nocheck, $(DEB_BUILD_OPTIONS)),)
    with_check := disabled by DEB_BUILD_OPTIONS
@@ -214,8 +309,8 @@ diff -urN debian/rules.defs gcc-4.5-4.5.3.orig/debian/rules.defs
  # not a dependency on all archs, but if available, use it for the testsuite
  ifneq (,$(wildcard /usr/bin/localedef))
 diff -urN debian/rules.parameters gcc-4.5-4.5.3.orig/debian/rules.parameters
---- debian/rules.parameters	2014-02-20 18:00:08.414512154 +0900
-+++ gcc-4.5-4.5.3.orig/debian/rules.parameters	2014-03-02 14:15:26.993898877 +0900
+--- debian/rules.parameters	2014-05-09 17:45:51.608136816 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.parameters	2014-05-09 17:45:51.643563752 +0900
 @@ -2,15 +2,15 @@
  GCC_VERSION	:= 4.5.3
  NEXT_GCC_VERSION	:= 4.5.4
@@ -237,8 +332,8 @@ diff -urN debian/rules.parameters gcc-4.5-4.5.3.orig/debian/rules.parameters
  DEB_GCJ_SOVERSION	:= 4.4
  PKG_GCJ_EXT	:= 11
 diff -urN debian/rules.patch gcc-4.5-4.5.3.orig/debian/rules.patch
---- debian/rules.patch	2014-02-20 18:00:08.446559546 +0900
-+++ gcc-4.5-4.5.3.orig/debian/rules.patch	2014-03-02 04:27:41.752729427 +0900
+--- debian/rules.patch	2014-05-09 17:45:51.608136816 +0900
++++ gcc-4.5-4.5.3.orig/debian/rules.patch	2014-05-09 17:45:51.643563752 +0900
 @@ -273,6 +273,10 @@
  
  debian_patches += armhf-triplet-backport
