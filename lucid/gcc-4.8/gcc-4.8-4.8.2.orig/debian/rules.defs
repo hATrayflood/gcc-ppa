@@ -343,6 +343,10 @@ with_common_libs := yes
 # XXX: should with_common_libs be "yes" only if this is the default compiler
 # version on the targeted arch?
 
+# PPA uploads ...
+with_common_pkgs :=
+with_common_libs :=
+
 # is this a multiarch-enabled build?
 ifeq (,$(filter $(distrelease),lenny etch squeeze dapper hardy jaunty karmic lucid maverick))
   with_multiarch_lib := yes
@@ -738,9 +742,7 @@ with_go := $(call envfilt, go, , , $(with_go))
 # Build all packages needed for Go development
 ifneq (,$(findstring gcc, $(PKGSOURCE)))
   ifeq ($(with_go),yes)
-    ifeq ($(with_common_libs),yes)
       with_libgo := yes
-    endif
     enabled_languages += go
   endif
 endif
@@ -890,7 +892,9 @@ ifeq ($(with_objc),yes)
   endif
   # libobjc soname change in 4.7
   #ifeq ($(with_common_libs),yes)
+  ifeq ($(with_common_libs),yes)
     with_libobjc := yes
+  endif
   #endif
 
   enabled_languages += objc
@@ -1081,7 +1085,7 @@ else
   endif
 
   # libasan -----------------
-  ifeq ($(with_asan)-$(with_common_libs),yes-yes)
+  ifeq ($(with_asan),yes)
     #ifneq ($(DEB_CROSS),yes)
       with_libasan := yes
     #endif
