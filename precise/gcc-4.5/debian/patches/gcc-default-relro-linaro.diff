@@ -1,0 +1,29 @@
+# DP: Turn on -Wl,-z,relro by default.
+
+---
+ gcc/doc/invoke.texi |    3 +++
+ gcc/gcc.c           |    1 +
+ 2 files changed, 4 insertions(+), 0 deletions(-)
+
+--- a/src/gcc/doc/invoke.texi.orig	2010-04-14 15:39:25.000000000 +0200
++++ b/src/gcc/doc/invoke.texi	2010-04-14 15:44:29.392342025 +0200
+@@ -8843,6 +8843,9 @@
+ linker.  When using the GNU linker, you can also get the same effect with
+ @samp{-Wl,-Map=output.map}.
+ 
++NOTE: In Ubuntu 8.10 and later versions, for LDFLAGS, the option
++@option{-Wl,-z,relro} is used.  To disable, use @option{-Wl,-z,norelro}.
++
+ @item -u @var{symbol}
+ @opindex u
+ Pretend the symbol @var{symbol} is undefined, to force linking of
+--- a/src/gcc/gcc.c.orig	2010-04-14 15:39:25.000000000 +0200
++++ b/src/gcc/gcc.c	2010-04-14 15:46:05.482341281 +0200
+@@ -798,6 +798,7 @@
+     %{v:-plugin-opt=-v} \
+     } \
+     %{flto} %{fwhopr} %l " LINK_PIE_SPEC \
++   " -z relro " \
+    "%X %{o*} %{A} %{d} %{e*} %{m} %{N} %{n} %{r}\
+     %{s} %{t} %{u*} %{x} %{z} %{Z} %{!A:%{!nostdlib:%{!nostartfiles:%S}}}\
+     %{static:} %{L*} %(mfwrap) %(link_libgcc) %o\

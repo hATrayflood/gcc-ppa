@@ -1,8 +1,8 @@
-gcc-4.5 (4.5.3-12ubuntu2trusty2) trusty; urgency=low
+gcc-4.5 (4.5.3-12ubuntu2trusty3) trusty; urgency=low
 
   * ppa for trusty
 
- -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Wed, 22 Oct 2014 04:30:00 +0900
+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Sun, 09 Nov 2014 08:10:00 +0900
 
 gcc-4.5 (4.5.3-12ubuntu2) precise; urgency=low
 

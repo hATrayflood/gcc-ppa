@@ -34,12 +34,14 @@ apt-get -y install libcloog-isl-dev-lts
 apt-get -y install libmpc-dev
 apt-get -y install libmpfr-dev
 apt-get -y install libgmp-dev
+apt-get -y install libelfg0-dev
 apt-get -y install dejagnu
 apt-get -y install autogen
 apt-get -y install realpath
 apt-get -y install chrpath
 apt-get -y install doxygen
 apt-get -y install graphviz
+apt-get -y install gsfonts-x11
 apt-get -y install texlive-latex-base
 apt-get -y install xsltproc
 apt-get -y install libxml2-utils

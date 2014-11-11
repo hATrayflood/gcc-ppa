@@ -1,0 +1,54 @@
+# DP: Search for plugins in a default plugin dir, backport from the trunk (docs).
+
+--- a/src/gcc/doc/plugins.texi~	2010-04-02 21:54:46.000000000 +0200
++++ b/src/gcc/doc/plugins.texi	2010-05-01 17:46:54.101086672 +0200
+@@ -22,6 +22,11 @@
+ plugins as key-value pairs. Multiple plugins can be invoked by
+ specifying multiple @option{-fplugin} arguments.
+ 
++A plugin can be simply given by its short name (no dots or
++slashes). When simply passing @option{-fplugin=NAME}, the plugin is
++loaded from the @file{plugin} directory, so @option{-fplugin=NAME} is
++the same as @option{-fplugin=`gcc -print-file-name=plugin`/NAME.so},
++using backquote shell syntax to query the @file{plugin} directory.
+ 
+ @section Plugin API
+ 
+@@ -407,6 +412,9 @@
+ invoking @command{gcc -print-file-name=plugin} (replace if needed
+ @command{gcc} with the appropriate program path).
+ 
++Inside plugins, this @code{plugin} directory name can be queried by
++calling @code{default_plugin_dir_name ()}.
++
+ The following GNU Makefile excerpt shows how to build a simple plugin:
+ 
+ @smallexample
+--- a/src/gcc/doc/invoke.texi~	2010-05-01 17:43:03.372338550 +0200
++++ b/src/gcc/doc/invoke.texi	2010-05-01 17:46:05.673586259 +0200
+@@ -425,7 +425,8 @@
+ 
+ @item Directory Options
+ @xref{Directory Options,,Options for Directory Search}.
+-@gccoptlist{-B@var{prefix}  -I@var{dir}  -iquote@var{dir}  -L@var{dir}
++@gccoptlist{-B@var{prefix}  -I@var{dir}  -iplugindir=@var{dir}
++-iquote@var{dir}  -L@var{dir}
+ -specs=@var{file}  -I- --sysroot=@var{dir}}
+ 
+ @item Target Options
+@@ -8872,6 +8873,15 @@
+ "@var{file}"}; they are not searched for @samp{#include <@var{file}>},
+ otherwise just like @option{-I}.
+ 
++@item -iplugindir=@var{dir}
++Set the directory to search for plugins which are passed
++by @option{-fplugin=@var{name}} instead of
++@option{-fplugin=@var{path}/@var{name}.so}.  This option is not meant
++to be used by the user, but only passed by the driver.
++
++NOTE: This is a backport for Debian/Ubuntu. Upstream versions of
++GCC 4.5 don't have this option.
++
+ @item -L@var{dir}
+ @opindex L
+ Add directory @var{dir} to the list of directories to be searched

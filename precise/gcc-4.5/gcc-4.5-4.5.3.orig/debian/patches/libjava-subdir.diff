@@ -1,0 +1,221 @@
+# DP: - Set the libjava sublibdir to /usr/lib/gcj-4.5
+# DP: - Set the default libgcj database dir to /var/lib/gcj-4.5
+
+---
+ gcc/java/Make-lang.in             |    5 +++--
+ libjava/Makefile.am               |    9 +++++----
+ libjava/Makefile.in               |    9 +++++----
+ libjava/classpath/configure.ac    |    2 +-
+ libjava/configure.ac              |    7 ++++++-
+ libjava/testsuite/Makefile.am     |    7 ++++---
+ libjava/testsuite/Makefile.in     |    7 ++++---
+ libjava/testsuite/lib/libjava.exp |    1 +
+ 8 files changed, 29 insertions(+), 18 deletions(-)
+
+--- a/src/gcc/java/Make-lang.in.orig	2009-12-20
++++ b/src/gcc/java/Make-lang.in	2009-12-20
+@@ -322,12 +322,13 @@
+ 	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) \
+ 		$(ZLIBINC) $(srcdir)/java/jcf-io.c $(OUTPUT_OPTION)
+ 
++short_version := $(shell echo $(version) | sed -r 's/([0-9]+\.[0-9]+).*/\1/')
+ # jcf-path.o needs a -D.
+ java/jcf-path.o: java/jcf-path.c $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) \
+   java/jcf.h
+ 	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) \
+-	  -DLIBGCJ_ZIP_FILE='"$(datadir)/java/libgcj-$(version).jar"' \
+-	  -DDEFAULT_TARGET_VERSION=\"$(version)\" \
++	  -DLIBGCJ_ZIP_FILE='"$(datadir)/java/libgcj-$(short_version).jar"' \
++	  -DDEFAULT_TARGET_VERSION=\"$(short_version)\" \
+ 	  $(srcdir)/java/jcf-path.c $(OUTPUT_OPTION)
+ 
+ TEXI_JAVA_FILES = java/gcj.texi $(gcc_docdir)/include/fdl.texi		\
+--- a/src/libjava/classpath/configure.ac.orig	2009-08-24
++++ b/src/libjava/classpath/configure.ac	2009-12-20
+@@ -328,7 +328,7 @@
+ 	     nativeexeclibdir=${withval}
+ 	    ],
+ 	    [
+-	     nativeexeclibdir='${toolexeclibdir}/gcj-'`cat ${srcdir}/../../gcc/BASE-VER`-`awk -F: '/^[[^#]].*:/ { print $1 }' ${srcdir}/../libtool-version`
++	     nativeexeclibdir='${toolexeclibdir}/gcj-'`sed -r 's/([[0-9]]+\.[[0-9]]+).*/\1/' ${srcdir}/../../gcc/BASE-VER`-`awk -F: '/^[[^#]].*:/ { print $1 }' ${srcdir}/../libtool-version`
+ 	    ])
+ 
+ AC_SUBST(nativeexeclibdir)
+--- a/src/libjava/testsuite/Makefile.am.orig	2008-07-21
++++ b/src/libjava/testsuite/Makefile.am	2009-12-20
+@@ -4,6 +4,7 @@
+ 
+ # May be used by various substitution variables.
+ gcc_version := $(shell cat $(top_srcdir)/../gcc/BASE-VER)
++gcc_short_version := $(shell sed -r 's/([0-9]+\.[0-9]+).*/\1/' $(top_srcdir)/../gcc/BASE-VER)
+ 
+ # autoconf2.13's target_alias
+ target_noncanonical = @target_noncanonical@
+@@ -59,11 +60,11 @@
+ 	  rm -rf $$testtmpdir; $(mkdir_p) $$testtmpdir; \
+ 	  if test -n "$$testdep"; then \
+ 	    $(GCJ) -C -g -w --encoding=UTF-8 -bootclasspath \
+-	      $(top_builddir)/libgcj-$(gcc_version).jar::$$testtmpdir \
++	      $(top_builddir)/libgcj-$(gcc_short_version).jar::$$testtmpdir \
+ 	      -d $$testtmpdir $(srcdir)/$$testdep || exit; \
+ 	  fi; \
+ 	  $(GCJ) -C -g -w --encoding=UTF-8 -bootclasspath \
+-	    $(top_builddir)/libgcj-$(gcc_version).jar:$$testtmpdir \
++	    $(top_builddir)/libgcj-$(gcc_short_version).jar:$$testtmpdir \
+ 	    -d $$testtmpdir $(srcdir)/$$test || exit; \
+ 	  case "$$test" in \
+ 	    libjava.loader/dummy.java) \
+@@ -75,7 +76,7 @@
+ 	  esac; \
+ 	  if test -n "$$genheader"; then \
+ 	    $(MYGCJH) $$genheader $$testtmpdir/*.class \
+-	      -bootclasspath $(top_builddir)/libgcj-$(gcc_version).jar \
++	      -bootclasspath $(top_builddir)/libgcj-$(gcc_short_version).jar \
+ 	      -d $$testtmpdir/ || exit; \
+ 	    mv $$testtmpdir/*.h $(srcdir)/`dirname $$test`/ 2>/dev/null; \
+ 	  fi; \
+--- a/src/libjava/testsuite/lib/libjava.exp.orig	2009-11-30
++++ b/src/libjava/testsuite/lib/libjava.exp	2009-12-20
+@@ -176,6 +176,7 @@
+     set text [eval exec "$GCJ_UNDER_TEST -B$specdir -v 2>@ stdout"]
+     regexp " version \[^\n\r\]*" $text version
+     set libjava_version [lindex $version 1]
++    set libjava_version "4.5"
+ 
+     verbose "version: $libjava_version"
+ 
+--- a/src/libjava/testsuite/Makefile.in.orig	2009-12-10
++++ b/src/libjava/testsuite/Makefile.in	2009-12-20
+@@ -315,6 +315,7 @@
+ 
+ # May be used by various substitution variables.
+ gcc_version := $(shell cat $(top_srcdir)/../gcc/BASE-VER)
++gcc_short_version := $(shell sed -r 's/([0-9]+\.[0-9]+).*/\1/' $(top_srcdir)/../gcc/BASE-VER)
+ 
+ # Setup the testing framework, if you have one
+ EXPECT = `if [ -f $(top_builddir)/../expect/expect ] ; then \
+@@ -588,11 +589,11 @@
+ @JAVA_MAINTAINER_MODE_TRUE@	  rm -rf $$testtmpdir; $(mkdir_p) $$testtmpdir; \
+ @JAVA_MAINTAINER_MODE_TRUE@	  if test -n "$$testdep"; then \
+ @JAVA_MAINTAINER_MODE_TRUE@	    $(GCJ) -C -g -w --encoding=UTF-8 -bootclasspath \
+-@JAVA_MAINTAINER_MODE_TRUE@	      $(top_builddir)/libgcj-$(gcc_version).jar::$$testtmpdir \
++@JAVA_MAINTAINER_MODE_TRUE@	      $(top_builddir)/libgcj-$(gcc_short_version).jar::$$testtmpdir \
+ @JAVA_MAINTAINER_MODE_TRUE@	      -d $$testtmpdir $(srcdir)/$$testdep || exit; \
+ @JAVA_MAINTAINER_MODE_TRUE@	  fi; \
+ @JAVA_MAINTAINER_MODE_TRUE@	  $(GCJ) -C -g -w --encoding=UTF-8 -bootclasspath \
+-@JAVA_MAINTAINER_MODE_TRUE@	    $(top_builddir)/libgcj-$(gcc_version).jar:$$testtmpdir \
++@JAVA_MAINTAINER_MODE_TRUE@	    $(top_builddir)/libgcj-$(gcc_short_version).jar:$$testtmpdir \
+ @JAVA_MAINTAINER_MODE_TRUE@	    -d $$testtmpdir $(srcdir)/$$test || exit; \
+ @JAVA_MAINTAINER_MODE_TRUE@	  case "$$test" in \
+ @JAVA_MAINTAINER_MODE_TRUE@	    libjava.loader/dummy.java) \
+@@ -604,7 +605,7 @@
+ @JAVA_MAINTAINER_MODE_TRUE@	  esac; \
+ @JAVA_MAINTAINER_MODE_TRUE@	  if test -n "$$genheader"; then \
+ @JAVA_MAINTAINER_MODE_TRUE@	    $(MYGCJH) $$genheader $$testtmpdir/*.class \
+-@JAVA_MAINTAINER_MODE_TRUE@	      -bootclasspath $(top_builddir)/libgcj-$(gcc_version).jar \
++@JAVA_MAINTAINER_MODE_TRUE@	      -bootclasspath $(top_builddir)/libgcj-$(gcc_short_version).jar \
+ @JAVA_MAINTAINER_MODE_TRUE@	      -d $$testtmpdir/ || exit; \
+ @JAVA_MAINTAINER_MODE_TRUE@	    mv $$testtmpdir/*.h $(srcdir)/`dirname $$test`/ 2>/dev/null; \
+ @JAVA_MAINTAINER_MODE_TRUE@	  fi; \
+--- a/src/libjava/configure.ac.orig	2009-12-14
++++ b/src/libjava/configure.ac	2009-12-20
+@@ -602,6 +602,9 @@
+   AS_HELP_STRING([--with-java-home=DIRECTORY],
+                  [value of java.home system property]),
+ 		 [JAVA_HOME="${withval}"], [JAVA_HOME=""])
++if test -n "$with_multisubdir"; then
++  JAVA_HOME=`echo $JAVA_HOME | sed "s,/usr/lib/,/usr/lib$with_multisubdir/,"`
++fi
+ AM_CONDITIONAL(JAVA_HOME_SET, test ! -z "$JAVA_HOME")
+ AC_SUBST(JAVA_HOME)
+ 
+@@ -1512,6 +1515,7 @@
+     multi_os_directory=`$CC -print-multi-os-directory`
+     case $multi_os_directory in
+       .) toolexeclibdir=$toolexecmainlibdir ;; # Avoid trailing /.
++      ../lib*) toolexeclibdir='$(subst /lib/../lib,/lib,'$toolexecmainlibdir/$multi_os_directory')' ;;
+       *) toolexeclibdir=$toolexecmainlibdir/$multi_os_directory ;;
+     esac
+     ;;
+@@ -1522,6 +1526,7 @@
+ 
+ # Determine gcj and libgcj version number.
+ gcjversion=`cat "$srcdir/../gcc/BASE-VER"`
++short_version=`sed -r 's/([[0-9]]+\.[[0-9]]+).*/\1/' $srcdir/../gcc/BASE-VER`
+ libgcj_soversion=`awk -F: '/^[[^#]].*:/ { print $1 }' $srcdir/libtool-version`
+ GCJVERSION=$gcjversion
+ AC_SUBST(GCJVERSION)
+@@ -1529,7 +1534,7 @@
+ 
+ # Determine where the standard .db file and GNU Classpath JNI
+ # libraries are found.
+-gcjsubdir=gcj-$gcjversion-$libgcj_soversion
++gcjsubdir=gcj-$short_version-$libgcj_soversion
+ multi_os_directory=`$CC -print-multi-os-directory`
+ case $multi_os_directory in
+   .)
+--- a/src/libjava/Makefile.am.orig	2009-12-10
++++ b/src/libjava/Makefile.am	2009-12-20
+@@ -5,7 +5,8 @@
+ ACLOCAL_AMFLAGS = -I . -I .. -I ../config -I libltdl
+ 
+ # May be used by various substitution variables.
+-gcc_version := $(shell cat $(top_srcdir)/../gcc/BASE-VER)
++gcc_full_version := $(shell cat $(top_srcdir)/../gcc/BASE-VER)
++gcc_version := $(shell sed -r 's/([0-9]+\.[0-9]+).*/\1/' $(top_srcdir)/../gcc/BASE-VER)
+ 
+ SUBDIRS = $(DIRLTDL) gcj include classpath
+ if TESTSUBDIR
+@@ -34,9 +35,9 @@
+ target_noncanonical = @target_noncanonical@
+ 
+ # This is required by TL_AC_GXX_INCLUDE_DIR.
+-libsubdir = $(libdir)/gcc/$(target_noncanonical)/$(gcc_version)
++libsubdir = $(libdir)/gcc/$(target_noncanonical)/$(gcc_full_version)
+ 
+-libexecsubdir = $(libexecdir)/gcc/$(target_noncanonical)/$(gcc_version)
++libexecsubdir = $(libexecdir)/gcc/$(target_noncanonical)/$(gcc_full_version)
+ 
+ ##
+ ## What gets installed, and where.
+@@ -330,7 +331,7 @@
+ 	-DGCJ_VERSIONED_LIBDIR="\"$(dbexecdir)\"" \
+ 	-DPATH_SEPARATOR="\"$(CLASSPATH_SEPARATOR)\"" \
+ 	-DECJ_JAR_FILE="\"$(ECJ_JAR)\"" \
+-	-DLIBGCJ_DEFAULT_DATABASE="\"$(dbexecdir)/$(db_name)\"" \
++	-DLIBGCJ_DEFAULT_DATABASE="\"/var/lib/gcj-4.5/$(db_name)\"" \
+ 	-DLIBGCJ_DEFAULT_DATABASE_PATH_TAIL="\"$(db_pathtail)\""
+ 
+ AM_GCJFLAGS = \
+--- a/src/libjava/Makefile.in.orig	2009-12-14
++++ b/src/libjava/Makefile.in	2009-12-20
+@@ -876,7 +876,8 @@
+ ACLOCAL_AMFLAGS = -I . -I .. -I ../config -I libltdl
+ 
+ # May be used by various substitution variables.
+-gcc_version := $(shell cat $(top_srcdir)/../gcc/BASE-VER)
++gcc_full_version := $(shell cat $(top_srcdir)/../gcc/BASE-VER)
++gcc_version := $(shell sed -r 's/([0-9]+\.[0-9]+).*/\1/' $(top_srcdir)/../gcc/BASE-VER)
+ SUBDIRS = $(DIRLTDL) gcj include classpath $(am__append_1)
+ 
+ # write_entries_to_file - writes each entry in a list
+@@ -897,8 +898,8 @@
+ 
+ 
+ # This is required by TL_AC_GXX_INCLUDE_DIR.
+-libsubdir = $(libdir)/gcc/$(target_noncanonical)/$(gcc_version)
+-libexecsubdir = $(libexecdir)/gcc/$(target_noncanonical)/$(gcc_version)
++libsubdir = $(libdir)/gcc/$(target_noncanonical)/$(gcc_full_version)
++libexecsubdir = $(libexecdir)/gcc/$(target_noncanonical)/$(gcc_full_version)
+ toolexeclib_LTLIBRARIES = libgcj.la libgij.la libgcj-tools.la \
+ 	$(am__append_2) $(am__append_3) $(am__append_4)
+ toolexecmainlib_DATA = libgcj.spec
+@@ -1097,7 +1098,7 @@
+ 	-DGCJ_VERSIONED_LIBDIR="\"$(dbexecdir)\"" \
+ 	-DPATH_SEPARATOR="\"$(CLASSPATH_SEPARATOR)\"" \
+ 	-DECJ_JAR_FILE="\"$(ECJ_JAR)\"" \
+-	-DLIBGCJ_DEFAULT_DATABASE="\"$(dbexecdir)/$(db_name)\"" \
++	-DLIBGCJ_DEFAULT_DATABASE="\"/var/lib/gcj-4.5/$(db_name)\"" \
+ 	-DLIBGCJ_DEFAULT_DATABASE_PATH_TAIL="\"$(db_pathtail)\""
+ 
+ AM_GCJFLAGS = \

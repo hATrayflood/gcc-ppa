@@ -1,0 +1,44 @@
+# DP: Sequel to PR40521 -- -g causes GCC to generate .eh_frame (documentation)
+
+gcc/
+2010-03-31  Thomas Schwinge  <thomas@codesourcery.com>
+	    Daniel Jacobowitz  <dan@codesourcery.com>
+
+	PR debug/40521
+	* doc/tm.texi (DWARF2_UNWIND_INFO, TARGET_UNWIND_INFO): Improve.
+	* dwarf2out.c (NEED_UNWIND_TABLES): Define.
+	(dwarf2out_do_frame, dwarf2out_do_cfi_asm, dwarf2out_begin_prologue)
+	(dwarf2out_frame_finish, dwarf2out_assembly_start): Use it.
+	(dwarf2out_assembly_start): Correct logic for TARGET_UNWIND_INFO.
+	* config/arm/arm.h (DWARF2_UNWIND_INFO): Remove definition.
+	* config/arm/bpabi.h (DWARF2_UNWIND_INFO): Define to zero.
+
+--- a/src/gcc/doc/tm.texi.orig	2010-03-27 11:27:39.000000000 +0100
++++ b/src/gcc/doc/tm.texi	2010-04-18 15:25:47.471085014 +0200
+@@ -8663,12 +8663,11 @@
+ Define this macro to 0 if your target supports DWARF 2 frame unwind
+ information, but it does not yet work with exception handling.
+ Otherwise, if your target supports this information (if it defines
+-@samp{INCOMING_RETURN_ADDR_RTX} and either @samp{UNALIGNED_INT_ASM_OP}
+-or @samp{OBJECT_FORMAT_ELF}), GCC will provide a default definition of 1.
++@samp{INCOMING_RETURN_ADDR_RTX}) and @code{TARGET_UNWIND_INFO} is not defined,
++GCC will provide a default definition of 1.
+ 
+-If @code{TARGET_UNWIND_INFO} is defined, the target specific unwinder
+-will be used in all cases.  Defining this macro will enable the generation
+-of DWARF 2 frame debugging information.
++If @code{TARGET_UNWIND_INFO} is defined, it doesn't make sense to define this
++macro to 1.
+ 
+ If @code{TARGET_UNWIND_INFO} is not defined, and this macro is defined to 1,
+ the DWARF 2 unwinder will be the default exception handling mechanism;
+@@ -8679,6 +8678,9 @@
+ @defmac TARGET_UNWIND_INFO
+ Define this macro if your target has ABI specified unwind tables.  Usually
+ these will be output by @code{TARGET_UNWIND_EMIT}.
++
++Defining this macro will affect the default value that is chosen for
++@code{DWARF2_UNWIND_INFO}.
+ @end defmac
+ 
+ @deftypevr {Target Hook} bool TARGET_UNWIND_TABLES_DEFAULT

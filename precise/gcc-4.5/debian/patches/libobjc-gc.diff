@@ -1,0 +1,21 @@
+# DP: Avoid warning building GC enabled libobjc on amd64
+
+--- a/src/libobjc/objects.c
++++ b/src/libobjc/objects.c
+@@ -29,6 +29,7 @@
+ 
+ #if OBJC_WITH_GC
+ # include <gc.h>
++# include <gc_typed.h>
+ #endif
+ 
+ id __objc_object_alloc (Class);
+@@ -47,7 +48,7 @@
+ #if OBJC_WITH_GC
+   if (CLS_ISCLASS (class))
+     new = (id) GC_malloc_explicitly_typed (class->instance_size,
+-					   class->gc_object_type);
++					   (GC_descr)class->gc_object_type);
+ #else
+   if (CLS_ISCLASS (class))
+     new = (*_objc_object_alloc) (class);
