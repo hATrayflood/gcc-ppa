@@ -21,6 +21,8 @@ provides
     /usr/bin/gcc-4.9
     /usr/bin/g++-4.9
     # precise
+    /usr/bin/gcc-4.5
+    /usr/bin/g++-4.5
     /usr/bin/gcc-4.7
     /usr/bin/g++-4.7
     /usr/bin/gcc-4.8

@@ -1,8 +1,8 @@
 diff -urN debian/changelog gcc-4.5-4.5.3.orig/debian/changelog
 --- debian/changelog	2014-05-09 17:45:51.583459570 +0900
-+++ gcc-4.5-4.5.3.orig/debian/changelog	2014-11-11 15:15:36.240022909 +0900
++++ gcc-4.5-4.5.3.orig/debian/changelog	2014-11-12 00:30:24.513400615 +0900
 @@ -1,3 +1,9 @@
-+gcc-4.5 (4.5.3-12ubuntu2precise3) trusty; urgency=low
++gcc-4.5 (4.5.3-12ubuntu2precise3) precise; urgency=low
 +
 +  * ppa for precise
 +
@@ -13,7 +13,7 @@ diff -urN debian/changelog gcc-4.5-4.5.3.orig/debian/changelog
    * Pursuant to the cross-distro consensus on the armhf linker path,
 diff -urN debian/control gcc-4.5-4.5.3.orig/debian/control
 --- debian/control	2014-05-09 17:45:51.583459570 +0900
-+++ gcc-4.5-4.5.3.orig/debian/control	2014-11-11 15:20:19.031959898 +0900
++++ gcc-4.5-4.5.3.orig/debian/control	2014-11-12 00:30:58.428602866 +0900
 @@ -1,16 +1,12 @@
  Source: gcc-4.5
  Section: devel

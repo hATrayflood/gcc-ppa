@@ -1,4 +1,4 @@
-gcc-4.5 (4.5.3-12ubuntu2precise3) trusty; urgency=low
+gcc-4.5 (4.5.3-12ubuntu2precise3) precise; urgency=low
 
   * ppa for precise
 
