@@ -13,7 +13,7 @@ diff -urN debian/changelog gcc-4.9-4.9.1.orig/debian/changelog
    * Update to SVN 20141011 (r216116) from the gcc-4_9-branch.
 diff -urN debian/control gcc-4.9-4.9.1.orig/debian/control
 --- debian/control	2014-10-19 06:23:27.348684386 +0900
-+++ gcc-4.9-4.9.1.orig/debian/control	2014-10-22 07:54:41.102183845 +0900
++++ gcc-4.9-4.9.1.orig/debian/control	2014-11-29 17:30:39.135049171 +0900
 @@ -1,37 +1,33 @@
  Source: gcc-4.9
  Section: devel
@@ -1408,67 +1408,6 @@ diff -urN debian/control.m4 gcc-4.9-4.9.1.orig/debian/control.m4
  BUILT_USING`'dnl
  Description: GCC, the GNU Compiler Collection (base package)
   This package contains files common to all languages and libraries
-diff -urN debian/cpp-4.9-i586-linux-gnu.preinst gcc-4.9-4.9.1.orig/debian/cpp-4.9-i586-linux-gnu.preinst
---- debian/cpp-4.9-i586-linux-gnu.preinst	1970-01-01 09:00:00.000000000 +0900
-+++ gcc-4.9-4.9.1.orig/debian/cpp-4.9-i586-linux-gnu.preinst	2014-10-19 06:23:27.352686412 +0900
-@@ -0,0 +1,11 @@
-+#!/bin/sh
-+
-+set -e
-+
-+if [ "$1" = "upgrade" ] || [ "$1" = "configure" ]; then
-+    update-alternatives --quiet --remove i586-linux-gnu-cpp /usr/bin/i586-linux-gnu-cpp-4.9
-+fi
-+
-+#DEBHELPER#
-+
-+exit 0
-diff -urN debian/g++-4.9-i586-linux-gnu.preinst gcc-4.9-4.9.1.orig/debian/g++-4.9-i586-linux-gnu.preinst
---- debian/g++-4.9-i586-linux-gnu.preinst	1970-01-01 09:00:00.000000000 +0900
-+++ gcc-4.9-4.9.1.orig/debian/g++-4.9-i586-linux-gnu.preinst	2014-10-19 06:23:27.352686412 +0900
-@@ -0,0 +1,11 @@
-+#!/bin/sh
-+
-+set -e
-+
-+if [ "$1" = "upgrade" ] || [ "$1" = "configure" ]; then
-+    update-alternatives --quiet --remove i586-linux-gnu-g++ /usr/bin/i586-linux-gnu-g++-4.9
-+fi
-+
-+#DEBHELPER#
-+
-+exit 0
-diff -urN debian/gcc-4.9-i586-linux-gnu.preinst gcc-4.9-4.9.1.orig/debian/gcc-4.9-i586-linux-gnu.preinst
---- debian/gcc-4.9-i586-linux-gnu.preinst	1970-01-01 09:00:00.000000000 +0900
-+++ gcc-4.9-4.9.1.orig/debian/gcc-4.9-i586-linux-gnu.preinst	2014-10-19 06:23:27.352686412 +0900
-@@ -0,0 +1,12 @@
-+#!/bin/sh
-+
-+set -e
-+
-+if [ "$1" = "upgrade" ] || [ "$1" = "configure" ]; then
-+    update-alternatives --quiet --remove i586-linux-gnu-gcc /usr/bin/i586-linux-gnu-gcc-4.9
-+    update-alternatives --quiet --remove i586-linux-gnu-gcov /usr/bin/i586-linux-gnu-gcov-4.9
-+fi
-+
-+#DEBHELPER#
-+
-+exit 0
-diff -urN debian/gfortran-4.9-i586-linux-gnu.preinst gcc-4.9-4.9.1.orig/debian/gfortran-4.9-i586-linux-gnu.preinst
---- debian/gfortran-4.9-i586-linux-gnu.preinst	1970-01-01 09:00:00.000000000 +0900
-+++ gcc-4.9-4.9.1.orig/debian/gfortran-4.9-i586-linux-gnu.preinst	2014-10-19 06:23:27.360690441 +0900
-@@ -0,0 +1,11 @@
-+#!/bin/sh
-+
-+set -e
-+
-+if [ "$1" = "upgrade" ] || [ "$1" = "configure" ]; then
-+    update-alternatives --quiet --remove i586-linux-gnu-gfortran /usr/bin/i586-linux-gnu-gfortran-4.9
-+fi
-+
-+#DEBHELPER#
-+
-+exit 0
 diff -urN debian/patches/ada-libgnatprj.diff gcc-4.9-4.9.1.orig/debian/patches/ada-libgnatprj.diff
 --- debian/patches/ada-libgnatprj.diff	2014-10-19 06:23:27.416718719 +0900
 +++ gcc-4.9-4.9.1.orig/debian/patches/ada-libgnatprj.diff	2014-10-19 20:18:02.351410006 +0900
