@@ -8,6 +8,10 @@ Porting missing version of gcc from upper/lower LTS to LTS
 provides
 --------
     # lucid
+    /usr/bin/gcc-4.0
+    /usr/bin/g++-4.0
+    /usr/bin/gcc-4.1
+    /usr/bin/g++-4.1
     /usr/bin/gcc-4.2
     /usr/bin/g++-4.2
     /usr/bin/gcc-4.5
@@ -49,6 +53,8 @@ usage
 
 upstream
 --------
+http://old-releases.ubuntu.com/ubuntu/pool/main/g/gcc-4.0/  
+http://packages.ubuntu.com/source/lucid/gcc-4.1  
 http://old-releases.ubuntu.com/ubuntu/pool/main/g/gcc-4.2/  
 http://packages.ubuntu.com/source/precise/gcc-4.5  
 http://packages.ubuntu.com/source/precise/gcc-4.6  

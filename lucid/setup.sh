@@ -38,7 +38,10 @@ apt-get -y install libmpfr-dev
 apt-get -y install libgmp3-dev
 apt-get -y install libelfg0-dev
 apt-get -y install dejagnu
+apt-get -y install expect-tcl8.3
 apt-get -y install autogen
+apt-get -y install lib64z1-dev
+apt-get -y install lib32z1-dev
 apt-get -y install realpath
 apt-get -y install chrpath
 apt-get -y install doxygen
