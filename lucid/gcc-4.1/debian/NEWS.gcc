@@ -1,0 +1,674 @@
+GCC 4.1 Release SeriesChanges, New Features, and Fixes
+======================================================
+
+The latest release in the 4.1 release series is GCC 4.1.2.
+
+
+Caveats
+=======
+
+
+General Optimizer Improvements
+==============================
+
+
+- GCC now has infrastructure for inter-procedural optimizations and
+  the following inter-procedural optimizations are implemented:
+	
+  - Profile guided inlining.  When doing profile feedback guided
+    optimization, GCC can now use the profile to make better informed
+    decisions on whether inlining of a function is profitable or not.
+    This means that GCC will no longer inline functions at call sites
+    that are not executed very often, and that functions at hot call
+    sites are more likely to be inlined.
+
+    A new parameter min-inline-recursive-probability is also now
+    available to throttle recursive inlining of functions with small
+    average recursive depths.
+
+  - Discovery of pure and const functions, a form of side-effects
+    analysis.  While older GCC releases could also discover such special
+    functions, the new IPA-based pass runs earlier so that the results
+    are available to more optimizers.  The pass is also simply more
+    powerful than the old one.
+
+  - Analysis of references to static variables and type escape
+    analysis, also forms of side-effects analysis.  The results of these
+    passes allow the compiler to be less conservative about
+    call-clobbered variables and references.  This results in more
+    redundant loads being eliminated and in making static variables
+    candidates for register promotion.
+
+  - Improvement of RTL-based alias analysis.  The results of type
+    escape analysis are fed to the RTL type-based alias analyzer,
+    allowing it to disambiguate more memory references.
+
+  - Interprocedural constant propagation and function versioning.
+    This pass looks for functions that are always called with the same
+    constant value for one or more of the function arguments, and
+    propagates those constants into those functions.
+
+  - GCC will now eliminate static variables whose usage was optimized out.
+
+  - -fwhole-program --combine can now be used to make all functions in
+    program static allowing whole program optimization.  As an
+    exception, the main function and all functions marked with the new
+    externally_visible attribute are kept global so that programs can
+    link with runtime libraries.
+	
+
+- GCC can now do a form of partial dead code elimination (PDCE) that
+  allows code motion of expressions to the paths where the result of the
+  expression is actually needed.  This is not always a win, so the pass
+  has been limited to only consider profitable cases.  Here is an example:
+
+    int foo (int *, int *);
+    int
+    bar (int d)
+    {
+      int a, b, c;
+      b = d + 1;
+      c = d + 2;
+      a = b + c;
+      if (d)
+        {
+          foo (&b, &c);
+          a = b + c;
+        }
+      printf ("%d\n", a);
+    }
+	
+
+  The a = b + c can be sunk to right before the printf.  Normal code
+  sinking will not do this, it will sink the first one above into the
+  else-branch of the conditional jump, which still gives you two
+  copies of the code.
+
+- GCC now has a value range propagation pass.  This allows the
+  compiler to eliminate bounds checks and branches.  The results of the
+  pass can also be used to accurately compute branch probabilities.
+
+- The pass to convert PHI nodes to straight-line code (a form of
+  if-conversion for GIMPLE) has been improved significantly.  The two
+  most significant improvements are an improved algorithm to determine
+  the order in which the PHI nodes are considered, and an improvement
+  that allow the pass to consider if-conversions of basic blocks with
+  more than two predecessors.
+
+- Alias analysis improvements.  GCC can now differentiate between
+  different fields of structures in Tree-SSA's virtual operands
+  form. This lets stores/loads from non-overlapping structure fields not
+  conflict.  A new algorithm to compute points-to sets was contributed
+  that can allows GCC to see now that p->a and p->b, where p is a
+  pointer to a structure, can never point to the same field.
+
+- Various enhancements to auto-vectorization:
+	
+  - Incrementally preserve SSA form when vectorizing.
+
+  - Incrementally preserve loop-closed form when vectorizing.
+
+  - Improvements to peeling for alignment: generate better code when
+    the misalignment of an access is known at compile time, or when
+    different accesses are known to have the same misalignment, even if
+    the misalignment amount itself is unknown.
+
+  - Consider dependence distance in the vectorizer.
+
+  - Externalize generic parts of data reference analysis to make this
+    analysis available to other passes.
+
+  - Vectorization of conditional code.
+
+  - Reduction support.
+	
+- GCC can now partition functions in sections of hot and cold
+  code. This can significantly improve performance due to better
+  instruction cache locality.  This feature works best together with
+  profile feedback driven optimization.
+
+- A new pass to avoid saving of unneeded arguments to the stack in
+  vararg functions if the compiler can prove that they will not be
+  needed.
+
+- Transition of basic block profiling to tree level implementation has
+  been completed.  The new implementation should be considerably more
+  reliable (hopefully avoiding profile mismatch errors when using
+  -fprofile-use or -fbranch-probabilities) and can be used to drive
+  higher level optimizations, such as inlining.
+	
+  The -ftree-based-profiling command line option was removed and
+  -fprofile-use now implies disabling old RTL level loop optimizer
+  (-fno-loop-optimize).  Speculative prefetching optimization
+  (originally enabled by -fspeculative-prefetching) was removed.
+
+
+New Languages and Language specific improvements
+================================================
+
+C and Objective-C
+-----------------
+
+- The old Bison-based C and Objective-C parser has been replaced by a
+  new, faster hand-written recursive-descent parser.
+
+
+Ada
+---
+
+- The build infrastructure for the Ada runtime library and tools has
+  been changed to be better integrated with the rest of the build
+  infrastructure of GCC.  This should make doing cross builds of Ada a
+  bit easier.
+
+
+C++
+---
+
+- ARM-style name-injection of friend declarations is no longer the
+  default.  For example:
+
+    struct S {
+      friend void f();
+    };
+
+    void g() { f(); }
+
+  will not be accepted; instead a declaration of f will need to be
+  present outside of the scope of S.  The new -ffriend-injection
+  option will enable the old behavior.
+
+
+- The (undocumented) extension which permitted templates with default
+  arguments to be bound to template template parameters with fewer
+  parameters has been deprecated, and will be removed in the next major
+  release of G++.  For example:
+
+    template <template <typename> class C>
+    void f(C<double>) {}
+
+    template <typename T, typename U = int>
+    struct S {};
+
+    template void f(S<double>);
+
+
+  makes use of the deprecated extension.  The reason this code is not
+  valid ISO C++ is that S is a template with two parameters;
+  therefore, it cannot be bound to C which has only one parameter.
+
+
+Runtime Library (libstdc++)
+---------------------------
+
+- Optimization work:
+
+  - A new implementation of std::search_n is provided, better
+    performing in case of random access iterators.
+
+  - Added further efficient specializations of istream functions,
+    i.e., character array and string extractors.
+
+  - Other smaller improvements throughout.
+
+- Policy-based associative containers, designed for high-performance,
+  flexibility and semantic safety are delivered in ext/pb_assoc.
+
+- A versatile string class, __gnu_cxx::__versa_string, providing
+  facilities conforming to the standard requirements for basic_string,
+  is delivered in <ext/vstring.h>.  In particular:
+
+  - Two base classes are provided: the default one avoids reference
+    counting and is optimized for short strings; the alternate one,
+    still uses it while improving in a few low level areas (e.g.,
+    alignment).  See vstring_fwd.h for some useful typedefs.
+
+  - Various algorithms have been rewritten (e.g., replace), the code
+    streamlined and simple optimizations added.
+
+  - Option 3 of DR 431 is implemented for both available bases, thus
+    improving the support for stateful allocators.
+
+  - As usual, many bugs have been fixed (e.g., libstdc++/13583,
+    libstdc++/23953) and LWG resolutions put into effect for the first
+    time (e.g., DR 280, DR 464, N1780 recommendations for DR 233,
+    TR1 Issue 6.19).  The implementation status of TR1 is now tracked in
+    the docs in tr1.html.
+
+
+Objective-C++
+-------------
+
+- A new language front end for Objective-C++ has been added.  This
+  language allows users to mix the object oriented features of
+  Objective-C with those of C++.
+
+
+Java (GCJ)
+----------
+
+- Core library (libgcj) updates based on GNU Classpath 0.15 - 0.19
+  features (plus some 0.20 bug-fixes)
+
+  - Networking
+
+    - The java.net.HttpURLConnection implementation no longer buffers
+      the entire response body in memory.  This means that response
+      bodies larger than available memory can now be handled.
+
+  - (N)IO
+
+    - NIO FileChannel.map implementation, fast bulk put implementation
+      for DirectByteBuffer (speeds up this method 10x).
+
+    - FileChannel.lock() and FileChannel.force() implemented.
+
+  - XML
+
+    - gnu.xml fix for nodes created outside a namespace context.
+
+    - Add support for output indenting and cdata-section-elements
+      output instruction in xml.transform.
+
+    - xml.xpath corrections for cases where elements/attributes might
+      have been created in non-namespace-aware mode.  Corrections to
+      handling of XSL variables and minor conformance updates.
+
+  - AWT
+
+    - GNU JAWT implementation, the AWT Native Interface, which allows
+      direct access to native screen resources from within a Canvas's
+      paint method.  GNU Classpath Examples comes with a Demo, see
+      libjava/classpath/examples/README.
+
+    - awt.datatransfer updated to 1.5 with support for FlavorEvents.
+      The gtk+ awt peers now allow copy/paste of text, images,
+      URIs/files and serialized objects with other applications and
+      tracking clipboard change events with gtk+ 2.6 (for gtk+ 2.4 only
+      text and serialized objects are supported). A GNU Classpath
+      Examples datatransfer Demo was added to show the new functionality.
+
+    - Split gtk+ awt peers event handling in two threads and improve
+      gdk lock handling (solves several awt lock ups).
+
+    - Speed up awt Image loading.
+
+    - Better gtk+ scrollbar peer implementation when using gtk+ >= 2.6.
+
+    - Handle image loading errors correctly for gdkpixbuf and
+      MediaTracker.
+
+    - Better handle GDK lock. Properly prefix gtkpeer native functions
+      (cp_gtk).
+
+    - GdkGraphics2D has been updated to use Cairo 0.5.x or higher.
+
+    - BufferedImage and GtkImage rewrites. All image drawing
+      operations should now work correctly (flipping requires gtk+ >= 2.6)
+
+    - Future Graphics2D, image and text work is documented at:
+      http://developer.classpath.org/mediation/ClasspathGraphicsImagesText
+	
+
+    - When gtk+ 2.6 or higher is installed the default log handler
+      will produce stack traces whenever a WARNING, CRITICAL or ERROR
+      message is produced.
+	
+  - Free Swing
+	
+    - The RepaintManager has been reworked for more efficient
+      painting, especially for large GUIs.
+
+    - The layout manager OverlayLayout has been implemented, the
+      BoxLayout has been rewritten to make use of the SizeRequirements
+      utility class and caching for more efficient layout.
+
+    - Improved accessibility support.
+
+    - Significant progress has been made in the implementation of the
+      javax.swing.plaf.metal package, with most UI delegates in a
+      working state now.  Please test this with your own applications
+      and provide feedback that will help us to improve this package.
+
+    - The GUI demo (gnu.classpath.examples.swing.Demo) has been
+      extended to highlight various features in our Free Swing
+      implementation. And it includes a look and feel switcher for Metal
+      (default), Ocean and GNU themes.
+
+    - The javax.swing.plaf.multi package is now implemented.
+
+    - Editing and several key actions for JTree and JTable were implemented.
+
+    - Lots of icons and look and feel improvements for Free Swing
+      basic and metal themes were added.  Try running the GNU Classpath
+      Swing Demo in examples (gnu.classpath.examples.swing.Demo) with:
+      -Dswing.defaultlaf=javax.swing.plaf.basic.BasicLookAndFeel or
+      -Dswing.defaultlaf=javax.swing.plaf.metal.MetalLookAndFeel
+
+    - Start of styled text capabilites for java.swing.text.
+
+    - DefaultMutableTreeNode pre-order, post-order, depth-first and
+      breadth-first traversal enumerations implemented.
+
+    - JInternalFrame colors and titlebar draw properly.
+
+    - JTree is working up to par (icons, selection and keyboard traversal).
+
+    - JMenus were made more compatible in visual and programmatic behavior.
+
+    - JTable changeSelection and multiple selections implemented.
+
+    - JButton and JToggleButton change states work properly now.
+
+    - JFileChooser fixes.
+
+    - revalidate() and repaint() fixes which make Free Swing much more
+      responsive.
+
+    - MetalIconFactory implemented.
+
+    - Free Swing Top-Level Compatibility. JFrame, JDialog, JApplet,
+      JInternalFrame, and JWindow are now 1.5 compatible in the sense
+      that you can call add() and setLayout() directly on them, which
+      will have the same effect as calling getContentPane().add() and
+      getContentPane().setLayout().
+
+    - The JTree interface has been completed.  JTrees now recognizes
+      mouse clicks and selections work.
+
+    - BoxLayout works properly now.
+
+    - Fixed GrayFilter to actually work.
+
+    - Metal SplitPane implemented.
+
+    - Lots of Free Swing text and editor stuff work now.
+	
+
+  - Free RMI and Corba
+	
+    - Andrew Watson, Vice President and Technical Director of the
+      Object Management Group, has officially assigned us 20 bit Vendor
+      Minor Code Id: 0x47430 ("GC") that will mark remote
+      classpath-specific system exceptions.  Obtaining the VMCID means
+      that GNU Classpath now is a recogniseable type of node in a highly
+      interoperable CORBA world.
+
+    - GNU Classpath now includes the first working draft to support
+      the RMI over IIOP protocol. The current implementation is capable
+      of remote invocations, transferring various Serializables and
+      Externalizables via RMI-IIOP protocol.  It can flatten graphs and,
+      at least for the simple cases, is interoperable with 1.5 JDKs.
+
+    - org.omg.PortableInterceptor and related functionality in other
+      packages is now implemented:
+	
+      - The sever and client interceptors work as required since 1.4.
+
+      - The IOR interceptor works as needed for 1.5.
+	
+    - The org.omg.DynamicAny package is completed and passes the
+      prepared tests.
+
+    - The Portable Object Adapter should now support the output of the
+      recent IDL to java compilers. These compilers now generate
+      servants and not CORBA objects as before, making the output depend
+      on the existing POA implementation. Completing POA means that such
+      code can already be tried to run on Classpath. Our POA is tested
+      for the following usager scenarios:
+	
+      - POA converts servant to the CORBA object.
+      - Servant provides to the CORBA object.
+      - POA activates new CORBA object with the given Object
+      - Id (byte array) that is later accessible for the servant.
+      - During the first call, the ServantActivator provides servant
+        for this and all subsequent calls on the current object.
+      - During each call, the ServantLocator provides servant for this
+        call only.
+      - ServantLocator or ServantActivator forwards call to another server.
+      - POA has a single servant, responsible for all objects.
+      - POA has a default servant, but some objects are explicitly
+        connected to they specific servants.
+	
+      The POA is verified using tests from the former cost.omg.org.
+
+    - The CORBA implementation is now a working prototype that should
+      support features up to 1.3 inclusive.  We invite groups writing
+      CORBA dependent applications to try Classpath implementation,
+      reporting any possible bugs.  The CORBA prototype is interoperable
+      with Sun's implementation v 1.4, transferring object references,
+      primitive types, narrow and wide strings, arrays, structures,
+      trees, abstract interfaces and value types (feature of CORBA 2.3)
+      between these two platforms.  Remote exceptions are transferred
+      and handled correctly.  The stringified object references (IORs)
+      from various sources are parsed as required.  The transient (for
+      current session) and permanent (till jre restart) redirections
+      work.  Both Little and Big Endian encoded messages are accepted.
+      The implementation is verified using tests from the former
+      cost.omg.org.  The current release includes working examples (see
+      the examples directory), demonstrating the client-server
+      communication, using either CORBA Request or IDL-based stub
+      (usually generated by a IDL to java compiler).  These examples
+      also show how to use the Classpath CORBA naming service.  The IDL
+      to java compiler is not yet written, but as our library must be
+      compatible, it naturally accepts the output of other idlj
+      implementations.
+	
+  - Misc
+	
+    - Updated TimeZone data against Olson tzdata2005l.
+
+    - Make zip and jar packages UTF-8 clean.
+
+    - "native" code builds and compiles (warning free) on Darwin and Solaris.
+
+    - java.util.logging.FileHandler now rotates files.
+
+    - Start of a generic JDWP framework in gnu/classpath/jdwp.  This
+      is unfinished, but feedback (at classpath@gnu.org) from runtime
+      hackers is greatly appreciated. Although most of the work is
+      currently being done around gcj/gij we want this framework to be
+      as VM neutral as possible.  Early design is described in:
+      http://gcc.gnu.org/ml/java/2005-05/msg00260.html
+
+    - QT4 AWT peers, enable by giving configure --enable-qt-peer.
+      Included, but not ready for production yet. They are explicitly
+      disabled and not supported.  But if you want to help with the
+      development of these new features we are interested in
+      feedback. You will have to explicitly enable them to try them
+      out (and they will most likely contain bugs).
+
+    - Documentation fixes all over the place.  See
+      http://developer.classpath.org/doc/
+	
+	
+New Targets and Target Specific Improvements
+============================================
+
+IA-32/x86-64
+------------
+
+- The x86-64 medium model (that allows building applications whose
+  data segment exceeds 4GB) was redesigned to match latest ABI draft.
+  New implementation split large datastructures into separate segment
+  improving performance of accesses to small datastructures and also
+  allows linking of small model libraries into medium model programs as
+  long as the libraries are not accessing the large datastructures
+  directly.  Medium model is also supported in position independent code
+  now.
+
+  The ABI change results in partial incompatibility among medium model
+  objects. Linking medium model libraries (or objects) compiled with
+  new compiler into medium model program compiled with older will
+  likely result in exceeding ranges of relocations.
+	
+  Binutils 2.16.91 or newer are required for compiling medium model now.
+
+
+RS6000 (POWER/PowerPC)
+----------------------
+
+- The AltiVec vector primitives in <altivec.h> are now implemented in
+  a way that puts a smaller burden on the preprocessor, instead
+  processing the "overloading" in the front ends. This should benefit
+  compilation speed on AltiVec vector code.
+
+- AltiVec initializers now are generated more efficiently.
+
+- The popcountb instruction available on POWER5 now is generated.
+
+- The floating point round to integer instructions available on
+  POWER5+ now is generated.
+
+- Floating point divides can be synthesized using the floating point
+  reciprocal estimate instructions.
+
+- Double precision floating point constants are initialized as single
+  precision values if they can be represented exactly.
+
+
+S/390, zSeries and System z9
+----------------------------
+
+- Support for the IBM System z9 109 processor has been added.  When
+  using the -march=z9-109 option, the compiler will generate code making
+  use of instructions provided by the extended immediate facility.  -
+
+- Support for 128-bit IEEE floating point has been added.  When using
+  the -mlong-double-128 option, the compiler will map the long double
+  data type to 128-bit IEEE floating point. Using this option
+  constitutes an ABI change, and requires glibc support.
+
+- Various changes to improve performance of generated code have been
+  implemented, including:
+
+  - In functions that do not require a literal pool, register %r13
+    (which is traditionally reserved as literal pool pointer), can now
+    be freely used for other purposes by the compiler.
+
+  - More precise tracking of register use allows the compiler to
+    generate more efficient function prolog and epilog code in certain
+    cases.
+
+  - The SEARCH STRING, COMPARE LOGICAL STRING, and MOVE STRING
+    instructions are now used to implement C string functions.
+
+  - The MOVE CHARACTER instruction with single byte overlap is now
+    used to implement the memset function with non-zero fill byte.
+
+  - The LOAD ZERO instructions are now used where appropriate.
+
+  - The INSERT CHARACTERS UNDER MASK, STORE CHARACTERS UNDER MASK, and
+    INSERT IMMEDIATE instructions are now used more frequently to
+    optimize bitfield operations.
+
+  - The BRANCH ON COUNT instruction is now used more frequently.  In
+    particular, the fact that a loop contains a subroutine call no
+    longer prevents the compiler from using this instruction.
+
+  - The compiler is now aware that all shift and rotate instructions
+    implicitly truncate the shift count to six bits.
+
+- Back-end support for the following generic features has been implemented:
+
+  - The full set of built-in functions for atomic memory access.
+
+  - The -fstack-protector feature.
+
+  - The optimization pass avoiding unnecessary stores of incoming
+    argument registers in functions with variable argument list.
+
+
+SPARC
+-----
+
+- The default code model in 64-bit mode has been changed from
+  Medium/Anywhere to Medium/Middle on Solaris.
+
+- TLS support is disabled by default on Solaris prior to release
+  10. It can be enabled on TLS-capable Solaris 9 versions (4/04 release
+  and later) by specifying --enable-tls at configure time.
+
+
+MorphoSys
+---------
+
+- Support has been added for this new architecture.
+
+
+Obsolete Systems
+================
+
+
+Documentation improvements
+==========================
+
+
+Other significant improvements
+==============================
+
+- GCC can now emit code for protecting applications from
+  stack-smashing attacks.  The protection is realized by buffer overflow
+  detection and reordering of stack variables to avoid pointer
+  corruption.
+
+- Some built-in functions have been fortified to protect them against
+  various buffer overflow (and format string) vulnerabilities. Compared
+  to the mudflap bounds checking feature, the safe builtins have far
+  smaller overhead.  This means that programs built using safe builtins
+  should not experience any measurable slowdown.
+
+
+GCC 4.1.2
+=========
+
+This is the list [1] of problem reports (PRs) from GCC's bug tracking
+system that are known to be fixed in the 4.1.2 release. This list
+might not be complete (that is, it is possible that some PRs that have
+been fixed are not listed here).
+
+[1] http://gcc.gnu.org/bugzilla/buglist.cgi?bug_status=RESOLVED&resolution=FIXED&target_milestone=4.1.2
+
+
+When generating code for a shared library, GCC now recognizes that
+global functions may be replaced when the program runs.  Therefore, it
+is now more conservative in deducing information from the bodies of
+functions.  For example, in this example:
+
+    void f() {}
+    void g() { 
+     try { f(); } 
+     catch (...) { 
+       cout << "Exception";
+     }
+    }
+
+G++ would previously have optimized away the catch clause, since it
+would have concluded that f cannot throw exceptions.  Because users
+may replace f with another function in the main body of the program,
+this optimization is unsafe, and is no longer performed.  If you wish
+G++ to continue to optimize as before, you must add a throw() clause
+to the declaration of f to make clear that it does not throw
+exceptions.
+
+
+------------------------------------------------------------------------------
+Please send FSF & GNU inquiries & questions tognu@gnu.org.There are
+also other ways to contact the FSF.
+
+These pages are maintained by the GCC team.
+
+For questions related to the use of GCC, please consult these web
+pages and the GCC manuals. If that fails, the gcc-help@gcc.gnu.org
+mailing list might help.  Please send comments on these web pages and
+the development of GCC to our public developer mailing list at
+gcc@gnu.org or gcc@gcc.gnu.org.
+
+Copyright (C) Free Software Foundation, Inc.,
+51 Franklin St - Suite 330, Boston, MA 02110, USA.
+
+Verbatim copying and distribution of this entire article is permitted
+in any medium, provided this notice is preserved.
+
+
+Last modified 2006-02-27

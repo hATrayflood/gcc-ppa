@@ -1,0 +1,112 @@
+#! /bin/sh -e
+
+# DP: Backport of sparc niagara support (doc files).
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2006-03-02  David S. Miller  <davem@sunset.davemloft.net>
+
+	Sun Niagara specific optimizations.
+	* config.gcc: Recognize niagara as target.
+	* config/sparc/sparc.h (SPARC_RELAXED_ORDERING): Mention Niagara.
+	(TARGET_CPU_niagara): Define.
+	(CPP_CPU64_DEFAULT_SPEC): Define __sparc_v9__ for Niagara.
+	(ASM_CPU64_DEFAULT_SPEC): Pass -Av9b for Niagara.
+	(CPP_CPU_SPEC): Handle -mcpu=niagara.
+	(ASM_CPU_SPEC): Likewise.
+	(PROCESSOR_NIAGARA): New enum entry.
+	(REGISTER_MOVE_COST): Handle Niagara.
+	(BRANCH_COST, PREFETCH_BLOCK, SIMULTANEOUS_PREFETCHES): Likewise.
+	* config/sparc/sparc.c (niagara_costs): New processor_costs entry.
+	(sparc_override_options): Recognize "niagara", set appropriate
+	default MASK_* values for it, and align functions to 32-bytes
+	by default just like ULTRASPARC/ULTRASPARC3.
+	(sparc_initialize_trampoline): Handle niagara like ultrasparc.
+	(sparc64_initialize_trampoline): Likewise.
+	(sparc_use_sched_lookahead): Use zero for niagara.
+	(sparc_issue_rate): Use one for niagara.
+	* config/sparc/niagara.md: New file.
+	* config/sparc/sparc.md: Include it.
+	* config/sparc/sol2-bi.h (CPP_CPU64_DEFAULT_SPEC,
+	ASM_CPU32_DEFAULT_SPEC, ASM_CPU64_DEFAULT_SPEC): Set appropriately
+	when default cpu is niagara.
+	(CPP_CPU_SPEC): Handle -mcpu=niagara.
+	(ASM_CPU_SPEC): Likewise.
+	* config/sparc/sol2.h (ASM_CPU_DEFAULT_SPEC): Set appropriately
+	when default cpu is niagara.
+	(ASM_CPU_SPEC): Handle -mcpu=niagara.
+	* config/sparc/linux64.h: Handle a default of TARGET_CPU_niagara
+	just like v9/ultrasparc/ultrasparc3.
+	* doc/invoke.texi: Add documentation for "niagara" and improve
+	existing documentation for ultrasparc variants.
+	
+Index: gcc/doc/invoke.texi
+===================================================================
+--- gcc/doc/invoke.texi	(revision 111647)
++++ gcc/doc/invoke.texi	(working copy)
+@@ -12268,8 +12268,8 @@
+ for machine type @var{cpu_type}.  Supported values for @var{cpu_type} are
+ @samp{v7}, @samp{cypress}, @samp{v8}, @samp{supersparc}, @samp{sparclite},
+ @samp{f930}, @samp{f934}, @samp{hypersparc}, @samp{sparclite86x},
+-@samp{sparclet}, @samp{tsc701}, @samp{v9}, @samp{ultrasparc}, and
+-@samp{ultrasparc3}.
++@samp{sparclet}, @samp{tsc701}, @samp{v9}, @samp{ultrasparc},
++@samp{ultrasparc3}, and @samp{niagara}.
+ 
+ Default instruction scheduling parameters are used for values that select
+ an architecture and not an implementation.  These are @samp{v7}, @samp{v8},
+@@ -12283,7 +12283,7 @@
+     v8:             supersparc, hypersparc
+     sparclite:      f930, f934, sparclite86x
+     sparclet:       tsc701
+-    v9:             ultrasparc, ultrasparc3
++    v9:             ultrasparc, ultrasparc3, niagara
+ @end smallexample
+ 
+ By default (unless configured otherwise), GCC generates code for the V7
+@@ -12317,9 +12317,11 @@
+ architecture.  This adds 64-bit integer and floating-point move instructions,
+ 3 additional floating-point condition code registers and conditional move
+ instructions.  With @option{-mcpu=ultrasparc}, the compiler additionally
+-optimizes it for the Sun UltraSPARC I/II chips.  With
++optimizes it for the Sun UltraSPARC I/II/IIi chips.  With
+ @option{-mcpu=ultrasparc3}, the compiler additionally optimizes it for the
+-Sun UltraSPARC III chip.
++Sun UltraSPARC III/III+/IIIi/IIIi+/IV/IV+ chips.  With
++@option{-mcpu=niagara}, the compiler additionally optimizes it for
++Sun UltraSPARC T1 chips.
+ 
+ @item -mtune=@var{cpu_type}
+ @opindex mtune
+@@ -12331,8 +12333,8 @@
+ @option{-mtune=@var{cpu_type}}, but the only useful values are those
+ that select a particular cpu implementation.  Those are @samp{cypress},
+ @samp{supersparc}, @samp{hypersparc}, @samp{f930}, @samp{f934},
+-@samp{sparclite86x}, @samp{tsc701}, @samp{ultrasparc}, and
+-@samp{ultrasparc3}.
++@samp{sparclite86x}, @samp{tsc701}, @samp{ultrasparc},
++@samp{ultrasparc3}, and @samp{niagara}.
+ 
+ @item -mv8plus
+ @itemx -mno-v8plus

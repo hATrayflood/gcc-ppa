@@ -1,0 +1,42 @@
+#! /bin/sh -e
+
+# DP: PR other/26208, fix arm pasto
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2006-03-03  Jakub Jelinek  <jakub@redhat.com>
+
+	* config/arm/unwind-arm.h (_Unwind_GetIPInfo): Fix pasto.
+
+Index: gcc/config/arm/unwind-arm.h
+===================================================================
+--- gcc/config/arm/unwind-arm.h	(Revision 111673)
++++ gcc/config/arm/unwind-arm.h	(Revision 111674)
+@@ -250,7 +250,7 @@
+ #define _Unwind_GetIP(context) \
+   (_Unwind_GetGR (context, 15) & ~(_Unwind_Word)1)
+ 
+-#define _Unwind_GetIP(context, ip_before_insn) \
++#define _Unwind_GetIPInfo(context, ip_before_insn) \
+   (*ip_before_insn = 0, _Unwind_GetGR (context, 15) & ~(_Unwind_Word)1)
+ 
+   static inline void

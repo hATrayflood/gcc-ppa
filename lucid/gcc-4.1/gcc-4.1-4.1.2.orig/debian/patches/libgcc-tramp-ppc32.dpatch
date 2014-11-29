@@ -1,0 +1,91 @@
+#! /bin/sh -e
+
+# DP: Fix libgcc.a(tramp.o) on ppc32
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+
+From: Jakub Jelinek <jakub@redhat.com>
+Sender: gcc-patches-owner@gcc.gnu.org
+To: Alan Modra <amodra@bigpond.net.au>
+Cc: gcc-patches@gcc.gnu.org
+Subject: [PATCH] Fix libgcc.a(tramp.o) on ppc32
+Date: Mon, 20 Aug 2007 17:35:52 -0400
+
+Hi!
+
+Without this patch and with recent binutils all ppc32 binaries or shared
+libraries that use trampolines are linked as BSS PLT, eventhough they
+were compiled with -msecure-plt or with --enable-secureplt configured
+gcc without -mbss-plt.
+With -Wl,--secure-plt the warning is:
+gcc -Wall -Wshadow -std=gnu99 -Werror -Wunused -Wextra -Wformat=2 -O2 -g \
+-pipe -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector \
+--param=ssp-buffer-size=4 -m32 -fexceptions \
+-Wl,-rpath-link,../libelf:../libdw -o nm nm.o ../libdw/libdw.so \
+../libebl/libebl.a ../libelf/libelf.so ../lib/libeu.a -ldl --Wl,--secure-plt
+Using bss-plt due to /usr/lib/gcc/ppc64-redhat-linux/4.1.2/libgcc.a(tramp.o)
+
+Although tramp.asm has the needed code for secure PLT since the
+2005-06-01 secure PLT GCC support addition, it is never triggered, as
+tramp.asm doesn't include auto-host.h which defines HAVE_AS_REL16
+or undefs it.  Also, ppc-asm.h uses @plt in JUMP_TARGET whenever __PIC__
+or __pic__ is defined, tramp.asm needs to use the same condition.
+
+Ok for 4.3/4.2/4.1?
+
+2007-08-20  Jakub Jelinek  <jakub@redhat.com>
+
+	* config/rs6000/tramp.asm: Include config.h.
+	Check __PIC__ or __pic__ macro instead of SHARED.
+
+--- gcc/config/rs6000/tramp.asm.jj	2006-10-05 00:28:33.000000000 +0200
++++ gcc/config/rs6000/tramp.asm	2007-08-20 23:20:52.000000000 +0200
+@@ -1,6 +1,6 @@
+ /*  Special support for trampolines
+  *
+- *   Copyright (C) 1996, 1997, 2000 Free Software Foundation, Inc.
++ *   Copyright (C) 1996, 1997, 2000, 2007 Free Software Foundation, Inc.
+  *   Written By Michael Meissner
+  * 
+  * This file is free software; you can redistribute it and/or modify it
+@@ -37,7 +37,8 @@
+ 
+ 	.file	"tramp.asm"
+ 	.section ".text"
+-	#include "ppc-asm.h"
++#include "ppc-asm.h"
++#include "config.h"
+ 
+ #ifndef __powerpc64__
+ 	.type	trampoline_initial,@object
+@@ -105,7 +106,7 @@ FUNC_START(__trampoline_setup)
+ 	blr
+ 
+ .Labort:
+-#if defined SHARED && defined HAVE_AS_REL16
++#if (defined __PIC__ || defined __pic__) && defined HAVE_AS_REL16
+ 	bcl	20,31,1f
+ 1:	mflr	r30
+ 	addis	r30,r30,_GLOBAL_OFFSET_TABLE_-1b@ha
+
+	Jakub

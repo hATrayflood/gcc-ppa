@@ -1,0 +1,52 @@
+#! /bin/sh -e
+
+# gdc-pr26885.dpatch by Arthur Loiret <arthur.loiret@gmail.com>
+# DP: Update Make-lang.in for pr26885: use $(GCC_OBJS) instead of gcc.o.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+
+--- gcc/d/Make-lang.in	2007-11-16 02:10:38.000000000 +0000
++++ gcc/d/Make-lang.in	2007-11-16 02:12:17.000000000 +0000
+@@ -48,7 +48,7 @@
+ # into the C++ rule, but that needs a little bit of work
+ # to do the right thing within all.cross.
+ D_DRIVER_NAME = gdc
+-D_DRIVER_OBJS = d/d-spec.o d/d-gcc.o version.o prefix.o intl.o
++D_DRIVER_OBJS = d/d-spec.o version.o prefix.o intl.o
+ D_COMPILER_NAME = cc1d
+ 
+ D_INSTALL_NAME = $(shell echo $(D_DRIVER_NAME)|sed '$(program_transform_name)')
+@@ -157,9 +157,9 @@
+ ALL_DMD_COMPILER_FLAGS = $(ALL_CFLAGS) $(ALL_CPPFLAGS) -Id -I$(srcdir)/$(D_dmd_srcdir) -I$(srcdir)/d $(D_EXTRA_DEFINES) $(D_CC_FLAGS)
+ 
+ # Create the compiler driver for D.
+-$(D_DRIVER_NAME)$(exeext): $(D_DRIVER_OBJS) $(EXTRA_GCC_OBJS) $(LIBDEPS)
++$(D_DRIVER_NAME)$(exeext): $(GCC_OBJS) $(D_DRIVER_OBJS) $(EXTRA_GCC_OBJS) $(LIBDEPS)
+ 	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ \
+-	$(D_DRIVER_OBJS) $(EXTRA_GCC_OBJS) $(LIBS)
++	$(GCC_OBJS) $(D_DRIVER_OBJS) $(EXTRA_GCC_OBJS) $(LIBS)
+ 
+ # Create a version of the g++ driver which calls the cross-compiler.
+ $(D_DRIVER_NAME)-cross$(exeext): $(D_DRIVER_NAME)$(exeext)

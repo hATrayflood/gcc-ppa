@@ -1,0 +1,488 @@
+#! /bin/sh -e
+
+# DP: Add --with{,out}-long-double-128 configure option.
+# DP: Taken from http://gcc.gnu.org/bugzilla/show_bug.cgi?id=25864#c14
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        rm -f ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2006-02-10  Jakub Jelinek  <jakub@redhat.com>
+
+	* doc/install.texi (Options specification): Document
+	--with-long-double-128.
+
+2006-02-05  Jakub Jelinek  <jakub@redhat.com>
+
+	* config.gcc (sparc-*-linux*): Add sparc/t-linux to tmake_file.
+	(sparc64-*-linux*): Likewise.
+	* config/sparc/t-linux64 (SHLIB_MAPFILES): Removed.
+	* config/sparc/t-linux: New file.
+	* config/sparc/libgcc-sparc-glibc.ver (__fixtfdi, __fixunstfdi,
+	__floatditf): Export at GCC_LDBL_3.0 if -m32 -mlong-double-128.
+	(__divtc3, __multc3, __powitf2): Export at GCC_LDBL_4.0.0 if
+	-m32 -mlong-double-128.
+
+	* config.gcc (alpha*-*-linux*): Add alpha/t-linux to tmake_file.
+	* config/alpha/t-linux: New file.
+	* config/alpha/libgcc-alpha-ldbl.ver: New file.
+
+2006-02-04  Jakub Jelinek  <jakub@redhat.com>
+
+	* config/sparc/linux.h (TARGET_OS_CPP_BUILTINS): Define
+	__LONG_DOUBLE_128__ if TARGET_LONG_DOUBLE_128.
+	(CPP_SUBTARGET_SPEC): Don't add -D__LONG_DOUBLE_128__ here.
+	* config/sparc/linux64.h (TARGET_OS_CPP_BUILTINS): Define
+	__LONG_DOUBLE_128__ if TARGET_LONG_DOUBLE_128 and TARGET_ARCH32.
+	(CPP_ARCH32_SPEC): Remove.
+
+2006-02-03  Aldy Hernandez  <aldyh@redhat.com>
+
+	* config/s390/s390.c (override_options): Handle
+	TARGET_DEFAULT_LONG_DOUBLE_128.
+
+	* config/alpha/alpha.c (override_options): Handle
+	TARGET_DEFAULT_LONG_DOUBLE_128.
+
+	* config/sparc/sparc.c (sparc_override_options): Handle
+	TARGET_DEFAULT_LONG_DOUBLE_128.
+
+2006-02-04  Jakub Jelinek  <jakub@redhat.com>
+
+	* config/rs6000/linux.h [TARGET_DEFAULT_LONG_DOUBLE_128]
+	(RS6000_DEFAULT_LONG_DOUBLE_SIZE): Define to 128.
+	* config/rs6000/linux64.h [TARGET_DEFAULT_LONG_DOUBLE_128]
+	(RS6000_DEFAULT_LONG_DOUBLE_SIZE): Define to 128.
+
+	* configure.ac: Add --with{out}-long-double-128 configure option.
+	(TARGET_DEFAULT_LONG_DOUBLE_128): New test.
+	* configure: Rebuilt.
+	* config.in: Rebuilt.
+
+--- gcc/config/rs6000/linux.h.jj	2006-02-04 11:46:38.000000000 +0100
++++ gcc/config/rs6000/linux.h	2006-02-04 11:47:18.000000000 +0100
+@@ -120,3 +120,8 @@
+ #endif
+ 
+ #define POWERPC_LINUX
++
++/* ppc linux has 128-bit long double support in glibc 2.4 and later.  */
++#ifdef TARGET_DEFAULT_LONG_DOUBLE_128
++#define RS6000_DEFAULT_LONG_DOUBLE_SIZE 128
++#endif
+--- gcc/config/rs6000/linux64.h.jj	2006-02-04 11:46:38.000000000 +0100
++++ gcc/config/rs6000/linux64.h	2006-02-04 11:47:37.000000000 +0100
+@@ -570,3 +570,8 @@ while (0)
+ #endif
+ 
+ #define POWERPC_LINUX
++
++/* ppc{32,64} linux has 128-bit long double support in glibc 2.4 and later.  */
++#ifdef TARGET_DEFAULT_LONG_DOUBLE_128
++#define RS6000_DEFAULT_LONG_DOUBLE_SIZE 128
++#endif
+--- gcc/configure.ac.jj	2006-02-04 10:42:42.000000000 +0100
++++ gcc/configure.ac	2006-02-04 10:44:51.000000000 +0100
+@@ -3135,6 +3135,39 @@ if test x$gcc_cv_libc_provides_ssp = xye
+ 	    [Define if your target C library provides stack protector support])
+ fi
+ 
++# Check if TFmode long double should be used by default or not.
++# Some glibc targets used DFmode long double, but with glibc 2.4
++# and later they can use TFmode.
++case "$target" in
++  powerpc*-*-*gnu* | \
++  sparc*-*-linux* | \
++  s390*-*-linux* | \
++  alpha*-*-linux*)
++    AC_ARG_WITH(long-double-128,
++[  --with-long-double-128  Use 128-bit long double by default.],
++      gcc_cv_target_ldbl128="$with_long_double_128",
++      [gcc_cv_target_ldbl128=no
++      if test x$host != x$target || test "x$TARGET_SYSTEM_ROOT" != x; then
++	if test "x$with_sysroot" = x; then
++	  glibc_header_dir="${exec_prefix}/${target_noncanonical}/sys-include"
++	elif test "x$with_sysroot" = xyes; then
++	  glibc_header_dir="${exec_prefix}/${target_noncanonical}/sys-root/usr/include"
++	else
++	  glibc_header_dir="${with_sysroot}/usr/include"
++	fi
++      else
++	glibc_header_dir=/usr/include
++      fi
++      grep '^[ 	]*#[ 	]*define[ 	][ 	]*__LONG_DOUBLE_MATH_OPTIONAL' \
++        $glibc_header_dir/bits/wordsize.h > /dev/null 2>&1 \
++      && gcc_cv_target_ldbl128=yes])
++    ;;
++esac
++if test x$gcc_cv_target_ldbl128 = xyes; then
++  AC_DEFINE(TARGET_DEFAULT_LONG_DOUBLE_128, 1,
++	    [Define if TFmode long double should be the default])
++fi
++
+ # Find out what GC implementation we want, or may, use.
+ AC_ARG_WITH(gc,
+ [  --with-gc={page,zone}   choose the garbage collection mechanism to use
+--- gcc/configure.jj	2006-02-04 10:42:41.000000000 +0100
++++ gcc/configure	2006-02-04 10:46:54.000000000 +0100
+@@ -931,6 +931,7 @@ Optional Packages:
+   --with-libiconv-prefix[=DIR]  search for libiconv in DIR/include and DIR/lib
+   --without-libiconv-prefix     don't search for libiconv in includedir and libdir
+   --with-system-libunwind use installed libunwind
++  --with-long-double-128  Use 128-bit long double by default.
+   --with-gc={page,zone}   choose the garbage collection mechanism to use
+                           with the compiler
+   --with-system-zlib      use installed libz
+@@ -16227,6 +16228,46 @@ _ACEOF
+ 
+ fi
+ 
++# Check if TFmode long double should be used by default or not.
++# Some glibc targets used DFmode long double, but with glibc 2.4
++# and later they can use TFmode.
++case "$target" in
++  powerpc*-*-*gnu* | \
++  sparc*-*-linux* | \
++  s390*-*-linux* | \
++  alpha*-*-linux*)
++
++# Check whether --with-long-double-128 or --without-long-double-128 was given.
++if test "${with_long_double_128+set}" = set; then
++  withval="$with_long_double_128"
++  gcc_cv_target_ldbl128="$with_long_double_128"
++else
++  gcc_cv_target_ldbl128=no
++      if test x$host != x$target || test "x$TARGET_SYSTEM_ROOT" != x; then
++	if test "x$with_sysroot" = x; then
++	  glibc_header_dir="${exec_prefix}/${target_noncanonical}/sys-include"
++	elif test "x$with_sysroot" = xyes; then
++	  glibc_header_dir="${exec_prefix}/${target_noncanonical}/sys-root/usr/include"
++	else
++	  glibc_header_dir="${with_sysroot}/usr/include"
++	fi
++      else
++	glibc_header_dir=/usr/include
++      fi
++      grep '^ 	*#[ 	]*define[ 	][ 	]*__LONG_DOUBLE_MATH_OPTIONAL' \
++        $glibc_header_dir/bits/wordsize.h > /dev/null 2>&1 \
++      && gcc_cv_target_ldbl128=yes
++fi;
++    ;;
++esac
++if test x$gcc_cv_target_ldbl128 = xyes; then
++
++cat >>confdefs.h <<\_ACEOF
++#define TARGET_DEFAULT_LONG_DOUBLE_128 1
++_ACEOF
++
++fi
++
+ # Find out what GC implementation we want, or may, use.
+ 
+ # Check whether --with-gc or --without-gc was given.
+--- gcc/config.in.jj	2006-02-04 10:42:42.000000000 +0100
++++ gcc/config.in	2006-02-04 10:44:51.000000000 +0100
+@@ -1283,6 +1283,12 @@
+ #endif
+ 
+ 
++/* Define if TFmode long double should be the default */
++#ifndef USED_FOR_TARGET
++#undef TARGET_DEFAULT_LONG_DOUBLE_128
++#endif
++
++
+ /* Define if your target C library provides stack protector support */
+ #ifndef USED_FOR_TARGET
+ #undef TARGET_LIBC_PROVIDES_SSP
+--- gcc/config/alpha/alpha.c.jj	2006-02-04 10:42:41.000000000 +0100
++++ gcc/config/alpha/alpha.c	2006-02-04 12:36:09.000000000 +0100
+@@ -501,6 +516,11 @@ override_options (void)
+       REAL_MODE_FORMAT (DFmode) = &vax_g_format;
+       REAL_MODE_FORMAT (TFmode) = NULL;
+     }
++
++#ifdef TARGET_DEFAULT_LONG_DOUBLE_128
++  if (!(target_flags_explicit & MASK_LONG_DOUBLE_128))
++    target_flags |= MASK_LONG_DOUBLE_128;
++#endif
+ }
+ 
+ /* Returns 1 if VALUE is a mask that contains full bytes of zero or ones.  */
+--- gcc/config/s390/s390.c.jj	2006-02-04 10:42:41.000000000 +0100
++++ gcc/config/s390/s390.c	2006-02-04 12:36:09.000000000 +0100
+@@ -1415,6 +1415,11 @@ override_options (void)
+     }
+   else if (s390_stack_guard)
+     error ("-mstack-guard implies use of -mstack-size"); 
++
++#ifdef TARGET_DEFAULT_LONG_DOUBLE_128
++  if (!(target_flags_explicit & MASK_LONG_DOUBLE_128))
++    target_flags |= MASK_LONG_DOUBLE_128;
++#endif
+ }
+ 
+ /* Map for smallest class containing reg regno.  */
+--- gcc/config/sparc/linux.h.jj	2006-02-04 10:42:41.000000000 +0100
++++ gcc/config/sparc/linux.h	2006-02-04 12:39:31.000000000 +0100
+@@ -23,17 +23,19 @@ Boston, MA 02110-1301, USA.  */
+ #define TARGET_OS_CPP_BUILTINS()		\
+   do						\
+     {						\
+-	builtin_define_std ("unix");		\
+-	builtin_define_std ("linux");		\
+-	builtin_define ("__gnu_linux__");	\
+-	builtin_assert ("system=linux");	\
+-	builtin_assert ("system=unix");		\
+-	builtin_assert ("system=posix");	\
+-	if (flag_pic)				\
+-	  {					\
+-		builtin_define ("__PIC__");	\
+-		builtin_define ("__pic__");	\
+-	  }					\
++      builtin_define_std ("unix");		\
++      builtin_define_std ("linux");		\
++      builtin_define ("__gnu_linux__");		\
++      builtin_assert ("system=linux");		\
++      builtin_assert ("system=unix");		\
++      builtin_assert ("system=posix");		\
++      if (flag_pic)				\
++	{					\
++	  builtin_define ("__PIC__");		\
++	  builtin_define ("__pic__");		\
++	}					\
++      if (TARGET_LONG_DOUBLE_128)		\
++	builtin_define ("__LONG_DOUBLE_128__");	\
+     }						\
+   while (0)
+ 
+@@ -100,8 +102,7 @@ Boston, MA 02110-1301, USA.  */
+ 
+ #undef CPP_SUBTARGET_SPEC
+ #define CPP_SUBTARGET_SPEC \
+-"%{posix:-D_POSIX_SOURCE} \
+-%{pthread:-D_REENTRANT} %{mlong-double-128:-D__LONG_DOUBLE_128__}"
++"%{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT}"
+ 
+ #undef LIB_SPEC
+ #define LIB_SPEC \
+--- gcc/config/sparc/sparc.c.jj	2006-02-04 10:42:41.000000000 +0100
++++ gcc/config/sparc/sparc.c	2006-02-04 12:36:09.000000000 +0100
+@@ -782,6 +790,11 @@ sparc_override_options (void)
+       sparc_costs = &ultrasparc3_costs;
+       break;
+     };
++
++#ifdef TARGET_DEFAULT_LONG_DOUBLE_128
++  if (!(target_flags_explicit & MASK_LONG_DOUBLE_128))
++    target_flags |= MASK_LONG_DOUBLE_128;
++#endif
+ }
+ 
+ #ifdef SUBTARGET_ATTRIBUTE_TABLE
+--- gcc/config/sparc/linux64.h.jj	2006-02-04 10:42:41.000000000 +0100
++++ gcc/config/sparc/linux64.h	2006-02-04 12:39:31.000000000 +0100
+@@ -20,22 +20,24 @@ along with GCC; see the file COPYING.  I
+ the Free Software Foundation, 51 Franklin Street, Fifth Floor,
+ Boston, MA 02110-1301, USA.  */
+ 
+-#define TARGET_OS_CPP_BUILTINS()		\
+-  do						\
+-    {						\
+-	builtin_define_std ("unix");		\
+-	builtin_define_std ("linux");		\
+-	builtin_define ("_LONGLONG");		\
+-	builtin_define ("__gnu_linux__");	\
+-	builtin_assert ("system=linux");	\
+-	builtin_assert ("system=unix");		\
+-	builtin_assert ("system=posix");	\
+-	if (flag_pic)				\
+-	  {					\
+-		builtin_define ("__PIC__");	\
+-		builtin_define ("__pic__");	\
+-	  }					\
+-    }						\
++#define TARGET_OS_CPP_BUILTINS()			\
++  do							\
++    {							\
++      builtin_define_std ("unix");			\
++      builtin_define_std ("linux");			\
++      builtin_define ("_LONGLONG");			\
++      builtin_define ("__gnu_linux__");			\
++      builtin_assert ("system=linux");			\
++      builtin_assert ("system=unix");			\
++      builtin_assert ("system=posix");			\
++      if (flag_pic)					\
++	{						\
++	  builtin_define ("__PIC__");			\
++	  builtin_define ("__pic__");			\
++	}						\
++      if (TARGET_ARCH32 && TARGET_LONG_DOUBLE_128)	\
++	builtin_define ("__LONG_DOUBLE_128__");		\
++    }							\
+   while (0)
+ 
+ /* Don't assume anything about the header files.  */
+@@ -59,13 +61,6 @@ Boston, MA 02110-1301, USA.  */
+ #undef ASM_CPU_DEFAULT_SPEC
+ #define ASM_CPU_DEFAULT_SPEC "-Av9a"
+ 
+-#ifdef SPARC_BI_ARCH
+-
+-#undef CPP_ARCH32_SPEC
+-#define CPP_ARCH32_SPEC "%{mlong-double-128:-D__LONG_DOUBLE_128__}"
+-
+-#endif
+-
+ /* Provide a STARTFILE_SPEC appropriate for GNU/Linux.  Here we add
+    the GNU/Linux magical crtbegin.o file (see crtstuff.c) which
+    provides part of the support for getting C++ file-scope static
+--- gcc/config.gcc.jj	2006-02-04 09:38:33.000000000 +0100
++++ gcc/config.gcc	2006-02-05 22:00:25.000000000 +0100
+@@ -568,7 +568,7 @@ alpha*-*-unicosmk*)
+ alpha*-*-linux*)
+ 	tm_file="${tm_file} alpha/elf.h alpha/linux.h alpha/linux-elf.h"
+ 	target_cpu_default="MASK_GAS"
+-	tmake_file="${tmake_file} alpha/t-crtfm alpha/t-alpha alpha/t-ieee"
++	tmake_file="${tmake_file} alpha/t-crtfm alpha/t-alpha alpha/t-ieee alpha/t-linux"
+ 	;;
+ alpha*-*-gnu*)
+ 	target_cpu_default="MASK_GAS"
+@@ -2059,7 +2059,7 @@ sparc-*-elf*)
+ sparc-*-linux*)		# SPARC's running GNU/Linux, libc6
+ 	tm_file="${tm_file} dbxelf.h elfos.h svr4.h sparc/sysv4.h sparc/linux.h"
+ 	extra_options="${extra_options} sparc/long-double-switch.opt"
+-	tmake_file="${tmake_file} sparc/t-crtfm"
++	tmake_file="${tmake_file} sparc/t-linux sparc/t-crtfm"
+ 	;;
+ sparc-*-rtems*)
+ 	tm_file="${tm_file} dbxelf.h elfos.h svr4.h sparc/sysv4.h sparc/sp-elf.h sparc/rtemself.h rtems.h"
+@@ -2178,7 +2178,7 @@ sparc64-*-freebsd*|ultrasparc-*-freebsd*
+ sparc64-*-linux*)		# 64-bit SPARC's running GNU/Linux
+ 	tm_file="sparc/biarch64.h ${tm_file} dbxelf.h elfos.h svr4.h sparc/sysv4.h sparc/linux64.h"
+ 	extra_options="${extra_options} sparc/long-double-switch.opt"
+-	tmake_file="${tmake_file} sparc/t-linux64 sparc/t-crtfm"
++	tmake_file="${tmake_file} sparc/t-linux sparc/t-linux64 sparc/t-crtfm"
+ 	;;
+ sparc64-*-netbsd*)
+ 	tm_file="sparc/biarch64.h ${tm_file}"
+--- gcc/config/alpha/libgcc-alpha-ldbl.ver.jj	2006-02-05 21:57:55.000000000 +0100
++++ gcc/config/alpha/libgcc-alpha-ldbl.ver	2006-02-05 21:58:59.000000000 +0100
+@@ -0,0 +1,32 @@
++%ifdef __LONG_DOUBLE_128__
++
++# long double 128 bit support in libgcc_s.so.1 is only available
++# when configured with --with-long-double-128.  Make sure all the
++# symbols are available at @@GCC_LDBL_* versions to make it clear
++# there is a configurable symbol set.
++
++%exclude {
++  __fixtfdi
++  __fixunstfdi
++  __floatditf
++
++  __divtc3
++  __multc3
++  __powitf2
++}
++
++%inherit GCC_LDBL_3.0 GCC_3.0
++GCC_LDBL_3.0 {
++  __fixtfdi
++  __fixunstfdi
++  __floatditf
++}
++
++%inherit GCC_LDBL_4.0.0 GCC_4.0.0
++GCC_LDBL_4.0.0 {
++  __divtc3
++  __multc3
++  __powitf2
++}
++
++%endif
+--- gcc/config/alpha/t-linux.jj	2006-02-05 21:57:01.000000000 +0100
++++ gcc/config/alpha/t-linux	2006-02-05 21:59:40.000000000 +0100
+@@ -0,0 +1 @@
++SHLIB_MAPFILES += $(srcdir)/config/alpha/libgcc-alpha-ldbl.ver
+--- gcc/config/sparc/t-linux64.jj	2006-01-28 00:43:01.000000000 +0100
++++ gcc/config/sparc/t-linux64	2006-02-05 20:40:45.000000000 +0100
+@@ -8,12 +8,6 @@ INSTALL_LIBGCC = install-multilib
+ EXTRA_MULTILIB_PARTS=crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o \
+ 	crtfastmath.o
+ 
+-# Override t-slibgcc-elf-ver to export some libgcc symbols with
+-# the symbol versions that glibc used.
+-# Avoid the t-linux version file.
+-SHLIB_MAPFILES = $(srcdir)/libgcc-std.ver \
+-		 $(srcdir)/config/sparc/libgcc-sparc-glibc.ver
+-
+ CRTSTUFF_T_CFLAGS = `if test x$$($(GCC_FOR_TARGET) $(MULTILIB_CFLAGS) \
+ 				 -print-multi-os-directory) \
+ 			= x../lib64; then echo -mcmodel=medany; fi`
+--- gcc/config/sparc/libgcc-sparc-glibc.ver.jj	2006-01-28 00:43:01.000000000 +0100
++++ gcc/config/sparc/libgcc-sparc-glibc.ver	2006-02-05 21:03:43.000000000 +0100
+@@ -26,3 +26,36 @@ GLIBC_VER {
+   __frame_state_for
+   __register_frame_info_table
+ }
++
++%if !defined (__arch64__) && defined (__LONG_DOUBLE_128__)
++
++# long double 128 bit support from 32-bit libgcc_s.so.1 is only available
++# when configured with --with-long-double-128.  Make sure all the
++# symbols are available at @@GCC_LDBL_* versions to make it clear
++# there is a configurable symbol set.
++
++%exclude {
++  __fixtfdi
++  __fixunstfdi
++  __floatditf
++
++  __divtc3
++  __multc3
++  __powitf2
++}
++
++%inherit GCC_LDBL_3.0 GCC_3.0
++GCC_LDBL_3.0 {
++  __fixtfdi
++  __fixunstfdi
++  __floatditf
++}
++
++%inherit GCC_LDBL_4.0.0 GCC_4.0.0
++GCC_LDBL_4.0.0 {
++  __divtc3
++  __multc3
++  __powitf2
++}
++
++%endif
+--- gcc/config/sparc/t-linux.jj	2006-02-05 20:40:20.000000000 +0100
++++ gcc/config/sparc/t-linux	2006-02-05 20:40:55.000000000 +0100
+@@ -0,0 +1,5 @@
++# Override t-slibgcc-elf-ver to export some libgcc symbols with
++# the symbol versions that glibc used.
++# Avoid the t-linux version file.
++SHLIB_MAPFILES = $(srcdir)/libgcc-std.ver \
++		 $(srcdir)/config/sparc/libgcc-sparc-glibc.ver

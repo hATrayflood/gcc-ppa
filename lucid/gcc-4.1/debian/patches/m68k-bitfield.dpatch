@@ -1,0 +1,55 @@
+#! /bin/sh -e
+
+# All lines beginning with `# DPATCH:' are a description of the patch.
+# DP: Avoid propagation of mem expression past a zero_extract lvalue
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+# append the patch here and adjust the -p? flag in the patch calls.
+
+---
+ gcc/gcse.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+Index: gcc-4.1/gcc/gcse.c
+===================================================================
+--- gcc-4.1.orig/gcc/gcse.c
++++ gcc-4.1/gcc/gcse.c
+@@ -5319,6 +5319,16 @@ compute_ld_motion_mems (void)
+ 		      else
+ 			ptr->invalid = 1;
+ 		    }
++		  else if (GET_CODE (dest) == ZERO_EXTRACT)
++		    {
++		      dest = XEXP (dest, 0);
++		      if (MEM_P (dest) && simple_mem (dest))
++			{
++			  ptr = ldst_entry (dest);
++			  ptr->invalid = 1;
++			}
++
++		    }
+ 		}
+ 	      else
+ 		invalidate_any_buried_refs (PATTERN (insn));

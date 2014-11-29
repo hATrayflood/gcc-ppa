@@ -1,0 +1,47 @@
+#! /bin/sh -e
+
+# All lines beginning with `# DPATCH:' are a description of the patch.
+# DP: better recognize symbolic operands in addresses
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+---
+ gcc/config/m68k/m68k.h |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+Index: gcc-4.1/gcc/config/m68k/m68k.h
+===================================================================
+--- gcc-4.1.orig/gcc/config/m68k/m68k.h
++++ gcc-4.1/gcc/config/m68k/m68k.h
+@@ -718,9 +718,7 @@ __transfer_from_trampoline ()					\
+        && (TARGET_68020							\
+ 	   || ((unsigned) INTVAL (XEXP (X, 1)) + 0x8000) < 0x10000))	\
+    || (GET_CODE (X) == PLUS && XEXP (X, 0) == pic_offset_table_rtx 	\
+-       && flag_pic && GET_CODE (XEXP (X, 1)) == SYMBOL_REF)		\
+-   || (GET_CODE (X) == PLUS && XEXP (X, 0) == pic_offset_table_rtx 	\
+-       && flag_pic && GET_CODE (XEXP (X, 1)) == LABEL_REF))
++       && flag_pic && symbolic_operand (XEXP (X, 1), VOIDmode)))	\
+ 
+ #define GO_IF_NONINDEXED_ADDRESS(X, ADDR)  \
+ { if (INDIRECTABLE_1_ADDRESS_P (X)) goto ADDR; }

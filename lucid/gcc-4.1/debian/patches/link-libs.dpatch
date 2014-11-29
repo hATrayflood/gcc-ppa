@@ -1,0 +1,157 @@
+#! /bin/sh -e
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- gcc/config/t-slibgcc-elf-ver.orig	2005-09-05 00:10:57.095357312 +0000
++++ gcc/config/t-slibgcc-elf-ver	2005-09-05 00:11:37.932149176 +0000
+@@ -14,6 +14,7 @@
+ SHLIB_LINK = $(GCC_FOR_TARGET) $(LIBGCC2_CFLAGS) -shared -nodefaultlibs \
+ 	-Wl,--soname=$(SHLIB_SONAME) \
+ 	-Wl,--version-script=$(SHLIB_MAP) \
++	-Wl,-O1 \
+ 	-o $(SHLIB_DIR)/$(SHLIB_SONAME).tmp @multilib_flags@ \
+ 	$(SHLIB_OBJS) $(SHLIB_LC) && \
+ 	rm -f $(SHLIB_DIR)/$(SHLIB_SOLINK) && \
+--- libobjc/Makefile.in.orig	2005-09-05 00:10:57.091357920 +0000
++++ libobjc/Makefile.in	2005-09-05 00:15:00.266389696 +0000
+@@ -273,11 +273,13 @@
+ libobjc$(libext).la: $(OBJS)
+ 	$(LIBTOOL_LINK) $(CC) -o $@ $(OBJS) \
+ 		-rpath $(toolexeclibdir) \
++		-Wl,-O1 \
+ 		-version-info $(LIBOBJC_VERSION) $(extra_ldflags_libobjc)
+ 
+ libobjc_gc$(libext).la: $(OBJS_GC)
+ 	$(LIBTOOL_LINK) $(CC) -o $@ $(OBJS_GC) \
+ 		-rpath $(toolexeclibdir) \
++		-Wl,-O1 \
+ 		-version-info $(LIBOBJC_GC_VERSION) $(extra_ldflags_libobjc)
+ 
+ #
+--- libffi/Makefile.am.orig	2005-09-05 00:10:57.077360048 +0000
++++ libffi/Makefile.am	2005-09-05 00:11:37.877157536 +0000
+@@ -150,7 +150,7 @@
+ 
+ AM_CFLAGS = -Wall -g -fexceptions
+ 
+-libffi_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version`
++libffi_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version` -Wl,-O1
+ 
+ AM_CPPFLAGS = -I. -I$(top_srcdir)/include -Iinclude -I$(top_srcdir)/src
+ AM_CCASFLAGS = $(AM_CPPFLAGS)
+--- libffi/Makefile.in.orig	2005-09-05 00:10:57.095357312 +0000
++++ libffi/Makefile.in	2005-09-05 00:11:37.932149176 +0000
+@@ -416,7 +416,7 @@
+ libffi_convenience_la_SOURCES = $(libffi_la_SOURCES)
+ nodist_libffi_convenience_la_SOURCES = $(nodist_libffi_la_SOURCES)
+ AM_CFLAGS = -Wall -g -fexceptions
+-libffi_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version`
++libffi_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version` -Wl,-O1
+ AM_CPPFLAGS = -I. -I$(top_srcdir)/include -Iinclude -I$(top_srcdir)/src
+ AM_CCASFLAGS = $(AM_CPPFLAGS)
+ all: fficonfig.h
+--- libgfortran/Makefile.am.orig	2005-08-11 18:01:02.000000000 +0000
++++ libgfortran/Makefile.am	2005-09-05 00:17:34.659918312 +0000
+@@ -8,7 +8,7 @@
+ 
+ toolexeclib_LTLIBRARIES = libgfortran.la libgfortranbegin.la
+ 
+-libgfortran_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version` -lm $(extra_ldflags_libgfortran)
++libgfortran_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version` -lm $(extra_ldflags_libgfortran) -Wl,-O1
+ 
+ ## This should really go in the compiler lib dir, not the system lib dir.
+ libgfortranbegin_la_SOURCES = fmain.c
+--- libgfortran/Makefile.in.orig	2005-09-03 09:44:48.000000000 +0000
++++ libgfortran/Makefile.in	2005-09-05 00:18:05.382247808 +0000
+@@ -309,7 +309,7 @@
+ ACLOCAL_AMFLAGS = -I ../config
+ gcc_version := $(shell cat $(top_srcdir)/../gcc/BASE-VER)
+ toolexeclib_LTLIBRARIES = libgfortran.la libgfortranbegin.la
+-libgfortran_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version` -lm $(extra_ldflags_libgfortran)
++libgfortran_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version` -lm $(extra_ldflags_libgfortran) -Wl,-O1
+ libgfortranbegin_la_SOURCES = fmain.c
+ libgfortranbegin_la_LDFLAGS = -static
+ AM_CPPFLAGS = -iquote$(srcdir)/io
+--- libjava/Makefile.am.orig	2005-09-05 00:10:57.078359896 +0000
++++ libjava/Makefile.am	2005-09-05 00:13:11.509923192 +0000
+@@ -96,7 +96,7 @@
+ GCJLINK = $(LIBTOOL) --tag=GCJ --mode=link $(GCJ) -L$(here) $(JC1FLAGS) \
+           $(LDFLAGS) -o $@
+ LIBLINK = $(LIBTOOL) --tag=CXX --mode=link $(CXX) -L$(here) $(JC1FLAGS) \
+-          $(LDFLAGS) $(extra_ldflags_libjava) -o $@
++          $(LDFLAGS) $(extra_ldflags_libjava) -Wl,-Bsymbolic-functions -Wl,-O1 -o $@
+ 
+ GCC_UNWIND_INCLUDE = @GCC_UNWIND_INCLUDE@
+ 
+--- libjava/Makefile.in.orig	2005-09-05 00:10:57.089358224 +0000
++++ libjava/Makefile.in	2005-09-05 00:13:57.763891520 +0000
+@@ -647,7 +647,7 @@
+           $(LDFLAGS) -o $@
+ 
+ LIBLINK = $(LIBTOOL) --tag=CXX --mode=link $(CXX) -L$(here) $(JC1FLAGS) \
+-          $(LDFLAGS) $(extra_ldflags_libjava) -o $@
++          $(LDFLAGS) $(extra_ldflags_libjava) -Wl,-Bsymbolic-functions -Wl,-O1 -o $@
+ 
+ WARNINGS = -Wextra -Wall
+ AM_CXXFLAGS = \
+--- libmudflap/Makefile.am.orig	2005-06-15 00:47:03.000000000 +0000
++++ libmudflap/Makefile.am	2005-09-05 00:19:21.098737152 +0000
+@@ -32,7 +32,7 @@
+ 	mf-hooks2.c
+ libmudflap_la_LIBADD = 
+ libmudflap_la_DEPENDENCIES = $(libmudflap_la_LIBADD)
+-libmudflap_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version`
++libmudflap_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version` -Wl,-O1
+ 
+ clean-local:
+ 	rm -f pth/*.o pth/*.lo
+--- libmudflap/Makefile.in.orig	2005-07-17 20:52:57.000000000 +0000
++++ libmudflap/Makefile.in	2005-09-05 00:19:42.890424312 +0000
+@@ -238,7 +238,7 @@
+ 
+ libmudflap_la_LIBADD = 
+ libmudflap_la_DEPENDENCIES = $(libmudflap_la_LIBADD)
+-libmudflap_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version`
++libmudflap_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version` -Wl,-O1
+ libmudflapth_la_SOURCES = 
+ libmudflapth_la_LIBADD = \
+ 	pth/mf-runtime.lo \
+--- libstdc++-v3/src/Makefile.am.orig	2005-09-05 00:10:57.091357920 +0000
++++ libstdc++-v3/src/Makefile.am	2005-09-05 00:11:37.931149328 +0000
+@@ -167,6 +167,7 @@
+ libstdc___la_DEPENDENCIES = ${version_dep} $(libstdc___la_LIBADD)
+ 
+ libstdc___la_LDFLAGS = \
++	-Wl,-O1 \
+ 	-version-info $(libtool_VERSION) ${version_arg} -lm 
+ 
+ 
+--- libstdc++-v3/src/Makefile.in.orig	2005-09-05 00:10:57.094357464 +0000
++++ libstdc++-v3/src/Makefile.in	2005-09-05 00:11:37.931149328 +0000
+@@ -360,6 +360,7 @@
+ 
+ libstdc___la_DEPENDENCIES = ${version_dep} $(libstdc___la_LIBADD)
+ libstdc___la_LDFLAGS = \
++	-Wl,-O1 \
+ 	-version-info $(libtool_VERSION) ${version_arg} -lm 
+ 
+ 

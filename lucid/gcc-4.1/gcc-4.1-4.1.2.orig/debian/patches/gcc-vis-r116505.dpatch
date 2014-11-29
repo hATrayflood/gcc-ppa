@@ -1,0 +1,1682 @@
+#! /bin/sh -e
+
+# DP: g++ visibility patches (taken from the redhat/gcc-4_1-branch)
+# DP:   PR c++/17470, PR c++/19134, PR c++/21581, PR c++/21675,
+# DP:   PR c++/25915, PR c++/26612, PR c++/26905, PR c++/26984,
+# DP:   PR c++/27000, PR c++/28215, PR c++/28279.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+
+r116505 | jakub | 2006-08-28 14:26:41 +0200 (Mon, 28 Aug 2006) | 90 lines
+
+2006-07-06  Jason Merrill  <jason@redhat.com>
+
+cp/
+        PR c++/28279
+        * decl2.c (finish_static_data_member_decl): Don't assert
+        TREE_PUBLIC.
+
+2006-07-01  Jason Merrill  <jason@redhat.com>
+
+cp/
+        PR c++/28215
+        * method.c (make_thunk): Unset DECL_USE_TEMPLATE and 
+        DECL_TEMPLATE_INFO.
+
+2006-06-30  Jason Merrill  <jason@redhat.com>
+
+objcp/
+        * objcp-decl.c (objcp_start_struct): Pass null attributes argument
+        to begin_class_definition.
+
+2006-06-29  Jason Merrill  <jason@redhat.com>
+
+        PR c++/26905
+        PR c++/26612
+        PR c++/27000
+        PR c++/26984
+        PR c++/19134
+        * tree.c (build_decl_stat): Don't hande #pragma visibility here.
+        * c-common.c (c_determine_visibility): Handle it here.
+        * c-decl.c (finish_decl): Call c_determine_visibility for 
+        functions, too.
+        * flags.h (enum symbol_visibility): Sort from most to least visibility.
+        * tree.h: Likewise.
+        * varasm.c (default_assemble_visibility): Likewise.
+        * c-common.c (handle_visibility_attribute): Complain about trying
+        to give visibility to an already defined class, or trying to change
+        declared visibility. Always attach the attribute.
+
+        PR c++/26905
+        PR c++/21675
+        PR c++/17470
+        * attribs.c (decl_attributes): Ignore type-in-place attributes
+        once the type has been defined.
+cp/
+        PR c++/26905
+        PR c++/26612
+        PR c++/27000
+        PR c++/26984
+        PR c++/19134
+        * decl2.c (determine_visibility): Overhaul.
+        (determine_visibility_from_class): Likewise.
+        (min_vis_r, type_visibility, constrain_visibility): New fns.
+        (constrain_visibility_for_template): Likewise.
+        (constrain_class_visibility): Likewise.
+        * decl.c (cp_finish_decl): Call determine_visibility for function
+        decls, too.
+        * name-lookup.c (pushtag): Call determine_visibility.
+        * decl.c (duplicate_decls): Don't copy visibility from template to
+        specialization.
+        * pt.c (check_explicit_specialization): Likewise.
+        (lookup_template_class, tsubst_decl): Call determine_visibility.
+        * class.c (finish_struct_1): Call constrain_class_visibility.
+
+        PR c++/26905
+        PR c++/21675
+        PR c++/17470
+        * parser.c (cp_parser_explicit_instantiation): Pass the attributes
+        to grokdeclarator.
+        (cp_parser_type_specifier): Allow 'enum __attribute ((...)) E'.
+        (cp_parser_enum_specifier): Likewise.
+        (cp_parser_elaborated_type_specifier): Apply attributes if this
+        declares only the class.
+        (cp_parser_class_specifier): Apply leading attributes immediately.
+        * semantics.c (begin_class_definition): Add attributes parameter,
+        apply them to the type.
+
+        PR c++/21581
+        PR c++/25915
+        * tree.c (decl_anon_ns_mem_p): New function.
+        * cp-tree.h: Declare it.
+        * decl2.c (determine_visibility): Make anonymous namespace
+        members static.
+        (min_vis_r, constrain_visibility): Likewise.
+        * rtti.c (create_pseudo_type_info): Set TREE_PUBLIC on
+        pseudo-types.
+        * decl.c (cxx_init_decl_processing): Set TREE_PUBLIC on
+        global_namespace.
+        * name-lookup.c (push_namespace_with_attribs): Don't set TREE_PUBLIC
+        on anonymous namespaces.
+
+Index: gcc/attribs.c
+===================================================================
+--- gcc/attribs.c	(Revision 116504)
++++ gcc/attribs.c	(Revision 116505)
+@@ -250,6 +250,14 @@
+ 	    }
+ 	}
+ 
++      if (TYPE_P (*anode)
++	  && (flags & (int) ATTR_FLAG_TYPE_IN_PLACE)
++	  && TYPE_SIZE (*anode) != NULL_TREE)
++	{
++	  warning (OPT_Wattributes, "type attributes ignored after type is already defined");
++	  continue;
++	}
++
+       if (spec->handler != NULL)
+ 	returned_attrs = chainon ((*spec->handler) (anode, name, args,
+ 						    flags, &no_add_attrs),
+Index: gcc/flags.h
+===================================================================
+--- gcc/flags.h	(Revision 116504)
++++ gcc/flags.h	(Revision 116505)
+@@ -58,15 +58,16 @@
+    debugging information.  */
+ extern bool use_gnu_debug_info_extensions;
+ 
+-/* Enumerate visibility settings.  */
++/* Enumerate visibility settings.  This is deliberately ordered from most
++   to least visibility.  */
+ #ifndef SYMBOL_VISIBILITY_DEFINED
+ #define SYMBOL_VISIBILITY_DEFINED
+ enum symbol_visibility
+ {
+   VISIBILITY_DEFAULT,
+-  VISIBILITY_INTERNAL,
++  VISIBILITY_PROTECTED,
+   VISIBILITY_HIDDEN,
+-  VISIBILITY_PROTECTED
++  VISIBILITY_INTERNAL
+ };
+ #endif
+ 
+Index: gcc/tree.c
+===================================================================
+--- gcc/tree.c	(Revision 116504)
++++ gcc/tree.c	(Revision 116505)
+@@ -3136,14 +3136,6 @@
+   else if (code == FUNCTION_DECL)
+     DECL_MODE (t) = FUNCTION_MODE;
+ 
+-  if (CODE_CONTAINS_STRUCT (code, TS_DECL_WITH_VIS))
+-    {
+-      /* Set default visibility to whatever the user supplied with
+-	 visibility_specified depending on #pragma GCC visibility.  */
+-      DECL_VISIBILITY (t) = default_visibility;
+-      DECL_VISIBILITY_SPECIFIED (t) = visibility_options.inpragma;
+-    }
+-
+   return t;
+ }
+ 
+Index: gcc/tree.h
+===================================================================
+--- gcc/tree.h	(Revision 116504)
++++ gcc/tree.h	(Revision 116505)
+@@ -1050,7 +1050,7 @@
+    expressions.  */
+ #define TREE_OVERFLOW(NODE) ((NODE)->common.public_flag)
+ 
+-/* In a VAR_DECL or FUNCTION_DECL,
++/* In a VAR_DECL, FUNCTION_DECL, NAMESPACE_DECL or TYPE_DECL,
+    nonzero means name is to be accessible from outside this module.
+    In an IDENTIFIER_NODE, nonzero means an external declaration
+    accessible from outside this module was previously seen
+@@ -2260,9 +2260,9 @@
+ enum symbol_visibility
+ {
+   VISIBILITY_DEFAULT,
+-  VISIBILITY_INTERNAL,
++  VISIBILITY_PROTECTED,
+   VISIBILITY_HIDDEN,
+-  VISIBILITY_PROTECTED
++  VISIBILITY_INTERNAL
+ };
+ #endif
+ 
+Index: gcc/testsuite/g++.old-deja/g++.pt/enum5.C
+===================================================================
+--- gcc/testsuite/g++.old-deja/g++.pt/enum5.C	(Revision 116504)
++++ gcc/testsuite/g++.old-deja/g++.pt/enum5.C	(Revision 116505)
+@@ -1,4 +1,4 @@
+ // { dg-do assemble  }
+ 
+-template <> // { dg-error "" } template declaration of enum
+-enum E {e};
++template <>
++enum E {e}; // { dg-error "" } template declaration of enum
+Index: gcc/testsuite/g++.dg/ext/attrib9.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/attrib9.C	(Revision 116504)
++++ gcc/testsuite/g++.dg/ext/attrib9.C	(Revision 116505)
+@@ -1,5 +1,10 @@
+-class __attribute__((unused)) C;	//  { dg-warning "type attributes" }
+-struct __attribute__((unused)) S;	//  { dg-warning "type attributes" }
+-union __attribute__((unused)) U;	//  { dg-warning "type attributes" }
++class __attribute__((unused)) C;
++struct __attribute__((unused)) S;
++union __attribute__((unused)) U;
+ enum e {};
+-enum __attribute__((unused)) e;		//  { dg-warning "type attributes" }
++enum __attribute__((unused)) e;	// { dg-warning "already defined" }
++
++struct __attribute((unused)) B *p;	//  { dg-warning "attributes" }
++
++template <class T> struct A { };
++struct __attribute((unused)) A<int>;	//  { dg-warning "attributes" }
+Index: gcc/testsuite/g++.dg/ext/attrib14.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/attrib14.C	(Revision 116504)
++++ gcc/testsuite/g++.dg/ext/attrib14.C	(Revision 116505)
+@@ -3,11 +3,11 @@
+ // parsing of the class, causing some variants to have it and some not.
+ 
+ struct __attribute__((bogus)) A
+-{
++{				// { dg-warning "ignored" "" }
+     virtual ~A();
+     void foo(const A&);
+     void bar(const A&);
+-};				// { dg-warning "ignored" "" }
++};
+ 
+ void A::foo(const A&)   {}
+ void A::bar(const A& a) { foo(a); }
+Index: gcc/testsuite/g++.dg/ext/visibility/anon1.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/anon1.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/anon1.C	(Revision 116505)
+@@ -0,0 +1,10 @@
++// PR c++/21581
++// Test for anonymous namespace internal linkage
++
++// { dg-do compile }
++// { dg-final { scan-assembler-not "globl.*_ZN.*1fEv" } }
++
++namespace
++{
++  int f() { }
++}
+Index: gcc/testsuite/g++.dg/ext/visibility/anon2.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/anon2.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/anon2.C	(Revision 116505)
+@@ -0,0 +1,11 @@
++// Test for propagation of anonymous namespace internal linkage
++
++// { dg-do compile }
++// { dg-final { scan-assembler-not "globl.*_Z1fv" } }
++
++namespace
++{
++  struct A { };
++}
++
++A f () { }
+Index: gcc/testsuite/g++.dg/ext/visibility/redecl1.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/redecl1.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/redecl1.C	(Revision 116505)
+@@ -0,0 +1,7 @@
++// Test that we complain about redeclaration with different visibility
++
++struct __attribute((visibility("hidden"))) B;
++struct __attribute((visibility("default"))) B;	// { dg-warning "visibility" }
++
++__attribute ((visibility ("hidden"))) void f();	// { dg-warning "previous" }
++__attribute ((visibility ("default"))) void f(); // { dg-warning "visibility" }
+Index: gcc/testsuite/g++.dg/ext/visibility/class1.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/class1.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/class1.C	(Revision 116505)
+@@ -0,0 +1,20 @@
++// PR c++/26905
++// Init should not be hidden, so calling it should use the PLT.
++
++// { dg-require-visibility "" }
++// { dg-options "-fpic" }
++// { dg-do compile { target i?86-*-* x86_64-*-* } }
++// { dg-final { scan-assembler "InitEv@PLT" } }
++
++#pragma GCC visibility push(hidden)
++struct __attribute__ ((visibility ("default"))) nsINIParser
++{
++    static void Init();
++};
++
++__attribute__ ((visibility ("default")))
++void
++CheckCompatibility(void)
++{
++  nsINIParser::Init();
++}
+Index: gcc/testsuite/g++.dg/ext/visibility/template1.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/template1.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/template1.C	(Revision 116505)
+@@ -0,0 +1,35 @@
++// PR c++/19134
++// -fvisibility-inlines-hidden doesn't apply to non-inline specializations
++
++// { dg-require-visibility "" }
++// { dg-options "-fvisibility-inlines-hidden" }
++// { dg-final { scan-not-hidden "_ZN1AIiE3fooEv" } }
++// { dg-final { scan-not-hidden "_ZN1AIiE3barEv" } }
++// { dg-final { scan-hidden "_ZN1AIlE3fooEv" } }
++// { dg-final { scan-hidden "_ZN1AIlE3barEv" } }
++// { dg-final { scan-hidden "_ZN1AIcE3barEv" } }
++
++template<class T>
++struct A {
++  void foo() {};
++  __attribute ((visibility ("hidden"))) void bar();
++};
++
++// This has default visibility.
++template<> void A<int>::foo() {}
++
++// This has hidden visibility because of -fvisibility-inlines-hidden.
++template<> inline void A<long>::foo() {}
++// Force the inline out.
++void f () { A<long> a; a.foo(); }
++
++// This has default visibility.
++template<> __attribute ((visibility ("default"))) void A<int>::bar() {}
++
++// This inherits hidden visibility from its template.
++template<> void A<long>::bar() { }
++
++// This also has hidden visibility; #pragma vis doesn't affect class members.
++#pragma GCC visibility push(default)
++template<> void A<char>::bar() { }
++#pragma GCC visibility pop
+Index: gcc/testsuite/g++.dg/ext/visibility/fvisibility-override2.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/fvisibility-override2.C	(Revision 116504)
++++ gcc/testsuite/g++.dg/ext/visibility/fvisibility-override2.C	(Revision 116505)
+@@ -6,7 +6,7 @@
+ 
+ class Foo
+ {
+-  __attribute__ ((visibility ("default"))) void method();
++  __attribute__ ((visibility ("internal"))) void method();
+ };
+ 
+ void Foo::method() { }
+Index: gcc/testsuite/g++.dg/ext/visibility/template2.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/template2.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/template2.C	(Revision 116505)
+@@ -0,0 +1,35 @@
++// PR c++/27000
++// Implicitly instantiated templates should not be affected by
++// #pragma visibility.
++
++/* { dg-do compile } */
++/* { dg-require-visibility "" } */
++/* { dg-final { scan-not-hidden "_ZN1SIiED1Ev" } } */
++/* { dg-final { scan-not-hidden "_ZN1SIiEC1ERKi" } } */
++
++template <class T>
++struct S
++{
++  S (const T &);
++  ~S ();
++  T t;
++};
++
++template <class T>
++S<T>::S (const T &x)
++{
++  t = x;
++}
++
++template <class T>
++S<T>::~S ()
++{
++}
++
++#pragma GCC visibility push(hidden)
++struct U
++{
++  S<int> s;
++  U () : s (6) { }
++} u;
++#pragma GCC visibility pop
+Index: gcc/testsuite/g++.dg/ext/visibility/template3.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/template3.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/template3.C	(Revision 116505)
+@@ -0,0 +1,22 @@
++// PR c++/17470
++// Test that we can give visibility to explicit template instantiations
++
++// { dg-require-visibility "" }
++// { dg-final { scan-hidden "_ZN1AIlE1fEl" } }
++// { dg-final { scan-hidden "_ZN1AIiE1fEi" } }
++// { dg-final { scan-not-hidden "_ZN1AIcE1fEc" } }
++// { dg-final { scan-hidden "_Z8identityIdET_S0_" } }
++// { dg-final { scan-not-hidden "_Z8identityIiET_S0_" } }
++
++template <class T> T identity(T t) { return t; }
++template  __attribute__((visibility("hidden"))) double identity(double);
++template int identity(int);
++
++
++template <class T> struct A { void f (T); };
++template <class T> void A<T>::f (T) { }
++template struct __attribute ((visibility ("hidden"))) A<int>;
++template<> struct  __attribute ((visibility ("hidden"))) A<long> { void f(long); };
++// inherits hidden visibility from its class
++void A<long>::f (long) { }
++template struct A<char>;
+Index: gcc/testsuite/g++.dg/ext/visibility/template4.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/template4.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/template4.C	(Revision 116505)
+@@ -0,0 +1,39 @@
++// Test for explicit visibility on template vs. #pragma vis at explicit
++// instantiation/specialization point for plain function templates.
++
++// { dg-require-visibility "" }
++// { dg-final { scan-hidden "_Z3fooIdEvT_" } }
++// { dg-final { scan-hidden "_Z3fooIlEvT_" } }
++// { dg-final { scan-hidden "_Z3fooIcEvT_" } }
++// { dg-final { scan-hidden "_Z3fooIiEvT_" } }
++// { dg-final { scan-not-hidden "_Z3fooIfEvT_" } }
++// { dg-final { scan-not-hidden "_Z3fooIsEvT_" } }
++
++// { dg-final { scan-hidden "_Z3barIdEvT_" } }
++// { dg-final { scan-hidden "_Z3barIlEvT_" } }
++// { dg-final { scan-hidden "_Z3barIiEvT_" } }
++// { dg-final { scan-hidden "_Z3barIcEvT_" } }
++// { dg-final { scan-not-hidden "_Z3barIfEvT_" } }
++// { dg-final { scan-not-hidden "_Z3barIsEvT_" } }
++
++#pragma GCC visibility push(hidden)
++template <class T> void bar(T) { }
++#pragma GCC visibility pop
++template void bar (long);
++template<> void bar (double) { }
++template __attribute ((visibility ("default"))) void bar (short);
++template<> __attribute ((visibility ("default"))) void bar (float) { }
++#pragma GCC visibility push(default)
++template<> void bar(char) { }
++template void bar(int);
++#pragma GCC visibility pop
++
++template <class T> __attribute ((visibility ("hidden"))) void foo(T) { }
++template void foo (long);
++template<> void foo (double) { }
++template __attribute ((visibility ("default"))) void foo (short);
++template<> __attribute ((visibility ("default"))) void foo (float) { }
++#pragma GCC visibility push(default)
++template<> void foo(char) { }
++template void foo(int);
++#pragma GCC visibility pop
+Index: gcc/testsuite/g++.dg/ext/visibility/prop1.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/prop1.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/prop1.C	(Revision 116505)
+@@ -0,0 +1,23 @@
++// Test for propagation of visibility through template arguments
++
++// { dg-do compile }
++// { dg-require-visibility "" }
++// { dg-final { scan-hidden "_Z1fIN1N1AEEvT_" } }
++// { dg-final { scan-hidden "_Z1hIXadL_ZN1N1iEEEEvv" } }
++
++namespace N __attribute ((__visibility__ ("hidden")))
++{
++  struct A { };
++  int i;
++}
++
++template <class T> void f (T) { }
++template <int *I> void h() { }
++
++void g()
++{
++  N::A a;
++  f(a);
++  h<&N::i>();
++}
++
+Index: gcc/testsuite/g++.dg/ext/visibility/assign1.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/assign1.C	(Revision 116504)
++++ gcc/testsuite/g++.dg/ext/visibility/assign1.C	(Revision 116505)
+@@ -6,11 +6,12 @@
+   B& operator=(const B&);
+ };
+ 
+-struct D : public B {
++struct __attribute__((visibility("hidden"))) D : public B {
+   // The implicit assignment operator should be hidden.
+-} __attribute__((visibility("hidden")));
++};
+ 
+-D d1, d2;
++__attribute__((visibility("hidden"))) D d1;
++__attribute__((visibility("hidden"))) D d2;
+ 
+ void f() {
+   d1 = d2;
+Index: gcc/testsuite/g++.dg/ext/visibility/typeinfo1.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/typeinfo1.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/typeinfo1.C	(Revision 116505)
+@@ -0,0 +1,19 @@
++// PR c++/26984
++// lazily generated typeinfos should not be affected by #pragma vis, but
++// they should be affected by the visibility of the type they describe.
++
++// { dg-require-visibility "" }
++// { dg-options "-fvisibility-inlines-hidden" }
++// { dg-final { scan-not-hidden "_ZTIPPi" } }
++// { dg-final { scan-not-hidden "_ZTSPPi" } }
++// { dg-final { scan-hidden "_ZTIP1A" } }
++// { dg-final { scan-hidden "_ZTSP1A" } }
++
++#include <typeinfo>
++
++#pragma GCC visibility push(hidden)
++const std::type_info* t = &(typeid(int **));
++struct A { };
++#pragma GCC visibility pop
++
++const std::type_info* t2 = &(typeid(A *));
+Index: gcc/testsuite/g++.dg/ext/visibility/virtual.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/virtual.C	(Revision 116504)
++++ gcc/testsuite/g++.dg/ext/visibility/virtual.C	(Revision 116505)
+@@ -1,9 +1,15 @@
+-/* Test that setting visibility for class affects virtual table. */
++/* Test that setting visibility for class affects virtual table, VTT and
++   type_info name and node. */
+ /* { dg-do compile } */
+ /* { dg-require-visibility "" } */
+ /* { dg-final { scan-hidden "ZTV3Foo" } } */
++/* { dg-final { scan-hidden "ZTT3Foo" } } */
++/* { dg-final { scan-hidden "ZTS3Foo" } } */
++/* { dg-final { scan-hidden "ZTI3Foo" } } */
+ 
+-class __attribute__ ((visibility ("hidden"))) Foo
++struct A { };
++
++class __attribute__ ((visibility ("hidden"))) Foo: virtual public A
+ {
+   virtual void method();
+ };
+Index: gcc/testsuite/g++.dg/ext/visibility/warn1.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/warn1.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/warn1.C	(Revision 116505)
+@@ -0,0 +1,13 @@
++// Warn when a declaration is specified with greater visibility than that
++// of its type.
++
++// { dg-do compile }
++// { dg-require-visibility "" }
++// { dg-final { scan-hidden "_Z1fv" } }
++
++namespace N __attribute ((__visibility__ ("hidden")))
++{
++  struct A { };
++}
++
++N::A f() { } // { dg-warning "visibility" "" }
+Index: gcc/testsuite/g++.dg/ext/visibility/warn2.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/warn2.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/warn2.C	(Revision 116505)
+@@ -0,0 +1,19 @@
++// Complain when a class is specified with greater visibility than one of
++// its members' types or bases, and when a declaration has greater
++// visibility than its type.
++
++// { dg-require-visibility "" }
++
++namespace N __attribute ((__visibility__ ("hidden")))
++{
++  struct A { };
++}
++
++struct B
++{				// { dg-warning "visibility" }
++  N::A a;
++};
++
++B f () { }			// { dg-warning "visibility" }
++
++struct C: public N::A { };	// { dg-warning "visibility" }
+Index: gcc/testsuite/g++.dg/ext/visibility/warn3.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/warn3.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/warn3.C	(Revision 116505)
+@@ -0,0 +1,11 @@
++// Warn when a class member is specified to have greater visibility than
++// its class.
++
++// { dg-require-visibility "" }
++
++struct __attribute ((visibility ("hidden"))) A
++{
++  __attribute ((visibility ("default"))) void f (); // { dg-warning "visibility" }
++};
++
++void A::f() { }
+Index: gcc/testsuite/g++.dg/ext/visibility/warn4.C
+===================================================================
+--- gcc/testsuite/g++.dg/ext/visibility/warn4.C	(Revision 0)
++++ gcc/testsuite/g++.dg/ext/visibility/warn4.C	(Revision 116505)
+@@ -0,0 +1,10 @@
++// Error if we try to give an instantiation visibility after it's already
++// been instantiated.
++
++// { dg-require-visibility "" }
++
++template <class T> struct A { void f (T); };
++template <class T> void A<T>::f (T) { }
++
++A<double> ad;
++template struct __attribute ((visibility ("hidden"))) A<double>; // { dg-error "already defined" }
+Index: gcc/testsuite/g++.dg/template/anon2.C
+===================================================================
+--- gcc/testsuite/g++.dg/template/anon2.C	(Revision 0)
++++ gcc/testsuite/g++.dg/template/anon2.C	(Revision 116505)
+@@ -0,0 +1,15 @@
++// PR c++/28279
++// finish_static_data_member_decl was confused by the anonymous
++// namespace causing TREE_PUBLIC to be unset
++
++template<typename T>
++struct is_pointer_impl {
++    static const bool value = true;
++};
++
++namespace {
++  class prefix_name_mapper {};
++}
++
++static const bool val = is_pointer_impl<prefix_name_mapper>::value;
++
+Index: gcc/objcp/objcp-decl.c
+===================================================================
+--- gcc/objcp/objcp-decl.c	(Revision 116504)
++++ gcc/objcp/objcp-decl.c	(Revision 116505)
+@@ -59,7 +59,7 @@
+   CLASSTYPE_DECLARED_CLASS (s) = 0;  /* this is a 'struct', not a 'class'.  */
+   xref_basetypes (s, NULL_TREE);     /* no base classes here!  */
+ 
+-  return begin_class_definition (s);
++  return begin_class_definition (s, NULL_TREE);
+ }
+ 
+ tree 
+Index: gcc/cp/class.c
+===================================================================
+--- gcc/cp/class.c	(Revision 116504)
++++ gcc/cp/class.c	(Revision 116505)
+@@ -5047,6 +5047,9 @@
+       DECL_SORTED_FIELDS (TYPE_MAIN_DECL (t)) = field_vec;
+     }
+ 
++  /* Complain if one of the field types requires lower visibility.  */
++  constrain_class_visibility (t);
++
+   /* Make the rtl for any new vtables we have created, and unmark
+      the base types we marked.  */
+   finish_vtbls (t);
+Index: gcc/cp/decl.c
+===================================================================
+--- gcc/cp/decl.c	(Revision 116504)
++++ gcc/cp/decl.c	(Revision 116505)
+@@ -1863,6 +1863,11 @@
+ 
+ 	  SET_DECL_TEMPLATE_SPECIALIZATION (olddecl);
+ 
++	  /* Don't propagate visibility from the template to the
++	     specialization here.  We'll do that in determine_visibility if
++	     appropriate.  */
++	  DECL_VISIBILITY_SPECIFIED (olddecl) = 0;
++
+ 	  /* [temp.expl.spec/14] We don't inline explicit specialization
+ 	     just because the primary template says so.  */
+ 	}
+@@ -3128,6 +3133,7 @@
+   gcc_assert (global_namespace == NULL_TREE);
+   global_namespace = build_lang_decl (NAMESPACE_DECL, global_scope_name,
+ 				      void_type_node);
++  TREE_PUBLIC (global_namespace) = 1;
+   begin_scope (sk_namespace, global_namespace);
+ 
+   current_lang_name = NULL_TREE;
+@@ -5281,6 +5287,9 @@
+       else
+ 	abstract_virtuals_error (decl, type);
+ 
++      /* This needs to happen after the linkage is set. */
++      determine_visibility (decl);
++
+       if (TREE_CODE (decl) == FUNCTION_DECL
+ 	  || TREE_TYPE (decl) == error_mark_node)
+ 	/* No initialization required.  */
+@@ -5307,10 +5316,6 @@
+ 		initialize_local_var (decl, init);
+ 	    }
+ 
+-	  /* The variable is being defined, so determine its visibility.
+-	     This needs to happen after the linkage is set. */
+-	  determine_visibility (decl);
+-
+ 	  /* If a variable is defined, and then a subsequent
+ 	     definition with external linkage is encountered, we will
+ 	     get here twice for the same variable.  We want to avoid
+Index: gcc/cp/method.c
+===================================================================
+--- gcc/cp/method.c	(Revision 116504)
++++ gcc/cp/method.c	(Revision 116505)
+@@ -163,6 +163,9 @@
+   DECL_DECLARED_INLINE_P (thunk) = 0;
+   /* Nor has it been deferred.  */
+   DECL_DEFERRED_FN (thunk) = 0;
++  /* Nor is it a template instantiation.  */
++  DECL_USE_TEMPLATE (thunk) = 0;
++  DECL_TEMPLATE_INFO (thunk) = NULL;
+ 
+   /* Add it to the list of thunks associated with FUNCTION.  */
+   TREE_CHAIN (thunk) = DECL_THUNKS (function);
+Index: gcc/cp/rtti.c
+===================================================================
+--- gcc/cp/rtti.c	(Revision 116504)
++++ gcc/cp/rtti.c	(Revision 116505)
+@@ -1145,6 +1145,10 @@
+   ti->name = get_identifier (real_name);
+   ti->vtable = NULL_TREE;
+ 
++  /* Pretend this is public so determine_visibility doesn't give vtables
++     internal linkage.  */
++  TREE_PUBLIC (TYPE_MAIN_DECL (ti->type)) = 1;
++
+   va_end (ap);
+ }
+ 
+Index: gcc/cp/tree.c
+===================================================================
+--- gcc/cp/tree.c	(Revision 116504)
++++ gcc/cp/tree.c	(Revision 116505)
+@@ -1394,6 +1394,30 @@
+     }
+ }
+ 
++/* Returns true if decl is within an anonymous namespace, however deeply
++   nested, or false otherwise.  */
++
++bool
++decl_anon_ns_mem_p (tree decl)
++{
++  while (1)
++    {
++      if (decl == NULL_TREE)
++	return false;
++      if (TREE_CODE (decl) == NAMESPACE_DECL
++	  && DECL_NAME (decl) == NULL_TREE)
++	return true;
++      /* Classes and namespaces inside anonymous namespaces have
++         TREE_PUBLIC == 0, so we can shortcut the search.  */
++      else if (TYPE_P (decl))
++	return (TREE_PUBLIC (TYPE_NAME (decl)) == 0);
++      else if (TREE_CODE (decl) == NAMESPACE_DECL)
++	return (TREE_PUBLIC (decl) == 0);
++      else
++	decl = DECL_CONTEXT (decl);
++    }
++}
++
+ /* Return truthvalue of whether T1 is the same tree structure as T2.
+    Return 1 if they are the same. Return 0 if they are different.  */
+ 
+@@ -2176,7 +2200,8 @@
+      template instantiations have internal linkage (in the object
+      file), but the symbols should still be treated as having external
+      linkage from the point of view of the language.  */
+-  if (TREE_CODE (decl) != TYPE_DECL && DECL_LANG_SPECIFIC (decl) && DECL_COMDAT (decl))
++  if (TREE_CODE (decl) != TYPE_DECL && DECL_LANG_SPECIFIC (decl)
++      && DECL_COMDAT (decl))
+     return lk_external;
+ 
+   /* Things in local scope do not have linkage, if they don't have
+Index: gcc/cp/cp-tree.h
+===================================================================
+--- gcc/cp/cp-tree.h	(Revision 116504)
++++ gcc/cp/cp-tree.h	(Revision 116505)
+@@ -3984,6 +3984,8 @@
+ extern tree coerce_delete_type			(tree);
+ extern void comdat_linkage			(tree);
+ extern void determine_visibility		(tree);
++extern void constrain_class_visibility		(tree);
++extern void update_member_visibility		(tree);
+ extern void import_export_decl			(tree);
+ extern tree build_cleanup			(tree);
+ extern tree build_offset_ref_call_from_tree	(tree, tree);
+@@ -4299,7 +4301,7 @@
+ extern void finish_translation_unit		(void);
+ extern tree finish_template_type_parm		(tree, tree);
+ extern tree finish_template_template_parm       (tree, tree);
+-extern tree begin_class_definition		(tree);
++extern tree begin_class_definition		(tree, tree);
+ extern void finish_template_decl		(tree);
+ extern tree finish_template_type		(tree, tree, int);
+ extern tree finish_base_specifier		(tree, tree, bool);
+@@ -4381,6 +4383,7 @@
+ extern tree break_out_target_exprs		(tree);
+ extern tree get_type_decl			(tree);
+ extern tree decl_namespace_context		(tree);
++extern bool decl_anon_ns_mem_p			(tree);
+ extern tree lvalue_type				(tree);
+ extern tree error_type				(tree);
+ extern int varargs_function_p			(tree);
+Index: gcc/cp/pt.c
+===================================================================
+--- gcc/cp/pt.c	(Revision 116504)
++++ gcc/cp/pt.c	(Revision 116505)
+@@ -2147,13 +2147,7 @@
+ 	     template it specializes.  */
+ 	  TREE_PRIVATE (decl) = TREE_PRIVATE (gen_tmpl);
+ 	  TREE_PROTECTED (decl) = TREE_PROTECTED (gen_tmpl);
+-	  /* The specialization has the same visibility as the
+-	     template it specializes.  */
+-	  if (DECL_VISIBILITY_SPECIFIED (gen_tmpl))
+-	    {
+-	      DECL_VISIBILITY_SPECIFIED (decl) = 1;
+-	      DECL_VISIBILITY (decl) = DECL_VISIBILITY (gen_tmpl);
+-	    }
++
+ 	  /* If DECL is a friend declaration, declared using an
+ 	     unqualified name, the namespace associated with DECL may
+ 	     have been set incorrectly.  For example, in:
+@@ -3605,9 +3599,9 @@
+ 
+       if (!constant_address_p)
+ 	{
+-	    error ("%qE is not a valid template argument for type %qT "
+-		  "because it is not a constant pointer", expr, type);
+-	    return NULL_TREE;
++	  error ("%qE is not a valid template argument for type %qT "
++		 "because it is not a constant pointer", expr, type);
++	  return NULL_TREE;
+ 	}
+     }
+   /* [temp.arg.nontype]/5, bullet 3
+@@ -4793,6 +4787,10 @@
+ 	   code that generates debugging information will crash.  */
+ 	DECL_IGNORED_P (TYPE_STUB_DECL (t)) = 1;
+ 
++      /* Possibly limit visibility based on template args.  */
++      TREE_PUBLIC (type_decl) = 1;
++      determine_visibility (type_decl);
++
+       POP_TIMEVAR_AND_RETURN (TV_NAME_LOOKUP, t);
+     }
+   timevar_pop (TV_NAME_LOOKUP);
+@@ -6608,6 +6606,11 @@
+ 	  SET_DECL_FRIEND_CONTEXT (r,
+ 				   tsubst (DECL_FRIEND_CONTEXT (t),
+ 					    args, complain, in_decl));
++
++	/* Possibly limit visibility based on template args.  */
++	DECL_VISIBILITY (r) = VISIBILITY_DEFAULT;
++	DECL_VISIBILITY_SPECIFIED (r) = 0;
++	determine_visibility (r);
+       }
+       break;
+ 
+@@ -6804,6 +6807,13 @@
+ 	if (CODE_CONTAINS_STRUCT (TREE_CODE (t), TS_DECL_WRTL))
+ 	  SET_DECL_RTL (r, NULL_RTX);
+ 	DECL_SIZE (r) = DECL_SIZE_UNIT (r) = 0;
++	if (TREE_CODE (r) == VAR_DECL)
++	  {
++	    /* Possibly limit visibility based on template args.  */
++	    DECL_VISIBILITY (r) = VISIBILITY_DEFAULT;
++	    DECL_VISIBILITY_SPECIFIED (r) = 0;
++	    determine_visibility (r);
++	  }
+ 
+ 	if (!local_p)
+ 	  {
+Index: gcc/cp/semantics.c
+===================================================================
+--- gcc/cp/semantics.c	(Revision 116504)
++++ gcc/cp/semantics.c	(Revision 116505)
+@@ -2151,7 +2151,7 @@
+ /* Begin a class definition, as indicated by T.  */
+ 
+ tree
+-begin_class_definition (tree t)
++begin_class_definition (tree t, tree attributes)
+ {
+   if (t == error_mark_node)
+     return error_mark_node;
+@@ -2190,6 +2190,9 @@
+   maybe_process_partial_specialization (t);
+   pushclass (t);
+   TYPE_BEING_DEFINED (t) = 1;
++
++  cplus_decl_attributes (&t, attributes, (int) ATTR_FLAG_TYPE_IN_PLACE);
++
+   if (flag_pack_struct)
+     {
+       tree v;
+Index: gcc/cp/name-lookup.c
+===================================================================
+--- gcc/cp/name-lookup.c	(Revision 116504)
++++ gcc/cp/name-lookup.c	(Revision 116505)
+@@ -3032,7 +3032,12 @@
+       /* Make a new namespace, binding the name to it.  */
+       d = build_lang_decl (NAMESPACE_DECL, name, void_type_node);
+       DECL_CONTEXT (d) = FROB_CONTEXT (current_namespace);
+-      TREE_PUBLIC (d) = 1;
++      /* The name of this namespace is not visible to other translation
++	 units if it is an anonymous namespace or member thereof.  */
++      if (anon || decl_anon_ns_mem_p (current_namespace))
++	TREE_PUBLIC (d) = 0;
++      else
++	TREE_PUBLIC (d) = 1;
+       pushdecl (d);
+       if (anon)
+ 	{
+@@ -4972,6 +4977,10 @@
+   gcc_assert (TREE_CODE (decl) == TYPE_DECL);
+   TYPE_STUB_DECL (type) = decl;
+ 
++  /* Set type visibility now if this is a forward declaration.  */
++  TREE_PUBLIC (decl) = 1;
++  determine_visibility (decl);
++
+   POP_TIMEVAR_AND_RETURN (TV_NAME_LOOKUP, type);
+ }
+ 
+Index: gcc/cp/decl2.c
+===================================================================
+--- gcc/cp/decl2.c	(Revision 116504)
++++ gcc/cp/decl2.c	(Revision 116505)
+@@ -754,8 +754,6 @@
+ 				tree asmspec_tree,
+ 				int flags)
+ {
+-  gcc_assert (TREE_PUBLIC (decl));
+-
+   DECL_CONTEXT (decl) = current_class_type;
+ 
+   /* We cannot call pushdecl here, because that would fill in the
+@@ -765,7 +763,7 @@
+   if (!asmspec_tree && current_class_type)
+     DECL_INITIAL (decl) = error_mark_node;
+ 
+-  if (! processing_template_decl)
++  if (! processing_template_decl && TREE_PUBLIC (decl))
+     note_vague_linkage_var (decl);
+ 
+   if (LOCAL_CLASS_P (current_class_type))
+@@ -1578,6 +1576,110 @@
+   return true;
+ }
+ 
++/* A special return value from type_visibility meaning internal
++   linkage.  */
++
++enum { VISIBILITY_STATIC = VISIBILITY_INTERNAL+1 };
++
++/* walk_tree helper function for type_visibility.  */
++
++static tree
++min_vis_r (tree *tp, int *walk_subtrees, void *data)
++{
++  int *vis_p = (int *)data;
++  if (! TYPE_P (*tp))
++    {
++      *walk_subtrees = 0;
++    }
++  else if (CLASS_TYPE_P (*tp))
++    {
++      if (!TREE_PUBLIC (TYPE_MAIN_DECL (*tp)))
++	{
++	  *vis_p = VISIBILITY_STATIC;
++	  return *tp;
++	}
++      else if (CLASSTYPE_VISIBILITY (*tp) > *vis_p)
++	*vis_p = CLASSTYPE_VISIBILITY (*tp);
++    }
++  return NULL;
++}
++
++/* Returns the visibility of TYPE, which is the minimum visibility of its
++   component types.  */
++
++static int
++type_visibility (tree type)
++{
++  int vis = VISIBILITY_DEFAULT;
++  walk_tree_without_duplicates (&type, min_vis_r, &vis);
++  return vis;
++}
++
++/* Limit the visibility of DECL to VISIBILITY.  SPECIFIED is true if the
++   constraint comes from an attribute or pragma; REASON is the source of
++   the constraint.  */
++
++static bool
++constrain_visibility (tree decl, int visibility, bool specified,
++		      const char *reason)
++{
++  if (visibility == VISIBILITY_STATIC)
++    {
++      TREE_PUBLIC (decl) = 0;
++      DECL_INTERFACE_KNOWN (decl) = 1;
++      if (DECL_LANG_SPECIFIC (decl))
++	DECL_NOT_REALLY_EXTERN (decl) = 1;
++    }
++  else if (visibility > DECL_VISIBILITY (decl))
++    {
++      if (lookup_attribute ("visibility", DECL_ATTRIBUTES (decl)))
++	warning (OPT_Wattributes, "%q+D: visibility attribute requests "
++		 "greater visibility than its %s allows", decl, reason);
++      DECL_VISIBILITY (decl) = visibility;
++      if (!DECL_VISIBILITY_SPECIFIED (decl))
++	DECL_VISIBILITY_SPECIFIED (decl) = specified;
++      return true;
++    }
++  return false;
++}
++
++/* Constrain the visibility of DECL based on the visbility of its template
++   arguments.  */
++
++static void
++constrain_visibility_for_template (tree decl, tree targs)
++{
++  /* If this is a template instantiation, check the innermost
++     template args for visibility constraints.  The outer template
++     args are covered by the class check.  */
++  tree args = INNERMOST_TEMPLATE_ARGS (targs);
++  int i;
++  for (i = TREE_VEC_LENGTH (args); i > 0; --i)
++    {
++      int vis = 0;
++
++      tree arg = TREE_VEC_ELT (args, i-1);
++      if (TYPE_P (arg))
++	vis = type_visibility (arg);
++      else if (TREE_TYPE (arg) && POINTER_TYPE_P (TREE_TYPE (arg)))
++	{
++	  STRIP_NOPS (arg);
++	  if (TREE_CODE (arg) == ADDR_EXPR)
++	    arg = TREE_OPERAND (arg, 0);
++	  if (TREE_CODE (arg) == VAR_DECL
++	      || TREE_CODE (arg) == FUNCTION_DECL)
++	    {
++	      if (! TREE_PUBLIC (arg))
++		vis = VISIBILITY_STATIC;
++	      else
++		vis = DECL_VISIBILITY (arg);
++	    }
++	}
++      if (vis)
++	constrain_visibility (decl, vis, false, "template parameter");
++    }
++}
++
+ /* Like c_determine_visibility, but with additional C++-specific
+    behavior.
+ 
+@@ -1589,13 +1691,19 @@
+ 
+    Note that because namespaces have multiple independent definitions,
+    namespace visibility is handled elsewhere using the #pragma visibility
+-   machinery rather than by decorating the namespace declaration.  */
++   machinery rather than by decorating the namespace declaration.
+ 
++   The goal is for constraints from the type to give a diagnostic, and
++   other constraints to be applied silently.  */
++
+ void
+ determine_visibility (tree decl)
+ {
+-  tree class_type;
++  tree class_type = NULL_TREE;
++  bool use_template;
+ 
++  /* Remember that all decls get VISIBILITY_DEFAULT when built.  */
++
+   /* Only relevant for names with external linkage.  */
+   if (!TREE_PUBLIC (decl))
+     return;
+@@ -1605,10 +1713,31 @@
+      maybe_clone_body.  */
+   gcc_assert (!DECL_CLONED_FUNCTION_P (decl));
+ 
+-  /* Give the common code a chance to make a determination.  */
+-  if (c_determine_visibility (decl))
+-    return;
++  if (TREE_CODE (decl) == TYPE_DECL)
++    {
++      if (CLASS_TYPE_P (TREE_TYPE (decl)))
++	use_template = CLASSTYPE_USE_TEMPLATE (TREE_TYPE (decl));
++      else if (TYPE_TEMPLATE_INFO (TREE_TYPE (decl)))
++	use_template = 1;
++      else
++	use_template = 0;
++    }
++  else if (DECL_LANG_SPECIFIC (decl))
++    use_template = DECL_USE_TEMPLATE (decl);
++  else
++    use_template = 0;
+ 
++  /* Anything that is exported must have default visibility.  */
++  if (TARGET_DLLIMPORT_DECL_ATTRIBUTES
++      && lookup_attribute ("dllexport",
++			   TREE_CODE (decl) == TYPE_DECL
++			   ? TYPE_ATTRIBUTES (TREE_TYPE (decl))
++			   : DECL_ATTRIBUTES (decl)))
++    {
++      DECL_VISIBILITY (decl) = VISIBILITY_DEFAULT;
++      DECL_VISIBILITY_SPECIFIED (decl) = 1;
++    }
++
+   /* If DECL is a member of a class, visibility specifiers on the
+      class can influence the visibility of the DECL.  */
+   if (DECL_CLASS_SCOPE_P (decl))
+@@ -1619,6 +1748,8 @@
+     class_type = TREE_TYPE (DECL_NAME (decl));
+   else
+     {
++      /* Not a class member.  */
++
+       /* Virtual tables have DECL_CONTEXT set to their associated class,
+ 	 so they are automatically handled above.  */
+       gcc_assert (TREE_CODE (decl) != VAR_DECL
+@@ -1626,79 +1757,140 @@
+ 
+       if (DECL_FUNCTION_SCOPE_P (decl))
+ 	{
++	  /* Local statics and classes get the visibility of their
++	     containing function.  */
+ 	  tree fn = DECL_CONTEXT (decl);
+ 	  DECL_VISIBILITY (decl) = DECL_VISIBILITY (fn);
+ 	  DECL_VISIBILITY_SPECIFIED (decl) = DECL_VISIBILITY_SPECIFIED (fn);
++
++	  /* Local classes in templates have CLASSTYPE_USE_TEMPLATE set,
++	     but have no TEMPLATE_INFO, so don't try to check it.  */
++	  use_template = 0;
+ 	}
++      else if (TREE_CODE (decl) == VAR_DECL && DECL_TINFO_P (decl))
++	{
++	  /* tinfo visibility is based on the type it's for.  */
++	  constrain_visibility
++	    (decl, type_visibility (TREE_TYPE (DECL_NAME (decl))),
++	     false, "type");
++	}
++      else if (use_template)
++	/* Template instantiations and specializations get visibility based
++	   on their template unless they override it with an attribute.  */;
++      else if (! DECL_VISIBILITY_SPECIFIED (decl))
++	{
++	  /* Set default visibility to whatever the user supplied with
++	     #pragma GCC visibility or a namespace visibility attribute.  */
++	  DECL_VISIBILITY (decl) = default_visibility;
++	  DECL_VISIBILITY_SPECIFIED (decl) = visibility_options.inpragma;
++	}
++    }
+ 
+-      /* Entities not associated with any class just get the
+-	 visibility specified by their attributes.  */
+-      return;
++  if (use_template)
++    {
++      tree tinfo = (TREE_CODE (decl) == TYPE_DECL
++		    ? TYPE_TEMPLATE_INFO (TREE_TYPE (decl))
++		    : DECL_TEMPLATE_INFO (decl));
++      tree args = TI_ARGS (tinfo);
++      int depth = TMPL_ARGS_DEPTH (args);
++
++      /* If the template has explicit visibility and the specialization
++	 doesn't, use the visibility from the template.  */
++      if (!DECL_VISIBILITY_SPECIFIED (decl))
++	{
++	  tree pattern = DECL_TEMPLATE_RESULT (TI_TEMPLATE (tinfo));
++	  DECL_VISIBILITY (decl) = DECL_VISIBILITY (pattern);
++	}
++
++      /* FIXME should TMPL_ARGS_DEPTH really return 1 for null input? */
++      if (args && depth > template_class_depth (class_type))
++	/* Don't let it have more visibility than its template type
++	   arguments.  */
++	constrain_visibility_for_template (decl, args);
+     }
+ 
+-  /* By default, static data members and function members receive
+-     the visibility of their containing class.  */
+   if (class_type)
+-    {
+-      determine_visibility_from_class (decl, class_type);
++    determine_visibility_from_class (decl, class_type);
+ 
+-      /* Give the target a chance to override the visibility associated
+-	 with DECL.  */
+-      if (TREE_CODE (decl) == VAR_DECL
+-	  && (DECL_TINFO_P (decl)
+-	      || (DECL_VTABLE_OR_VTT_P (decl)
+-		  /* Construction virtual tables are not exported because
+-		     they cannot be referred to from other object files;
+-		     their name is not standardized by the ABI.  */
+-		  && !DECL_CONSTRUCTION_VTABLE_P (decl)))
+-	  && TREE_PUBLIC (decl)
+-	  && !DECL_REALLY_EXTERN (decl)
+-	  && DECL_VISIBILITY_SPECIFIED (decl)
+-	  && (!class_type || !CLASSTYPE_VISIBILITY_SPECIFIED (class_type)))
+-	targetm.cxx.determine_class_data_visibility (decl);
+-    }      
++  /* Don't let it have more visibility than its type.  */
++  if (TREE_CODE (decl) != TYPE_DECL)
++    if (constrain_visibility (decl, type_visibility (TREE_TYPE (decl)),
++			      false, "type"))
++      warning (OPT_Wattributes, "\
++%q+D declared with greater visibility than its type",
++	       decl);
++
++  if (decl_anon_ns_mem_p (decl))
++    /* Names in an anonymous namespace get internal linkage.
++       This might change once we implement export.  */
++    constrain_visibility (decl, VISIBILITY_STATIC,
++			  false, "namespace");
+ }
+ 
++/* By default, static data members and function members receive
++   the visibility of their containing class.  */
++
+ static void
+ determine_visibility_from_class (tree decl, tree class_type)
+ {
+-  if (TARGET_DLLIMPORT_DECL_ATTRIBUTES
+-      && lookup_attribute ("dllexport", TYPE_ATTRIBUTES (class_type)))
+-    {
+-      DECL_VISIBILITY (decl) = VISIBILITY_DEFAULT;
+-      DECL_VISIBILITY_SPECIFIED (decl) = 1;
+-    }
+-  else if (TREE_CODE (decl) == FUNCTION_DECL
+-	   && DECL_DECLARED_INLINE_P (decl)
+-	   && visibility_options.inlines_hidden)
+-    {
+-      /* Don't change it if it has been set explicitly by user.  */
+-      if (!DECL_VISIBILITY_SPECIFIED (decl))
+-	{
+-	  DECL_VISIBILITY (decl) = VISIBILITY_HIDDEN;
+-	  DECL_VISIBILITY_SPECIFIED (decl) = 1;
+-	}
+-    }
+-  else if (CLASSTYPE_VISIBILITY_SPECIFIED (class_type))
+-    {
+-      DECL_VISIBILITY (decl) = CLASSTYPE_VISIBILITY (class_type);
+-      DECL_VISIBILITY_SPECIFIED (decl) = 1;
+-    }
+-  else if (TYPE_CLASS_SCOPE_P (class_type))
+-    determine_visibility_from_class (decl, TYPE_CONTEXT (class_type));
+-  else if (TYPE_FUNCTION_SCOPE_P (class_type))
+-    {
+-      tree fn = TYPE_CONTEXT (class_type);
+-      DECL_VISIBILITY (decl) = DECL_VISIBILITY (fn);
+-      DECL_VISIBILITY_SPECIFIED (decl) = DECL_VISIBILITY_SPECIFIED (fn);
+-    }
+-  else if (!DECL_VISIBILITY_SPECIFIED (decl))
+-    {
+-      DECL_VISIBILITY (decl) = CLASSTYPE_VISIBILITY (class_type);
+-      DECL_VISIBILITY_SPECIFIED (decl) = 0;
+-    }
++  if (visibility_options.inlines_hidden
++      /* Don't do this for inline templates; specializations might not be
++	 inline, and we don't want them to inherit the hidden
++	 visibility.  We'll set it here for all inline instantiations.  */
++      && !processing_template_decl
++      && ! DECL_VISIBILITY_SPECIFIED (decl)
++      && TREE_CODE (decl) == FUNCTION_DECL
++      && DECL_DECLARED_INLINE_P (decl))
++    DECL_VISIBILITY (decl) = VISIBILITY_HIDDEN;
++
++  /* The decl can't have more visibility than its class.  */
++  constrain_visibility (decl, CLASSTYPE_VISIBILITY (class_type),
++			CLASSTYPE_VISIBILITY_SPECIFIED (class_type),
++			"class");
++
++  /* Give the target a chance to override the visibility associated
++     with DECL.  */
++  if (TREE_CODE (decl) == VAR_DECL
++      && (DECL_TINFO_P (decl)
++	  || (DECL_VTABLE_OR_VTT_P (decl)
++	      /* Construction virtual tables are not exported because
++		 they cannot be referred to from other object files;
++		 their name is not standardized by the ABI.  */
++	      && !DECL_CONSTRUCTION_VTABLE_P (decl)))
++      && TREE_PUBLIC (decl)
++      && !DECL_REALLY_EXTERN (decl)
++      && DECL_VISIBILITY_SPECIFIED (decl)
++      && (!class_type || !CLASSTYPE_VISIBILITY_SPECIFIED (class_type)))
++    targetm.cxx.determine_class_data_visibility (decl);
+ }
+ 
++/* Constrain the visibility of a class TYPE based on the visibility of its
++   field types.  Warn if any fields require lesser visibility.  */
++
++void
++constrain_class_visibility (tree type)
++{
++  tree decl = TYPE_MAIN_DECL (type);
++  tree binfo = TYPE_BINFO (type);
++  tree t;
++  int i;
++
++  for (t = TYPE_FIELDS (type); t; t = TREE_CHAIN (t))
++    if (TREE_CODE (t) == FIELD_DECL)
++      if (constrain_visibility (decl, type_visibility (TREE_TYPE (t)),
++				false, "field type"))
++	warning (OPT_Wattributes, "\
++%qT declared with greater visibility than the type of its field %qD",
++		 type, t);
++
++  for (i = 0; BINFO_BASE_ITERATE (binfo, i, t); ++i)
++    if (constrain_visibility (decl, type_visibility (TREE_TYPE (t)),
++			      false, "base type"))
++      warning (OPT_Wattributes, "\
++%qT declared with greater visibility than its base %qT",
++	       type, TREE_TYPE (t));
++}
++
+ /* DECL is a FUNCTION_DECL or VAR_DECL.  If the object file linkage
+    for DECL has not already been determined, do so now by setting
+    DECL_EXTERNAL, DECL_COMDAT and other related flags.  Until this
+Index: gcc/cp/parser.c
+===================================================================
+--- gcc/cp/parser.c	(Revision 116504)
++++ gcc/cp/parser.c	(Revision 116505)
+@@ -9411,7 +9411,7 @@
+       if (declarator != cp_error_declarator)
+ 	{
+ 	  decl = grokdeclarator (declarator, &decl_specifiers,
+-				 NORMAL, 0, NULL);
++				 NORMAL, 0, &decl_specifiers.attributes);
+ 	  /* Turn access control back on for names used during
+ 	     template instantiation.  */
+ 	  pop_deferring_access_checks ();
+@@ -9560,22 +9560,11 @@
+   switch (keyword)
+     {
+     case RID_ENUM:
+-      /* 'enum' [identifier] '{' introduces an enum-specifier;
+-	 'enum' <anything else> introduces an elaborated-type-specifier.  */
+-      if (cp_lexer_peek_nth_token (parser->lexer, 2)->type == CPP_OPEN_BRACE
+-	  || (cp_lexer_peek_nth_token (parser->lexer, 2)->type == CPP_NAME
+-	      && cp_lexer_peek_nth_token (parser->lexer, 3)->type
+-		 == CPP_OPEN_BRACE))
++      /* Look for the enum-specifier.  */
++      type_spec = cp_parser_enum_specifier (parser);
++      /* If that worked, we're done.  */
++      if (type_spec)
+ 	{
+-	  if (parser->num_template_parameter_lists)
+-	    {
+-	      error ("template declaration of %qs", "enum");
+-	      cp_parser_skip_to_end_of_block_or_statement (parser);
+-	      type_spec = error_mark_node;
+-	    }
+-	  else
+-	    type_spec = cp_parser_enum_specifier (parser);
+-
+ 	  if (declares_class_or_enum)
+ 	    *declares_class_or_enum = 2;
+ 	  if (decl_specs)
+@@ -10077,6 +10066,7 @@
+ 					 /*type_p=*/true,
+ 					 is_declaration);
+   /* For everything but enumeration types, consider a template-id.  */
++  /* For an enumeration type, consider only a plain identifier.  */
+   if (tag_type != enum_type)
+     {
+       bool template_p = false;
+@@ -10108,7 +10098,6 @@
+ 	type = TREE_TYPE (decl);
+     }
+ 
+-  /* For an enumeration type, consider only a plain identifier.  */
+   if (!type)
+     {
+       identifier = cp_parser_identifier (parser);
+@@ -10236,11 +10225,6 @@
+ 	  else
+ 	    ts = ts_global;
+ 
+-	  /* Warn about attributes. They are ignored.  */
+-	  if (attributes)
+-	    warning (OPT_Wattributes,
+-		     "type attributes are honored only at type definition");
+-
+ 	  template_p = 
+ 	    (parser->num_template_parameter_lists
+ 	     && (cp_parser_next_token_starts_class_definition_p (parser)
+@@ -10253,6 +10237,21 @@
+ 	  type = xref_tag (tag_type, identifier, ts, template_p);
+ 	}
+     }
++
++  /* Allow attributes on forward declarations of classes.  */
++  if (attributes)
++    {
++      if (tag_type != enum_type && CLASSTYPE_TEMPLATE_INSTANTIATION (type)
++	  && ! processing_explicit_instantiation)
++	warning (OPT_Wattributes,
++		 "attributes ignored on template instantiation");
++      else if (is_declaration && cp_parser_declares_only_class_p (parser))
++	cplus_decl_attributes (&type, attributes, (int) ATTR_FLAG_TYPE_IN_PLACE);
++      else
++	warning (OPT_Wattributes,
++		 "attributes ignored on elaborated-type-specifier that is not a forward declaration");
++    }
++
+   if (tag_type != enum_type)
+     cp_parser_check_class_key (tag_type, type);
+ 
+@@ -10269,27 +10268,43 @@
+      enum identifier [opt] { enumerator-list [opt] }
+ 
+    GNU Extensions:
+-     enum identifier [opt] { enumerator-list [opt] } attributes
++     enum attributes[opt] identifier [opt] { enumerator-list [opt] }
++       attributes[opt]
+ 
+-   Returns an ENUM_TYPE representing the enumeration.  */
++   Returns an ENUM_TYPE representing the enumeration, or NULL_TREE
++   if the token stream isn't an enum-specifier after all.  */
+ 
+ static tree
+ cp_parser_enum_specifier (cp_parser* parser)
+ {
+   tree identifier;
+   tree type;
++  tree attributes;
+ 
++  /* Parse tentatively so that we can back up if we don't find a
++     enum-specifier.  */
++  cp_parser_parse_tentatively (parser);
++
+   /* Caller guarantees that the current token is 'enum', an identifier
+      possibly follows, and the token after that is an opening brace.
+      If we don't have an identifier, fabricate an anonymous name for
+      the enumeration being defined.  */
+   cp_lexer_consume_token (parser->lexer);
+ 
++  attributes = cp_parser_attributes_opt (parser);
++
+   if (cp_lexer_next_token_is (parser->lexer, CPP_NAME))
+     identifier = cp_parser_identifier (parser);
+   else
+     identifier = make_anon_name ();
+ 
++  /* Look for the `{' but don't consume it yet.  */
++  if (!cp_lexer_next_token_is (parser->lexer, CPP_OPEN_BRACE))
++    cp_parser_simulate_error (parser);
++
++  if (!cp_parser_parse_definitely (parser))
++    return NULL_TREE;
++
+   /* Issue an error message if type-definitions are forbidden here.  */
+   cp_parser_check_type_definition (parser);
+ 
+@@ -10301,6 +10316,12 @@
+   /* Consume the opening brace.  */
+   cp_lexer_consume_token (parser->lexer);
+ 
++  if (type == error_mark_node)
++    {
++      cp_parser_skip_to_end_of_block_or_statement (parser);
++      return error_mark_node;
++    }
++
+   /* If the next token is not '}', then there are some enumerators.  */
+   if (cp_lexer_next_token_is_not (parser->lexer, CPP_CLOSE_BRACE))
+     cp_parser_enumerator_list (parser, type);
+@@ -12909,7 +12930,7 @@
+       scope = CP_DECL_CONTEXT (TYPE_MAIN_DECL (type));
+       old_scope = push_inner_scope (scope);
+     }
+-  type = begin_class_definition (type);
++  type = begin_class_definition (type, attributes);
+ 
+   if (type == error_mark_node)
+     /* If the type is erroneous, skip the entire body of the class.  */
+@@ -12926,10 +12947,7 @@
+   has_trailing_semicolon = (token->type == CPP_SEMICOLON);
+   /* Look for trailing attributes to apply to this class.  */
+   if (cp_parser_allow_gnu_extensions_p (parser))
+-    {
+-      tree sub_attr = cp_parser_attributes_opt (parser);
+-      attributes = chainon (attributes, sub_attr);
+-    }
++    attributes = cp_parser_attributes_opt (parser);
+   if (type != error_mark_node)
+     type = finish_struct (type, attributes);
+   if (nested_name_specifier_p)
+Index: gcc/c-decl.c
+===================================================================
+--- gcc/c-decl.c	(Revision 116504)
++++ gcc/c-decl.c	(Revision 116505)
+@@ -3448,18 +3448,16 @@
+   /* If #pragma weak was used, mark the decl weak now.  */
+   maybe_apply_pragma_weak (decl);
+ 
+-  /* If this is a variable definition, determine its ELF visibility.  */
+-  if (TREE_CODE (decl) == VAR_DECL 
+-      && TREE_STATIC (decl) 
+-      && !DECL_EXTERNAL (decl))
+-    c_determine_visibility (decl);
+-
+   /* Output the assembler code and/or RTL code for variables and functions,
+      unless the type is an undefined structure or union.
+      If not, it will get done when the type is completed.  */
+ 
+   if (TREE_CODE (decl) == VAR_DECL || TREE_CODE (decl) == FUNCTION_DECL)
+     {
++      /* Determine the ELF visibility.  */
++      if (TREE_PUBLIC (decl))
++	c_determine_visibility (decl);
++
+       /* This is a no-op in c-lang.c or something real in objc-act.c.  */
+       if (c_dialect_objc ())
+ 	objc_check_decl (decl);
+Index: gcc/varasm.c
+===================================================================
+--- gcc/varasm.c	(Revision 116504)
++++ gcc/varasm.c	(Revision 116505)
+@@ -4955,7 +4955,7 @@
+ default_assemble_visibility (tree decl, int vis)
+ {
+   static const char * const visibility_types[] = {
+-    NULL, "internal", "hidden", "protected"
++    NULL, "protected", "hidden", "internal"
+   };
+ 
+   const char *name, *type;
+Index: gcc/c-common.c
+===================================================================
+--- gcc/c-common.c	(Revision 116504)
++++ gcc/c-common.c	(Revision 116505)
+@@ -4805,21 +4805,28 @@
+ static tree
+ handle_visibility_attribute (tree *node, tree name, tree args,
+ 			     int ARG_UNUSED (flags),
+-			     bool *no_add_attrs)
++			     bool *ARG_UNUSED (no_add_attrs))
+ {
+   tree decl = *node;
+   tree id = TREE_VALUE (args);
++  enum symbol_visibility vis;
+ 
+-  *no_add_attrs = true;
+-
+   if (TYPE_P (*node))
+     {
+-      if (TREE_CODE (*node) != RECORD_TYPE && TREE_CODE (*node) != UNION_TYPE)
+-       {
+-         warning (OPT_Wattributes, "%qE attribute ignored on non-class types",
+-		  name);
+-         return NULL_TREE;
+-       }
++      if (TREE_CODE (*node) == ENUMERAL_TYPE)
++	/* OK */;
++      else if (TREE_CODE (*node) != RECORD_TYPE && TREE_CODE (*node) != UNION_TYPE)
++	{
++	  warning (OPT_Wattributes, "%qE attribute ignored on non-class types",
++		   name);
++	  return NULL_TREE;
++	}
++      else if (TYPE_FIELDS (*node))
++	{
++	  error ("%qE attribute ignored because %qT is already defined",
++		 name, *node);
++	  return NULL_TREE;
++	}
+     }
+   else if (decl_function_context (decl) != 0 || !TREE_PUBLIC (decl))
+     {
+@@ -4848,23 +4855,33 @@
+     }
+ 
+   if (strcmp (TREE_STRING_POINTER (id), "default") == 0)
+-    DECL_VISIBILITY (decl) = VISIBILITY_DEFAULT;
++    vis = VISIBILITY_DEFAULT;
+   else if (strcmp (TREE_STRING_POINTER (id), "internal") == 0)
+-    DECL_VISIBILITY (decl) = VISIBILITY_INTERNAL;
++    vis = VISIBILITY_INTERNAL;
+   else if (strcmp (TREE_STRING_POINTER (id), "hidden") == 0)
+-    DECL_VISIBILITY (decl) = VISIBILITY_HIDDEN;
++    vis = VISIBILITY_HIDDEN;
+   else if (strcmp (TREE_STRING_POINTER (id), "protected") == 0)
+-    DECL_VISIBILITY (decl) = VISIBILITY_PROTECTED;
++    vis = VISIBILITY_PROTECTED;
+   else
+-    error ("visibility argument must be one of \"default\", \"hidden\", \"protected\" or \"internal\"");
++    {
++      error ("visibility argument must be one of \"default\", \"hidden\", \"protected\" or \"internal\"");
++      vis = VISIBILITY_DEFAULT;
++    }
++
++  if (DECL_VISIBILITY_SPECIFIED (decl)
++      && vis != DECL_VISIBILITY (decl)
++      && lookup_attribute ("visibility", (TYPE_P (*node)
++					  ? TYPE_ATTRIBUTES (*node)
++					  : DECL_ATTRIBUTES (decl))))
++    error ("%qD redeclared with different visibility", decl);
++
++  DECL_VISIBILITY (decl) = vis;
+   DECL_VISIBILITY_SPECIFIED (decl) = 1;
+ 
+-  /* For decls only, go ahead and attach the attribute to the node as well.
+-     This is needed so we can determine whether we have VISIBILITY_DEFAULT
+-     because the visibility was not specified, or because it was explicitly
+-     overridden from the class visibility.  */
+-  if (DECL_P (*node))
+-    *no_add_attrs = false;
++  /* Go ahead and attach the attribute to the node as well.  This is needed
++     so we can determine whether we have VISIBILITY_DEFAULT because the
++     visibility was not specified, or because it was explicitly overridden
++     from the containing scope.  */
+ 
+   return NULL_TREE;
+ }
+@@ -4901,6 +4918,13 @@
+       return true;
+     }
+ 
++  /* Set default visibility to whatever the user supplied with
++     visibility_specified depending on #pragma GCC visibility.  */
++  if (!DECL_VISIBILITY_SPECIFIED (decl))
++    {
++      DECL_VISIBILITY (decl) = default_visibility;
++      DECL_VISIBILITY_SPECIFIED (decl) = visibility_options.inpragma;
++    }
+   return false;
+ }
+ 

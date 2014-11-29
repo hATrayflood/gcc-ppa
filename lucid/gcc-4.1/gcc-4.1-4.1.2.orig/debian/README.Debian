@@ -1,0 +1,390 @@
+		The Debian GNU Compiler Collection setup
+		========================================
+
+Please see the README.Debian in /usr/share/doc/gcc, contained in the
+gcc package for a description of the setup of the different compiler
+versions.
+
+For general discussion about the Debian toolchain (GCC, glibc, binutils)
+please use the mailing list debian-toolchain@lists.debian.org; for GCC
+specific things, please use debian-gcc@lists.debian.org.  When in doubt
+use the debian-toolchain ML.
+
+
+Maintainers of these packages
+-----------------------------
+
+Matthias Klose <doko@debian.org>
+Ray Dassen <jdassen@debian.org>
+Jeff Bailey <jbailey@nisa.net>			(hurd-i386)
+Joel Baker <fenton@debian.org>			(netbsd-i386)
+Philip Blundell <pb@debian.org>			(arm-linux)
+Ben Collins <bcollins@debian.org>		(sparc-linux)
+Randolph Chung <tausq@debian.org>		(ia64-linux)
+Falk Hueffner <falk@debian.org>			(alpha-linux)
+Dan Jacobowitz <dan@debian.org>			(powerpc-linux)
+Thiemo Seufer <ths@networkno.de>		(mips*-linux)
+Matt Taggart <taggart@carmen.fc.hp.com>		(hppa-linux)
+Gerhard Tonn <GerhardTonn@swol.de>		(s390-linux)
+Roman Zippel <zippel@linux-m68k.org>		(m68k-linux)
+Ludovic Brenta <ludovic@ludovic-brenta.org>	(gnat)
+Arthur Loiret <arthur.loiret@gmail.com>		(gdc)
+
+===============================================================================
+
+Patches that Debian applied in this version:
+
+svn-updates:
+  SVN updates from the 4.1 branch upto 20081201.
+
+gcc-version:
+  Add package identification to the gcc version string
+
+gcc-textdomain:
+  Set gettext's domain and textdomain to the versioned package name.
+
+gcc-driver-extra-langs:
+  Add options and specs for languages that are not built from a source
+  (but built from separate sources).
+
+gcc-long-double:
+  Add --with{,out}-long-double-128 configure option.
+  Taken from http://gcc.gnu.org/bugzilla/show_bug.cgi?id=25864#c14
+
+libstdc++-long-double:
+  PR target/25864, libstdc++-v3 parts.
+  Taken from http://gcc.gnu.org/bugzilla/show_bug.cgi?id=25864#c13
+
+libstdc++-pic:
+  Build and install libstdc++_pic.a library.
+
+libstdc++-doclink:
+  adjust hrefs to point to the local documentation
+
+gcc-hash-style-both:
+  Link using --hash-style=both (alpha, amd64, ia64, i386, powerpc, ppc64, s390, sparc)
+
+gccbug:
+  Use sensible-editor instead of vi as fallback editor
+
+gccbug-posix:
+  Make gccbug POSIX compliant (patch by David Weinehall)
+  http://www.opengroup.org/onlinepubs/009695399/utilities/test.html
+
+boehm-gc-backport:
+  gcc/java / libjava backport / classpath-0.92
+
+boehm-gc-nocheck:
+  Disable running the boehm-gc testsuite. Hangs the buildd at least on hppa.
+
+boehm-gc-getnprocs:
+  boehm-gc/pthread_support.c (GC_get_nprocs): Use sysconf as fallback.
+
+fastjar-version:
+  Append GCC version to the fastjar version string.
+
+fastjar-doc:
+  fastjar.texi: Directly define the gcctabopt and gccoptlist macros.
+
+libstdc++-doxygen:
+  libstdc++ doxygen docs: Set SHORT_NAMES to YES
+
+pr20218:
+  Backport of PR middle-end/20218 to the 4.1 branch.
+
+pr20218-mips:
+  Backport from mainline for PR middle-end/20218, mips part.
+
+pr31868:
+  Backport from mainline for PR target/31868.
+
+gcc-directives-only:
+  Backport from trunk: -fdirectives-only (when preprocessing,
+  handle directives, but do not expand macros).
+
+arm-libffi:
+  Add closure support to libffi for arm
+
+libffi-backport:
+  libffi backport
+
+libffi-backport2:
+  Add missing bits for the libffi backport from the trunk
+  - parisc chunks
+  - missing testcases in testsuite/libffi.call
+
+libjava-backport-updates:
+  SVN updates from the gcc-4_1-branch-java-merge-20070117 branch upto 20070221.
+
+libjava-backport-updates2:
+  SVN updates from the gcc-4_1-rh-branch branch upto 20070428.
+
+libjava-backport-updates3:
+  SVN updates from the gcc-4_1-rh-branch branch upto 20070504.
+
+libjava-backport-updates4:
+  SVN updates from the gcc-4_1-rh-branch branch upto 20070718.
+
+pr32844:
+  backport PR classpath/32844 (java/util/EnumSet.java).
+
+pr32862:
+  Fix PR java/32862, bugs in EnumMap implementation.
+
+libjava-jar:
+  gjar: support @ arguments.
+
+libjava-visibility:
+  Reduce the number of symbols in libgcj.so by 20%; taken from the trunk.
+
+libjava-subdir:
+  - Set the libjava sublibdir to /usr/lib/gcj-4_1
+  - Set the default libgcj database dir to /var/lib/gcj-4.1
+
+libjava-jnipath:
+  - Add /usr/lib/jni to java.library.path.
+  - When running the i386 binaries on amd64, look in
+  - /usr/lib32/gcj-x.y and /usr/lib32/jni instead.
+
+libjava-stacktrace:
+  libgcj: Lookup source file name and line number in separated
+  debug files found in /usr/lib/debug
+
+libjava-soname:
+  Bump the libgcj soversion.
+
+libjava-disable-static:
+  Disable building the static libjava.
+
+libjava-rpath:
+  - Link ecjx and gij with -rpath $(dbexecdir)
+
+libjava-maxhostnamelen:
+  libjava: Avoid dependency on MAXHOSTNAMELEN
+
+libjava-class-igf:
+  * java/lang/Class.java (internalGetFields): Use LinkedHashSet.
+
+gcc-expandv:
+  * gcc.c (main): Call expandargv.
+
+alpha-no-ev4-directive:
+
+note-gnu-stack:
+  Add .note.GNU-stack sections for gcc's crt files, libffi and boehm-gc
+  Taken from FC.
+
+arm-gij:
+  Enable gij interpreter on arm
+
+hppa-cbranch:
+  Fix for PR target/26743 (hppa)
+  Backport from gcc trunk 2006-04-12 by tausq@debian.org
+
+hppa-cbranch2:
+  Fix for PR target/26743 (hppa)
+  Backport from gcc trunk 2006-04-12 by tausq@debian.org
+
+m68k-fjump:
+  gcc/config/m68k/m68k.md:
+  always use as fjcc pseudo op, we rely heavily on as 
+  to generate the right size for the jump instructions
+  fixes #359281
+
+m68k-gc:
+  boehm-gc:
+  the thread suspend handler has to save all registers
+  reenable MPROTECT_VDB, it should work, otherwise it's probably a kernel bug
+  change STACKBOTTOM to LINUX_STACKBOTTOM so it works with 2.6 kernel
+
+m68k-save_pic:
+  gcc/config/m68k/m68k.c:
+  correctly save the pic register, when not done by reload()
+  (fixes _Unwind_RaiseException and thus exception handling)
+  fixes 345574
+
+m68k-libffi2:
+  add closure support to libffi for m68k
+
+m68k-dwarf:
+  correct the dwarf frame information, but preserve compatibility
+
+m68k-split_shift:
+  use correct predicates for long long shifts and use more splits
+  fixes 381572
+
+m68k-prevent-qipush:
+  prevent combine from creating a byte push on the stack (invalid on m68k)
+
+m68k-jumptable:
+  Don't force byte offset when accessing the jumptable, gas can
+  generate the correct offset size instead.
+
+m68k-peephole:
+  Convert some text peepholes to rtl peepholes, so the correct
+  DWARF2 information can be generated for stack manipulations.
+  (Keep a few peepholes temporarily disabled.)
+
+m68k-return:
+  don't use single return if fp register have to be restored
+  fixes 386864
+
+m68k-sig-unwind:
+  add support for unwinding over signal frames
+
+m68k-align-code:
+  use "move.l %a4,%a4" to advance within code.
+
+m68k-align-stack:
+  try to keep the stack word aligned
+
+m68k-dwarf3:
+  emit correct dwarf info for cfa offset and register with -fomit-frame-pointer
+
+m68k-fpcompare:
+  bring fp compare early to its desired form to relieve reload,
+  allow any fp constant during and after reload (even special constants)
+  in case reload can't find a free register for them.
+
+m68k-secondary-addr-reload:
+  add secondary reloads to allow reload to get byte values into addr regs
+
+m68k-notice-move:
+  don't set cc_status for fp move without fp register
+
+m68k-symbolic-operand:
+  better recognize symbolic operands in addresses
+
+m68k-bitfield-offset:
+  only use constant offset for register bitfields
+  (combine expects shifts, but does a rotate)
+
+mips-libspec:
+  mips*-linux: Always imply -lpthread for -pthread
+
+pr25524:
+  Backport PR libstdc++/25524 from the trunk
+
+pr26864:
+  Backport fix for PR libmudflap/26864 from the trunk.
+
+pr26208:
+  PR other/26208
+
+pr26208-r111674:
+  PR other/26208, fix arm pasto
+
+libjava-sjlj:
+  Don't try to use _Unwind_Backtrace on SJLJ targets.
+  See bug #387875, #388505, GCC PR 29206.
+
+gcc-dwarf2-h:
+  gcc dwarf2.h header additions (r107384, r111620), taken from the trunk
+
+gcc-unwind-r111705:
+  gcc unwind r11705, taken from the trunk
+
+gcc-unwind-r120406:
+  gcc unwind r120406, taken from the trunk
+
+pr9861-nojava:
+  Non-java parts of PR java/9861 (java changes in gcj-ecj-generics.tar.bz2).
+
+classpath-config-guess:
+  Update config.guess/config.sub in the classpath directory.
+
+arm-pr28516:
+  Fix PR28516 on ARM
+
+arm-pr30486:
+  Fix 30486 on ARM
+
+pr22244:
+  Improve debug info for packed arrays with constant bounds (PR fortran/22244)
+
+libgcc-tramp-ppc32:
+  Fix libgcc.a(tramp.o) on ppc32
+
+pr33639:
+  Fix PR java/33639
+
+pr33765:
+  Fix PR java/33765, ignore ZIPEMPTYMAGIC files.
+
+pr28322:
+  Fix PR other/28322, GCC new warnings and compatibility.
+
+arm-unbreak-eabi-armv4t:
+  Fix armv4t build on ARM
+
+pr26885:
+  Proposed patch for PR driver/26885
+
+gcc-r109242:
+  Backport r109242 from the trunk
+
+gcc-r109581:
+  Backport r109581 from the trunk
+
+gcc-4.1-x86-blended:
+  Backport x86 "generic" patches from the trunk
+
+gcc-pfrs-2:
+  Fix a regression in the backport of PR 28946 from the trunk (H.J. Lu).
+
+cpu-default-generic:
+  set default 32bit ix86 architecture to i486
+
+pr20218:
+  Backport of PR middle-end/20218 to the 4.1 branch.
+
+libssp-gnu:
+  GNU/k*BSD support
+
+gcc-pascal-lang:
+  Add pascal options and specs for the gcc driver.
+
+gcc-d-lang:
+  Add D options and specs for the gcc driver.
+
+link-libs:
+
+reporting:
+  Add Debian URL for bug reporting instructions.
+
+gcc-ice-hack:
+  2004-01-23  Jakub Jelinek  <jakub@redhat.com>
+  
+  	* system.h (ICE_EXIT_CODE): Define.
+  	* gcc.c (execute): Don't free first string early, but at the end
+  	of the function.  Call retry_ice if compiler exited with
+  	ICE_EXIT_CODE.
+  	(retry_ice): New function.
+  	* diagnostic.c (diagnostic_count_diagnostic,
+  	diagnostic_action_after_output, error_recursion): Exit with
+  	ICE_EXIT_CODE instead of FATAL_EXIT_CODE.
+
+gcc-ice-apport:
+  Report an ICE to apport (if apport is available
+  and the environment variable GCC_NOAPPORT is not set)
+
+multiarch-include:
+  biarch-include.dpatch
+  
+  Adds biarch include directories
+  /usr/local/include/<arch>-linux-gnu
+  /usr/include/<arch>-linux-gnu
+  to the system include paths, depending on 32/64 bit mode.
+
+disable-biarch-check:
+  For biarch builds, disable the testsuite for the non-default architecture
+  for runtime libraries, which are not built by default (libjava).
+
+config-ml:
+  disable some biarch libraries for biarch builds
+
+i386-biarch:
+  biarch patches for i386/x86_64
+
+gcc-biarch-generic:
+  gcc/config/i386/biarch.h: Remove DRIVER_SELF_SPECS macro.

@@ -1,0 +1,50 @@
+#! /bin/sh -e
+
+# DP: Add --with{,out}-long-double-128 configure option (doc files).
+# DP: Taken from http://gcc.gnu.org/bugzilla/show_bug.cgi?id=25864#c14
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        rm -f ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2006-02-10  Jakub Jelinek  <jakub@redhat.com>
+
+	* doc/install.texi (Options specification): Document
+	--with-long-double-128.
+
+--- gcc/doc/install.texi.jj	2006-02-02 16:39:46.000000000 +0100
++++ gcc/doc/install.texi	2006-02-10 15:33:53.000000000 +0100
+@@ -1224,6 +1224,14 @@ error message.
+ All support for systems which have been obsoleted in one release of GCC
+ is removed entirely in the next major release, unless someone steps
+ forward to maintain the port.
++
++@item --with-long-double-128
++Specify if @code{long double} type should be 128-bit by default on selected
++GNU/Linux architectures.  If using @code{--without-long-double-128},
++@code{long double} will be by default 64-bit, the same as @code{double} type.
++When neither of these configure options are used, the default will be
++128-bit @code{long double} when built against GNU C Library 2.4 and later,
++64-bit @code{long double} otherwise.
+ @end table
+ 
+ @subheading Cross-Compiler-Specific Options

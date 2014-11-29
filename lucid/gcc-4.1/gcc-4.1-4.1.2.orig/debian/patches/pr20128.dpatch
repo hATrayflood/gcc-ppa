@@ -1,0 +1,346 @@
+#! /bin/sh -e
+
+# DP: Backport from mainline for PR middle-end/17982, PR middle-end/20218.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2006-12-07  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Backport from mainline:
+	2006-12-11  H.J. Lu  <hongjiu.lu@intel.com>
+	PR middle-end/17982
+	PR middle-end/20218
+	* cgraphunit.c (cgraph_optimize): Remove call to
+	process_pending_assemble_externals.
+
+	* config/elfos.h (ASM_OUTPUT_EXTERNAL): New.
+
+	* config/ia64/hpux.h (TARGET_ASM_FILE_END): Removed.
+
+	* config/ia64/ia64.c (ia64_asm_output_external): Rewritten.
+	(ia64_hpux_add_extern_decl): Removed.
+	(ia64_hpux_file_end): Likewise.
+	(extern_func_list): Likewise.
+	(extern_func_head): Likewise.
+
+	* output.h (assemble_external): Update comments.
+	(default_elf_asm_output_external): New.
+	(maybe_assemble_visibility): New.
+
+	* toplev.c (compile_file): Update comment.
+
+	* varasm.c (assemble_external): Always put it on
+	pending_assemble_externals.
+	(maybe_assemble_visibility): Make it extern and return int.
+	(default_elf_asm_output_external): New.
+
+--- gcc/cgraphunit.c.global	2007-01-09 05:24:35.000000000 -0800
++++ gcc/cgraphunit.c	2007-01-09 05:30:01.000000000 -0800
+@@ -1330,8 +1330,6 @@ cgraph_optimize (void)
+       return;
+     }
+ 
+-  process_pending_assemble_externals ();
+-  
+   /* Frontend may output common variables after the unit has been finalized.
+      It is safe to deal with them here as they are always zero initialized.  */
+   cgraph_varpool_analyze_pending_decls ();
+--- gcc/config/elfos.h.global	2006-11-18 06:33:14.000000000 -0800
++++ gcc/config/elfos.h	2007-01-09 05:29:06.000000000 -0800
+@@ -494,3 +494,13 @@ Boston, MA 02110-1301, USA.  */
+         fprintf ((FILE), "\"\n");					\
+     }									\
+   while (0)
++
++/* A C statement (sans semicolon) to output to the stdio stream STREAM
++   any text necessary for declaring the name of an external symbol
++   named NAME whch is referenced in this compilation but not defined.
++   It is needed to properly support non-default visibility.  */
++
++#ifndef ASM_OUTPUT_EXTERNAL
++#define ASM_OUTPUT_EXTERNAL(FILE, DECL, NAME) \
++  default_elf_asm_output_external (FILE, DECL, NAME)
++#endif
+--- gcc/config/ia64/hpux.h.global	2006-11-18 06:32:57.000000000 -0800
++++ gcc/config/ia64/hpux.h	2007-01-09 05:29:06.000000000 -0800
+@@ -144,10 +144,6 @@ do {								\
+    definitions, so do not use them in gthr-posix.h.  */
+ #define GTHREAD_USE_WEAK 0
+ 
+-/* Put out the needed function declarations at the end.  */
+-
+-#define TARGET_ASM_FILE_END ia64_hpux_file_end
+-
+ #undef CTORS_SECTION_ASM_OP
+ #define CTORS_SECTION_ASM_OP  "\t.section\t.init_array,\t\"aw\",\"init_array\""
+ 
+--- gcc/config/ia64/ia64.c.global	2006-12-29 18:34:00.000000000 -0800
++++ gcc/config/ia64/ia64.c	2007-01-09 05:29:06.000000000 -0800
+@@ -242,10 +242,6 @@ static void ia64_rwreloc_select_rtx_sect
+ 					     unsigned HOST_WIDE_INT)
+      ATTRIBUTE_UNUSED;
+ static unsigned int ia64_section_type_flags (tree, const char *, int);
+-static void ia64_hpux_add_extern_decl (tree decl)
+-     ATTRIBUTE_UNUSED;
+-static void ia64_hpux_file_end (void)
+-     ATTRIBUTE_UNUSED;
+ static void ia64_init_libfuncs (void)
+      ATTRIBUTE_UNUSED;
+ static void ia64_hpux_init_libfuncs (void)
+@@ -4983,49 +4979,6 @@ ia64_secondary_reload_class (enum reg_cl
+ }
+ 
+ 
+-/* Emit text to declare externally defined variables and functions, because
+-   the Intel assembler does not support undefined externals.  */
+-
+-void
+-ia64_asm_output_external (FILE *file, tree decl, const char *name)
+-{
+-  int save_referenced;
+-
+-  /* GNU as does not need anything here, but the HP linker does need
+-     something for external functions.  */
+-
+-  if (TARGET_GNU_AS
+-      && (!TARGET_HPUX_LD
+-	  || TREE_CODE (decl) != FUNCTION_DECL
+-	  || strstr (name, "__builtin_") == name))
+-    return;
+-
+-  /* ??? The Intel assembler creates a reference that needs to be satisfied by
+-     the linker when we do this, so we need to be careful not to do this for
+-     builtin functions which have no library equivalent.  Unfortunately, we
+-     can't tell here whether or not a function will actually be called by
+-     expand_expr, so we pull in library functions even if we may not need
+-     them later.  */
+-  if (! strcmp (name, "__builtin_next_arg")
+-      || ! strcmp (name, "alloca")
+-      || ! strcmp (name, "__builtin_constant_p")
+-      || ! strcmp (name, "__builtin_args_info"))
+-    return;
+-
+-  if (TARGET_HPUX_LD)
+-    ia64_hpux_add_extern_decl (decl);
+-  else
+-    {
+-      /* assemble_name will set TREE_SYMBOL_REFERENCED, so we must save and
+-         restore it.  */
+-      save_referenced = TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (decl));
+-      if (TREE_CODE (decl) == FUNCTION_DECL)
+-        ASM_OUTPUT_TYPE_DIRECTIVE (file, name, "function");
+-      (*targetm.asm_out.globalize_label) (file, name);
+-      TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (decl)) = save_referenced;
+-    }
+-}
+-
+ /* Parse the -mfixed-range= option string.  */
+ 
+ static void
+@@ -8514,55 +8467,33 @@ ia64_hpux_function_arg_padding (enum mac
+    return DEFAULT_FUNCTION_ARG_PADDING (mode, type);
+ }
+ 
+-/* Linked list of all external functions that are to be emitted by GCC.
+-   We output the name if and only if TREE_SYMBOL_REFERENCED is set in
+-   order to avoid putting out names that are never really used.  */
+-
+-struct extern_func_list GTY(())
+-{
+-  struct extern_func_list *next;
+-  tree decl;
+-};
+-
+-static GTY(()) struct extern_func_list *extern_func_head;
+-
+-static void
+-ia64_hpux_add_extern_decl (tree decl)
+-{
+-  struct extern_func_list *p = ggc_alloc (sizeof (struct extern_func_list));
+-
+-  p->decl = decl;
+-  p->next = extern_func_head;
+-  extern_func_head = p;
+-}
+-
+-/* Print out the list of used global functions.  */
++/* Emit text to declare externally defined variables and functions, because
++   the Intel assembler does not support undefined externals.  */
+ 
+-static void
+-ia64_hpux_file_end (void)
++void
++ia64_asm_output_external (FILE *file, tree decl, const char *name)
+ {
+-  struct extern_func_list *p;
+-
+-  for (p = extern_func_head; p; p = p->next)
+-    {
+-      tree decl = p->decl;
+-      tree id = DECL_ASSEMBLER_NAME (decl);
+-
+-      gcc_assert (id);
+-
+-      if (!TREE_ASM_WRITTEN (decl) && TREE_SYMBOL_REFERENCED (id))
+-        {
+-	  const char *name = XSTR (XEXP (DECL_RTL (decl), 0), 0);
+-
+-	  TREE_ASM_WRITTEN (decl) = 1;
+-	  (*targetm.asm_out.globalize_label) (asm_out_file, name);
+-	  fputs (TYPE_ASM_OP, asm_out_file);
+-	  assemble_name (asm_out_file, name);
+-	  fprintf (asm_out_file, "," TYPE_OPERAND_FMT "\n", "function");
+-        }
++  /* We output the name if and only if TREE_SYMBOL_REFERENCED is
++     set in order to avoid putting out names that are never really
++     used. */
++  if (TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (decl)))
++    {
++      /* maybe_assemble_visibility will return 1 if the assembler
++	 visibility directive is outputed.  */
++      int need_visibility = ((*targetm.binds_local_p) (decl)
++			     && maybe_assemble_visibility (decl));
++
++      /* GNU as does not need anything here, but the HP linker does
++	 need something for external functions.  */
++      if ((TARGET_HPUX_LD || !TARGET_GNU_AS)
++	  && TREE_CODE (decl) == FUNCTION_DECL)
++	{
++	  ASM_OUTPUT_TYPE_DIRECTIVE (file, name, "function");
++	  (*targetm.asm_out.globalize_label) (file, name);
++	}
++      else if (need_visibility && !TARGET_GNU_AS)
++	(*targetm.asm_out.globalize_label) (file, name);
+     }
+-
+-  extern_func_head = 0;
+ }
+ 
+ /* Set SImode div/mod functions, init_integral_libfuncs only initializes
+--- gcc/output.h.global	2006-11-18 06:33:17.000000000 -0800
++++ gcc/output.h	2007-01-09 05:29:06.000000000 -0800
+@@ -274,9 +274,9 @@ extern void assemble_end_function (tree,
+    initial value (that will be done by the caller).  */
+ extern void assemble_variable (tree, int, int, int);
+ 
+-/* Output something to declare an external symbol to the assembler.
+-   (Most assemblers don't need this, so we normally output nothing.)
+-   Do nothing if DECL is not external.  */
++/* Queue for outputing something to declare an external symbol to the
++   assembler.  (Most assemblers don't need this, so we normally output
++   nothing.)  Do nothing if DECL is not external.  */
+ extern void assemble_external (tree);
+ 
+ /* Assemble code to leave SIZE bytes of zeros.  */
+@@ -586,6 +586,10 @@ extern void default_file_start (void);
+ extern void file_end_indicate_exec_stack (void);
+ extern bool default_valid_pointer_mode (enum machine_mode);
+ 
++extern void default_elf_asm_output_external (FILE *file, tree,
++					     const char *);
++extern int maybe_assemble_visibility (tree);
++
+ extern int default_address_cost (rtx);
+ 
+ /* dbxout helper functions */
+--- gcc/toplev.c.global	2006-11-18 06:33:17.000000000 -0800
++++ gcc/toplev.c	2007-01-09 05:29:06.000000000 -0800
+@@ -1033,9 +1033,7 @@ compile_file (void)
+ 
+   dw2_output_indirect_constants ();
+ 
+-  /* Flush any pending external directives.  cgraph did this for
+-     assemble_external calls from the front end, but the RTL
+-     expander can also generate them.  */
++  /* Flush any pending external directives.  */
+   process_pending_assemble_externals ();
+ 
+   /* Attach a special .ident directive to the end of the file to identify
+--- gcc/varasm.c.global	2006-11-18 06:33:17.000000000 -0800
++++ gcc/varasm.c	2007-01-09 05:30:40.000000000 -0800
+@@ -126,7 +126,6 @@ static unsigned HOST_WIDE_INT array_size
+ static unsigned min_align (unsigned, unsigned);
+ static void output_constructor (tree, unsigned HOST_WIDE_INT, unsigned int);
+ static void globalize_decl (tree);
+-static void maybe_assemble_visibility (tree);
+ static int in_named_entry_eq (const void *, const void *);
+ static hashval_t in_named_entry_hash (const void *);
+ static void initialize_cold_section_name (void);
+@@ -1935,11 +1934,10 @@ assemble_external (tree decl ATTRIBUTE_U
+   if (!DECL_P (decl) || !DECL_EXTERNAL (decl) || !TREE_PUBLIC (decl))
+     return;
+ 
+-  if (flag_unit_at_a_time)
+-    pending_assemble_externals = tree_cons (0, decl,
+-					    pending_assemble_externals);
+-  else
+-    assemble_external_real (decl);
++  /* We want to output external symbols at very last to check if they
++     are references or not.  */
++  pending_assemble_externals = tree_cons (0, decl,
++					  pending_assemble_externals);
+ #endif
+ }
+ 
+@@ -4970,13 +4968,18 @@ default_assemble_visibility (tree decl, 
+ 
+ /* A helper function to call assemble_visibility when needed for a decl.  */
+ 
+-static void
++int
+ maybe_assemble_visibility (tree decl)
+ {
+   enum symbol_visibility vis = DECL_VISIBILITY (decl);
+ 
+   if (vis != VISIBILITY_DEFAULT)
+-    targetm.asm_out.visibility (decl, vis);
++    {
++      targetm.asm_out.visibility (decl, vis);
++      return 1;
++    }
++  else
++    return 0;
+ }
+ 
+ /* Returns 1 if the target configuration supports defining public symbols
+@@ -5752,4 +5755,19 @@ file_end_indicate_exec_stack (void)
+   named_section_flags (".note.GNU-stack", flags);
+ }
+ 
++/* Emit text to declare externally defined symbols. It is needed to
++   properly support non-default visibility.  */
++void
++default_elf_asm_output_external (FILE *file ATTRIBUTE_UNUSED,
++				 tree decl,
++				 const char *name ATTRIBUTE_UNUSED)
++{
++  /* We output the name if and only if TREE_SYMBOL_REFERENCED is
++     set in order to avoid putting out names that are never really
++     used. */
++  if (TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (decl))
++      && targetm.binds_local_p (decl))
++    maybe_assemble_visibility (decl);
++}
++
+ #include "gt-varasm.h"

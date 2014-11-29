@@ -1,0 +1,543 @@
+Source: gcc-4.1
+Section: devel
+Priority: optional
+Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+Standards-Version: 3.8.2
+Build-Depends: dpkg-dev (>= 1.13.9), gcc-multilib [amd64 i386 powerpc ppc64 s390 sparc kfreebsd-amd64], libc6.1-dev (>= 2.5) [alpha ia64] | libc0.3-dev (>= 2.5) [hurd-i386] | libc0.1-dev (>= 2.5) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.5), libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64], lib64gcc1 [i386 powerpc sparc s390], lib64z1-dev [i386 powerpc sparc s390], lib32z1-dev [amd64 ppc64 kfreebsd-amd64], autogen [!ia64], libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.59, autoconf2.13, automake1.9, libtool, gawk, dejagnu [!hurd-i386], bzip2, binutils (>= 2.17cvs20070426) | binutils-multiarch (>= 2.17cvs20070426), binutils-hppa64 (>= 2.17cvs20070426) [hppa], debhelper (>= 5.0), gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, texinfo (>= 4.3), zlib1g-dev, libmpfr-dev (>= 2.3.0~rc1.dfsg.1) [!avr], locales [!hurd-i386 !m68k], procps [!hurd-i386], sharutils, realpath (>= 1.9.12), chrpath, lsb-release, make (>= 3.81)
+Build-Depends-Indep: doxygen (>= 1.4.2), graphviz (>= 2.2), gsfonts-x11, 
+Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-lower
+XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+
+Package: gcc-4.1-base
+Architecture: any
+Section: libs
+Priority: optional
+Description: The GNU Compiler Collection (base package)
+ This package contains files common to all languages and libraries
+ contained in the GNU Compiler Collection (GCC).
+
+Package: libgcc1
+Architecture: any
+Section: libs
+Priority: required
+Depends: gcc-4.1-base (= ${gcc:Version}), ${shlibs:Depends}
+Description: GCC support library
+ Shared version of the support library, a library of internal subroutines
+ that GCC uses to overcome shortcomings of particular machines, or
+ special needs for some languages.
+
+Package: libgcc2
+Architecture: m68k
+Section: libs
+Priority: required
+Depends: gcc-4.1-base (= ${gcc:Version}), ${shlibs:Depends}
+Description: GCC support library
+ Shared version of the support library, a library of internal subroutines
+ that GCC uses to overcome shortcomings of particular machines, or
+ special needs for some languages.
+
+Package: libgcc4
+Architecture: hppa
+Section: libs
+Priority: required
+Depends: gcc-4.1-base (= ${gcc:Version}), ${shlibs:Depends}
+Description: GCC support library
+ Shared version of the support library, a library of internal subroutines
+ that GCC uses to overcome shortcomings of particular machines, or
+ special needs for some languages.
+
+Package: lib64gcc1
+Architecture: i386 powerpc sparc s390
+Section: libs
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${dep:libcbiarch}
+Conflicts: libgcc1 (<= 1:3.3-0pre9)
+Description: GCC support library (64bit)
+ Shared version of the support library, a library of internal subroutines
+ that GCC uses to overcome shortcomings of particular machines, or
+ special needs for some languages.
+
+Package: lib32gcc1
+Architecture: amd64 ppc64 kfreebsd-amd64
+Section: libs
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${dep:libcbiarch}
+Replaces: ia32-libs-openoffice.org (<< 1ubuntu3)
+Description: GCC support library (32 bit Version)
+ Shared version of the support library, a library of internal subroutines
+ that GCC uses to overcome shortcomings of particular machines, or
+ special needs for some languages.
+
+Package: gcc-4.1
+Architecture: any
+Section: devel
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), cpp-4.1 (= ${gcc:Version}), binutils (>= ${binutils:Version}), ${dep:libgcc}, ${dep:libssp}, ${dep:libunwinddev}, ${shlibs:Depends}
+Recommends: ${dep:libcdev}
+Suggests: ${gcc:multilib}, gcc-4.1-doc (>= ${gcc:SoftVersion}), gcc-4.1-locales (>= ${gcc:SoftVersion}), libmudflap0-dev (>= ${gcc:Version})
+Provides: c-compiler, libssp0-dev
+Conflicts: libssp0-dev (<< 4.1.1-6)
+Replaces: gcj-4.1 (<< 4.1.1), libssp0-dev (<< 4.1.1-6)
+Description: The GNU C compiler
+ This is the GNU C compiler, a fairly portable optimizing compiler for C.
+
+Package: gcc-4.1-multilib
+Architecture: amd64 i386 kfreebsd-amd64 powerpc ppc64 s390 sparc
+Section: devel
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), gcc-4.1 (= ${gcc:Version}), ${dep:libcbiarchdev}, ${dep:libgccbiarch}, ${dep:libsspbiarch}, ${dep:libgompbiarch}, ${shlibs:Depends}
+Recommends: ${dep:libmudflapbiarch}
+Replaces: gcc-4.1 (<< 4.1.2-4)
+Description: The GNU C compiler (multilib files)
+ This is the GNU C compiler, a fairly portable optimizing compiler for C.
+ .
+ On architectures with multilib support, the package contains files
+ and dependencies for the non-default multilib architecture(s).
+
+Package: gcc-4.1-hppa64
+Architecture: hppa
+Section: devel
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${shlibs:Depends}
+Conflicts: gcc-3.3-hppa64 (<= 1:3.3.4-5), gcc-3.4-hppa64 (<= 3.4.1-3)
+Description: The GNU C compiler (cross compiler for hppa64)
+ This is the GNU C compiler, a fairly portable optimizing compiler for C.
+
+Package: cpp-4.1
+Architecture: any
+Section: interpreters
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${shlibs:Depends}
+Suggests: gcc-4.1-locales (>= ${gcc:SoftVersion})
+Conflicts: gcj-4.1 (<< 4.1.1), gnat-4.1 (<= 4.1.1-22)
+Replaces: gcj-4.1 (<< 4.1.1)
+Description: The GNU C preprocessor
+ A macro processor that is used automatically by the GNU C compiler
+ to transform programs before actual compilation.
+ .
+ This package has been separated from gcc for the benefit of those who
+ require the preprocessor but not the compiler.
+
+Package: cpp-4.1-doc
+Architecture: all
+Section: doc
+Priority: optional
+Depends: gcc-4.1-base (>= ${gcc:SoftVersion})
+Description: Documentation for the GNU C preprocessor (cpp)
+ Documentation for the GNU C preprocessor in info format.
+
+Package: gcc-4.1-locales
+Architecture: all
+Section: devel
+Priority: optional
+Depends: gcc-4.1-base (>= ${gcc:SoftVersion}), cpp-4.1 (>= ${gcc:SoftVersion})
+Recommends: gcc-4.1 (>= ${gcc:SoftVersion})
+Description: The GNU C compiler (native language support files)
+ Native language support for GCC. Lets GCC speak your language,
+ if translations are available.
+ .
+ Please do NOT submit bug reports in other languages than "C".
+ Always reset your language settings to use the "C" locales.
+
+Package: g++-4.1
+Architecture: any
+Section: devel
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), gcc-4.1 (= ${gcc:Version}), libstdc++6-4.1-dev (= ${gcc:Version}), ${shlibs:Depends}
+Provides: c++-compiler, c++abi2-dev
+Suggests: ${gxx:multilib}, gcc-4.1-doc (>= ${gcc:SoftVersion})
+Description: The GNU C++ compiler
+ This is the GNU C++ compiler, a fairly portable optimizing compiler for C++.
+
+Package: g++-4.1-multilib
+Architecture: amd64 i386 kfreebsd-amd64 powerpc ppc64 s390 sparc
+Section: devel
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), g++-4.1 (= ${gcc:Version}), gcc-4.1-multilib (= ${gcc:Version}), ${dep:libcxxbiarch}, ${shlibs:Depends}
+Suggests: ${dep:libcxxbiarchdbg}
+Replaces: libstdc++6-4.1-dev (<< 4.1.2-4)
+Description: The GNU C++ compiler (multilib files)
+ This is the GNU C++ compiler, a fairly portable optimizing compiler for C++.
+ .
+ On architectures with multilib support, the package contains files
+ and dependencies for the non-default multilib architecture(s).
+
+Package: libmudflap0
+Architecture: any
+Section: libs
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${shlibs:Depends}
+Description: GCC mudflap shared support libraries
+ The libmudflap libraries are used by GCC for instrumenting pointer and array
+ dereferencing operations.
+
+Package: lib32mudflap0
+Architecture: amd64 ppc64 kfreebsd-amd64
+Section: libs
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+Replaces: libmudflap0 (<< 4.1)
+Description: GCC mudflap shared support libraries (32bit)
+ The libmudflap libraries are used by GCC for instrumenting pointer and array
+ dereferencing operations.
+
+Package: lib64mudflap0
+Architecture: i386 powerpc sparc s390
+Section: libs
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+Replaces: libmudflap0 (<< 4.1)
+Description: GCC mudflap shared support libraries (64bit)
+ The libmudflap libraries are used by GCC for instrumenting pointer and array
+ dereferencing operations.
+
+Package: libmudflap0-dev
+Architecture: any
+Section: libdevel
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), libmudflap0 (>= ${gcc:Version}), ${dep:libcdev}, ${shlibs:Depends}
+Suggests: ${sug:libmudflapdev}
+Conflicts: libmudflap0-4.2-dev
+Description: GCC mudflap support libraries (development files)
+ The libmudflap libraries are used by GCC for instrumenting pointer and array
+ dereferencing operations.
+ .
+ This package contains the headers and the static libraries.
+
+Package: protoize
+Architecture: any
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), gcc-4.1 (>= ${gcc:Version}), ${shlibs:Depends}
+Description: Create/remove ANSI prototypes from C code
+ "protoize" can be used to add prototypes to a program, thus converting
+ the program to ANSI C in one respect.  The companion program "unprotoize"
+ does the reverse: it removes argument types from any prototypes
+ that are found.
+
+Package: gobjc++-4.1
+Architecture: any
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), gobjc-4.1 (= ${gcc:Version}), g++-4.1 (= ${gcc:Version}), ${shlibs:Depends}, libobjc1 (>= ${gcc:EpochVersion})
+Suggests: ${gobjcxx:multilib}, gcc-4.1-doc (>= ${gcc:SoftVersion})
+Provides: objc++-compiler
+Description: The GNU Objective-C++ compiler
+ This is the GNU Objective-C++ compiler, which compiles
+ Objective-C++ on platforms supported by the gcc compiler. It uses the
+ gcc backend to generate optimized code.
+
+Package: gobjc++-4.1-multilib
+Architecture: amd64 i386 kfreebsd-amd64 powerpc ppc64 s390 sparc
+Section: devel
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), gobjc++-4.1 (= ${gcc:Version}), g++-4.1-multilib (= ${gcc:Version}), gobjc-4.1-multilib (= ${gcc:Version}), ${shlibs:Depends}
+Description: The GNU Objective-C++ compiler (multilib files)
+ This is the GNU Objective-C++ compiler, which compiles Objective-C++ on
+ platforms supported by the gcc compiler.
+ .
+ On architectures with multilib support, the package contains files
+ and dependencies for the non-default multilib architecture(s).
+
+Package: gobjc-4.1
+Architecture: any
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), gcc-4.1 (= ${gcc:Version}), ${dep:libcdev}, ${shlibs:Depends}, libobjc1 (>= ${gcc:EpochVersion})
+Suggests: ${gobjc:multilib}, gcc-4.1-doc (>= ${gcc:SoftVersion})
+Provides: objc-compiler
+Description: The GNU Objective-C compiler
+ This is the GNU Objective-C compiler, which compiles
+ Objective-C on platforms supported by the gcc compiler. It uses the
+ gcc backend to generate optimized code.
+
+Package: gobjc-4.1-multilib
+Architecture: amd64 i386 kfreebsd-amd64 powerpc ppc64 s390 sparc
+Section: devel
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), gobjc-4.1 (= ${gcc:Version}), gcc-4.1-multilib (= ${gcc:Version}), ${dep:libobjcbiarch}, ${shlibs:Depends}
+Replaces: gobjc-4.1 (<< 4.1.2-4)
+Description: The GNU Objective-C compiler (multilib files)
+ This is the GNU Objective-C compiler, which compiles Objective-C on platforms
+ supported by the gcc compiler.
+ .
+ On architectures with multilib support, the package contains files
+ and dependencies for the non-default multilib architecture(s).
+
+Package: libobjc1
+Section: libs
+Architecture: any
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${shlibs:Depends}
+Description: Runtime library for GNU Objective-C applications
+ Library needed for GNU ObjC applications linked against the shared library.
+
+Package: lib64objc1
+Section: libs
+Architecture: i386 powerpc sparc s390
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+Description: Runtime library for GNU Objective-C applications (64bit)
+ Library needed for GNU ObjC applications linked against the shared library.
+
+Package: lib32objc1
+Section: libs
+Architecture: amd64 ppc64 kfreebsd-amd64
+Priority: optional
+Depends: gcc-4.1-base (>= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+Description: Runtime library for GNU Objective-C applications (32bit)
+ Library needed for GNU ObjC applications linked against the shared library.
+
+Package: gfortran-4.1
+Architecture: any
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), gcc-4.1 (= ${gcc:Version}), libgfortran1 (>= ${gcc:Version}), ${dep:libcdev}, ${shlibs:Depends}
+Provides: fortran95-compiler
+Suggests: ${gfortran:multilib}, gfortran-4.1-doc
+Replaces: libgfortran1-dev
+Description: The GNU Fortran 95 compiler
+ This is the GNU Fortran compiler, which compiles
+ Fortran 95 on platforms supported by the gcc compiler. It uses the
+ gcc backend to generate optimized code.
+
+Package: gfortran-4.1-multilib
+Architecture: amd64 i386 kfreebsd-amd64 powerpc ppc64 s390 sparc
+Section: devel
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), gfortran-4.1 (= ${gcc:Version}), gcc-4.1-multilib (= ${gcc:Version}), ${dep:libfortranbiarch}, ${shlibs:Depends}
+Replaces: gfortran-4.1 (<< 4.1.2-4)
+Description: The GNU Fortran 95 compiler (multilib files)
+ This is the GNU Fortran compiler, which compiles Fortran 95 on platforms
+ supported by the gcc compiler.
+ .
+ On architectures with multilib support, the package contains files
+ and dependencies for the non-default multilib architecture(s).
+
+Package: gfortran-4.1-doc
+Architecture: all
+Section: doc
+Priority: optional
+Depends: gcc-4.1-base (>= ${gcc:SoftVersion})
+Description: Documentation for the GNU Fortran compiler (gfortran)
+ Documentation for the GNU Fortran 95 compiler in info format.
+
+Package: libgfortran1
+Section: libs
+Architecture: any
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${shlibs:Depends}
+Description: Runtime library for GNU Fortran applications
+ Library needed for GNU Fortran applications linked against the
+ shared library.
+
+Package: lib64gfortran1
+Section: libs
+Architecture: i386 powerpc sparc s390
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+Description: Runtime library for GNU Fortran applications (64bit)
+ Library needed for GNU Fortran applications linked against the
+ shared library.
+
+Package: lib32gfortran1
+Section: libs
+Architecture: amd64 ppc64 kfreebsd-amd64
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+Description: Runtime library for GNU Fortran applications (32bit)
+ Library needed for GNU Fortran applications linked against the
+ shared library.
+
+Package: libffi4
+Section: libs
+Architecture: any
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${shlibs:Depends}
+Description: Foreign Function Interface library runtime
+ A foreign function interface is the popular name for the interface that
+ allows code written in one language to call code written in another
+ language.
+
+Package: lib32ffi4
+Section: libs
+Architecture: amd64 ppc64 kfreebsd-amd64
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+Replaces: libffi4 (<< 4.1)
+Description: Foreign Function Interface library runtime (32bit)
+ A foreign function interface is the popular name for the interface that
+ allows code written in one language to call code written in another
+ language.
+
+Package: lib64ffi4
+Section: libs
+Architecture: i386 powerpc sparc s390
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
+Replaces: libffi4 (<< 4.1)
+Description: Foreign Function Interface library runtime (64bit)
+ A foreign function interface is the popular name for the interface that
+ allows code written in one language to call code written in another
+ language.
+
+Package: libffi4-dev
+Section: libdevel
+Architecture: any
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), libffi4 (>= ${gcc:Version})
+Suggests: ${sug:libffidev}
+Provides: libffi-dev
+Conflicts: libffi1-dev, libffi2-dev, libffi3-dev, libffi-dev, libffi
+Description: Foreign Function Interface library (development files)
+ This package contains the headers and static library files necessary for
+ building programs which use libffi.
+ .
+ A foreign function interface is the popular name for the interface that
+ allows code written in one language to call code written in another
+ language.
+
+Package: libstdc++6
+Architecture: any
+Section: libs
+Priority: required
+Depends: gcc-4.1-base (= ${gcc:Version}), ${shlibs:Depends}
+Conflicts: scim (<< 1.4.2-1)
+Description: The GNU Standard C++ Library v3
+ This package contains an additional runtime library for C++ programs
+ built with the GNU compiler.
+ .
+ libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+ was included up to g++-2.95. The first version of libstdc++-v3 appeared
+ in g++-3.0.
+
+Package: lib32stdc++6
+Architecture: amd64 ppc64 kfreebsd-amd64
+Section: libs
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), lib32gcc1
+Description: The GNU Standard C++ Library v3 (32 bit Version)
+ This package contains an additional runtime library for C++ programs
+ built with the GNU compiler.
+
+Package: lib64stdc++6
+Architecture: i386 powerpc sparc s390
+Section: libs
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), ${shlibs:Depends}, lib64gcc1
+Description: The GNU Standard C++ Library v3 (64bit)
+ This package contains an additional runtime library for C++ programs
+ built with the GNU compiler.
+ .
+ libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+ was included up to g++-2.95. The first version of libstdc++-v3 appeared
+ in g++-3.0.
+
+Package: libstdc++6-4.1-dev
+Architecture: any
+Section: libdevel
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), g++-4.1 (= ${gcc:Version}), libstdc++6 (>= ${gcc:Version}), ${dep:libcdev}
+Conflicts: libg++27-dev, libg++272-dev (<< 2.7.2.8-1), libstdc++2.8-dev, libg++2.8-dev, libstdc++2.9-dev, libstdc++2.9-glibc2.1-dev, libstdc++2.10-dev (<< 1:2.95.3-2), libstdc++3.0-dev
+Suggests: libstdc++6-4.1-doc
+Provides: libstdc++-dev
+Description: The GNU Standard C++ Library v3 (development files)
+ This package contains the headers and static library files necessary for
+ building C++ programs which use libstdc++.
+ .
+ libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+ was included up to g++-2.95. The first version of libstdc++-v3 appeared
+ in g++-3.0.
+
+Package: libstdc++6-4.1-pic
+Architecture: any
+Section: libdevel
+Priority: extra
+Depends: gcc-4.1-base (= ${gcc:Version}), libstdc++6 (>= ${gcc:Version}), libstdc++6-4.1-dev (= ${gcc:Version})
+Description: The GNU Standard C++ Library v3 (shared library subset kit)
+ This is used to develop subsets of the libstdc++ shared libraries for
+ use on custom installation floppies and in embedded systems.
+ .
+ Unless you are making one of those, you will not need this package.
+
+Package: libstdc++6-4.1-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: gcc-4.1-base (= ${gcc:Version}), libstdc++6 (>= ${gcc:Version}), ${shlibs:Depends}
+Recommends: libstdc++6-4.1-dev (= ${gcc:Version})
+Conflicts: libstdc++5-dbg, libstdc++5-3.3-dbg, libstdc++6-dbg, libstdc++6-4.0-dbg
+Description: The GNU Standard C++ Library v3 (debugging files)
+ This package contains the shared library of libstdc++ compiled with
+ debugging symbols.
+
+Package: lib32stdc++6-4.1-dbg
+Architecture: amd64 ppc64 kfreebsd-amd64
+Section: debug
+Priority: extra
+Depends: gcc-4.1-base (= ${gcc:Version}), lib32stdc++6 (>= ${gcc:Version}), libstdc++6-4.1-dev (= ${gcc:Version})
+Conflicts: lib32stdc++6-dbg, lib32stdc++6-4.0-dbg
+Description: The GNU Standard C++ Library v3 (debugging files)
+ This package contains the shared library of libstdc++ compiled with
+ debugging symbols.
+
+Package: lib64stdc++6-4.1-dbg
+Architecture: i386 powerpc sparc s390
+Section: debug
+Priority: extra
+Depends: gcc-4.1-base (= ${gcc:Version}), lib64stdc++6 (>= ${gcc:Version}), libstdc++6-4.1-dev (= ${gcc:Version})
+Conflicts: lib64stdc++6-dbg, lib64stdc++6-4.0-dbg
+Description: The GNU Standard C++ Library v3 (debugging files)
+ This package contains the shared library of libstdc++ compiled with
+ debugging symbols.
+
+Package: libstdc++6-4.1-doc
+Architecture: all
+Section: doc
+Priority: optional
+Depends: gcc-4.1-base (>= ${gcc:SoftVersion})
+Conflicts: libstdc++5-doc, libstdc++5-3.3-doc, libstdc++6-doc, libstdc++6-4.0-doc
+Description: The GNU Standard C++ Library v3 (documentation files)
+ This package contains documentation files for the GNU stdc++ library.
+ .
+ One set is the distribution documentation, the other set is the
+ source documentation including a namespace list, class hierarchy,
+ alphabetical list, compound list, file list, namespace members,
+ compound members and file members.
+
+Package: gcc-4.1-soft-float
+Architecture: arm armeb
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), gcc-4.1 (= ${gcc:Version}), ${shlibs:Depends}
+Replaces: gcc-soft-float-ss
+Description: The soft-floating-point gcc libraries (arm)
+ These are versions of basic static libraries such as libgcc.a compiled
+ with the -msoft-float option, for CPUs without a floating-point unit.
+
+Package: fixincludes
+Architecture: any
+Priority: optional
+Depends: gcc-4.1-base (= ${gcc:Version}), gcc-4.1 (= ${gcc:Version}), ${shlibs:Depends}
+Description: Fix non-ANSI header files
+ FixIncludes was created to fix non-ANSI system header files. Many
+ system manufacturers supply proprietary headers that are not ANSI compliant.
+ The GNU compilers cannot compile non-ANSI headers. Consequently, the
+ FixIncludes shell script was written to fix the header files.
+ .
+ Not all packages with header files are installed on the system, when the
+ package is built, so we make fixincludes available at build time of other
+ packages, such that checking tools like lintian can make use of it.
+
+Package: gcc-4.1-doc
+Architecture: all
+Section: doc
+Priority: optional
+Depends: gcc-4.1-base (>= ${gcc:SoftVersion})
+Conflicts: gcc-docs (<< 2.95.2)
+Replaces: gcc (<=2.7.2.3-4.3), gcc-docs (<< 2.95.2)
+Description: Documentation for the GNU compilers (gcc, gobjc, g++)
+ Documentation for the GNU compilers in info format.
+
+Package: gcc-4.1-source
+Architecture: all
+Priority: optional
+Depends: gcc-4.1-base (>= ${gcc:SoftVersion}), make (>= 3.81)
+Description: Source of the GNU Compiler Collection
+ This package contains the sources and patches which are needed to
+ build the GNU Compiler Collection (GCC).

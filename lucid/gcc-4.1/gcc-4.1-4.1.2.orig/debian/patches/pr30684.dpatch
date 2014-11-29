@@ -1,0 +1,155 @@
+#! /bin/sh -e
+
+# DP: Fix PR ada/30684, taken from the gcc-4_1-branch.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+
+2007-02-20  Eric Botcazou  <ebotcazou@adacore.com>
+
+	PR ada/30684
+	Backport from 4.2 branch:
+	2006-11-17  Eric Botcazou  <ebotcazou@adacore.com>
+
+	* ada-tree.h (DECL_READONLY_ONCE_ELAB): New macro.
+	* decl.c (elaborate_expression_1): Test the DECL_READONLY_ONCE_ELAB
+	flag in addition to TREE_READONLY to assert the constantness of
+	variables for elaboration purposes.
+	* trans.c (add_decl_expr): Do not dynamically elaborate padded objects
+	if the initializer takes into account the padding.
+	Set DECL_READONLY_ONCE_ELAB flag on variables originally TREE_READONLY
+	but whose elaboration cannot be performed statically.
+
+Index: gcc/ada/trans.c
+===================================================================
+--- gcc/ada/trans.c	(Revision 122180)
++++ gcc/ada/trans.c	(Revision 122181)
+@@ -4315,7 +4315,8 @@
+ void
+ add_decl_expr (tree gnu_decl, Entity_Id gnat_entity)
+ {
+-  tree gnu_stmt;
++  tree type = TREE_TYPE (gnu_decl);
++  tree gnu_stmt, gnu_init, gnu_lhs;
+ 
+   /* If this is a variable that Gigi is to ignore, we may have been given
+      an ERROR_MARK.  So test for it.  We also might have been given a
+@@ -4323,7 +4324,7 @@
+      ignore a TYPE_DECL for an UNCONSTRAINED_ARRAY_TYPE.  */
+   if (!DECL_P (gnu_decl)
+       || (TREE_CODE (gnu_decl) == TYPE_DECL
+-	  && TREE_CODE (TREE_TYPE (gnu_decl)) == UNCONSTRAINED_ARRAY_TYPE))
++	  && TREE_CODE (type) == UNCONSTRAINED_ARRAY_TYPE))
+     return;
+ 
+   /* If we are global, we don't want to actually output the DECL_EXPR for
+@@ -4345,41 +4346,32 @@
+ 	}
+     }
+ 
+-  /* If this is a DECL_EXPR for a variable with DECL_INITIAL set,
+-     there are two cases we need to handle here.  */
+-  if (TREE_CODE (gnu_decl) == VAR_DECL && DECL_INITIAL (gnu_decl))
++  /* If this is a variable and an initializer is attached to it, it must be
++     valid for the context.  Similar to init_const in create_var_decl_1.  */ 
++  if (TREE_CODE (gnu_decl) == VAR_DECL
++      && (gnu_init = DECL_INITIAL (gnu_decl)) != NULL_TREE
++      && (TYPE_MAIN_VARIANT (type) != TYPE_MAIN_VARIANT (TREE_TYPE (gnu_init))
++	  || (TREE_STATIC (gnu_decl)
++	      && !initializer_constant_valid_p (gnu_init,
++						TREE_TYPE (gnu_init)))))
+     {
+-      tree gnu_init = DECL_INITIAL (gnu_decl);
+-      tree gnu_lhs = NULL_TREE;
+-
+-      /* If this is a DECL_EXPR for a variable with DECL_INITIAL set
+-	 and decl has a padded type, convert it to the unpadded type so the
+-	 assignment is done properly.  */
+-      if (TREE_CODE (TREE_TYPE (gnu_decl)) == RECORD_TYPE
+-	  && TYPE_IS_PADDING_P (TREE_TYPE (gnu_decl)))
+-	gnu_lhs
+-	  = convert (TREE_TYPE (TYPE_FIELDS (TREE_TYPE (gnu_decl))), gnu_decl);
+-
+-      /* Otherwise, if this is going into memory and the initializer isn't
+-	 valid for the assembler and loader.  Gimplification could do this,
+-	 but would be run too late if -fno-unit-at-a-time.  */
+-      else if (TREE_STATIC (gnu_decl)
+-	       && !initializer_constant_valid_p (gnu_init,
+-						 TREE_TYPE (gnu_decl)))
++      /* If GNU_DECL has a padded type, convert it to the unpadded
++	 type so the assignment is done properly.  */
++      if (TREE_CODE (type) == RECORD_TYPE && TYPE_IS_PADDING_P (type))
++	gnu_lhs = convert (TREE_TYPE (TYPE_FIELDS (type)), gnu_decl);
++      else
+ 	gnu_lhs = gnu_decl;
+ 
+-      if (gnu_lhs)
+-	{
+-	  tree gnu_assign_stmt
+-	    = build_binary_op (MODIFY_EXPR, NULL_TREE,
+-			       gnu_lhs, DECL_INITIAL (gnu_decl));
++      gnu_stmt = build_binary_op (MODIFY_EXPR, NULL_TREE, gnu_lhs, gnu_init);
+ 
+-	  DECL_INITIAL (gnu_decl) = 0;
++      DECL_INITIAL (gnu_decl) = NULL_TREE;
++      if (TREE_READONLY (gnu_decl))
++	{
+ 	  TREE_READONLY (gnu_decl) = 0;
+-	  annotate_with_locus (gnu_assign_stmt,
+-			       DECL_SOURCE_LOCATION (gnu_decl));
+-	  add_stmt (gnu_assign_stmt);
++	  DECL_READONLY_ONCE_ELAB (gnu_decl) = 1;
+ 	}
++
++      add_stmt_with_node (gnu_stmt, gnat_entity);
+     }
+ }
+ 
+Index: gcc/ada/ada-tree.h
+===================================================================
+--- gcc/ada/ada-tree.h	(Revision 122180)
++++ gcc/ada/ada-tree.h	(Revision 122181)
+@@ -235,6 +235,10 @@
+    discriminant.  */
+ #define DECL_STUBBED_P(NODE) DECL_LANG_FLAG_0 (FUNCTION_DECL_CHECK (NODE))
+ 
++/* Nonzero in a VAR_DECL if it is guaranteed to be constant after having
++   been elaborated and TREE_READONLY is not set on it.  */
++#define DECL_READONLY_ONCE_ELAB(NODE) DECL_LANG_FLAG_0 (VAR_DECL_CHECK (NODE))
++
+ /* Nonzero if this decl is always used by reference; i.e., an INDIRECT_REF
+    is needed to access the object.  */
+ #define DECL_BY_REF_P(NODE) DECL_LANG_FLAG_1 (NODE)
+Index: gcc/ada/decl.c
+===================================================================
+--- gcc/ada/decl.c	(Revision 122180)
++++ gcc/ada/decl.c	(Revision 122181)
+@@ -4732,7 +4732,8 @@
+ 
+   expr_variable = (!CONSTANT_CLASS_P (gnu_expr)
+ 		   && !(TREE_CODE (gnu_inner_expr) == VAR_DECL
+-			&& TREE_READONLY (gnu_inner_expr))
++			&& (TREE_READONLY (gnu_inner_expr)
++			    || DECL_READONLY_ONCE_ELAB (gnu_inner_expr)))
+ 		   && !CONTAINS_PLACEHOLDER_P (gnu_expr));
+ 
+   /* If this is a static expression or contains a discriminant, we don't

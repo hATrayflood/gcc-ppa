@@ -1,0 +1,78 @@
+#! /bin/sh -e
+
+# gdc-nolibphobos-driver.dpatch by Arthur Loiret <arthur.loiret@gmail.com>
+# DP: Modify gdc driver to have no libphobos by default.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+
+diff -ruN gcc/d/d-lang.cc gcc/d/d-lang.cc
+--- gcc/d/d-lang.cc	2007-09-27 17:33:09.000000000 +0200
++++ gcc/d/d-lang.cc	2007-09-27 17:39:49.000000000 +0200
+@@ -159,7 +159,7 @@
+     global.params.fileImppath = new Array();
+ 
+     // GCC options
+-    flag_exceptions = 1;
++    flag_exceptions = 0;
+ 
+     // extra D-specific options
+     gen.splitDynArrayVarArgs = true;
+diff -ruN gcc/d/dmain.d gcc/d/dmain.d
+--- gcc/d/dmain.d	1970-01-01 01:00:00.000000000 +0100
++++ gcc/d/dmain.d	2007-09-27 20:57:55.000000000 +0200
+@@ -0,0 +1,21 @@
++extern (C) size_t strlen(const char* s);
++extern (C) void* malloc(size_t s);
++
++int main(char[][] args); // U _Dmain
++
++extern (C) int main(int argc, char** argv) {
++	char[][] args;
++	char[] *am;
++	int i;
++
++	am = cast(char[] *) malloc(argc * (char[]).sizeof);
++
++	for(i = 0; i < argc; i++) {
++		am[i] = argv[i][0 .. strlen(argv[i])];
++	}
++
++	args = am[0 .. argc];
++
++	return main(args);
++}
++
+diff -ruN gcc/d/d-spec.c gcc/d/d-spec.c
+--- gcc/d/d-spec.c	2007-09-27 17:34:51.000000000 +0200
++++ gcc/d/d-spec.c	2007-09-28 09:54:34.000000000 +0200
+@@ -82,7 +82,7 @@
+ 
+     /* If nonzero, use the standard D runtime library when linking with
+        stanard libraries. */
+-    int phobos = 1;
++    int phobos = 0;
+ 
+     /* The number of arguments being added to what's in argv, other than
+        libraries.  We use this to track the number of times we've inserted

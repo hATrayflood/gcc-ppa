@@ -1,0 +1,56 @@
+#! /bin/sh -e
+
+# DP: gcc/config/i386/biarch.h: Remove DRIVER_SELF_SPECS macro.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+
+--- gcc/config/i386/biarch.h~	2006-07-19 11:59:43.897556736 +0200
++++ gcc/config/i386/biarch.h	2006-07-20 11:36:48.735816608 +0200
+@@ -23,4 +23,3 @@
+ 
+ #define TARGET_64BIT_DEFAULT 0
+ #define TARGET_BI_ARCH 1
+-#define DRIVER_SELF_SPECS "%{m64:%{!mtune:-mtune=x86-64}}"
+--- gcc/config.gcc.m64	2006-07-20 08:59:01.000000000 -0700
++++ gcc/config.gcc	2006-07-20 12:25:20.000000000 -0700
+@@ -1054,6 +1054,20 @@ i[34567]86-*-linux* | i[34567]86-*-kfree
+ 	#tmake_file="${tmake_file} i386/t-crtstuff i386/t-crtfm"
+ 	tmake_file="${tmake_file} i386/t-crtfm i386/t-linux64"
+ 	need_64bit_hwint=yes
++	# FIXME: -m64 for i[34567]86-*-* should be allowed just
++	# like -m32 for x86_64-*-*.
++	case X"${with_cpu}" in
++	Xgeneric|Xnocona|Xx86-64|Xk8|Xopteron|Xathlon64|Xathlon-fx)
++		;;
++	X)
++		with_cpu=generic
++		;;
++	*)
++		echo "Unsupported CPU used in --with-cpu=$with_cpu, supported values:" 1>&2
++		echo "generic nocona x86-64 k8 opteron athlon64 athlon-fx" 1>&2
++		exit 1
++		;;
++	esac
+ 	;;
+ x86_64-*-linux* | x86_64-*-kfreebsd*-gnu | x86_64-*-knetbsd*-gnu)
+ 	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h linux.h \

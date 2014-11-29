@@ -1,0 +1,194 @@
+#! /bin/sh -e
+
+# DP: Revert PR c++/29138
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 -R < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2006-10-03  Mark Mitchell  <mark@codesourcery.com>
+
+	PR c++/29138
+	* g++.dg/inherit/access8.C: New test.
+	* g++.dg/template/dtor4.C: Tweak error messages.
+
+2006-10-03  Mark Mitchell  <mark@codesourcery.com>
+
+	PR c++/29138
+	* decl2.c (grokfield): Don't handle access declarations here.
+	* parser.c (cp_parser_using_declaration): Handle access
+	declarations too.
+	(cp_parser_block_declaration): Adjust calls to
+	cp_parser_using_declaration.
+	(cp_parser_member_declaration): Likewise.  Use
+	cp_parser_using_declaration to look for access_declarations.
+
+Index: gcc/cp/decl2.c
+===================================================================
+--- gcc/cp/decl2.c	(revision 117409)
++++ gcc/cp/decl2.c	(revision 117410)
+@@ -809,16 +809,6 @@
+   const char *asmspec = 0;
+   int flags = LOOKUP_ONLYCONVERTING;
+ 
+-  if (!declspecs->any_specifiers_p
+-      && declarator->kind == cdk_id
+-      && declarator->u.id.qualifying_scope
+-      && TYPE_P (declarator->u.id.qualifying_scope)
+-      && IS_AGGR_TYPE (declarator->u.id.qualifying_scope)
+-      && TREE_CODE (declarator->u.id.unqualified_name) == IDENTIFIER_NODE)
+-    /* Access declaration */
+-    return do_class_using_decl (declarator->u.id.qualifying_scope,
+-				declarator->u.id.unqualified_name);
+-
+   if (init
+       && TREE_CODE (init) == TREE_LIST
+       && TREE_VALUE (init) == error_mark_node
+Index: gcc/cp/parser.c
+===================================================================
+--- gcc/cp/parser.c	(revision 117409)
++++ gcc/cp/parser.c	(revision 117410)
+@@ -1531,8 +1531,8 @@
+   (cp_parser *);
+ static void cp_parser_namespace_alias_definition
+   (cp_parser *);
+-static void cp_parser_using_declaration
+-  (cp_parser *);
++static bool cp_parser_using_declaration
++  (cp_parser *, bool);
+ static void cp_parser_using_directive
+   (cp_parser *);
+ static void cp_parser_asm_definition
+@@ -7123,7 +7123,8 @@
+ 	cp_parser_using_directive (parser);
+       /* Otherwise, it's a using-declaration.  */
+       else
+-	cp_parser_using_declaration (parser);
++	cp_parser_using_declaration (parser,
++				     /*access_declaration_p=*/false);
+     }
+   /* If the next keyword is `__label__' we have a label declaration.  */
+   else if (token1->keyword == RID_LABEL)
+@@ -10490,14 +10491,21 @@
+   return cp_parser_namespace_name (parser);
+ }
+ 
+-/* Parse a using-declaration.
++/* Parse a using-declaration, or, if ACCESS_DECLARATION_P is true, an
++   access declaration.
+ 
+    using-declaration:
+      using typename [opt] :: [opt] nested-name-specifier unqualified-id ;
+-     using :: unqualified-id ;  */
++     using :: unqualified-id ;  
+ 
+-static void
+-cp_parser_using_declaration (cp_parser* parser)
++   access-declaration:
++     qualified-id ;  
++
++   */
++
++static bool
++cp_parser_using_declaration (cp_parser* parser, 
++			     bool access_declaration_p)
+ {
+   cp_token *token;
+   bool typename_p = false;
+@@ -10506,18 +10514,23 @@
+   tree identifier;
+   tree qscope;
+ 
+-  /* Look for the `using' keyword.  */
+-  cp_parser_require_keyword (parser, RID_USING, "`using'");
+-
+-  /* Peek at the next token.  */
+-  token = cp_lexer_peek_token (parser->lexer);
+-  /* See if it's `typename'.  */
+-  if (token->keyword == RID_TYPENAME)
++  if (access_declaration_p)
++    cp_parser_parse_tentatively (parser);
++  else
+     {
+-      /* Remember that we've seen it.  */
+-      typename_p = true;
+-      /* Consume the `typename' token.  */
+-      cp_lexer_consume_token (parser->lexer);
++      /* Look for the `using' keyword.  */
++      cp_parser_require_keyword (parser, RID_USING, "`using'");
++      
++      /* Peek at the next token.  */
++      token = cp_lexer_peek_token (parser->lexer);
++      /* See if it's `typename'.  */
++      if (token->keyword == RID_TYPENAME)
++	{
++	  /* Remember that we've seen it.  */
++	  typename_p = true;
++	  /* Consume the `typename' token.  */
++	  cp_lexer_consume_token (parser->lexer);
++	}
+     }
+ 
+   /* Look for the optional global scope qualification.  */
+@@ -10550,6 +10563,14 @@
+ 					 /*check_dependency_p=*/true,
+ 					 /*declarator_p=*/true);
+ 
++  if (access_declaration_p)
++    {
++      if (cp_lexer_next_token_is_not (parser->lexer, CPP_SEMICOLON))
++	cp_parser_simulate_error (parser);
++      if (!cp_parser_parse_definitely (parser))
++	return false;
++    }
++
+   /* The function we call to handle a using-declaration is different
+      depending on what scope we are in.  */
+   if (qscope == error_mark_node || identifier == error_mark_node)
+@@ -10583,6 +10604,8 @@
+ 
+   /* Look for the final `;'.  */
+   cp_parser_require (parser, CPP_SEMICOLON, "`;'");
++  
++  return true;
+ }
+ 
+ /* Parse a using-directive.
+@@ -13450,8 +13473,8 @@
+   if (cp_lexer_next_token_is_keyword (parser->lexer, RID_USING))
+     {
+       /* Parse the using-declaration.  */
+-      cp_parser_using_declaration (parser);
+-
++      cp_parser_using_declaration (parser,
++				   /*access_declaration_p=*/false);
+       return;
+     }
+ 
+@@ -13471,6 +13494,9 @@
+       return;
+     }
+ 
++  if (cp_parser_using_declaration (parser, /*access_declaration=*/true))
++    return;
++
+   /* Parse the decl-specifier-seq.  */
+   cp_parser_decl_specifier_seq (parser,
+ 				CP_PARSER_FLAGS_OPTIONAL,

@@ -1,0 +1,373 @@
+# -*- makefile -*-
+# rules to patch the unpacked files in the source directory
+# ---------------------------------------------------------------------------
+# various rules to unpack addons and (un)apply patches.
+# 	- patch / apply-patches
+#	- unpatch / reverse-patches
+
+.NOTPARALLEL:
+
+patchdir	?= debian/patches
+
+# which patches should be applied?
+debian_patches = \
+	svn-updates
+
+ifneq ($(GFDL_INVARIANT_FREE),yes)
+  debian_patches += \
+	svn-doc-updates
+  debian_patches += \
+	rename-info-files \
+	gcc-long-double-doc \
+
+#	gcc-vis-r116505-doc \
+#	gcc-vis-r116507-doc \
+
+endif
+
+debian_patches += \
+	gcc-version \
+	gcc-textdomain \
+	gcc-driver-extra-langs \
+	gcc-long-double \
+	libstdc++-long-double \
+	libstdc++-pic \
+	libstdc++-doclink \
+	gcc-hash-style-both \
+	gccbug \
+	gccbug-posix \
+	boehm-gc-backport \
+	boehm-gc-nocheck \
+	boehm-gc-getnprocs \
+	fastjar-version \
+	fastjar-doc \
+	libstdc++-doxygen \
+	pr20218 \
+	pr20218-mips \
+	pr31868 \
+	gcc-directives-only \
+	arm-libffi \
+	libffi-backport \
+	libffi-backport2 \
+	libjava-backport-updates \
+	libjava-backport-updates2 \
+	libjava-backport-updates3 \
+	libjava-backport-updates4 \
+	pr32844 \
+	pr32862 \
+	libjava-jar \
+	libjava-visibility \
+	libjava-subdir \
+	libjava-jnipath \
+	libjava-stacktrace \
+	libjava-soname \
+	libjava-disable-static \
+	libjava-rpath \
+	libjava-maxhostnamelen \
+	libjava-class-igf \
+	gcc-expandv \
+	alpha-no-ev4-directive \
+	note-gnu-stack \
+	arm-gij \
+	hppa-cbranch \
+	hppa-cbranch2 \
+	m68k-fjump \
+	m68k-gc \
+	m68k-save_pic \
+	m68k-libffi2 \
+	m68k-dwarf \
+	m68k-split_shift \
+	m68k-prevent-qipush \
+	m68k-jumptable \
+	m68k-peephole \
+	m68k-return \
+	m68k-sig-unwind \
+	m68k-align-code \
+	m68k-align-stack \
+	m68k-dwarf3 \
+	m68k-fpcompare \
+	m68k-secondary-addr-reload \
+	m68k-notice-move \
+	m68k-symbolic-operand \
+	m68k-bitfield-offset \
+	mips-libspec \
+	pr25524 \
+	pr26864 \
+	pr26208 \
+	pr26208-r111674 \
+	libjava-sjlj \
+	gcc-dwarf2-h \
+	gcc-unwind-r111705 \
+	gcc-unwind-r120406 \
+	pr9861-nojava \
+	classpath-config-guess \
+	arm-pr28516 \
+	arm-pr30486 \
+	pr22244 \
+	libgcc-tramp-ppc32 \
+	pr33639 \
+	pr33765 \
+	pr28322 \
+
+#	gcc-vis-r115693 \
+#	gcc-vis-r116504 \
+#	gcc-vis-r116505 \
+#	gcc-vis-r116506 \
+#	gcc-vis-r116507 \
+#	gcc-vis-r117139 \
+
+ifeq ($(distribution),Debian)
+  debian_patches += arm-unbreak-eabi-armv4t
+endif
+
+# gdc fixed in gdc-pr26885.dpatch.
+#ifneq ($(with_d),yes)
+  debian_patches += pr26885
+#endif
+
+debian_patches += gcc-r109242 gcc-r109581 gcc-4.1-x86-blended gcc-pfrs-2
+ifneq ($(DEB_TARGET_ARCH),lpia)
+  debian_patches += cpu-default-generic
+endif
+
+ifneq ($(GFDL_INVARIANT_FREE),yes)
+  debian_patches += pr25524-doc gcc-4.1-x86-blended-doc \
+	libjava-backport-doc-updates2
+# gdc fixed in gdc-pr26885.dpatch.
+#  ifneq ($(with_d),yes)
+    debian_patches += pr26885-doc
+#  endif
+endif
+
+ifneq (,$(filter $(DEB_TARGET_ARCH), amd64 i386 powerpc ppc64 sparc s390))
+  debian_patches += pr20218
+endif
+
+ifeq ($(with_libffi),yes)
+  debian_patches += \
+	libffi-configure
+endif
+
+ifeq ($(with_ssp)-$(with_ssp_default),yes-yes)
+  debian_patches += gcc-ssp-default
+endif
+
+ifeq ($(with_ssp),yes)
+  debian_patches += libssp-gnu
+endif
+
+ifeq ($(with_multiarch_lib),yes)
+  debian_patches += multiarch-lib
+endif
+
+ifeq ($(with_java),yes)
+  debian_patches += mips-libjava-interp
+
+  ifeq ($(with_native_ecj),yes)
+    debian_patches += native-ecj
+  endif
+endif
+
+ifeq ($(with_proto),yes)
+  debian_patches += deb-protoize
+endif
+
+ifeq ($(with_ada),yes)
+  debian_patches += ada-gcc-name ada-default-project-path #ada-names
+  debian_patches += ada-symbolic-tracebacks ada-driver-check
+  debian_patches += ada-pr15802
+  ifeq ($(with_libgnat),yes)
+    debian_patches += ada-gnatvsn ada-link-lib ada-libgnatvsn ada-libgnatprj
+    debian_patches += ada-acats
+  endif
+  ifeq ($(DEB_TARGET_ARCH)-$(distribution),ia64-Debian)
+    debian_patches += ignore-comp-fail
+  endif
+endif
+
+ifeq ($(with_pascal),yes)
+  debian_patches += gpc-4.1 gpc-gcc-4.x gpc-names
+else
+  debian_patches += gcc-pascal-lang
+endif
+
+ifeq ($(with_d),yes)
+# debian_patches += svn-gdc-updates
+  debian_patches += gdc-4.1
+  debian_patches += gdc-pr26885
+  debian_patches += gdc-driver-zlib
+  debian_patches += gdc-driver-defaultlib
+  ifeq ($(with_libphobos),yes)
+    debian_patches += gdc-libphobos-build
+  else
+    debian_patches += gdc-driver-nophobos
+  endif
+  debian_patches += gdc-fix-build
+  debian_patches += gdc-libphobos-std-format
+  debian_patches += gdc-arm-unwind_ptr
+else
+  debian_patches += gcc-d-lang
+endif
+
+ifeq ($(DEB_TARGET_ARCH_OS),hurd)
+  debian_patches += hurd-changes hurd-fast-math hurd-profiling
+endif
+
+ifeq ($(DEB_TARGET_ARCH),alpha)
+  debian_patches += alpha-ieee mudflap-nocheck
+  ifneq ($(GFDL_INVARIANT_FREE),yes)
+    debian_patches += alpha-ieee-doc
+  endif
+endif
+
+ifeq ($(DEB_TARGET_ARCH),arm)
+  debian_patches += arm-pragma-pack
+endif
+
+ifeq ($(DEB_TARGET_ARCH),m68k)
+  debian_patches += m68k-bitfield m68k-autoinc
+  debian_patches += m68k-dwarf2 m68k-peephole-note m68k-java
+  debian_patches += m68k-prevent-swap m68k-reg-inc m68k-noautoinc-setjmp
+endif
+
+ifeq ($(DEB_TARGET_ARCH),sparc)
+  debian_patches += sparc-niagara
+  debian_patches += sparc-g7
+  debian_patches += sparc-niagara2
+  ifneq ($(GFDL_INVARIANT_FREE),yes)
+    debian_patches += sparc-niagara-doc
+    debian_patches += sparc-niagara2-doc
+  endif
+endif
+
+ifneq (,$(filter $(DEB_TARGET_ARCH), ia64))
+  debian_patches += pr27880 no-getipinfo
+endif
+
+ifeq ($(DEB_TARGET_ARCH_OS),kfreebsd)
+  debian_patches += kbsd-gnu
+  debian_patches += kbsd-gnu-ada
+  debian_patches += kbsd-gnu-java
+endif
+ifeq ($(DEB_TARGET_ARCH_OS),knetbsd)
+  debian_patches += # kbsd-gnu
+endif
+ifeq ($(DEB_TARGET_ARCH_OS),netbsd)
+  debian_patches += # netbsd-all-gcc netbsd-archs-gcc
+endif
+ifeq ($(DEB_TARGET_ARCH_OS),hurd)
+  debian_patches += libjava-hurdfix
+endif
+
+ifdef DEB_CROSS
+  debian_patches += cross-include cross-fixes
+endif
+
+debian_patches += link-libs
+
+# all patches below this line are applied for gcc-snapshot builds as well
+
+ifeq ($(PKGSOURCE),gcc-snapshot)
+  debian_patches =
+endif
+
+debian_patches += reporting gcc-ice-hack gcc-ice-apport
+
+ifneq ($(DEB_TARGET_ARCH),sh4)
+  debian_patches += multiarch-include
+endif
+
+ifeq ($(biarch),yes)
+  ifeq (,$(findstring libjava, $(biarch_multidir_names)))
+    debian_patches += disable-biarch-check
+  endif
+  debian_patches += config-ml
+
+  ifeq ($(DEB_TARGET_ARCH),powerpc)
+    debian_patches += powerpc-biarch
+  endif
+  ifeq ($(DEB_TARGET_ARCH),s390)
+    debian_patches += s390-biarch
+  endif
+  ifeq ($(DEB_TARGET_ARCH),sparc)
+      debian_patches += sparc-biarch
+  endif
+  ifeq ($(DEB_TARGET_ARCH),i386)
+    debian_patches += i386-biarch
+    debian_patches += gcc-biarch-generic
+  endif
+  ifneq ($(with_64bit_check),yes)
+    debian_patches += disable-configure-run-check
+  endif
+endif
+
+ifeq ($(biarch32),yes)
+  ifeq (,$(findstring libjava, $(biarch_multidir_names)))
+    debian_patches += disable-biarch-check
+  endif
+  debian_patches += config-ml gcc-multilib64dir
+
+  ifeq ($(DEB_TARGET_ARCH),ppc64)
+    debian_patches += ppc64-ada
+  endif
+  ifneq ($(with_32bit_check),yes)
+    debian_patches += disable-configure-run-check
+  endif
+endif
+
+
+patch: $(patch_stamp)
+$(patch_stamp): $(unpack_stamp) pre-patch \
+    $(foreach p,$(debian_patches),$(patch_stamp)-$(p))
+	echo -e "\nPatches that $(distribution) applied in this version:" > pxxx
+	for i in $(debian_patches); do \
+	  echo -e "\n$$i:" >> pxxx; \
+	  sed -n 's/^# *DP: */  /p' $(patchdir)/$$i.dpatch >> pxxx; \
+	done
+ifeq ($(with_libphobos),yes)
+	[ ! -d $(srcdir)/libphobos ] || rm -rf $(srcdir)/libphobos
+	mkdir $(srcdir)/libphobos && \
+	  cd $(srcdir)/libphobos && \
+	    ../symlink-tree ../gcc/d/phobos$(libphobos_version) 2>&1 && \
+	cd $(srcdir)
+	chmod a+x $(srcdir)/gcc/d/phobos$(libphobos_version)/config/x3
+endif
+	mv -f pxxx $@
+
+pre-patch:
+	@if [ -x /usr/bin/automake-1.4 ]; then \
+	  : ; \
+	else \
+	  mkdir -p $(PWD)/bin; \
+	  ln -sf /usr/bin/automake $(PWD)/bin/automake-1.4; \
+	fi
+
+unpatch:
+	for stamp in none `ls -1t $(patch_stamp)-*`; do \
+	  case "$$stamp" in none|patched-stamp|patched-\*) continue; esac; \
+	  patch=`echo $$stamp | sed -e 's,$(patch_stamp)-,,'`; \
+	  echo "trying to revert patch $$patch ..."; \
+	  if [ -x $(patchdir)/$$patch.dpatch ]; then true; else \
+	    chmod +x $(patchdir)/$$patch.dpatch; fi; \
+	  if $(patchdir)/$$patch.dpatch -unpatch -d $(srcdir); then \
+	    echo "reverted $$patch patch."; \
+	    rm -f $$stamp; \
+	  else \
+	    echo "error in reverting $$patch patch."; \
+	    exit 1; \
+	  fi; \
+	done
+	rm -f patched-stamp
+
+# debian/rules.conf isn't yet sourced
+SOURCE_VERSION := $(call vafilt,$(CHANGELOG_VARS),Version)
+
+$(patch_stamp)-%: $(patchdir)/%.dpatch
+	@if [ -x $< ]; then true; else chmod +x $<; fi
+	@if [ -f $@ ]; then \
+	  echo "$* patches already applied."; exit 1; \
+	fi
+	DEB_VERSION=$$(echo $(SOURCE_VERSION) | sed 's/ds[0-9]*//'); \
+	export DEB_VERSION; set -x; \
+	$< -patch -d $(srcdir)
+	@echo "$* patches applied." > $@

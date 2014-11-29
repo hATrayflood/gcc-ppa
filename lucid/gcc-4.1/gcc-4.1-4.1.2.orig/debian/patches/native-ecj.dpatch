@@ -1,0 +1,124 @@
+#! /bin/sh -e
+
+# DP: Build ecj as a native binary
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- libjava/Makefile.am.old	2007-05-06 15:33:47.000000000 +0200
++++ libjava/Makefile.am	2007-05-07 13:05:56.000000000 +0200
+@@ -669,7 +669,7 @@
+ ## Hopefully the user has compiled it into his system .db.
+ ## However, even if not it will run reasonably quickly.
+ 
+-ECJX_BASE_FLAGS = -findirect-dispatch \
++ECJX_BASE_FLAGS = \
+ 	--main=org.eclipse.jdt.internal.compiler.batch.GCCMain
+ 
+ if NATIVE
+@@ -678,7 +678,7 @@
+ 
+ if ENABLE_SHARED
+ ## Use ecj.jar at runtime.
+-ecjx_LDFLAGS = $(ECJX_BASE_FLAGS) -Djava.class.path=$(ECJ_JAR)
++ecjx_LDFLAGS = $(ECJX_BASE_FLAGS) $(ECJ_BUILD_JAR)
+ else !ENABLE_SHARED
+ ## Use ecj.jar at compile time.
+ ecjx_LDFLAGS = $(ECJX_BASE_FLAGS) $(ECJ_BUILD_JAR)
+--- libjava/Makefile.in.old	2007-05-06 15:33:47.000000000 +0200
++++ libjava/Makefile.in	2007-05-07 13:07:27.000000000 +0200
+@@ -566,7 +566,7 @@
+ ECHO_C = @ECHO_C@
+ ECHO_N = @ECHO_N@
+ ECHO_T = @ECHO_T@
+-ECJ_BUILD_JAR = @ECJ_BUILD_JAR@
++ECJ_BUILD_JAR = $(top_srcdir)/../ecj-standalone.jar
+ ECJ_JAR = @ECJ_JAR@
+ EGREP = @EGREP@
+ ENABLE_SHARED_FALSE = @ENABLE_SHARED_FALSE@
+@@ -7779,13 +7779,13 @@
+ gij_LDADD = -L$(here)/.libs libgij.la
+ gij_DEPENDENCIES = libgij.la
+ ecjx_SOURCES = 
+-ECJX_BASE_FLAGS = -findirect-dispatch \
++ECJX_BASE_FLAGS = \
+ 	--main=org.eclipse.jdt.internal.compiler.batch.GCCMain
+ 
+ @NATIVE_FALSE@ecjx_LINK = $(GCJ_FOR_ECJX_LINK)
+ @NATIVE_TRUE@ecjx_LINK = $(GCJLINK)
+ @ENABLE_SHARED_FALSE@@NATIVE_TRUE@ecjx_LDFLAGS = $(ECJX_BASE_FLAGS) $(ECJ_BUILD_JAR)
+-@ENABLE_SHARED_TRUE@@NATIVE_TRUE@ecjx_LDFLAGS = $(ECJX_BASE_FLAGS) -Djava.class.path=$(ECJ_JAR)
++@ENABLE_SHARED_TRUE@@NATIVE_TRUE@ecjx_LDFLAGS = $(ECJX_BASE_FLAGS) $(ECJ_BUILD_JAR)
+ @NATIVE_FALSE@ecjx_LDFLAGS = $(ECJX_BASE_FLAGS) $(ECJ_BUILD_JAR)
+ @NATIVE_FALSE@ecjx_LDADD = 
+ @NATIVE_TRUE@ecjx_LDADD = -L$(here)/.libs libgcj.la -rpath $(dbexecdir)
+--- libjava/testsuite/Makefile.am~	2007-05-06 10:44:26.000000000 +0200
++++ libjava/testsuite/Makefile.am	2007-05-09 09:36:45.000000000 +0200
+@@ -61,11 +61,11 @@
+ 	  if test -n "$$testdep"; then \
+ 	    $(GCJ) -C -g -w --encoding=UTF-8 -bootclasspath \
+ 	      $(top_builddir)/libgcj-$(gcc_short_version).jar::$$testtmpdir \
+-	      -d $$testtmpdir $(srcdir)/$$testdep || exit; \
++	      -d $$testtmpdir $(srcdir)/$$testdep || echo "ERROR building $$testdep"; \
+ 	  fi; \
+ 	  $(GCJ) -C -g -w --encoding=UTF-8 -bootclasspath \
+ 	    $(top_builddir)/libgcj-$(gcc_short_version).jar:$$testtmpdir \
+-	    -d $$testtmpdir $(srcdir)/$$test || exit; \
++	    -d $$testtmpdir $(srcdir)/$$test || echo "ERROR building $$test"; \
+ 	  case "$$test" in \
+ 	    libjava.loader/dummy.java) \
+ 	      cp $$testtmpdir/dummy.class $$testjar;; \
+@@ -77,7 +77,7 @@
+ 	  if test -n "$$genheader"; then \
+ 	    $(MYGCJH) $$genheader $$testtmpdir/*.class \
+ 	      -bootclasspath $(top_builddir)/libgcj-$(gcc_short_version).jar \
+-	      -d $$testtmpdir/ || exit; \
++	      -d $$testtmpdir/ || echo "ERROR generating header files"; \
+ 	    mv $$testtmpdir/*.h $(srcdir)/`dirname $$test`/ 2>/dev/null; \
+ 	  fi; \
+ 	  rm -rf $$testtmpdir; \
+--- libjava/testsuite/Makefile.in~	2007-05-06 10:44:33.000000000 +0200
++++ libjava/testsuite/Makefile.in	2007-05-09 09:38:38.000000000 +0200
+@@ -559,11 +559,11 @@
+ @JAVA_MAINTAINER_MODE_TRUE@	  if test -n "$$testdep"; then \
+ @JAVA_MAINTAINER_MODE_TRUE@	    $(GCJ) -C -g -w --encoding=UTF-8 -bootclasspath \
+ @JAVA_MAINTAINER_MODE_TRUE@	      $(top_builddir)/libgcj-$(gcc_short_version).jar::$$testtmpdir \
+-@JAVA_MAINTAINER_MODE_TRUE@	      -d $$testtmpdir $(srcdir)/$$testdep || exit; \
++@JAVA_MAINTAINER_MODE_TRUE@	      -d $$testtmpdir $(srcdir)/$$testdep || echo "ERROR building $$testdep"; \
+ @JAVA_MAINTAINER_MODE_TRUE@	  fi; \
+ @JAVA_MAINTAINER_MODE_TRUE@	  $(GCJ) -C -g -w --encoding=UTF-8 -bootclasspath \
+ @JAVA_MAINTAINER_MODE_TRUE@	    $(top_builddir)/libgcj-$(gcc_short_version).jar:$$testtmpdir \
+-@JAVA_MAINTAINER_MODE_TRUE@	    -d $$testtmpdir $(srcdir)/$$test || exit; \
++@JAVA_MAINTAINER_MODE_TRUE@	    -d $$testtmpdir $(srcdir)/$$test || echo "ERROR building $$test"; \
+ @JAVA_MAINTAINER_MODE_TRUE@	  case "$$test" in \
+ @JAVA_MAINTAINER_MODE_TRUE@	    libjava.loader/dummy.java) \
+ @JAVA_MAINTAINER_MODE_TRUE@	      cp $$testtmpdir/dummy.class $$testjar;; \
+@@ -575,7 +575,7 @@
+ @JAVA_MAINTAINER_MODE_TRUE@	  if test -n "$$genheader"; then \
+ @JAVA_MAINTAINER_MODE_TRUE@	    $(MYGCJH) $$genheader $$testtmpdir/*.class \
+ @JAVA_MAINTAINER_MODE_TRUE@	      -bootclasspath $(top_builddir)/libgcj-$(gcc_short_version).jar \
+-@JAVA_MAINTAINER_MODE_TRUE@	      -d $$testtmpdir/ || exit; \
++@JAVA_MAINTAINER_MODE_TRUE@	      -d $$testtmpdir/ || echo "ERROR generating header files"; \
+ @JAVA_MAINTAINER_MODE_TRUE@	    mv $$testtmpdir/*.h $(srcdir)/`dirname $$test`/ 2>/dev/null; \
+ @JAVA_MAINTAINER_MODE_TRUE@	  fi; \
+ @JAVA_MAINTAINER_MODE_TRUE@	  rm -rf $$testtmpdir; \

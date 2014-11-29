@@ -1,0 +1,320 @@
+#! /bin/sh -e
+
+# All lines beginning with `# DPATCH:' are a description of the patch.
+# DP: gcc/config/m68k/m68k.md:
+# DP: always use as fjcc pseudo op, we rely heavily on as 
+# DP: to generate the right size for the jump instructions
+# DP: fixes #359281
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+# append the patch here and adjust the -p? flag in the patch calls.
+
+---
+ gcc/config/m68k/m68k.md |   90 ++++++++++++++----------------------------------
+ 1 file changed, 27 insertions(+), 63 deletions(-)
+
+Index: gcc-4.1/gcc/config/m68k/m68k.md
+===================================================================
+--- gcc-4.1.orig/gcc/config/m68k/m68k.md
++++ gcc-4.1/gcc/config/m68k/m68k.md
+@@ -5562,10 +5562,7 @@
+ 		      (pc)))]
+   ""
+ {
+-  if (MOTOROLA)
+-    OUTPUT_JUMP ("jbeq %l0", "fbeq %l0", "jbeq %l0");
+-  else
+-    OUTPUT_JUMP ("jeq %l0", "fjeq %l0", "jeq %l0");
++  OUTPUT_JUMP ("jeq %l0", "fjeq %l0", "jeq %l0");
+ })
+ 
+ (define_insn "bne"
+@@ -5576,10 +5573,7 @@
+ 		      (pc)))]
+   ""
+ {
+-  if (MOTOROLA)
+-    OUTPUT_JUMP ("jbne %l0", "fbne %l0", "jbne %l0");
+-  else
+-    OUTPUT_JUMP ("jne %l0", "fjne %l0", "jne %l0");
++  OUTPUT_JUMP ("jne %l0", "fjne %l0", "jne %l0");
+ })
+ 
+ (define_insn "bgt"
+@@ -5590,10 +5584,7 @@
+ 		      (pc)))]
+   ""
+ {
+-  if (MOTOROLA)
+-    OUTPUT_JUMP ("jbgt %l0", "fbgt %l0", 0);
+-  else
+-    OUTPUT_JUMP ("jgt %l0", "fjgt %l0", 0);
++  OUTPUT_JUMP ("jgt %l0", "fjgt %l0", 0);
+ })
+ 
+ (define_insn "bgtu"
+@@ -5615,10 +5606,7 @@
+ 		      (pc)))]
+   ""
+ {
+-  if (MOTOROLA)
+-    OUTPUT_JUMP ("jblt %l0", "fblt %l0", "jbmi %l0");
+-  else
+-    OUTPUT_JUMP ("jlt %l0", "fjlt %l0", "jmi %l0");
++  OUTPUT_JUMP ("jlt %l0", "fjlt %l0", "jmi %l0");
+ })
+ 
+ (define_insn "bltu"
+@@ -5640,10 +5628,7 @@
+ 		      (pc)))]
+   ""
+ {
+-  if (MOTOROLA)
+-    OUTPUT_JUMP ("jbge %l0", "fbge %l0", "jbpl %l0");
+-  else
+-    OUTPUT_JUMP ("jge %l0", "fjge %l0", "jpl %l0");
++  OUTPUT_JUMP ("jge %l0", "fjge %l0", "jpl %l0");
+ })
+ 
+ (define_insn "bgeu"
+@@ -5665,10 +5650,7 @@
+ 		      (pc)))]
+   ""
+ {
+-  if (MOTOROLA)
+-    OUTPUT_JUMP ("jble %l0", "fble %l0", 0);
+-  else
+-    OUTPUT_JUMP ("jle %l0", "fjle %l0", 0);
++  OUTPUT_JUMP ("jle %l0", "fjle %l0", 0);
+ })
+ 
+ (define_insn "bleu"
+@@ -5690,7 +5672,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbor %l0" : "fjor %l0";
++  return "fjor %l0";
+ })
+ 
+ (define_insn "bunordered"
+@@ -5701,7 +5683,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbun %l0" : "fjun %l0";
++  return "fjun %l0";
+ })
+ 
+ (define_insn "buneq"
+@@ -5712,7 +5694,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbueq %l0" : "fjueq %l0";
++  return "fjueq %l0";
+ })
+ 
+ (define_insn "bunge"
+@@ -5723,7 +5705,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbuge %l0" : "fjuge %l0";
++  return "fjuge %l0";
+ })
+ 
+ (define_insn "bungt"
+@@ -5734,7 +5716,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbugt %l0" : "fjugt %l0";
++  return "fjugt %l0";
+ })
+ 
+ (define_insn "bunle"
+@@ -5745,7 +5727,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbule %l0" : "fjule %l0";
++  return "fjule %l0";
+ })
+ 
+ (define_insn "bunlt"
+@@ -5756,7 +5738,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbult %l0" : "fjult %l0";
++  return "fjult %l0";
+ })
+ 
+ (define_insn "bltgt"
+@@ -5767,7 +5749,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbogl %l0" : "fjogl %l0";
++  return "fjogl %l0";
+ })
+ 
+ ;; Negated conditional jump instructions.
+@@ -5780,10 +5762,7 @@
+ 		      (label_ref (match_operand 0 "" ""))))]
+   ""
+ {
+-  if (MOTOROLA)
+-    OUTPUT_JUMP ("jbne %l0", "fbne %l0", "jbne %l0");
+-  else
+-    OUTPUT_JUMP ("jne %l0", "fjne %l0", "jne %l0");
++  OUTPUT_JUMP ("jne %l0", "fjne %l0", "jne %l0");
+ })
+ 
+ (define_insn ""
+@@ -5794,10 +5773,7 @@
+ 		      (label_ref (match_operand 0 "" ""))))]
+   ""
+ {
+-  if (MOTOROLA)
+-    OUTPUT_JUMP ("jbeq %l0", "fbeq %l0", "jbeq %l0");
+-  else
+-    OUTPUT_JUMP ("jeq %l0", "fjeq %l0", "jeq %l0");
++  OUTPUT_JUMP ("jeq %l0", "fjeq %l0", "jeq %l0");
+ })
+ 
+ (define_insn ""
+@@ -5808,10 +5784,7 @@
+ 		      (label_ref (match_operand 0 "" ""))))]
+   ""
+ {
+-  if (MOTOROLA)
+-    OUTPUT_JUMP ("jble %l0", "fbngt %l0", 0);
+-  else
+-    OUTPUT_JUMP ("jle %l0", "fjngt %l0", 0);
++  OUTPUT_JUMP ("jle %l0", "fjngt %l0", 0);
+ })
+ 
+ (define_insn ""
+@@ -5833,10 +5806,7 @@
+ 		      (label_ref (match_operand 0 "" ""))))]
+   ""
+ {
+-  if (MOTOROLA)
+-    OUTPUT_JUMP ("jbge %l0", "fbnlt %l0", "jbpl %l0");
+-  else
+-    OUTPUT_JUMP ("jge %l0", "fjnlt %l0", "jpl %l0");
++  OUTPUT_JUMP ("jge %l0", "fjnlt %l0", "jpl %l0");
+ })
+ 
+ (define_insn ""
+@@ -5858,10 +5828,7 @@
+ 		      (label_ref (match_operand 0 "" ""))))]
+   ""
+ {
+-  if (MOTOROLA)
+-    OUTPUT_JUMP ("jblt %l0", "fbnge %l0", "jbmi %l0");
+-  else
+-    OUTPUT_JUMP ("jlt %l0", "fjnge %l0", "jmi %l0");
++  OUTPUT_JUMP ("jlt %l0", "fjnge %l0", "jmi %l0");
+ })
+ 
+ (define_insn ""
+@@ -5883,10 +5850,7 @@
+ 		      (label_ref (match_operand 0 "" ""))))]
+   ""
+ {
+-  if (MOTOROLA)
+-    OUTPUT_JUMP ("jbgt %l0", "fbnle %l0", 0);
+-  else
+-    OUTPUT_JUMP ("jgt %l0", "fjnle %l0", 0);
++  OUTPUT_JUMP ("jgt %l0", "fjnle %l0", 0);
+ })
+ 
+ (define_insn ""
+@@ -5908,7 +5872,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbun %l0" : "fjun %l0";
++  return "fjun %l0";
+ })
+ 
+ (define_insn "*bunordered_rev"
+@@ -5919,7 +5883,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbor %l0" : "fjor %l0";
++  return "fjor %l0";
+ })
+ 
+ (define_insn "*buneq_rev"
+@@ -5930,7 +5894,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbogl %l0" : "fjogl %l0";
++  return "fjogl %l0";
+ })
+ 
+ (define_insn "*bunge_rev"
+@@ -5941,7 +5905,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbolt %l0" : "fjolt %l0";
++  return "fjolt %l0";
+ })
+ 
+ (define_insn "*bunle_rev"
+@@ -5952,7 +5916,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbogt %l0" : "fjogt %l0";
++  return "fjogt %l0";
+ })
+ 
+ (define_insn "*bunlt_rev"
+@@ -5963,7 +5927,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fboge %l0" : "fjoge %l0";
++  return "fjoge %l0";
+ })
+ 
+ (define_insn "*bltgt_rev"
+@@ -5974,7 +5938,7 @@
+   "TARGET_68881"
+ {
+   gcc_assert (cc_prev_status.flags & CC_IN_68881);
+-  return MOTOROLA ? "fbueq %l0" : "fjueq %l0";
++  return "fjueq %l0";
+ })
+ 
+ ;; Unconditional and other jump instructions

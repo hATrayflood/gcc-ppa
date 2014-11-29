@@ -1,0 +1,323 @@
+diff -urN debian/changelog gcc-4.1-4.1.2.orig/debian/changelog
+--- debian/changelog	2014-11-18 16:53:04.698339230 +0900
++++ gcc-4.1-4.1.2.orig/debian/changelog	2014-11-18 16:58:22.909312378 +0900
+@@ -1,3 +1,9 @@
++gcc-4.1 (4.1.2-27ubuntu1lucid1) lucid; urgency=low
++
++  * ppa for lucid
++
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Wed, 22 Oct 2014 04:30:00 +0900
++
+ gcc-4.1 (4.1.2-27ubuntu1) karmic; urgency=low
+ 
+   * Merge with Debian; remaining changes:
+diff -urN debian/control gcc-4.1-4.1.2.orig/debian/control
+--- debian/control	2014-11-18 16:53:04.741309843 +0900
++++ gcc-4.1-4.1.2.orig/debian/control	2014-11-29 13:43:02.659305881 +0900
+@@ -1,13 +1,12 @@
+ Source: gcc-4.1
+ Section: devel
+ Priority: optional
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-XSBC-Original-Maintainer: Debian GCC Maintainers <debian-gcc@lists.debian.org>
+-Uploaders: Matthias Klose <doko@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.8.2
+-Build-Depends: dpkg-dev (>= 1.13.9), gcc-4.1-multilib [amd64 i386 powerpc ppc64 s390 sparc kfreebsd-amd64], libc6.1-dev (>= 2.5) [alpha ia64] | libc0.3-dev (>= 2.5) [hurd-i386] | libc0.1-dev (>= 2.5) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.5), libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64], lib64gcc1 [i386 powerpc sparc s390], lib64z1-dev [i386 powerpc sparc s390], lib32z1-dev [amd64 ppc64 kfreebsd-amd64], autogen [!ia64], libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.59, autoconf2.13, automake1.9, libtool, gawk, dejagnu [!hurd-i386], bzip2, binutils (>= 2.17cvs20070426) | binutils-multiarch (>= 2.17cvs20070426), binutils-hppa64 (>= 2.17cvs20070426) [hppa], debhelper (>= 5.0), gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, texinfo (>= 4.3), zlib1g-dev, libmpfr-dev (>= 2.3.0~rc1.dfsg.1) [!avr], locales [!hurd-i386 !m68k], procps [!hurd-i386], sharutils, realpath (>= 1.9.12), chrpath, lsb-release, make (>= 3.81)
++Build-Depends: dpkg-dev (>= 1.13.9), gcc-multilib [amd64 i386 powerpc ppc64 s390 sparc kfreebsd-amd64], libc6.1-dev (>= 2.5) [alpha ia64] | libc0.3-dev (>= 2.5) [hurd-i386] | libc0.1-dev (>= 2.5) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.5), libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64], lib64gcc1 [i386 powerpc sparc s390], lib64z1-dev [i386 powerpc sparc s390], lib32z1-dev [amd64 ppc64 kfreebsd-amd64], autogen [!ia64], libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.59, autoconf2.13, automake1.9, libtool, gawk, dejagnu [!hurd-i386], bzip2, binutils (>= 2.17cvs20070426) | binutils-multiarch (>= 2.17cvs20070426), binutils-hppa64 (>= 2.17cvs20070426) [hppa], debhelper (>= 5.0), gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, texinfo (>= 4.3), zlib1g-dev, libmpfr-dev (>= 2.3.0~rc1.dfsg.1) [!avr], locales [!hurd-i386 !m68k], procps [!hurd-i386], sharutils, realpath (>= 1.9.12), chrpath, lsb-release, make (>= 3.81)
+ Build-Depends-Indep: doxygen (>= 1.4.2), graphviz (>= 2.2), gsfonts-x11, 
+-Homepage: http://gcc.gnu.org/
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-lower
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ Package: gcc-4.1-base
+ Architecture: any
+@@ -215,6 +214,137 @@
+  does the reverse: it removes argument types from any prototypes
+  that are found.
+ 
++Package: gobjc++-4.1
++Architecture: any
++Priority: optional
++Depends: gcc-4.1-base (= ${gcc:Version}), gobjc-4.1 (= ${gcc:Version}), g++-4.1 (= ${gcc:Version}), ${shlibs:Depends}, libobjc1 (>= ${gcc:EpochVersion})
++Suggests: ${gobjcxx:multilib}, gcc-4.1-doc (>= ${gcc:SoftVersion})
++Provides: objc++-compiler
++Description: The GNU Objective-C++ compiler
++ This is the GNU Objective-C++ compiler, which compiles
++ Objective-C++ on platforms supported by the gcc compiler. It uses the
++ gcc backend to generate optimized code.
++
++Package: gobjc++-4.1-multilib
++Architecture: amd64 i386 kfreebsd-amd64 powerpc ppc64 s390 sparc
++Section: devel
++Priority: optional
++Depends: gcc-4.1-base (= ${gcc:Version}), gobjc++-4.1 (= ${gcc:Version}), g++-4.1-multilib (= ${gcc:Version}), gobjc-4.1-multilib (= ${gcc:Version}), ${shlibs:Depends}
++Description: The GNU Objective-C++ compiler (multilib files)
++ This is the GNU Objective-C++ compiler, which compiles Objective-C++ on
++ platforms supported by the gcc compiler.
++ .
++ On architectures with multilib support, the package contains files
++ and dependencies for the non-default multilib architecture(s).
++
++Package: gobjc-4.1
++Architecture: any
++Priority: optional
++Depends: gcc-4.1-base (= ${gcc:Version}), gcc-4.1 (= ${gcc:Version}), ${dep:libcdev}, ${shlibs:Depends}, libobjc1 (>= ${gcc:EpochVersion})
++Suggests: ${gobjc:multilib}, gcc-4.1-doc (>= ${gcc:SoftVersion})
++Provides: objc-compiler
++Description: The GNU Objective-C compiler
++ This is the GNU Objective-C compiler, which compiles
++ Objective-C on platforms supported by the gcc compiler. It uses the
++ gcc backend to generate optimized code.
++
++Package: gobjc-4.1-multilib
++Architecture: amd64 i386 kfreebsd-amd64 powerpc ppc64 s390 sparc
++Section: devel
++Priority: optional
++Depends: gcc-4.1-base (= ${gcc:Version}), gobjc-4.1 (= ${gcc:Version}), gcc-4.1-multilib (= ${gcc:Version}), ${dep:libobjcbiarch}, ${shlibs:Depends}
++Replaces: gobjc-4.1 (<< 4.1.2-4)
++Description: The GNU Objective-C compiler (multilib files)
++ This is the GNU Objective-C compiler, which compiles Objective-C on platforms
++ supported by the gcc compiler.
++ .
++ On architectures with multilib support, the package contains files
++ and dependencies for the non-default multilib architecture(s).
++
++Package: libobjc1
++Section: libs
++Architecture: any
++Priority: optional
++Depends: gcc-4.1-base (= ${gcc:Version}), ${shlibs:Depends}
++Description: Runtime library for GNU Objective-C applications
++ Library needed for GNU ObjC applications linked against the shared library.
++
++Package: lib64objc1
++Section: libs
++Architecture: i386 powerpc sparc s390
++Priority: optional
++Depends: gcc-4.1-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
++Description: Runtime library for GNU Objective-C applications (64bit)
++ Library needed for GNU ObjC applications linked against the shared library.
++
++Package: lib32objc1
++Section: libs
++Architecture: amd64 ppc64 kfreebsd-amd64
++Priority: optional
++Depends: gcc-4.1-base (>= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
++Description: Runtime library for GNU Objective-C applications (32bit)
++ Library needed for GNU ObjC applications linked against the shared library.
++
++Package: gfortran-4.1
++Architecture: any
++Priority: optional
++Depends: gcc-4.1-base (= ${gcc:Version}), gcc-4.1 (= ${gcc:Version}), libgfortran1 (>= ${gcc:Version}), ${dep:libcdev}, ${shlibs:Depends}
++Provides: fortran95-compiler
++Suggests: ${gfortran:multilib}, gfortran-4.1-doc
++Replaces: libgfortran1-dev
++Description: The GNU Fortran 95 compiler
++ This is the GNU Fortran compiler, which compiles
++ Fortran 95 on platforms supported by the gcc compiler. It uses the
++ gcc backend to generate optimized code.
++
++Package: gfortran-4.1-multilib
++Architecture: amd64 i386 kfreebsd-amd64 powerpc ppc64 s390 sparc
++Section: devel
++Priority: optional
++Depends: gcc-4.1-base (= ${gcc:Version}), gfortran-4.1 (= ${gcc:Version}), gcc-4.1-multilib (= ${gcc:Version}), ${dep:libfortranbiarch}, ${shlibs:Depends}
++Replaces: gfortran-4.1 (<< 4.1.2-4)
++Description: The GNU Fortran 95 compiler (multilib files)
++ This is the GNU Fortran compiler, which compiles Fortran 95 on platforms
++ supported by the gcc compiler.
++ .
++ On architectures with multilib support, the package contains files
++ and dependencies for the non-default multilib architecture(s).
++
++Package: gfortran-4.1-doc
++Architecture: all
++Section: doc
++Priority: optional
++Depends: gcc-4.1-base (>= ${gcc:SoftVersion})
++Description: Documentation for the GNU Fortran compiler (gfortran)
++ Documentation for the GNU Fortran 95 compiler in info format.
++
++Package: libgfortran1
++Section: libs
++Architecture: any
++Priority: optional
++Depends: gcc-4.1-base (= ${gcc:Version}), ${shlibs:Depends}
++Description: Runtime library for GNU Fortran applications
++ Library needed for GNU Fortran applications linked against the
++ shared library.
++
++Package: lib64gfortran1
++Section: libs
++Architecture: i386 powerpc sparc s390
++Priority: optional
++Depends: gcc-4.1-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
++Description: Runtime library for GNU Fortran applications (64bit)
++ Library needed for GNU Fortran applications linked against the
++ shared library.
++
++Package: lib32gfortran1
++Section: libs
++Architecture: amd64 ppc64 kfreebsd-amd64
++Priority: optional
++Depends: gcc-4.1-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}
++Description: Runtime library for GNU Fortran applications (32bit)
++ Library needed for GNU Fortran applications linked against the
++ shared library.
++
+ Package: libffi4
+ Section: libs
+ Architecture: any
+diff -urN debian/control.m4 gcc-4.1-4.1.2.orig/debian/control.m4
+--- debian/control.m4	2014-11-18 16:53:04.727711081 +0900
++++ gcc-4.1-4.1.2.orig/debian/control.m4	2014-11-29 12:37:58.681721992 +0900
+@@ -25,41 +25,16 @@
+ Source: SRCNAME
+ Section: devel
+ Priority: PRI(optional)
+-ifelse(DIST,`Ubuntu',`dnl
+-ifelse(regexp(SRCNAME, `gcc-snapshot\|gnat'),0,`dnl
+-Maintainer: Ubuntu MOTU Developers <ubuntu-motu@lists.ubuntu.com>
+-', `dnl
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-')dnl SRCNAME
+-XSBC-Original-Maintainer: MAINTAINER
+-', `dnl
+-Maintainer: MAINTAINER
+-')dnl DIST
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Uploaders: Ludovic Brenta <lbrenta@debian.org>
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Uploaders: Arthur Loiret <arthur.loiret@gmail.com>
+-', regexp(SRCNAME, `gpc'),0,`dnl
+-Uploaders: Matthias Klose <doko@debian.org>
+-', `dnl
+-Uploaders: Matthias Klose <doko@debian.org>
+-')dnl SRCNAME
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.8.2
+ ifdef(`TARGET',`dnl cross
+ Build-Depends: dpkg-dev (>= 1.13.9), dpkg-cross (>= 1.25.99), LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP LIBUNWIND_BUILD_DEP LIBATOMIC_OPS_BUILD_DEP AUTOGEN_BUILD_DEP m4, autoconf2.59, autoconf2.13, automake1.9, libtool, gawk, bzip2, BINUTILS_BUILD_DEP, debhelper (>= 5.0), bison (>= 1:2.3), flex, realpath (>= 1.9.12), lsb-release, make (>= 3.81)
+ ',`dnl native
+-Build-Depends: dpkg-dev (>= 1.13.9), gcc-4.1-multilib [amd64 i386 powerpc ppc64 s390 sparc kfreebsd-amd64], LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP AUTOGEN_BUILD_DEP libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.59, autoconf2.13, automake1.9, libtool, gawk, CHECK_BUILD_DEP, bzip2, BINUTILS_BUILD_DEP, binutils-hppa64 (>= BINUTILSV) [hppa], debhelper (>= 5.0), gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, texinfo (>= 4.3), zlib1g-dev, libmpfr-dev (>= 2.3.0~rc1.dfsg.1) [fortran_no_archs], locales [locale_no_archs], procps [linux_gnu_archs], sharutils, PASCAL_BUILD_DEP GDC_BUILD_DEP JAVA_BUILD_DEP GNAT_BUILD_DEP realpath (>= 1.9.12), chrpath, lsb-release, make (>= 3.81)
++Build-Depends: dpkg-dev (>= 1.13.9), gcc-multilib [amd64 i386 powerpc ppc64 s390 sparc kfreebsd-amd64], LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP AUTOGEN_BUILD_DEP libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.59, autoconf2.13, automake1.9, libtool, gawk, CHECK_BUILD_DEP, bzip2, BINUTILS_BUILD_DEP, binutils-hppa64 (>= BINUTILSV) [hppa], debhelper (>= 5.0), gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, texinfo (>= 4.3), zlib1g-dev, libmpfr-dev (>= 2.3.0~rc1.dfsg.1) [fortran_no_archs], locales [locale_no_archs], procps [linux_gnu_archs], sharutils, PASCAL_BUILD_DEP GDC_BUILD_DEP JAVA_BUILD_DEP GNAT_BUILD_DEP realpath (>= 1.9.12), chrpath, lsb-release, make (>= 3.81)
+ Build-Depends-Indep: LIBSTDCXX_BUILD_INDEP JAVA_BUILD_INDEP
+ ')dnl
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Homepage: http://gcc.gnu.org/
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Homepage: http://dgcc.sourceforge.net/
+-', regexp(SRCNAME, `gpc'),0,`dnl
+-Homepage: http://www.gnu-pascal.de/gpc/h-index.html
+-', `dnl
+-Homepage: http://gcc.gnu.org/
+-')dnl SRCNAME
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-lower
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ ifelse(SRCNAME,gcc-snapshot,`dnl
+ Package: gcc-snapshot
+@@ -584,7 +559,7 @@
+ ')`'dnl gfdldoc
+ ')`'dnl fdev
+ 
+-ifenabled(`libfortran',`
++ifenabled(`libgfortran',`
+ Package: libgfortran`'FORTRAN_SO
+ Section: libs
+ Architecture: any
+diff -urN debian/rules.conf gcc-4.1-4.1.2.orig/debian/rules.conf
+--- debian/rules.conf	2014-11-18 16:53:04.727711081 +0900
++++ gcc-4.1-4.1.2.orig/debian/rules.conf	2014-11-29 13:42:41.905018903 +0900
+@@ -443,9 +443,11 @@
+     endif
+   endif
+ else
+-  languages = ada c c++ java d # pascal
++  languages = ada c c++ fortran java objc objpp d # pascal
+   addons = gccbase cdev c++dev fdev fixincl libcxx lib4gcc \
+ 	   libgcc libffi libgcj libgcjdev libgnat libs \
++	   objcdev objppdev libobjc lib32objc lib64objc \
++	   libgfortran lib32gfortran lib64gfortran \
+ 	   lib64gcc lib64cxx lib64ffi \
+ 	   lib32gcc lib32cxx \
+ 	   proto mudflap source \
+diff -urN debian/rules.defs gcc-4.1-4.1.2.orig/debian/rules.defs
+--- debian/rules.defs	2014-11-18 16:53:04.698339230 +0900
++++ gcc-4.1-4.1.2.orig/debian/rules.defs	2014-11-18 18:12:16.419694920 +0900
+@@ -447,8 +447,6 @@
+ endif
+ with_fortran := $(call envfilt, fortran, , , $(with_fortran))
+ 
+-with_fortran := disabled for gcc-4.1
+-
+ # Build all packages needed for Fortran development
+ ifeq ($(with_fortran)-$(with_dev),yes-yes)
+   with_fdev := yes
+@@ -532,7 +530,6 @@
+ else
+   with_objc := yes
+ endif
+-with_objc := disabled for gcc-4.1
+ 
+ # the ObjC runtime with garbage collection enabled needs the Boehm GC
+ with_objc_gc := yes
+@@ -546,7 +543,6 @@
+ ifneq (, $(filter $(DEB_TARGET_GNU_SYSTEM),$(libgc_no_systems)))
+   with_objc_gc := disabled for $(DEB_TARGET_GNU_SYSTEM)
+ endif
+-with_objc_gc := disabled for gcc-4.1
+ ifdef DEB_CROSS
+   ifneq (objc, $(findstring objc,$(WITH_LANG)))
+     with_objc := disabled for cross compiler package
+@@ -574,7 +570,6 @@
+ #  with_libobjc := no
+ #endif
+ with_libobjc := yes
+-with_libobjc := disabled for gcc-4.1
+ 
+ ifeq ($(with_objc),yes)
+   enabled_languages += objc
+@@ -582,7 +577,6 @@
+ 
+ # ObjC++ --------------------
+ with_objcxx := yes
+-with_objcxx := disabled for gcc-4.1
+ with_objcxx := $(call envfilt, obj-c++, , c++ objc, $(with_objcxx))
+ 
+ ifeq ($(with_objcxx),yes)
+@@ -737,6 +731,7 @@
+ ifneq (,$(findstring gdc,$(PKGSOURCE)))
+   with_check := disabled for gdc
+ endif
++with_check := disabled for this build
+ 
+ locale_data = generate
+ 
+diff -urN debian/rules.parameters gcc-4.1-4.1.2.orig/debian/rules.parameters
+--- debian/rules.parameters	2014-11-18 16:53:04.717855775 +0900
++++ gcc-4.1-4.1.2.orig/debian/rules.parameters	2014-11-18 16:58:44.938090668 +0900
+@@ -2,9 +2,9 @@
+ GCC_VERSION	:= 4.1.3
+ NEXT_GCC_VERSION	:= 4.1.4
+ BASE_VERSION	:= 4.1
+-SOURCE_VERSION	:= 4.1.2-27ubuntu1
+-DEB_VERSION	:= 4.1.2-27ubuntu1
+-DEB_EVERSION	:= 1:4.1.2-27ubuntu1
++SOURCE_VERSION	:= 4.1.2-27ubuntu1lucid1
++DEB_VERSION	:= 4.1.2-27ubuntu1lucid1
++DEB_EVERSION	:= 1:4.1.2-27ubuntu1lucid1
+ GPC_BASE_VERSION	:= 
+ GDC_BASE_VERSION  := 
+ DEB_GPC_VERSION	:= 
+@@ -12,7 +12,7 @@
+ DEB_SOVERSION	:= 4.1.2
+ DEB_SOEVERSION	:= 1:4.1.2
+ DEB_LIBGCC_SOVERSION	:= 1:4.1.2
+-DEB_LIBGCC_VERSION	:= 1:4.1.2-27ubuntu1
++DEB_LIBGCC_VERSION	:= 1:4.1.2-27ubuntu1lucid1
+ DEB_STDCXX_SOVERSION	:= 4.1.2
+ DEB_GCJ_SOVERSION	:= 4.1.2-1
+ PKG_GCJ_EXT	:= 7

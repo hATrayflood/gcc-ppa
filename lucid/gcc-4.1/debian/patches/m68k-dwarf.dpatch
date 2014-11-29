@@ -1,0 +1,76 @@
+#! /bin/sh -e
+
+# All lines beginning with `# DPATCH:' are a description of the patch.
+# DP: correct the dwarf frame information, but preserve compatibility
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+# append the patch here and adjust the -p? flag in the patch calls.
+
+---
+ gcc/config/m68k/m68k.c |    4 ++++
+ gcc/config/m68k/m68k.h |    9 ++++++++-
+ 2 files changed, 12 insertions(+), 1 deletion(-)
+
+Index: gcc-4.1/gcc/config/m68k/m68k.c
+===================================================================
+--- gcc-4.1.orig/gcc/config/m68k/m68k.c
++++ gcc-4.1/gcc/config/m68k/m68k.c
+@@ -3390,5 +3390,9 @@ m68k_regno_mode_ok (int regno, enum mach
+ 	    && GET_MODE_UNIT_SIZE (mode) <= 12)
+ 	  return true;
+     }
++  else if (regno == 24)
++    {
++      return GET_MODE_SIZE (mode) == 4;
++    }
+   return false;
+ }
+Index: gcc-4.1/gcc/config/m68k/m68k.h
+===================================================================
+--- gcc-4.1.orig/gcc/config/m68k/m68k.h
++++ gcc-4.1/gcc/config/m68k/m68k.h
+@@ -174,6 +174,13 @@ Boston, MA 02110-1301, USA.  */
+    register elimination.  */
+ #define FIRST_PSEUDO_REGISTER 25
+ 
++/* Number of hardware registers that go into the DWARF-2 unwind info. This
++   should be 24, but to prevent compability problems leave it at 25.  */
++#define DWARF_FRAME_REGISTERS 25
++
++#define DWARF_FRAME_RETURN_COLUMN 24
++#define DWARF_ALT_FRAME_RETURN_COLUMN 25
++
+ /* All m68k targets (except AmigaOS) use %a5 as the PIC register  */
+ #define PIC_OFFSET_TABLE_REGNUM (flag_pic ? 13 : INVALID_REGNUM)
+ 
+@@ -251,7 +258,7 @@ Boston, MA 02110-1301, USA.  */
+    for the 68881 registers, a single register is always enough for
+    anything that can be stored in them at all.  */
+ #define HARD_REGNO_NREGS(REGNO, MODE)   \
+-  ((REGNO) >= 16 ? GET_MODE_NUNITS (MODE)	\
++  ((REGNO) >= 16 && (REGNO) <= 23 ? GET_MODE_NUNITS (MODE)	\
+    : ((GET_MODE_SIZE (MODE) + UNITS_PER_WORD - 1) / UNITS_PER_WORD))
+ 
+ /* A C expression that is nonzero if hard register NEW_REG can be

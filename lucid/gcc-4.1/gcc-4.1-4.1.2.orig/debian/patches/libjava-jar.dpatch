@@ -1,0 +1,106 @@
+#! /bin/sh -e
+
+# DP: gjar: support @ arguments.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+From: Christian Thalinger <twisti@complang.tuwien.ac.at>
+
+While building OpenJDK b16 I noticed that jar does not support @
+arguments.  OpenJDK e.g. uses it to import the binary plug files.
+
+This patch adds support for @filelist, where the file filelist may only
+contain files and not options, as the spec says.
+
+Index: libjava/classpath/tools/gnu/classpath/tools/jar/Main.java
+===================================================================
+RCS file: /cvsroot/classpath/classpath/tools/gnu/classpath/tools/jar/Main.java,v
+retrieving revision 1.9
+diff -u -3 -p -r1.9 Main.java
+--- libjava/classpath/tools/gnu/classpath/tools/jar/Main.java     31 Jan 2007 17:05:34 -0000     1.9
++++ libjava/classpath/tools/gnu/classpath/tools/jar/Main.java     23 Jul 2007 18:31:19 -0000
+@@ -47,6 +47,8 @@ import gnu.classpath.tools.getopt.Parser
+ 
+ import java.io.BufferedReader;
+ import java.io.File;
++import java.io.FileNotFoundException;
++import java.io.FileReader;
+ import java.io.InputStreamReader;
+ import java.io.IOException;
+ import java.text.MessageFormat;
+@@ -102,14 +104,51 @@ public class Main
+     public void notifyFile(String fileArgument)
+     {
+       Entry entry;
++
++      if (fileArgument.charAt(0) == '@')
++        {
++          BufferedReader br = null;
++          String filename;
++
++          try
++            {
++              br =
++                new BufferedReader(new FileReader(fileArgument.substring(1)));
++            }
++          catch (FileNotFoundException fnfe)
++            {
++              System.err.println(fnfe);
++              System.exit(1);
++            }
++
++          try
++            {
++              while ((filename = br.readLine()) != null)
++                addEntry(filename);
++            }
++          catch (IOException ioe)
++            {
++              ioe.printStackTrace();
++            }
++        }
++      else
++        {
++          addEntry(fileArgument);
++        }
++    }
++
++    private final void addEntry(String filename)
++    {
++      Entry entry;
++
+       if (changedDirectory != null)
+         {
+-          entry = new Entry(new File(changedDirectory, fileArgument),
+-                            fileArgument);
++          entry = new Entry(new File(changedDirectory, filename),
++                            filename);
+           changedDirectory = null;
+         }
+       else
+-        entry = new Entry(new File(fileArgument));
++        entry = new Entry(new File(filename));
+       entries.add(entry);
+     }
+   }
+
+

@@ -1,0 +1,262 @@
+#! /bin/sh -e
+ 
+# DP: biarch patches for i386/x86_64
+ 
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        cd ${dir}libcpp && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        cd ${dir}libcpp && autoconf2.59
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+
+--- gcc/config/i386/linux.h.orig	2006-12-11 22:50:26.000000000 +0100
++++ gcc/config/i386/linux.h	2006-12-11 22:50:57.000000000 +0100
+@@ -164,6 +164,7 @@
+       }									\
+   } while (0)
+ 
++#ifdef __i386__
+ /* Used by crtstuff.c to initialize the base of data-relative relocations.
+    These are GOT relative on x86, so return the pic register.  */
+ #ifdef __PIC__
+@@ -183,6 +184,7 @@
+ 	   "addl\t$_GLOBAL_OFFSET_TABLE_+[.-.LPR%=],%0"			\
+ 	   : "=d"(BASE))
+ #endif
++#endif
+ 
+ #undef NEED_INDICATE_EXEC_STACK
+ #define NEED_INDICATE_EXEC_STACK 1
+--- gcc/config/i386/linux64.h.orig	2006-12-11 22:50:26.000000000 +0100
++++ gcc/config/i386/linux64.h	2006-12-11 22:52:17.000000000 +0100
+@@ -19,8 +19,11 @@
+ the Free Software Foundation, 51 Franklin Street, Fifth Floor,
+ Boston, MA 02110-1301, USA.  */
+ 
++#ifndef TARGET_VERSION
+ #define TARGET_VERSION fprintf (stderr, " (x86-64 Linux/ELF)");
++#endif
+ 
++#undef TARGET_OS_CPP_BUILTINS
+ #define TARGET_OS_CPP_BUILTINS()				\
+   do								\
+     {								\
+@@ -55,6 +58,7 @@
+    done.  */
+ 
+ #undef	LINK_SPEC
++#if TARGET_64BIT_DEFAULT
+ #define LINK_SPEC "%{!m32:-m elf_x86_64} %{m32:-m elf_i386} --hash-style=both \
+   %{shared:-shared} \
+   %{!shared: \
+@@ -69,8 +73,22 @@
+ #define ENDFILE_SPEC \
+   "%{ffast-math|funsafe-math-optimizations:crtfastmath.o%s} \
+    %{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s"
+-
++#else
++#define LINK_SPEC "%{m64:-m elf_x86_64} %{!m64:-m elf_i386} --hash-style=both \
++  %{shared:-shared} \
++  %{!shared: \
++    %{!static: \
++      %{rdynamic:-export-dynamic} \
++      %{!m64:%{!dynamic-linker:-dynamic-linker /lib/ld-linux.so.2}} \
++      %{m64:%{!dynamic-linker:-dynamic-linker /lib64/ld-linux-x86-64.so.2}}} \
++    %{static:-static}}"
++#endif
++  
++#if TARGET_64BIT_DEFAULT
+ #define MULTILIB_DEFAULTS { "m64" }
++#else
++#define MULTILIB_DEFAULTS { "m32" }
++#endif
+ 
+ #undef NEED_INDICATE_EXEC_STACK
+ #define NEED_INDICATE_EXEC_STACK 1
+@@ -81,6 +99,7 @@
+ #define REG_NAME(reg) reg
+ 
+ #ifdef TARGET_LIBC_PROVIDES_SSP
++#undef TARGET_THREAD_SSP_OFFSET
+ /* i386 glibc provides __stack_chk_guard in %gs:0x14,
+    x86_64 glibc provides it in %fs:0x28.  */
+ #define TARGET_THREAD_SSP_OFFSET	(TARGET_64BIT ? 0x28 : 0x14)
+--- gcc/config/i386/biarch.h.orig	2006-12-11 22:50:27.000000000 +0100
++++ gcc/config/i386/biarch.h	2006-12-11 22:50:57.000000000 +0100
+@@ -0,0 +1,26 @@
++/* Make configure files to produce biarch compiler defaulting to 32bit mode.
++   This file must be included very first, while the OS specific file later
++   to overwrite otherwise wrong defaults. 
++   Copyright (C) 2001, 2004 Free Software Foundation, Inc.
++   Contributed by Bo Thorsen <bo@suse.de>.
++
++This file is part of GCC.
++
++GCC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++GCC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GCC; see the file COPYING.  If not, write to
++the Free Software Foundation, 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.  */
++
++#define TARGET_64BIT_DEFAULT 0
++#define TARGET_BI_ARCH 1
++#define DRIVER_SELF_SPECS "%{m64:%{!mtune:-mtune=x86-64}}"
+--- gcc/config.gcc.orig	2006-12-11 22:50:26.000000000 +0100
++++ gcc/config.gcc	2006-12-11 22:50:57.000000000 +0100
+@@ -1044,12 +1044,14 @@
+ i[34567]86-*-linux* | i[34567]86-*-kfreebsd*-gnu | i[34567]86-*-knetbsd*-gnu)
+ 			# Intel 80386's running GNU/*
+ 			# with ELF format using glibc 2
+-	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h linux.h i386/linux.h"
++	tm_file="i386/biarch.h ${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h linux.h i386/linux.h i386/x86-64.h i386/linux64.h"
+ 	case ${target} in
+ 	i[34567]86-*-knetbsd*-gnu) tm_file="${tm_file} knetbsd-gnu.h i386/knetbsd-gnu.h" ;;
+ 	i[34567]86-*-kfreebsd*-gnu) tm_file="${tm_file} kfreebsd-gnu.h i386/kfreebsd-gnu.h" ;;
+ 	esac
+-	tmake_file="${tmake_file} i386/t-crtstuff i386/t-crtfm"
++	#tmake_file="${tmake_file} i386/t-crtstuff i386/t-crtfm"
++	tmake_file="${tmake_file} i386/t-crtfm i386/t-linux64 i386/t-crtstuff64"
++	need_64bit_hwint=yes
+ 	;;
+ x86_64-*-linux* | x86_64-*-kfreebsd*-gnu | x86_64-*-knetbsd*-gnu)
+ 	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h linux.h \
+--- libffi/src/x86/ffitarget.h.orig	2006-12-11 22:50:26.000000000 +0100
++++ libffi/src/x86/ffitarget.h	2006-12-11 22:50:57.000000000 +0100
+@@ -33,6 +33,11 @@
+ #define X86
+ #endif
+ 
++#if defined (X86) && defined (__x86_64__)
++#undef X86
++#define X86_64
++#endif
++
+ /* ---- Generic type definitions ----------------------------------------- */
+ 
+ #ifndef LIBFFI_ASM
+--- libffi/Makefile.am.orig	2006-12-11 22:50:26.000000000 +0100
++++ libffi/Makefile.am	2006-12-11 22:50:57.000000000 +0100
+@@ -89,7 +89,7 @@
+ nodist_libffi_la_SOURCES += src/mips/ffi.c src/mips/o32.S
+ endif
+ if X86
+-nodist_libffi_la_SOURCES += src/x86/ffi.c src/x86/sysv.S
++nodist_libffi_la_SOURCES += src/x86/ffi64.c src/x86/unix64.S src/x86/ffi.c src/x86/sysv.S
+ endif
+ if X86_WIN32
+ nodist_libffi_la_SOURCES += src/x86/ffi.c src/x86/win32.S
+--- libffi/Makefile.in.orig	2006-12-11 22:50:27.000000000 +0100
++++ libffi/Makefile.in	2006-12-11 22:50:57.000000000 +0100
+@@ -41,7 +41,7 @@
+ target_triplet = @target@
+ @MIPS_IRIX_TRUE@am__append_1 = src/mips/ffi.c src/mips/o32.S src/mips/n32.S
+ @MIPS_LINUX_TRUE@am__append_2 = src/mips/ffi.c src/mips/o32.S
+-@X86_TRUE@am__append_3 = src/x86/ffi.c src/x86/sysv.S
++@X86_TRUE@am__append_3 = src/x86/ffi64.c src/x86/unix64.S src/x86/ffi.c src/x86/sysv.S
+ @X86_WIN32_TRUE@am__append_4 = src/x86/ffi.c src/x86/win32.S
+ @SPARC_TRUE@am__append_5 = src/sparc/ffi.c src/sparc/v8.S src/sparc/v9.S
+ @ALPHA_TRUE@am__append_6 = src/alpha/ffi.c src/alpha/osf.S
+@@ -95,7 +95,8 @@
+ @MIPS_IRIX_TRUE@am__objects_1 = src/mips/ffi.lo src/mips/o32.lo \
+ @MIPS_IRIX_TRUE@	src/mips/n32.lo
+ @MIPS_LINUX_TRUE@am__objects_2 = src/mips/ffi.lo src/mips/o32.lo
+-@X86_TRUE@am__objects_3 = src/x86/ffi.lo src/x86/sysv.lo
++@X86_TRUE@am__objects_3 = src/x86/ffi64.lo src/x86/unix64.lo \
++@X86_TRUE@	src/x86/ffi.lo src/x86/sysv.lo
+ @X86_WIN32_TRUE@am__objects_4 = src/x86/ffi.lo src/x86/win32.lo
+ @SPARC_TRUE@am__objects_5 = src/sparc/ffi.lo src/sparc/v8.lo \
+ @SPARC_TRUE@	src/sparc/v9.lo
+--- libjava/configure.ac.orig	2006-12-11 22:50:27.000000000 +0100
++++ libjava/configure.ac	2006-12-11 22:50:57.000000000 +0100
+@@ -948,16 +948,17 @@
+        AC_CHECK_LIB(dld, dladdr, [
+        AC_DEFINE(HAVE_DLADDR, 1, [Define if you have dladdr()])])])
+ 
+-   if test x"$build" = x"$host"; then
+-     AC_CHECK_FILES(/proc/self/exe, [
+-       AC_DEFINE(HAVE_PROC_SELF_EXE, 1, [Define if you have /proc/self/exe])])
+-   else
+-     case $host in
+-     *-linux*)
+-       AC_DEFINE(HAVE_PROC_SELF_EXE, 1, [Define if you have /proc/self/exe])
+-       ;;
+-     esac
+-   fi
++   case $host in
++   *-linux*)
++     AC_DEFINE(HAVE_PROC_SELF_EXE, 1, [Define if you have /proc/self/exe])
++     ;;
++   *)
++     if test x"$build" = x"$host"; then
++       AC_CHECK_FILES(/proc/self/exe, [
++         AC_DEFINE(HAVE_PROC_SELF_EXE, 1, [Define if you have /proc/self/exe])])
++     fi
++     ;;
++   esac
+ 
+    AM_ICONV
+    AM_LC_MESSAGES
+--- libcpp/configure.ac.orig	2006-12-11 22:50:27.000000000 +0100
++++ libcpp/configure.ac	2006-12-11 22:50:57.000000000 +0100
+@@ -116,6 +116,7 @@
+ 	arm*-*-*eabi* | \
+ 	arm*-*-symbianelf* | \
+ 	x86_64-*-* | \
++	i[34567]86-*-* | \
+ 	ia64-*-* | \
+ 	hppa*64*-*-* | parisc*64*-*-* | \
+ 	i[34567]86-*-solaris2.1[0-9]* | \
+--- libtool.m4.orig	2006-12-11 22:50:27.000000000 +0100
++++ libtool.m4	2006-12-11 22:50:57.000000000 +0100
+@@ -191,14 +191,14 @@
+   rm -rf conftest*
+   ;;
+ 
+-x86_64-*linux*|ppc*-*linux*|powerpc*-*linux*|s390*-*linux*|sparc*-*linux*)
++i[[3456]]86-*-linux*|x86_64-*linux*|ppc*-*linux*|powerpc*-*linux*|s390*-*linux*|sparc*-*linux*)
+   # Find out which ABI we are using.
+   echo 'int i;' > conftest.$ac_ext
+   if AC_TRY_EVAL(ac_compile); then
+     case "`/usr/bin/file conftest.o`" in
+     *32-bit*)
+       case $host in
+-        x86_64-*linux*)
++        i[[3456]]86-*-linux*|x86_64-*linux*)
+           LD="${LD-ld} -m elf_i386"
+           ;;
+         ppc64-*linux*|powerpc64-*linux*)
+@@ -214,7 +214,7 @@
+       ;;
+     *64-bit*)
+       case $host in
+-        x86_64-*linux*)
++        i[[3456]]86-*-linux*|x86_64-*linux*)
+           LD="${LD-ld} -m elf_x86_64"
+           ;;
+         ppc*-*linux*|powerpc*-*linux*)

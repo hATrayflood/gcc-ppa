@@ -1,0 +1,39 @@
+#! /bin/sh -e
+
+# DP: Enable the libjava interpreter on mips/mipsel.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- libjava/configure.host~	2006-04-22 01:59:20.293222320 +0200
++++ libjava/configure.host	2006-04-22 02:02:17.173332456 +0200
+@@ -90,6 +90,9 @@
+  	enable_java_net_default=no
+  	enable_getenv_properties_default=no
+ 	;;
++  mips*-linux*)
++	libgcj_interpreter=yes
++	;;
+   i686-*|i586-*|i486-*|i386-*)
+ 	sysdeps_dir=i386
+ 	# With -fomit-frame-pointer -maccumulate-outgoing-args (implied),

@@ -1,0 +1,172 @@
+#! /bin/sh -e
+
+# DP: Reduce the number of symbols in libgcj.so by 20%; taken from the trunk.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2007-03-29  Andrew Haley  <aph@redhat.com>
+
+	* jvgenmain.c (main): Change main to use class$, not class$$.
+	(do_mangle_classname): Likewise.
+	* class.c (hide): New function.
+	(add_field): Hide everything that shouldn't be visible outside a
+	DSO.
+	(build_static_class_ref): Likewise.
+	(build_classdollar_field): Likewise.
+	(make_class_data): Likewise.
+	(layout_class_method): Likewise.
+	* expr.c (special_method_p): New function.
+
+--- gcc/java/class.c	(revision 122746)
++++ gcc/java/class.c	(working copy)
+@@ -689,6 +688,13 @@
+   return fntype;
+ }
+ 
++static void
++hide (tree decl)
++{
++  DECL_VISIBILITY (decl) = VISIBILITY_HIDDEN;
++  DECL_VISIBILITY_SPECIFIED (decl) = 1;
++}
++
+ tree
+ add_method_1 (tree this_class, int access_flags, tree name, tree function_type)
+ {
+@@ -799,6 +805,10 @@
+       /* Always make field externally visible.  This is required so
+ 	 that native methods can always access the field.  */
+       TREE_PUBLIC (field) = 1;
++      /* Hide everything that shouldn't be visible outside a DSO.  */
++      if (flag_indirect_classes
++	  || (FIELD_PRIVATE (field)))
++	hide (field);
+       /* Considered external unless we are compiling it into this
+ 	 object file.  */
+       DECL_EXTERNAL (field) = (is_compiled_class (class) != 2);
+@@ -956,7 +966,11 @@
+       decl = build_decl (VAR_DECL, decl_name, class_type_node);
+       TREE_STATIC (decl) = 1;
+       if (! flag_indirect_classes)
+-	TREE_PUBLIC (decl) = 1;
++	{
++	  TREE_PUBLIC (decl) = 1;
++	  if (CLASS_PRIVATE (TYPE_NAME (type)))
++	    hide (decl);
++	}
+       DECL_IGNORED_P (decl) = 1;
+       DECL_ARTIFICIAL (decl) = 1;
+       if (is_compiled_class (type) == 1)
+@@ -995,6 +1009,7 @@
+       TREE_CONSTANT (decl) = 1;
+       TREE_READONLY (decl) = 1;
+       TREE_PUBLIC (decl) = 1;
++      hide (decl);
+       DECL_IGNORED_P (decl) = 1;
+       DECL_ARTIFICIAL (decl) = 1;
+       MAYBE_CREATE_VAR_LANG_DECL_SPECIFIC (decl);
+@@ -1640,6 +1655,10 @@
+ 
+       TREE_PUBLIC (dtable_decl) = 1;
+       DECL_INITIAL (dtable_decl) = dtable;
++      /* The only dispatch table exported from a DSO is the dispatch
++	 table for java.lang.Class.  */
++      if (DECL_NAME (type_decl) != id_class)
++	hide (dtable_decl);
+       if (! flag_indirect_classes)
+ 	rest_of_decl_compilation (dtable_decl, 1, 0);
+       /* Maybe we're compiling Class as the first class.  If so, set
+@@ -2509,6 +2528,12 @@
+ 
+   TREE_PUBLIC (method_decl) = 1;
+ 
++  if (flag_indirect_classes
++      || (METHOD_PRIVATE (method_decl) && METHOD_STATIC (method_decl)
++	  && ! METHOD_NATIVE (method_decl)
++	  && ! special_method_p (method_decl)))
++    hide (method_decl);
++
+   /* Considered external unless it is being compiled into this object
+      file, or it was already flagged as external.  */
+   if (!DECL_EXTERNAL (method_decl))
+--- gcc/java/jvgenmain.c	(revision 122746)
++++ gcc/java/jvgenmain.c	(working copy)
+@@ -143,8 +143,8 @@
+     fprintf (stream, "   JvRunMainName (\"%s\", argc, argv);\n", classname);
+   else
+     {
+-      fprintf (stream, "   extern void *%s;\n", mangled_classname);
+-      fprintf (stream, "   JvRunMain (%s, argc, argv);\n", mangled_classname);
++      fprintf (stream, "   extern char %s;\n", mangled_classname);
++      fprintf (stream, "   JvRunMain (&%s, argc, argv);\n", mangled_classname);
+     }
+   fprintf (stream, "}\n");
+   if (stream != stdout && fclose (stream) != 0)
+@@ -176,7 +176,7 @@
+ 	count++;
+     }
+   append_gpp_mangled_name (&ptr [-count], count);
+-  obstack_grow (mangle_obstack, "7class$$E", strlen ("7class$$E"));
++  obstack_grow (mangle_obstack, "6class$E", strlen ("6class$E"));
+   obstack_1grow (mangle_obstack, '\0');
+   return obstack_finish (mangle_obstack);
+ }
+--- gcc/java/expr.c	(revision 122746)
++++ gcc/java/expr.c	(working copy)
+@@ -2121,6 +2121,25 @@
+ 
+    {NULL, NULL, NULL, NULL, 0, NULL}};
+ 
++/* True if this method is special, i.e. it's a private method that
++   should be exported fro a DSO.  */
++
++bool
++special_method_p (tree candidate_method)
++{
++  tree context = DECL_NAME (TYPE_NAME (DECL_CONTEXT (candidate_method)));
++  tree method = DECL_NAME (candidate_method);
++  rewrite_rule *p;
++
++  for (p = rules; p->classname; p++)
++    {
++      if (get_identifier (p->classname) == context
++	  && get_identifier (p->method) == method)
++	return true;
++    }
++  return false;
++}
++
+ /* Scan the rules list for replacements for *METHOD_P and replace the
+    args accordingly.  If the rewrite results in an access to a private
+    method, update SPECIAL.*/
+--- gcc/java/java-tree.h	(revision 122746)
++++ gcc/java/java-tree.h	(working copy)
+@@ -1171,6 +1171,7 @@
+ extern void initialize_builtins (void);
+ 
+ extern tree lookup_name (tree);
++extern bool special_method_p (tree);
+ extern void maybe_rewrite_invocation (tree *, tree *, tree *, tree *);
+ extern tree build_known_method_ref (tree, tree, tree, tree, tree, tree);
+ extern tree build_class_init (tree, tree);

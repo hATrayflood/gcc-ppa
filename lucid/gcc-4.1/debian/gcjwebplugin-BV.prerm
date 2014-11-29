@@ -1,0 +1,12 @@
+#!/bin/sh -e
+
+browser_dirs="@browser_dirs@"
+PLUGINPTH=/usr/lib/gcj-@BV@/libgcjwebplugin.so
+
+for browser in $browser_dirs; do
+    update-alternatives --quiet --remove \
+	$browser-javaplugin.so \
+	$PLUGINPTH
+done
+
+#DEBHELPER#

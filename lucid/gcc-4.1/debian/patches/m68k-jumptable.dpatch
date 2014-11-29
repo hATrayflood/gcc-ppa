@@ -1,0 +1,51 @@
+#! /bin/sh -e
+
+# All lines beginning with `# DPATCH:' are a description of the patch.
+# DP: Don't force byte offset when accessing the jumptable, gas can
+# DP: generate the correct offset size instead.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+---
+
+ gcc/config/m68k/m68k.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: gcc-4.1/gcc/config/m68k/m68k.c
+===================================================================
+--- gcc-4.1.orig/gcc/config/m68k/m68k.c
++++ gcc-4.1/gcc/config/m68k/m68k.c
+@@ -2773,10 +2773,10 @@ print_operand (FILE *file, rtx op, int l
+ 
+ #if MOTOROLA
+ #  define ASM_OUTPUT_CASE_FETCH(file, labelno, regname)\
+-	asm_fprintf (file, "%LL%d-%LLI%d.b(%Rpc,%s.", labelno, labelno, regname)
++	asm_fprintf (file, "%LL%d(%Rpc,%s.", labelno, regname)
+ #else /* !MOTOROLA */
+ # define ASM_OUTPUT_CASE_FETCH(file, labelno, regname)\
+-	asm_fprintf (file, "%Rpc@(%LL%d-%LLI%d-2:b,%s:", labelno, labelno, regname)
++	asm_fprintf (file, "%Rpc@(%LL%d,%s:", labelno, regname)
+ #endif /* !MOTOROLA */
+ 
+ void

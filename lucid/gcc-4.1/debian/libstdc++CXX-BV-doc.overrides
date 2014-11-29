@@ -1,0 +1,2 @@
+libstdc++@CXX@-@BV@-doc: extra-license-file
+libstdc++@CXX@-@BV@-doc: manpage-has-errors-from-man usr/share/man/man3/__gnu_internal.3.gz

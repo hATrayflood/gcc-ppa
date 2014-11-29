@@ -1,0 +1,61 @@
+#! /bin/sh -e
+
+# DP: libjava: Avoid dependency on MAXHOSTNAMELEN
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+libjava/ChangeLog
+
+2007-07-24  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* java/net/natVMInetAddressPosix.cc
+	(java::net::VMInetAddress::getLocalHostname) [!MAXHOSTNAMELEN]:
+	Allocate buffer dynamically.
+
+--- libjava/java/net/natVMInetAddressPosix.cc.orig	2007-01-26 15:27:19.000000000 +0000
++++ libjava/java/net/natVMInetAddressPosix.cc	2007-01-26 15:45:53.000000000 +0000
+@@ -47,10 +47,25 @@ java::net::VMInetAddress::getLocalHostname ()
+ {
+   char *chars;
+ #ifdef HAVE_GETHOSTNAME
++#ifdef MAXHOSTNAMELEN
+   char buffer[MAXHOSTNAMELEN];
+   if (gethostname (buffer, MAXHOSTNAMELEN))
+     return NULL;
+   chars = buffer;
++#else
++  size_t size = 256;
++  while (1) {
++    char buffer[size];
++    if (!gethostname (buffer, size-1))
++      {
++	buffer[size-1] = 0;
++	return JvNewStringUTF (buffer);
++      }
++    else if (errno != ENAMETOOLONG)
++      return NULL;
++    size *= 2;
++  }
++#endif
+ #elif HAVE_UNAME
+   struct utsname stuff;
+   if (uname (&stuff) != 0)

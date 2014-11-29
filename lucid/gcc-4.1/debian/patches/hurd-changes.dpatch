@@ -1,0 +1,90 @@
+#! /bin/sh -e
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+# DP: Traditional GNU systems don't have a /usr directory.  However, Debian
+# DP: systems do, and we support both having a /usr -> . symlink, and having a
+# DP: /usr directory like the other ports.  So this patch should NOT go
+# DP: upstream.
+# DP: 
+# DP: Define MAXPATHLEN and PATH_MAX.
+
+--- gcc/ada/adaint.c.orig	2005-11-15 14:52:31.000000000 +0100
++++ gcc/ada/adaint.c	2006-12-10 12:28:46.000000000 +0100
+@@ -272,6 +272,10 @@
+ #include <sys/param.h>
+ #endif
+ 
++#ifndef MAXPATHLEN
++#define MAXPATHLEN 4096
++#endif
++
+ #ifdef MAXPATHLEN
+ #define GNAT_MAX_PATH_LEN MAXPATHLEN
+ #else
+--- gcc/config/i386/gnu.h.orig	2004-09-08 02:17:19.000000000 +0200
++++ gcc/config/i386/gnu.h	2006-12-10 12:28:45.000000000 +0100
+@@ -17,7 +17,7 @@
+   while (0)
+ 
+ #undef CPP_SPEC
+-#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{bsd:-D_BSD_SOURCE}"
++#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{bsd:-D_BSD_SOURCE} %{pthread:-D_REENTRANT}"
+ 
+ #undef CC1_SPEC
+ #define CC1_SPEC "%(cc1_cpu)"
+--- gcc/config/gnu.h.orig	2004-07-05 21:49:20.000000000 +0200
++++ gcc/config/gnu.h	2006-12-10 12:28:45.000000000 +0100
+@@ -6,11 +6,12 @@
+ 
+ /* Default C library spec.  Use -lbsd-compat for gcc -bsd.  */
+ #undef LIB_SPEC
+-#define LIB_SPEC "%{bsd:-lbsd-compat} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}"
++#define LIB_SPEC "%{pthread:-lpthread} %{bsd:-lbsd-compat} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}"
+ 
+ /* Standard include directory.  In GNU, "/usr" is a four-letter word.  */
+ #undef STANDARD_INCLUDE_DIR
+-#define STANDARD_INCLUDE_DIR "/include"
++/* Overriden for Debian GNU/Hurd.  */
++#define STANDARD_INCLUDE_DIR "/usr/include"
+ 
+ /* The system headers under GNU are C++-aware.  */
+ #define NO_IMPLICIT_EXTERN_C
+--- gcc/config/t-gnu.orig	2004-01-10 07:40:24.000000000 +0100
++++ gcc/config/t-gnu	2006-12-10 12:28:45.000000000 +0100
+@@ -1,2 +1,2 @@
+ # In GNU, "/usr" is a four-letter word.
+-NATIVE_SYSTEM_HEADER_DIR = /include
++NATIVE_SYSTEM_HEADER_DIR = /usr/include
+--- gcc/tlink.c.orig	2005-06-25 04:02:01.000000000 +0200
++++ gcc/tlink.c	2006-12-10 12:28:45.000000000 +0100
+@@ -34,6 +34,10 @@
+ 
+ #define MAX_ITERATIONS 17
+ 
++#ifndef MAXPATHLEN
++#define MAXPATHLEN 4096
++#endif
++
+ /* Defined in the automatically-generated underscore.c.  */
+ extern int prepends_underscore;
+ 

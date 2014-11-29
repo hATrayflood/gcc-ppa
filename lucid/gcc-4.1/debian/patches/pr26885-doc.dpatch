@@ -1,0 +1,112 @@
+#! /bin/sh -e
+
+# DP: Proposed patch for PR driver/26885 (doc files)
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+Date: Tue, 2 May 2006 13:23:54 -0700
+
+gcc/
+
+2006-04-22  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR driver/26885
+	* Makefile.in (GCC_OBJS): New.
+	(OBJS-common): Add opts-common.o.
+	(xgcc$(exeext)): Replace gcc.o with $(GCC_OBJS).
+	(cpp$(exeext)): Likewise.
+	(gcc.o): Also depend on opts.h.
+	(opts-common.o): New.
+
+	* common.opt (gcoff): Add Negative(gdwarf-2).
+	(gdwarf-2): Add Negative(gstabs).
+	(gstabs): Add Negative(gstabs+).
+	(gstabs+): Add Negative(gvms).
+	(gvms): Add Negative(gxcoff).
+	(gxcoff): Add Negative(gxcoff+).
+	(gxcoff+): Add Negative(gcoff).
+	* config/i386/i386.opt (m32): Add Negative(m64).
+	(m64): Add Negative(m32).
+
+	* doc/options.texi: Document the Negative option.
+
+	* gcc.c: Include "opts.h".
+	(main): Call prune_options after expandargv.
+
+	* optc-gen.awk: Generate common declarations for all flag
+	variables in options.c. Output the neg_index field.
+
+	* opts.c (find_opt): Moved to ...
+	* opts-common.c: Here. New file.
+
+	* opts.h (cl_option): Add a neg_index field.
+	(find_opt): New.
+	(prune_options): Likewise.
+
+gcc/cp/
+
+2006-04-22  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR driver/26885
+	* Make-lang.in (GXX_OBJS): Replace gcc.o with $(GCC_OBJS).
+
+gcc/fortran/
+
+2006-04-22  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR driver/26885
+	* Make-lang.in (GFORTRAN_D_OBJS): Replace gcc.o with
+	$(GCC_OBJS).
+
+gcc/java/
+
+2006-04-22  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR driver/26885
+	* Make-lang.in ($(GCJ)$(exeext)): Replace gcc.o with
+	$(GCC_OBJS).
+
+gcc/treelang/
+
+2006-04-22  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR driver/26885
+	* Make-lang.in (gtreelang$(exeext)): Replace gcc.o with
+	$(GCC_OBJS).
+
+--- gcc/doc/options.texi.orig	2006-05-07 13:23:52.294265896 +0200
++++ gcc/doc/options.texi	2006-05-07 13:24:36.553537464 +0200
+@@ -100,6 +100,12 @@
+ ``f'', ``W'' or ``m'' are assumed to have a ``no-'' form unless this
+ property is used.
+ 
++@item Negative(@var{othername})
++The option will turn off another option @var{othername}, which is the
++the option name with the leading ``-'' removed.  This chain action will
++propagate through the @code{Negative} property of the option to be
++turned off.
++
+ @item Joined
+ @itemx Separate
+ The option takes a mandatory argument.  @code{Joined} indicates

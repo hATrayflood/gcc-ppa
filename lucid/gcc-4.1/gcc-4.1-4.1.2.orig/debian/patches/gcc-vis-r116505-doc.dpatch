@@ -1,0 +1,294 @@
+#! /bin/sh -e
+
+# DP: g++ visibility patches (taken from the redhat/gcc-4_1-branch)
+# DP:   PR c++/17470, PR c++/19134, PR c++/21581, PR c++/21675,
+# DP:   PR c++/25915, PR c++/26612, PR c++/26905, PR c++/26984,
+# DP:   PR c++/27000, PR c++/28215, PR c++/28279.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+
+r116505 | jakub | 2006-08-28 14:26:41 +0200 (Mon, 28 Aug 2006) | 90 lines
+
+2006-07-06  Jason Merrill  <jason@redhat.com>
+
+cp/
+        PR c++/28279
+        * decl2.c (finish_static_data_member_decl): Don't assert
+        TREE_PUBLIC.
+
+2006-07-01  Jason Merrill  <jason@redhat.com>
+
+cp/
+        PR c++/28215
+        * method.c (make_thunk): Unset DECL_USE_TEMPLATE and 
+        DECL_TEMPLATE_INFO.
+
+2006-06-30  Jason Merrill  <jason@redhat.com>
+
+objcp/
+        * objcp-decl.c (objcp_start_struct): Pass null attributes argument
+        to begin_class_definition.
+
+2006-06-29  Jason Merrill  <jason@redhat.com>
+
+        PR c++/26905
+        PR c++/26612
+        PR c++/27000
+        PR c++/26984
+        PR c++/19134
+        * tree.c (build_decl_stat): Don't hande #pragma visibility here.
+        * c-common.c (c_determine_visibility): Handle it here.
+        * c-decl.c (finish_decl): Call c_determine_visibility for 
+        functions, too.
+        * flags.h (enum symbol_visibility): Sort from most to least visibility.
+        * tree.h: Likewise.
+        * varasm.c (default_assemble_visibility): Likewise.
+        * c-common.c (handle_visibility_attribute): Complain about trying
+        to give visibility to an already defined class, or trying to change
+        declared visibility. Always attach the attribute.
+
+        PR c++/26905
+        PR c++/21675
+        PR c++/17470
+        * attribs.c (decl_attributes): Ignore type-in-place attributes
+        once the type has been defined.
+cp/
+        PR c++/26905
+        PR c++/26612
+        PR c++/27000
+        PR c++/26984
+        PR c++/19134
+        * decl2.c (determine_visibility): Overhaul.
+        (determine_visibility_from_class): Likewise.
+        (min_vis_r, type_visibility, constrain_visibility): New fns.
+        (constrain_visibility_for_template): Likewise.
+        (constrain_class_visibility): Likewise.
+        * decl.c (cp_finish_decl): Call determine_visibility for function
+        decls, too.
+        * name-lookup.c (pushtag): Call determine_visibility.
+        * decl.c (duplicate_decls): Don't copy visibility from template to
+        specialization.
+        * pt.c (check_explicit_specialization): Likewise.
+        (lookup_template_class, tsubst_decl): Call determine_visibility.
+        * class.c (finish_struct_1): Call constrain_class_visibility.
+
+        PR c++/26905
+        PR c++/21675
+        PR c++/17470
+        * parser.c (cp_parser_explicit_instantiation): Pass the attributes
+        to grokdeclarator.
+        (cp_parser_type_specifier): Allow 'enum __attribute ((...)) E'.
+        (cp_parser_enum_specifier): Likewise.
+        (cp_parser_elaborated_type_specifier): Apply attributes if this
+        declares only the class.
+        (cp_parser_class_specifier): Apply leading attributes immediately.
+        * semantics.c (begin_class_definition): Add attributes parameter,
+        apply them to the type.
+
+        PR c++/21581
+        PR c++/25915
+        * tree.c (decl_anon_ns_mem_p): New function.
+        * cp-tree.h: Declare it.
+        * decl2.c (determine_visibility): Make anonymous namespace
+        members static.
+        (min_vis_r, constrain_visibility): Likewise.
+        * rtti.c (create_pseudo_type_info): Set TREE_PUBLIC on
+        pseudo-types.
+        * decl.c (cxx_init_decl_processing): Set TREE_PUBLIC on
+        global_namespace.
+        * name-lookup.c (push_namespace_with_attribs): Don't set TREE_PUBLIC
+        on anonymous namespaces.
+
+Index: gcc/doc/extend.texi
+===================================================================
+--- gcc/doc/extend.texi	(Revision 116504)
++++ gcc/doc/extend.texi	(Revision 116505)
+@@ -2335,6 +2335,17 @@
+ 
+ Not all ELF targets support this attribute.
+ 
++A C++ namespace declaration can also have the visibility attribute.
++This attribute applies only to the particular namespace body, not to
++other definitions of the same namespace; it is equivalent to using
++@samp{#pragma GCC visibility} before and after the namespace
++definition (@pxref{Visibility Pragmas}).
++
++In C++, if a template argument has limited visibility, this
++restriction is implicitly propagated to the template instantiation.
++Otherwise, template instantiations and specializations default to the
++visibility of their template.
++
+ @item warn_unused_result
+ @cindex @code{warn_unused_result} attribute
+ The @code{warn_unused_result} attribute causes a warning to be emitted
+@@ -2513,10 +2524,7 @@
+ An attribute specifier list may appear as part of a @code{struct},
+ @code{union} or @code{enum} specifier.  It may go either immediately
+ after the @code{struct}, @code{union} or @code{enum} keyword, or after
+-the closing brace.  It is ignored if the content of the structure, union
+-or enumerated type is not defined in the specifier in which the
+-attribute specifier list is used---that is, in usages such as
+-@code{struct __attribute__((foo)) bar} with no following opening brace.
++the closing brace.  The former syntax is preferred.
+ Where attribute specifiers follow the closing brace, they are considered
+ to relate to the structure, union or enumerated type defined, not to any
+ enclosing declaration the type specifier appears in, and the type
+@@ -3180,13 +3188,14 @@
+ @cindex type attributes
+ 
+ The keyword @code{__attribute__} allows you to specify special
+-attributes of @code{struct} and @code{union} types when you define such
+-types.  This keyword is followed by an attribute specification inside
+-double parentheses.  Six attributes are currently defined for types:
+-@code{aligned}, @code{packed}, @code{transparent_union}, @code{unused},
+-@code{deprecated} and @code{may_alias}.  Other attributes are defined for
+-functions (@pxref{Function Attributes}) and for variables
+-(@pxref{Variable Attributes}).
++attributes of @code{struct} and @code{union} types when you define
++such types.  This keyword is followed by an attribute specification
++inside double parentheses.  Seven attributes are currently defined for
++types: @code{aligned}, @code{packed}, @code{transparent_union},
++@code{unused}, @code{deprecated}, @code{visibility}, and
++@code{may_alias}.  Other attributes are defined for functions
++(@pxref{Function Attributes}) and for variables (@pxref{Variable
++Attributes}).
+ 
+ You may also specify any one of these attributes with @samp{__}
+ preceding and following its keyword.  This allows you to use these
+@@ -3194,14 +3203,13 @@
+ macro of the same name.  For example, you may use @code{__aligned__}
+ instead of @code{aligned}.
+ 
+-You may specify the @code{aligned} and @code{transparent_union}
+-attributes either in a @code{typedef} declaration or just past the
+-closing curly brace of a complete enum, struct or union type
+-@emph{definition} and the @code{packed} attribute only past the closing
+-brace of a definition.
++You may specify type attributes either in a @code{typedef} declaration
++or in an enum, struct or union type declaration or definition.
+ 
+-You may also specify attributes between the enum, struct or union
+-tag and the name of the type rather than after the closing brace.
++For an enum, struct or union type, you may specify attributes either
++between the enum, struct or union tag and the name of the type, or
++just past the closing curly brace of the @emph{definition}.  The
++former syntax is preferred.
+ 
+ @xref{Attribute Syntax}, for details of the exact syntax for using
+ attributes.
+@@ -3450,6 +3458,13 @@
+ @option{-fstrict-aliasing}, which is on by default at @option{-O2} or
+ above in recent GCC versions.
+ 
++@item visibility
++
++In C++, attribute visibility (@pxref{Function Attributes}) can also be
++applied to class, struct, union and enum types.  Unlike other type
++attributes, the attribute must appear between the initial keyword and
++the name of the type; it cannot appear after the body of the type.
++
+ @subsection ARM Type Attributes
+ 
+ On those ARM targets that support @code{dllimport} (such as Symbian
+@@ -9226,6 +9241,7 @@
+ * Symbol-Renaming Pragmas::
+ * Structure-Packing Pragmas::
+ * Weak Pragmas::
++* Visibility Pragmas::
+ @end menu
+ 
+ @node ARM Pragmas
+@@ -9466,6 +9482,26 @@
+ translation unit.
+ @end table
+ 
++@node Visibility Pragmas
++@subsection Visibility Pragmas
++
++@table @code
++@item #pragma GCC visibility push(@var{visibility})
++@itemx #pragma GCC visibility pop
++@cindex pragma, visibility
++
++This pragma allows the user to set the visibility for multiple
++declarations without having to give each a visibility attribute
++@xref{Function Attributes}, for more information about visibility and
++the attribute syntax.
++
++In C++, @samp{#pragma GCC visibility} affects only namespace-scope
++declarations.  Class members and template specializations are not
++affected; if you want to override the visibility for a particular
++member or instantiation, you must use an attribute.
++
++@end table
++
+ @node Unnamed Fields
+ @section Unnamed struct/union fields within structs/unions
+ @cindex struct
+Index: gcc/doc/invoke.texi
+===================================================================
+--- gcc/doc/invoke.texi	(Revision 116504)
++++ gcc/doc/invoke.texi	(Revision 116505)
+@@ -1585,13 +1585,13 @@
+ appear in the export table of a DSO and do not require a PLT indirection
+ when used within the DSO@.  Enabling this option can have a dramatic effect
+ on load and link times of a DSO as it massively reduces the size of the
+-dynamic export table when the library makes heavy use of templates.  While
+-it can cause bloating through duplication of code within each DSO where
+-it is used, often the wastage is less than the considerable space occupied
+-by a long symbol name in the export table which is typical when using
+-templates and namespaces.  For even more savings, combine with the
+-@option{-fvisibility=hidden} switch.
++dynamic export table when the library makes heavy use of templates.
+ 
++You may mark a method as having a visibility explicitly to negate the
++effect of the switch for that method.  For example, if you do want to
++compare pointers to a particular inline method, or the method has
++local static data, you might mark it as having default visibility.
++
+ @item -fno-weak
+ @opindex fno-weak
+ Do not use weak symbol support, even if it is provided by the linker.
+@@ -13157,6 +13157,20 @@
+ Note that due to ISO C++ specification requirements, operator new and
+ operator delete must always be of default visibility.
+ 
++@samp{extern} declarations are not affected by @samp{-fvisibility}, so
++a lot of code can be recompiled with @samp{-fvisibility=hidden} with
++no modifications.  However, this means that calls to @samp{extern}
++functions with no explicit visibility will use the PLT, so it is more
++effective to use @samp{__attribute ((visibility))} and/or
++@samp{#pragma GCC visibility} to tell the compiler which @samp{extern}
++declarations should be treated as hidden.
++
++Note that @samp{-fvisibility} does affect C++ vague linkage
++entities. This means that, for instance, an exception class that will
++be thrown between DSOs must be explicitly marked with default
++visibility so that the @samp{type_info} nodes will be unified between
++the DSOs.
++
+ An overview of these techniques, their benefits and how to use them
+ is at @w{@uref{http://gcc.gnu.org/wiki/Visibility}}.
+ 

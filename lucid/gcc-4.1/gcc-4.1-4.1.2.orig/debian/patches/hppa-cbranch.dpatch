@@ -1,0 +1,1751 @@
+#! /bin/sh -e
+
+# All lines beginning with `# DPATCH:' are a description of the patch.
+# DP: Fix for PR target/26743 (hppa)
+# DP: Backport from gcc trunk 2006-04-12 by tausq@debian.org
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2006-04-09  John David Anglin  <dave.anglin@nrc-crnc.gc.ca>
+	PR target/26743
+	PR target/11254
+	PR target/10274
+	* pa.md (cbranch patterns): Revise arguments used in calls to
+	output_cbranch, output_bb and output_bvd.  Add long branch length
+	attributes.
+	(fbranch patterns): Handle long branches.
+	(jump): Revise length check.  Revise arguments for output_lbranch call.
+	Add long branch length attributes.
+	(decrement_and_branch_until_zero): Add long branch length attributes.
+	(output_movb, output_parallel_addb and output_parallel_movb patterns):
+	Likewise.  Revise arguments for output_parallel_addb and
+	output_parallel_movb calls.
+	* pa-protos.h (output_cbranch, output_lbranch, output_bb, output_bvb,
+	output_parallel_movb and output_parallel_addb): Update prototypes.
+	* pa.c (output_cbranch): Revise arguments.  Correct handling of
+	nullification in long branches.
+	(output_lbranch): Add new argument to control extraction of delay
+	instruction.
+	(output_bb): Handle long branches.
+	(output_bvb, output_dbra, output_movb, output_parallel_movb,
+	output_parallel_addb): Likewise.
+
+
+--- gcc/config/pa/pa.c.orig	2006-02-07 23:11:30.000000000 +0100
++++ gcc/config/pa/pa.c	2006-04-19 11:31:02.331909272 +0200
+@@ -5934,11 +5934,13 @@
+    parameters.  */
+ 
+ const char *
+-output_cbranch (rtx *operands, int nullify, int length, int negated, rtx insn)
++output_cbranch (rtx *operands, int negated, rtx insn)
+ {
+   static char buf[100];
+   int useskip = 0;
+-  rtx xoperands[5];
++  int nullify = INSN_ANNULLED_BRANCH_P (insn);
++  int length = get_attr_length (insn);
++  int xdelay;
+ 
+   /* A conditional branch to the following instruction (e.g. the delay slot)
+      is asking for a disaster.  This can happen when not optimizing and
+@@ -6008,7 +6010,7 @@
+ 	with an unfilled delay slot.  */
+       case 8:
+ 	/* Handle weird backwards branch with a filled delay slot
+-	   with is nullified.  */
++	   which is nullified.  */
+ 	if (dbr_sequence_length () != 0
+ 	    && ! forward_branch_p (insn)
+ 	    && nullify)
+@@ -6055,19 +6057,24 @@
+ 	  }
+ 	break;
+ 
+-      case 20:
+-      case 28:
+-	xoperands[0] = operands[0];
+-	xoperands[1] = operands[1];
+-	xoperands[2] = operands[2];
+-	xoperands[3] = operands[3];
+-
++      default:
+ 	/* The reversed conditional branch must branch over one additional
+-	   instruction if the delay slot is filled.  If the delay slot
+-	   is empty, the instruction after the reversed condition branch
+-	   must be nullified.  */
+-	nullify = dbr_sequence_length () == 0;
+-	xoperands[4] = nullify ? GEN_INT (length) : GEN_INT (length + 4);
++	   instruction if the delay slot is filled and needs to be extracted
++	   by output_lbranch.  If the delay slot is empty or this is a
++	   nullified forward branch, the instruction after the reversed
++	   condition branch must be nullified.  */
++	if (dbr_sequence_length () == 0
++	    || (nullify && forward_branch_p (insn)))
++	  {
++	    nullify = 1;
++	    xdelay = 0;
++	    operands[4] = GEN_INT (length);
++	  }
++	else
++	  {
++	    xdelay = 1;
++	    operands[4] = GEN_INT (length + 4);
++	  }
+ 
+ 	/* Create a reversed conditional branch which branches around
+ 	   the following insns.  */
+@@ -6114,27 +6121,38 @@
+ 	      }
+ 	  }
+ 
+-	output_asm_insn (buf, xoperands);
+-	return output_lbranch (operands[0], insn);
+-
+-      default:
+-	gcc_unreachable ();
++	output_asm_insn (buf, operands);
++	return output_lbranch (operands[0], insn, xdelay);
+     }
+   return buf;
+ }
+ 
+-/* This routine handles long unconditional branches that exceed the
+-   maximum range of a simple branch instruction.  */
++/* This routine handles output of long unconditional branches that
++   exceed the maximum range of a simple branch instruction.  Since
++   we don't have a register available for the branch, we save register
++   %r1 in the frame marker, load the branch destination DEST into %r1,
++   execute the branch, and restore %r1 in the delay slot of the branch.
++
++   Since long branches may have an insn in the delay slot and the
++   delay slot is used to restore %r1, we in general need to extract
++   this insn and execute it before the branch.  However, to facilitate
++   use of this function by conditional branches, we also provide an
++   option to not extract the delay insn so that it will be emitted
++   after the long branch.  So, if there is an insn in the delay slot,
++   it is extracted if XDELAY is nonzero.
++
++   The lengths of the various long-branch sequences are 20, 16 and 24
++   bytes for the portable runtime, non-PIC and PIC cases, respectively.  */
+ 
+ const char *
+-output_lbranch (rtx dest, rtx insn)
++output_lbranch (rtx dest, rtx insn, int xdelay)
+ {
+   rtx xoperands[2];
+  
+   xoperands[0] = dest;
+ 
+   /* First, free up the delay slot.  */
+-  if (dbr_sequence_length () != 0)
++  if (xdelay && dbr_sequence_length () != 0)
+     {
+       /* We can't handle a jump in the delay slot.  */
+       gcc_assert (GET_CODE (NEXT_INSN (insn)) != JUMP_INSN);
+@@ -6244,11 +6262,13 @@
+    above.  it returns the appropriate output template to emit the branch.  */
+ 
+ const char *
+-output_bb (rtx *operands ATTRIBUTE_UNUSED, int nullify, int length,
+-	   int negated, rtx insn, int which)
++output_bb (rtx *operands ATTRIBUTE_UNUSED, int negated, rtx insn, int which)
+ {
+   static char buf[100];
+   int useskip = 0;
++  int nullify = INSN_ANNULLED_BRANCH_P (insn);
++  int length = get_attr_length (insn);
++  int xdelay;
+ 
+   /* A conditional branch to the following instruction (e.g. the delay slot) is
+      asking for a disaster.  I do not think this can happen as this pattern
+@@ -6315,7 +6335,7 @@
+ 	with an unfilled delay slot.  */
+       case 8:
+ 	/* Handle weird backwards branch with a filled delay slot
+-	   with is nullified.  */
++	   which is nullified.  */
+ 	if (dbr_sequence_length () != 0
+ 	    && ! forward_branch_p (insn)
+ 	    && nullify)
+@@ -6357,9 +6377,10 @@
+ 	  }
+ 	else
+ 	  {
+-	    strcpy (buf, "{extrs,|extrw,s,}");
+ 	    if (GET_MODE (operands[0]) == DImode)
+ 	      strcpy (buf, "extrd,s,*");
++	    else
++	      strcpy (buf, "{extrs,|extrw,s,}");
+ 	    if ((which == 0 && negated)
+ 		|| (which == 1 && ! negated))
+ 	      strcat (buf, "<");
+@@ -6377,7 +6398,40 @@
+ 	break;
+ 
+       default:
+-	gcc_unreachable ();
++	/* The reversed conditional branch must branch over one additional
++	   instruction if the delay slot is filled and needs to be extracted
++	   by output_lbranch.  If the delay slot is empty or this is a
++	   nullified forward branch, the instruction after the reversed
++	   condition branch must be nullified.  */
++	if (dbr_sequence_length () == 0
++	    || (nullify && forward_branch_p (insn)))
++	  {
++	    nullify = 1;
++	    xdelay = 0;
++	    operands[4] = GEN_INT (length - 8);
++	  }
++	else
++	  {
++	    xdelay = 1;
++	    operands[4] = GEN_INT (length - 4);
++	  }
++
++	if (GET_MODE (operands[0]) == DImode)
++	  strcpy (buf, "extrd,s,*");
++	else
++	  strcpy (buf, "{extrs,|extrw,s,}");
++	if ((which == 0 && negated)
++	    || (which == 1 && !negated))
++	  strcat (buf, ">= %0,%1,1,%%r0\n\t");
++	else
++	  strcat (buf, "< %0,%1,1,%%r0\n\t");
++	if (nullify)
++	  strcat (buf, "b,n .+%4");
++	else
++	  strcat (buf, "b .+%4");
++	output_asm_insn (buf, operands);
++	return output_lbranch (negated ? operands[3] : operands[2],
++			       insn, xdelay);
+     }
+   return buf;
+ }
+@@ -6389,11 +6443,13 @@
+    branch.  */
+ 
+ const char *
+-output_bvb (rtx *operands ATTRIBUTE_UNUSED, int nullify, int length,
+-	    int negated, rtx insn, int which)
++output_bvb (rtx *operands ATTRIBUTE_UNUSED, int negated, rtx insn, int which)
+ {
+   static char buf[100];
+   int useskip = 0;
++  int nullify = INSN_ANNULLED_BRANCH_P (insn);
++  int length = get_attr_length (insn);
++  int xdelay;
+ 
+   /* A conditional branch to the following instruction (e.g. the delay slot) is
+      asking for a disaster.  I do not think this can happen as this pattern
+@@ -6460,7 +6516,7 @@
+ 	with an unfilled delay slot.  */
+       case 8:
+ 	/* Handle weird backwards branch with a filled delay slot
+-	   with is nullified.  */
++	   which is nullified.  */
+ 	if (dbr_sequence_length () != 0
+ 	    && ! forward_branch_p (insn)
+ 	    && nullify)
+@@ -6522,7 +6578,40 @@
+ 	break;
+ 
+       default:
+-	gcc_unreachable ();
++	/* The reversed conditional branch must branch over one additional
++	   instruction if the delay slot is filled and needs to be extracted
++	   by output_lbranch.  If the delay slot is empty or this is a
++	   nullified forward branch, the instruction after the reversed
++	   condition branch must be nullified.  */
++	if (dbr_sequence_length () == 0
++	    || (nullify && forward_branch_p (insn)))
++	  {
++	    nullify = 1;
++	    xdelay = 0;
++	    operands[4] = GEN_INT (length - 8);
++	  }
++	else
++	  {
++	    xdelay = 1;
++	    operands[4] = GEN_INT (length - 4);
++	  }
++
++	if (GET_MODE (operands[0]) == DImode)
++	  strcpy (buf, "extrd,s,*");
++	else
++	  strcpy (buf, "{extrs,|extrw,s,}");
++	if ((which == 0 && negated)
++	    || (which == 1 && !negated))
++	  strcat (buf, ">= {%0,%1,1,%%r0|%0,%%sar,1,%%r0}\n\t");
++	else
++	  strcat (buf, "< {%0,%1,1,%%r0|%0,%%sar,1,%%r0}\n\t");
++	if (nullify)
++	  strcat (buf, "b,n .+%4");
++	else
++	  strcat (buf, "b .+%4");
++	output_asm_insn (buf, operands);
++	return output_lbranch (negated ? operands[3] : operands[2],
++			       insn, xdelay);
+     }
+   return buf;
+ }
+@@ -6534,6 +6623,7 @@
+ const char *
+ output_dbra (rtx *operands, rtx insn, int which_alternative)
+ {
++  int length = get_attr_length (insn);
+ 
+   /* A conditional branch to the following instruction (e.g. the delay slot) is
+      asking for a disaster.  Be prepared!  */
+@@ -6559,7 +6649,7 @@
+   if (which_alternative == 0)
+     {
+       int nullify = INSN_ANNULLED_BRANCH_P (insn);
+-      int length = get_attr_length (insn);
++      int xdelay;
+ 
+       /* If this is a long branch with its delay slot unfilled, set `nullify'
+ 	 as it can nullify the delay slot and save a nop.  */
+@@ -6603,7 +6693,30 @@
+ 	    return "addi,%N2 %1,%0,%0\n\tb %3";
+ 
+ 	default:
+-	  gcc_unreachable ();
++	  /* The reversed conditional branch must branch over one additional
++	     instruction if the delay slot is filled and needs to be extracted
++	     by output_lbranch.  If the delay slot is empty or this is a
++	     nullified forward branch, the instruction after the reversed
++	     condition branch must be nullified.  */
++	  if (dbr_sequence_length () == 0
++	      || (nullify && forward_branch_p (insn)))
++	    {
++	      nullify = 1;
++	      xdelay = 0;
++	      operands[4] = GEN_INT (length);
++	    }
++	  else
++	    {
++	      xdelay = 1;
++	      operands[4] = GEN_INT (length + 4);
++	    }
++
++	  if (nullify)
++	    output_asm_insn ("addib,%N2,n %1,%0,.+%4", operands);
++	  else
++	    output_asm_insn ("addib,%N2 %1,%0,.+%4", operands);
++
++	  return output_lbranch (operands[3], insn, xdelay);
+ 	}
+       
+     }
+@@ -6616,10 +6729,17 @@
+       output_asm_insn ("{fstws|fstw} %0,-16(%%r30)\n\tldw -16(%%r30),%4",
+ 		       operands);
+       output_asm_insn ("ldo %1(%4),%4\n\tstw %4,-16(%%r30)", operands);
+-      if (get_attr_length (insn) == 24)
++      if (length == 24)
+ 	return "{comb|cmpb},%S2 %%r0,%4,%3\n\t{fldws|fldw} -16(%%r30),%0";
+-      else
++      else if (length == 28)
+ 	return "{comclr|cmpclr},%B2 %%r0,%4,%%r0\n\tb %3\n\t{fldws|fldw} -16(%%r30),%0";
++      else
++	{
++	  operands[4] = GEN_INT (length - 24);
++	  output_asm_insn ("addib,%N2 %1,%0,.+%4", operands);
++	  output_asm_insn ("{fldws|fldw} -16(%%r30),%0", operands);
++	  return output_lbranch (operands[3], insn, 0);
++	}
+     }
+   /* Deal with gross reload from memory case.  */
+   else
+@@ -6627,14 +6747,20 @@
+       /* Reload loop counter from memory, the store back to memory
+ 	 happens in the branch's delay slot.  */
+       output_asm_insn ("ldw %0,%4", operands);
+-      if (get_attr_length (insn) == 12)
++      if (length == 12)
+ 	return "addib,%C2 %1,%4,%3\n\tstw %4,%0";
+-      else
++      else if (length == 16)
+ 	return "addi,%N2 %1,%4,%4\n\tb %3\n\tstw %4,%0";
++      else
++	{
++	  operands[5] = GEN_INT (length - 12);
++	  output_asm_insn ("addib,%N2 %1,%0,.+%5\n\tstw %4,%0", operands);
++	  return output_lbranch (operands[3], insn, 0);
++	}
+     }
+ }
+ 
+-/* Return the output template for emitting a dbra type insn.
++/* Return the output template for emitting a movb type insn.
+ 
+    Note it may perform some output operations on its own before
+    returning the final output string.  */
+@@ -6642,6 +6768,7 @@
+ output_movb (rtx *operands, rtx insn, int which_alternative,
+ 	     int reverse_comparison)
+ {
++  int length = get_attr_length (insn);
+ 
+   /* A conditional branch to the following instruction (e.g. the delay slot) is
+      asking for a disaster.  Be prepared!  */
+@@ -6668,7 +6795,7 @@
+   if (which_alternative == 0)
+     {
+       int nullify = INSN_ANNULLED_BRANCH_P (insn);
+-      int length = get_attr_length (insn);
++      int xdelay;
+ 
+       /* If this is a long branch with its delay slot unfilled, set `nullify'
+ 	 as it can nullify the delay slot and save a nop.  */
+@@ -6712,38 +6839,80 @@
+ 	    return "or,%N2 %1,%%r0,%0\n\tb %3";
+ 
+ 	default:
+-	  gcc_unreachable ();
++	  /* The reversed conditional branch must branch over one additional
++	     instruction if the delay slot is filled and needs to be extracted
++	     by output_lbranch.  If the delay slot is empty or this is a
++	     nullified forward branch, the instruction after the reversed
++	     condition branch must be nullified.  */
++	  if (dbr_sequence_length () == 0
++	      || (nullify && forward_branch_p (insn)))
++	    {
++	      nullify = 1;
++	      xdelay = 0;
++	      operands[4] = GEN_INT (length);
++	    }
++	  else
++	    {
++	      xdelay = 1;
++	      operands[4] = GEN_INT (length + 4);
++	    }
++
++	  if (nullify)
++	    output_asm_insn ("movb,%N2,n %1,%0,.+%4", operands);
++	  else
++	    output_asm_insn ("movb,%N2 %1,%0,.+%4", operands);
++
++	  return output_lbranch (operands[3], insn, xdelay);
+ 	}
+     }
+-  /* Deal with gross reload from FP register case.  */
++  /* Deal with gross reload for FP destination register case.  */
+   else if (which_alternative == 1)
+     {
+-      /* Move loop counter from FP register to MEM then into a GR,
+-	 increment the GR, store the GR into MEM, and finally reload
+-	 the FP register from MEM from within the branch's delay slot.  */
++      /* Move source register to MEM, perform the branch test, then
++	 finally load the FP register from MEM from within the branch's
++	 delay slot.  */
+       output_asm_insn ("stw %1,-16(%%r30)", operands);
+-      if (get_attr_length (insn) == 12)
++      if (length == 12)
+ 	return "{comb|cmpb},%S2 %%r0,%1,%3\n\t{fldws|fldw} -16(%%r30),%0";
+-      else
++      else if (length == 16)
+ 	return "{comclr|cmpclr},%B2 %%r0,%1,%%r0\n\tb %3\n\t{fldws|fldw} -16(%%r30),%0";
++      else
++	{
++	  operands[4] = GEN_INT (length - 12);
++	  output_asm_insn ("movb,%N2 %1,%0,.+%4", operands);
++	  output_asm_insn ("{fldws|fldw} -16(%%r30),%0", operands);
++	  return output_lbranch (operands[3], insn, 0);
++	}
+     }
+   /* Deal with gross reload from memory case.  */
+   else if (which_alternative == 2)
+     {
+       /* Reload loop counter from memory, the store back to memory
+ 	 happens in the branch's delay slot.  */
+-      if (get_attr_length (insn) == 8)
++      if (length == 8)
+ 	return "{comb|cmpb},%S2 %%r0,%1,%3\n\tstw %1,%0";
+-      else
++      else if (length == 12)
+ 	return "{comclr|cmpclr},%B2 %%r0,%1,%%r0\n\tb %3\n\tstw %1,%0";
++      else
++	{
++	  operands[4] = GEN_INT (length - 8);
++	  output_asm_insn ("movb,%N2 %1,%0,.+%4\n\tstw %1,%0", operands);
++	  return output_lbranch (operands[3], insn, 0);
++	}
+     }
+   /* Handle SAR as a destination.  */
+   else
+     {
+-      if (get_attr_length (insn) == 8)
++      if (length == 8)
+ 	return "{comb|cmpb},%S2 %%r0,%1,%3\n\tmtsar %r1";
+-      else
++      else if (length == 12)
+ 	return "{comclr|cmpclr},%B2 %%r0,%1,%%r0\n\tb %3\n\tmtsar %r1";
++      else
++	{
++	  operands[4] = GEN_INT (length - 8);
++	  output_asm_insn ("movb,%N2 %1,%0,.+%4\n\tmtsar %r1", operands);
++	  return output_lbranch (operands[3], insn, 0);
++	}
+     }
+ }
+ 
+@@ -8206,37 +8375,50 @@
+ /* Output an unconditional move and branch insn.  */
+ 
+ const char *
+-output_parallel_movb (rtx *operands, int length)
++output_parallel_movb (rtx *operands, rtx insn)
+ {
++  int length = get_attr_length (insn);
++
+   /* These are the cases in which we win.  */
+   if (length == 4)
+     return "mov%I1b,tr %1,%0,%2";
+ 
+-  /* None of these cases wins, but they don't lose either.  */
+-  if (dbr_sequence_length () == 0)
++  /* None of the following cases win, but they don't lose either.  */
++  if (length == 8)
+     {
+-      /* Nothing in the delay slot, fake it by putting the combined
+-	 insn (the copy or add) in the delay slot of a bl.  */
+-      if (GET_CODE (operands[1]) == CONST_INT)
+-	return "b %2\n\tldi %1,%0";
++      if (dbr_sequence_length () == 0)
++	{
++	  /* Nothing in the delay slot, fake it by putting the combined
++	     insn (the copy or add) in the delay slot of a bl.  */
++	  if (GET_CODE (operands[1]) == CONST_INT)
++	    return "b %2\n\tldi %1,%0";
++	  else
++	    return "b %2\n\tcopy %1,%0";
++	}
+       else
+-	return "b %2\n\tcopy %1,%0";
++	{
++	  /* Something in the delay slot, but we've got a long branch.  */
++	  if (GET_CODE (operands[1]) == CONST_INT)
++	    return "ldi %1,%0\n\tb %2";
++	  else
++	    return "copy %1,%0\n\tb %2";
++	}
+     }
++
++  if (GET_CODE (operands[1]) == CONST_INT)
++    output_asm_insn ("ldi %1,%0", operands);
+   else
+-    {
+-      /* Something in the delay slot, but we've got a long branch.  */
+-      if (GET_CODE (operands[1]) == CONST_INT)
+-	return "ldi %1,%0\n\tb %2";
+-      else
+-	return "copy %1,%0\n\tb %2";
+-    }
++    output_asm_insn ("copy %1,%0", operands);
++  return output_lbranch (operands[2], insn, 1);
+ }
+ 
+ /* Output an unconditional add and branch insn.  */
+ 
+ const char *
+-output_parallel_addb (rtx *operands, int length)
++output_parallel_addb (rtx *operands, rtx insn)
+ {
++  int length = get_attr_length (insn);
++
+   /* To make life easy we want operand0 to be the shared input/output
+      operand and operand1 to be the readonly operand.  */
+   if (operands[0] == operands[1])
+@@ -8246,18 +8428,20 @@
+   if (length == 4)
+     return "add%I1b,tr %1,%0,%3";
+ 
+-  /* None of these cases win, but they don't lose either.  */
+-  if (dbr_sequence_length () == 0)
+-    {
+-      /* Nothing in the delay slot, fake it by putting the combined
+-	 insn (the copy or add) in the delay slot of a bl.  */
+-      return "b %3\n\tadd%I1 %1,%0,%0";
+-    }
+-  else
++  /* None of the following cases win, but they don't lose either.  */
++  if (length == 8)
+     {
+-      /* Something in the delay slot, but we've got a long branch.  */
+-      return "add%I1 %1,%0,%0\n\tb %3";
++      if (dbr_sequence_length () == 0)
++	/* Nothing in the delay slot, fake it by putting the combined
++	   insn (the copy or add) in the delay slot of a bl.  */
++	return "b %3\n\tadd%I1 %1,%0,%0";
++      else
++	/* Something in the delay slot, but we've got a long branch.  */
++	return "add%I1 %1,%0,%0\n\tb %3";
+     }
++
++  output_asm_insn ("add%I1 %1,%0,%0", operands);
++  return output_lbranch (operands[3], insn, 1);
+ }
+ 
+ /* Return nonzero if INSN (a jump insn) immediately follows a call
+--- gcc/config/pa/pa.md.orig	2006-02-15 03:54:08.000000000 +0100
++++ gcc/config/pa/pa.md	2006-04-19 11:15:44.899380216 +0200
+@@ -139,7 +139,7 @@
+ (define_delay (eq_attr "type" "btable_branch,branch,parallel_branch")
+   [(eq_attr "in_branch_delay" "true") (nil) (nil)])
+ 
+-;; Floating point conditional branch delay slot description and
++;; Floating point conditional branch delay slot description.
+ (define_delay (eq_attr "type" "fbranch")
+   [(eq_attr "in_branch_delay" "true")
+    (eq_attr "in_nullified_branch_delay" "true")
+@@ -1708,8 +1708,7 @@
+   ""
+   "*
+ {
+-  return output_cbranch (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 0, insn);
++  return output_cbranch (operands, 0, insn);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+@@ -1719,6 +1718,8 @@
+ 	   (lt (abs (minus (match_dup 0) (plus (pc) (const_int 8))))
+ 	       (const_int 262100))
+ 	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
+ 	   (eq (symbol_ref "flag_pic") (const_int 0))
+ 	   (const_int 20)]
+ 	  (const_int 28)))])
+@@ -1736,8 +1737,7 @@
+   ""
+   "*
+ {
+-  return output_cbranch (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 1, insn);
++  return output_cbranch (operands, 1, insn);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+@@ -1747,6 +1747,8 @@
+ 	   (lt (abs (minus (match_dup 0) (plus (pc) (const_int 8))))
+ 	       (const_int 262100))
+ 	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
+ 	   (eq (symbol_ref "flag_pic") (const_int 0))
+ 	   (const_int 20)]
+ 	  (const_int 28)))])
+@@ -1762,8 +1764,7 @@
+   "TARGET_64BIT"
+   "*
+ {
+-  return output_cbranch (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 0, insn);
++  return output_cbranch (operands, 0, insn);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+@@ -1773,6 +1774,8 @@
+ 	   (lt (abs (minus (match_dup 0) (plus (pc) (const_int 8))))
+ 	       (const_int 262100))
+ 	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
+ 	   (eq (symbol_ref "flag_pic") (const_int 0))
+ 	   (const_int 20)]
+ 	  (const_int 28)))])
+@@ -1790,8 +1793,7 @@
+   "TARGET_64BIT"
+   "*
+ {
+-  return output_cbranch (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 1, insn);
++  return output_cbranch (operands, 1, insn);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+@@ -1801,6 +1803,8 @@
+ 	   (lt (abs (minus (match_dup 0) (plus (pc) (const_int 8))))
+ 	       (const_int 262100))
+ 	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
+ 	   (eq (symbol_ref "flag_pic") (const_int 0))
+ 	   (const_int 20)]
+ 	  (const_int 28)))])
+@@ -1815,8 +1819,7 @@
+   "TARGET_64BIT"
+   "*
+ {
+-  return output_cbranch (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 0, insn);
++  return output_cbranch (operands, 0, insn);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+@@ -1826,6 +1829,8 @@
+ 	   (lt (abs (minus (match_dup 0) (plus (pc) (const_int 8))))
+ 	       (const_int 262100))
+ 	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
+ 	   (eq (symbol_ref "flag_pic") (const_int 0))
+ 	   (const_int 20)]
+ 	  (const_int 28)))])
+@@ -1843,8 +1848,7 @@
+   "TARGET_64BIT"
+   "*
+ {
+-  return output_cbranch (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 1, insn);
++  return output_cbranch (operands, 1, insn);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+@@ -1854,6 +1858,8 @@
+ 	   (lt (abs (minus (match_dup 0) (plus (pc) (const_int 8))))
+ 	       (const_int 262100))
+ 	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
+ 	   (eq (symbol_ref "flag_pic") (const_int 0))
+ 	   (const_int 20)]
+ 	  (const_int 28)))])
+@@ -1871,15 +1877,21 @@
+   ""
+   "*
+ {
+-  return output_bb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 0, insn, 0);
++  return output_bb (operands, 0, insn, 0);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -1893,15 +1905,21 @@
+   "TARGET_64BIT"
+   "*
+ {
+-  return output_bb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 0, insn, 0);
++  return output_bb (operands, 0, insn, 0);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -1915,15 +1933,21 @@
+   ""
+   "*
+ {
+-  return output_bb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 1, insn, 0);
++  return output_bb (operands, 1, insn, 0);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -1937,15 +1961,21 @@
+   "TARGET_64BIT"
+   "*
+ {
+-  return output_bb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 1, insn, 0);
++  return output_bb (operands, 1, insn, 0);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -1959,15 +1989,21 @@
+   ""
+   "*
+ {
+-  return output_bb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 0, insn, 1);
++  return output_bb (operands, 0, insn, 1);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -1981,15 +2017,21 @@
+   "TARGET_64BIT"
+   "*
+ {
+-  return output_bb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 0, insn, 1);
++  return output_bb (operands, 0, insn, 1);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -2003,15 +2045,21 @@
+   ""
+   "*
+ {
+-  return output_bb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 1, insn, 1);
++  return output_bb (operands, 1, insn, 1);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -2025,15 +2073,21 @@
+   "TARGET_64BIT"
+   "*
+ {
+-  return output_bb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-			 get_attr_length (insn), 1, insn, 1);
++  return output_bb (operands, 1, insn, 1);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ ;; Branch on Variable Bit patterns.
+ (define_insn ""
+@@ -2048,15 +2102,21 @@
+   ""
+   "*
+ {
+-  return output_bvb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-		     get_attr_length (insn), 0, insn, 0);
++  return output_bvb (operands, 0, insn, 0);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -2070,15 +2130,21 @@
+   "TARGET_64BIT"
+   "*
+ {
+-  return output_bvb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-		     get_attr_length (insn), 0, insn, 0);
++  return output_bvb (operands, 0, insn, 0);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -2092,15 +2158,21 @@
+   ""
+   "*
+ {
+-  return output_bvb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-		     get_attr_length (insn), 1, insn, 0);
++  return output_bvb (operands, 1, insn, 0);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -2114,15 +2186,21 @@
+   "TARGET_64BIT"
+   "*
+ {
+-  return output_bvb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-		     get_attr_length (insn), 1, insn, 0);
++  return output_bvb (operands, 1, insn, 0);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -2136,15 +2214,21 @@
+   ""
+   "*
+ {
+-  return output_bvb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-		     get_attr_length (insn), 0, insn, 1);
++  return output_bvb (operands, 0, insn, 1);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -2158,15 +2242,21 @@
+   "TARGET_64BIT"
+   "*
+ {
+-  return output_bvb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-		     get_attr_length (insn), 0, insn, 1);
++  return output_bvb (operands, 0, insn, 1);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -2180,15 +2270,21 @@
+   ""
+   "*
+ {
+-  return output_bvb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-		     get_attr_length (insn), 1, insn, 1);
++  return output_bvb (operands, 1, insn, 1);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -2202,46 +2298,114 @@
+   "TARGET_64BIT"
+   "*
+ {
+-  return output_bvb (operands, INSN_ANNULLED_BRANCH_P (insn),
+-		     get_attr_length (insn), 1, insn, 1);
++  return output_bvb (operands, 1, insn, 1);
+ }"
+ [(set_attr "type" "cbranch")
+  (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ ;; Floating point branches
++
++;; ??? Nullification is handled differently from other branches.
++;; If nullification is specified, the delay slot is nullified on any
++;; taken branch regardless of branch direction.
+ (define_insn ""
+   [(set (pc) (if_then_else (ne (reg:CCFP 0) (const_int 0))
+ 			   (label_ref (match_operand 0 "" ""))
+ 			   (pc)))]
+-  "! TARGET_SOFT_FLOAT"
++  "!TARGET_SOFT_FLOAT"
+   "*
+ {
+-  if (INSN_ANNULLED_BRANCH_P (insn))
+-    return \"ftest\;b,n %0\";
++  int length = get_attr_length (insn);
++  rtx xoperands[1];
++  int nullify, xdelay;
++
++  if (length < 16)
++    return \"ftest\;b%* %l0\";
++
++  if (dbr_sequence_length () == 0 || INSN_ANNULLED_BRANCH_P (insn))
++    {
++      nullify = 1;
++      xdelay = 0;
++      xoperands[0] = GEN_INT (length - 8);
++    }
++  else
++    {
++      nullify = 0;
++      xdelay = 1;
++      xoperands[0] = GEN_INT (length - 4);
++    }
++
++  if (nullify)
++    output_asm_insn (\"ftest\;add,tr %%r0,%%r0,%%r0\;b,n .+%0\", xoperands);
+   else
+-    return \"ftest\;b%* %0\";
++    output_asm_insn (\"ftest\;add,tr %%r0,%%r0,%%r0\;b .+%0\", xoperands);
++  return output_lbranch (operands[0], insn, xdelay);
+ }"
+-  [(set_attr "type" "fbranch")
+-   (set_attr "length" "8")])
++[(set_attr "type" "fbranch")
++ (set (attr "length")
++    (cond [(lt (abs (minus (match_dup 0) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 32)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 28)]
++	  (const_int 36)))])
+ 
+ (define_insn ""
+   [(set (pc) (if_then_else (ne (reg:CCFP 0) (const_int 0))
+ 			   (pc)
+ 			   (label_ref (match_operand 0 "" ""))))]
+-  "! TARGET_SOFT_FLOAT"
++  "!TARGET_SOFT_FLOAT"
+   "*
+ {
+-  if (INSN_ANNULLED_BRANCH_P (insn))
+-    return \"ftest\;add,tr %%r0,%%r0,%%r0\;b,n %0\";
+-  else
++  int length = get_attr_length (insn);
++  rtx xoperands[1];
++  int nullify, xdelay;
++
++  if (length < 16)
+     return \"ftest\;add,tr %%r0,%%r0,%%r0\;b%* %0\";
++
++  if (dbr_sequence_length () == 0 || INSN_ANNULLED_BRANCH_P (insn))
++    {
++      nullify = 1;
++      xdelay = 0;
++      xoperands[0] = GEN_INT (length - 4);
++    }
++  else
++    {
++      nullify = 0;
++      xdelay = 1;
++      xoperands[0] = GEN_INT (length);
++    }
++
++  if (nullify)
++    output_asm_insn (\"ftest\;b,n .+%0\", xoperands);
++  else
++    output_asm_insn (\"ftest\;b .+%0\", xoperands);
++  return output_lbranch (operands[0], insn, xdelay);
+ }"
+-  [(set_attr "type" "fbranch")
+-   (set_attr "length" "12")])
++[(set_attr "type" "fbranch")
++ (set (attr "length")
++    (cond [(lt (abs (minus (match_dup 0) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 12)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 28)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 24)]
++	  (const_int 32)))])
+ 
+ ;; Move instructions
+ 
+@@ -6967,11 +7131,10 @@
+   "*
+ {
+   /* An unconditional branch which can reach its target.  */
+-  if (get_attr_length (insn) != 24
+-      && get_attr_length (insn) != 16)
++  if (get_attr_length (insn) < 16)
+     return \"b%* %l0\";
+ 
+-  return output_lbranch (operands[0], insn);
++  return output_lbranch (operands[0], insn, 1);
+ }"
+   [(set_attr "type" "uncond_branch")
+    (set_attr "pa_combine_type" "uncond_branch")
+@@ -6980,14 +7143,16 @@
+ 	   (if_then_else (lt (abs (minus (match_dup 0)
+ 					 (plus (pc) (const_int 8))))
+ 			     (const_int 8184))
+-			 (const_int 4)
+-			 (const_int 8))
+-	   (ge (abs (minus (match_dup 0) (plus (pc) (const_int 8))))
++	   (const_int 4)
++	   (const_int 8))
++	   (lt (abs (minus (match_dup 0) (plus (pc) (const_int 8))))
+ 	       (const_int 262100))
+-	   (if_then_else (eq (symbol_ref "flag_pic") (const_int 0))
+-			 (const_int 16)
+-			 (const_int 24))]
+-	  (const_int 4)))])
++	   (const_int 4)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 20)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 16)]
++	  (const_int 24)))])
+ 
+ ;;; Hope this is only within a function...
+ (define_insn "indirect_jump"
+@@ -8801,39 +8966,71 @@
+       (if_then_else (eq_attr "alternative" "0")
+ ;; Loop counter in register case
+ ;; Short branch has length of 4
+-;; Long branch has length of 8
+-	(if_then_else (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8))
++;; Long branch has length of 8, 20, 24 or 28
++	(cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 20)]
++	  (const_int 28))
+ 
+ ;; Loop counter in FP reg case.
+ ;; Extra goo to deal with additional reload insns.
+ 	(if_then_else (eq_attr "alternative" "1")
+ 	  (if_then_else (lt (match_dup 3) (pc))
+-	    (if_then_else
+-	      (lt (abs (minus (match_dup 3) (plus (pc) (const_int 24))))
+-		  (const_int 8184))
+-	      (const_int 24)
+-	      (const_int 28))
+-	    (if_then_else
+-	      (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
+-		  (const_int 8184))
+-	      (const_int 24)
+-	      (const_int 28)))
++	     (cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 24))))
++		      (const_int 8184))
++		    (const_int 24)
++		    (lt (abs (minus (match_dup 3) (plus (pc) (const_int 24))))
++		      (const_int 262100))
++		    (const_int 28)
++		    (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++		    (const_int 44)
++		    (eq (symbol_ref "flag_pic") (const_int 0))
++		    (const_int 40)]
++		  (const_int 48))
++	     (cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++		      (const_int 8184))
++		    (const_int 24)
++		    (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++		      (const_int 262100))
++		    (const_int 28)
++		    (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++		    (const_int 44)
++		    (eq (symbol_ref "flag_pic") (const_int 0))
++		    (const_int 40)]
++		  (const_int 48)))
++
+ ;; Loop counter in memory case.
+ ;; Extra goo to deal with additional reload insns.
+ 	(if_then_else (lt (match_dup 3) (pc))
+-	  (if_then_else
+-	    (lt (abs (minus (match_dup 3) (plus (pc) (const_int 12))))
+-		(const_int 8184))
+-	    (const_int 12)
+-	    (const_int 16))
+-	  (if_then_else
+-	    (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
+-		(const_int 8184))
+-	    (const_int 12)
+-	    (const_int 16))))))])
++	     (cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 12))))
++		      (const_int 8184))
++		    (const_int 12)
++		    (lt (abs (minus (match_dup 3) (plus (pc) (const_int 12))))
++		      (const_int 262100))
++		    (const_int 16)
++		    (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++		    (const_int 32)
++		    (eq (symbol_ref "flag_pic") (const_int 0))
++		    (const_int 28)]
++		  (const_int 36))
++	     (cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++		      (const_int 8184))
++		    (const_int 12)
++		    (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++		      (const_int 262100))
++		    (const_int 16)
++		    (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++		    (const_int 32)
++		    (eq (symbol_ref "flag_pic") (const_int 0))
++		    (const_int 28)]
++		  (const_int 36))))))])
+ 
+ (define_insn ""
+   [(set (pc)
+@@ -8852,33 +9049,59 @@
+       (if_then_else (eq_attr "alternative" "0")
+ ;; Loop counter in register case
+ ;; Short branch has length of 4
+-;; Long branch has length of 8
+-	(if_then_else (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8))
++;; Long branch has length of 8, 20, 24 or 28
++        (cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 20)]
++	  (const_int 28))
+ 
+ ;; Loop counter in FP reg case.
+ ;; Extra goo to deal with additional reload insns.
+ 	(if_then_else (eq_attr "alternative" "1")
+ 	  (if_then_else (lt (match_dup 3) (pc))
+-	    (if_then_else
+-	      (lt (abs (minus (match_dup 3) (plus (pc) (const_int 12))))
+-		  (const_int 8184))
+-	      (const_int 12)
+-	      (const_int 16))
+-	    (if_then_else
+-	      (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
+-		  (const_int 8184))
+-	      (const_int 12)
+-	      (const_int 16)))
++	     (cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 12))))
++		      (const_int 8184))
++		    (const_int 12)
++		    (lt (abs (minus (match_dup 3) (plus (pc) (const_int 12))))
++		      (const_int 262100))
++		    (const_int 16)
++		    (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++		    (const_int 32)
++		    (eq (symbol_ref "flag_pic") (const_int 0))
++		    (const_int 28)]
++		  (const_int 36))
++	     (cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++		      (const_int 8184))
++		    (const_int 12)
++		    (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++		      (const_int 262100))
++		    (const_int 16)
++		    (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++		    (const_int 32)
++		    (eq (symbol_ref "flag_pic") (const_int 0))
++		    (const_int 28)]
++		  (const_int 36)))
++
+ ;; Loop counter in memory or sar case.
+ ;; Extra goo to deal with additional reload insns.
+-	(if_then_else
+-	  (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
+-	      (const_int 8184))
+-	  (const_int 8)
+-	  (const_int 12)))))])
++	(cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++		   (const_int 8184))
++		(const_int 8)
++		(lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++		  (const_int 262100))
++		(const_int 12)
++		(ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++		(const_int 28)
++		(eq (symbol_ref "flag_pic") (const_int 0))
++		(const_int 24)]
++	      (const_int 32)))))])
+ 
+ ;; Handle negated branch.
+ (define_insn ""
+@@ -8899,32 +9122,58 @@
+ ;; Loop counter in register case
+ ;; Short branch has length of 4
+ ;; Long branch has length of 8
+-	(if_then_else (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8))
++        (cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 20)]
++	  (const_int 28))
+ 
+ ;; Loop counter in FP reg case.
+ ;; Extra goo to deal with additional reload insns.
+ 	(if_then_else (eq_attr "alternative" "1")
+ 	  (if_then_else (lt (match_dup 3) (pc))
+-	    (if_then_else
+-	      (lt (abs (minus (match_dup 3) (plus (pc) (const_int 12))))
+-		  (const_int 8184))
+-	      (const_int 12)
+-	      (const_int 16))
+-	    (if_then_else
+-	      (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
+-		  (const_int 8184))
+-	      (const_int 12)
+-	      (const_int 16)))
++	     (cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 12))))
++		      (const_int 8184))
++		    (const_int 12)
++		    (lt (abs (minus (match_dup 3) (plus (pc) (const_int 12))))
++		      (const_int 262100))
++		    (const_int 16)
++		    (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++		    (const_int 32)
++		    (eq (symbol_ref "flag_pic") (const_int 0))
++		    (const_int 28)]
++		  (const_int 36))
++	     (cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++		      (const_int 8184))
++		    (const_int 12)
++		    (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++		      (const_int 262100))
++		    (const_int 16)
++		    (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++		    (const_int 32)
++		    (eq (symbol_ref "flag_pic") (const_int 0))
++		    (const_int 28)]
++		  (const_int 36)))
++
+ ;; Loop counter in memory or SAR case.
+ ;; Extra goo to deal with additional reload insns.
+-	(if_then_else
+-	  (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
+-	      (const_int 8184))
+-	  (const_int 8)
+-	  (const_int 12)))))])
++	(cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++		   (const_int 8184))
++		(const_int 8)
++		(lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++		  (const_int 262100))
++		(const_int 12)
++		(ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++		(const_int 28)
++		(eq (symbol_ref "flag_pic") (const_int 0))
++		(const_int 24)]
++	      (const_int 32)))))])
+ 
+ (define_insn ""
+   [(set (pc) (label_ref (match_operand 3 "" "" )))
+@@ -8934,14 +9183,21 @@
+   "(reload_completed && operands[0] == operands[1]) || operands[0] == operands[2]"
+   "*
+ {
+-  return output_parallel_addb (operands, get_attr_length (insn));
++  return output_parallel_addb (operands, insn);
+ }"
+-  [(set_attr "type" "parallel_branch")
+-   (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++[(set_attr "type" "parallel_branch")
++ (set (attr "length")
++    (cond [(lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 3) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 20)]
++	  (const_int 28)))])
+ 
+ (define_insn ""
+   [(set (pc) (label_ref (match_operand 2 "" "" )))
+@@ -8950,14 +9206,21 @@
+   "reload_completed"
+   "*
+ {
+-  return output_parallel_movb (operands, get_attr_length (insn));
++  return output_parallel_movb (operands, insn);
+ }"
+-  [(set_attr "type" "parallel_branch")
+-   (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++[(set_attr "type" "parallel_branch")
++ (set (attr "length")
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 20)]
++	  (const_int 28)))])
+ 
+ (define_insn ""
+   [(set (pc) (label_ref (match_operand 2 "" "" )))
+@@ -8966,14 +9229,21 @@
+   "reload_completed"
+   "*
+ {
+-  return output_parallel_movb (operands, get_attr_length (insn));
++  return output_parallel_movb (operands, insn);
+ }"
+-  [(set_attr "type" "parallel_branch")
+-   (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++[(set_attr "type" "parallel_branch")
++ (set (attr "length")
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 20)]
++	  (const_int 28)))])
+ 
+ (define_insn ""
+   [(set (pc) (label_ref (match_operand 2 "" "" )))
+@@ -8982,14 +9252,21 @@
+   "reload_completed"
+   "*
+ {
+-  return output_parallel_movb (operands, get_attr_length (insn));
++  return output_parallel_movb (operands, insn);
+ }"
+-  [(set_attr "type" "parallel_branch")
+-   (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++[(set_attr "type" "parallel_branch")
++ (set (attr "length")
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 20)]
++	  (const_int 28)))])
+ 
+ (define_insn ""
+   [(set (pc) (label_ref (match_operand 2 "" "" )))
+@@ -8998,14 +9275,21 @@
+   "reload_completed"
+   "*
+ {
+-  return output_parallel_movb (operands, get_attr_length (insn));
++  return output_parallel_movb (operands, insn);
+ }"
+-  [(set_attr "type" "parallel_branch")
+-   (set (attr "length")
+-    (if_then_else (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
+-		      (const_int 8184))
+-           (const_int 4)
+-	   (const_int 8)))])
++[(set_attr "type" "parallel_branch")
++ (set (attr "length")
++    (cond [(lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 8184))
++	   (const_int 4)
++	   (lt (abs (minus (match_dup 2) (plus (pc) (const_int 8))))
++	       (const_int 262100))
++	   (const_int 8)
++	   (ne (symbol_ref "TARGET_PORTABLE_RUNTIME") (const_int 0))
++	   (const_int 24)
++	   (eq (symbol_ref "flag_pic") (const_int 0))
++	   (const_int 20)]
++	  (const_int 28)))])
+ 
+ (define_insn ""
+   [(set (match_operand 0 "register_operand" "=f")
+--- gcc/config/pa/pa-protos.h.orig	2005-10-24 04:38:25.000000000 +0200
++++ gcc/config/pa/pa-protos.h	2006-04-19 11:15:44.899380216 +0200
+@@ -42,14 +42,14 @@
+ extern const char *output_fp_move_double (rtx *);
+ extern const char *output_block_move (rtx *, int);
+ extern const char *output_block_clear (rtx *, int);
+-extern const char *output_cbranch (rtx *, int, int, int, rtx);
+-extern const char *output_lbranch (rtx, rtx);
+-extern const char *output_bb (rtx *, int, int, int, rtx, int);
+-extern const char *output_bvb (rtx *, int, int, int, rtx, int);
++extern const char *output_cbranch (rtx *, int, rtx);
++extern const char *output_lbranch (rtx, rtx, int);
++extern const char *output_bb (rtx *, int, rtx, int);
++extern const char *output_bvb (rtx *, int, rtx, int);
+ extern const char *output_dbra (rtx *, rtx, int);
+ extern const char *output_movb (rtx *, rtx, int, int);
+-extern const char *output_parallel_movb (rtx *, int);
+-extern const char *output_parallel_addb (rtx *, int);
++extern const char *output_parallel_movb (rtx *, rtx);
++extern const char *output_parallel_addb (rtx *, rtx);
+ extern const char *output_call (rtx, rtx, int);
+ extern const char *output_indirect_call (rtx, rtx);
+ extern const char *output_millicode_call (rtx, rtx);
