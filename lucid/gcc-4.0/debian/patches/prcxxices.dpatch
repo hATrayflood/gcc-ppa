@@ -1,0 +1,233 @@
+#! /bin/sh -e
+
+# DP: Fix PR c++/10385, PR c++/26036, PR c++/26558, ICE's on invalid code,
+# DP: taken from the gcc-4_0-branch.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+gcc/cp:
+
+2006-04-19  Volker Reichelt  <reichelt@igpm.rwth-aachen.de>
+
+	PR c++/26558
+	* parser.c (cp_parser_class_name): Check for invalid typenames.
+	Rearrange code.
+
+	PR c++/26036
+	* typeck.c (convert_arguments): Return error_mark_node instead of
+	error_mark_list.
+	* cp-tree.h (error_mark_list): Remove declaration.
+	* decl.c (error_mark_list): Remove definition.
+	(cxx_init_decl_processing): Do not initialize error_mark_list.
+
+	PR c++/10385
+	* rtti.c (build_dynamic_cast_1): Check for invalid conversions
+	before calling convert_to_reference.
+	* cvt.c (convert_to_reference): Assert that reftype is a
+	REFERENCE_TYPE.
+
+gcc/testsuite:
+
+2006-04-19  Volker Reichelt  <reichelt@igpm.rwth-aachen.de>
+
+	PR c++/26558
+	* g++.dg/parse/template19.C: New test.
+
+	PR c++/26036
+	* g++.dg/expr/call3.C: New test.
+
+	PR c++/10385
+	* g++.dg/conversion/dynamic1.C: New test.
+
+Index: gcc/testsuite/g++.dg/conversion/dynamic1.C
+===================================================================
+--- gcc/testsuite/g++.dg/conversion/dynamic1.C	(revision 0)
++++ gcc/testsuite/g++.dg/conversion/dynamic1.C	(revision 113098)
+@@ -0,0 +1,15 @@
++// PR c++/10385
++// Origin: <douglas@coc.ufrj.br>
++// { dg-do compile }
++
++struct A
++{
++  void foo();
++};
++
++A& bar();
++
++void baz()
++{
++  dynamic_cast<A&>( bar().foo );  // { dg-error "cannot dynamic_cast" }
++}
+Index: gcc/testsuite/g++.dg/parse/template19.C
+===================================================================
+--- gcc/testsuite/g++.dg/parse/template19.C	(revision 0)
++++ gcc/testsuite/g++.dg/parse/template19.C	(revision 113098)
+@@ -0,0 +1,11 @@
++// PR c++/26558
++// Origin: Jan Gorski <slimak@yk74.internetdsl.tpnet.pl>
++// { dg-do compile }
++
++template<int> struct A
++{
++  template<int> void foo()
++  {
++    foo<0>::; // { dg-error "before" }
++  }
++};
+Index: gcc/testsuite/g++.dg/expr/call3.C
+===================================================================
+--- gcc/testsuite/g++.dg/expr/call3.C	(revision 0)
++++ gcc/testsuite/g++.dg/expr/call3.C	(revision 113098)
+@@ -0,0 +1,12 @@
++// PR c++/26036
++// Origin: <ben@pc-doctor.com>
++// { dg-do compile }
++
++struct A
++{
++  int i;
++};
++
++A foo(int);       // { dg-error "too few arguments" }
++
++int j = foo().i;  // { dg-error "at this point" }
+Index: gcc/cp/typeck.c
+===================================================================
+--- gcc/cp/typeck.c	(revision 113085)
++++ gcc/cp/typeck.c	(revision 113098)
+@@ -2685,7 +2685,7 @@
+ 	    }
+ 	  else
+ 	    error ("too few arguments to function");
+-	  return error_mark_list;
++	  return error_mark_node;
+ 	}
+     }
+ 
+Index: gcc/cp/decl.c
+===================================================================
+--- gcc/cp/decl.c	(revision 113085)
++++ gcc/cp/decl.c	(revision 113098)
+@@ -116,9 +116,6 @@
+ static tree next_initializable_field (tree);
+ static tree reshape_init (tree, tree *);
+ 
+-/* Erroneous argument lists can use this *IFF* they do not modify it.  */
+-tree error_mark_list;
+-
+ /* The following symbols are subsumed in the cp_global_trees array, and
+    listed here individually for documentation purposes.
+ 
+@@ -2925,9 +2922,6 @@
+   /* Initially, C.  */
+   current_lang_name = lang_name_c;
+ 
+-  error_mark_list = build_tree_list (error_mark_node, error_mark_node);
+-  TREE_TYPE (error_mark_list) = error_mark_node;
+-
+   /* Create the `std' namespace.  */
+   push_namespace (std_identifier);
+   std_node = current_namespace;
+Index: gcc/cp/rtti.c
+===================================================================
+--- gcc/cp/rtti.c	(revision 113085)
++++ gcc/cp/rtti.c	(revision 113098)
+@@ -485,10 +485,7 @@
+     }
+   else
+     {
+-      /* Apply trivial conversion T -> T& for dereferenced ptrs.  */
+       exprtype = build_reference_type (exprtype);
+-      expr = convert_to_reference (exprtype, expr, CONV_IMPLICIT,
+-				   LOOKUP_NORMAL, NULL_TREE);
+ 
+       /* T is a reference type, v shall be an lvalue of a complete class
+ 	 type, and the result is an lvalue of the type referred to by T.  */
+@@ -504,6 +501,9 @@
+ 	  goto fail;
+ 	}
+       
++      /* Apply trivial conversion T -> T& for dereferenced ptrs.  */
++      expr = convert_to_reference (exprtype, expr, CONV_IMPLICIT,
++				   LOOKUP_NORMAL, NULL_TREE);
+     }
+ 
+   /* The dynamic_cast operator shall not cast away constness.  */
+Index: gcc/cp/cvt.c
+===================================================================
+--- gcc/cp/cvt.c	(revision 113085)
++++ gcc/cp/cvt.c	(revision 113098)
+@@ -458,6 +458,7 @@
+   intype = TREE_TYPE (expr);
+ 
+   gcc_assert (TREE_CODE (intype) != REFERENCE_TYPE);
++  gcc_assert (TREE_CODE (reftype) == REFERENCE_TYPE);
+ 
+   intype = TYPE_MAIN_VARIANT (intype);
+ 
+Index: gcc/cp/cp-tree.h
+===================================================================
+--- gcc/cp/cp-tree.h	(revision 113085)
++++ gcc/cp/cp-tree.h	(revision 113098)
+@@ -3116,10 +3116,6 @@
+ 			     binfo.  */
+ } base_kind;
+ 
+-/* in decl{2}.c */
+-/* A node that is a list (length 1) of error_mark_nodes.  */
+-extern GTY(()) tree error_mark_list;
+-
+ /* Node for "pointer to (virtual) function".
+    This may be distinct from ptr_type_node so gdb can distinguish them.  */
+ #define vfunc_ptr_type_node  vtable_entry_type
+Index: gcc/cp/parser.c
+===================================================================
+--- gcc/cp/parser.c	(revision 113085)
++++ gcc/cp/parser.c	(revision 113098)
+@@ -12542,16 +12542,19 @@
+        standard does not seem to be definitive, but there is no other
+        valid interpretation of the following `::'.  Therefore, those
+        names are considered class-names.  */
+-    decl = TYPE_NAME (make_typename_type (scope, decl, tag_type, tf_error));
+-  else if (decl == error_mark_node
+-	   || TREE_CODE (decl) != TYPE_DECL
++    {
++      decl = make_typename_type (scope, decl, tag_type, tf_error);
++      if (decl != error_mark_node)
++	decl = TYPE_NAME (decl);
++    }
++  else if (TREE_CODE (decl) != TYPE_DECL
+ 	   || TREE_TYPE (decl) == error_mark_node
+ 	   || !IS_AGGR_TYPE (TREE_TYPE (decl)))
+-    {
+-      cp_parser_error (parser, "expected class-name");
+-      return error_mark_node;
+-    }
++    decl = error_mark_node;
+ 
++  if (decl == error_mark_node)
++    cp_parser_error (parser, "expected class-name");
++
+   return decl;
+ }
+ 

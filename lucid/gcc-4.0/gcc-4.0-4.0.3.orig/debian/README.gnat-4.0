@@ -1,0 +1,6 @@
+gnat-4.0 is not recommended for serious work, it's main use is to
+keep the gcc-4.0 source package buildable (gnat-4.0 is used as a
+build dependency).
+
+Please use the gnat package, together with the packages providing a
+complete Ada environment (i.e. gnat-gdb, gnat, asis, ...).

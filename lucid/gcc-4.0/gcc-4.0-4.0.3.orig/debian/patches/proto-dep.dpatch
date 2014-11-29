@@ -1,0 +1,40 @@
+#! /bin/sh -e
+
+# DP: Fix parallel make (building unprotoize)
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+# append the patch here and adjust the -p? flag in the patch calls.
+
+--- gcc/Makefile.in~	2006-04-03 21:48:13.499667000 +0200
++++ gcc/Makefile.in	2006-04-03 22:00:44.639667000 +0200
+@@ -3058,8 +3058,8 @@
+ 	  $(DRIVER_DEFINES) \
+ 	  $(srcdir)/protoize.c $(OUTPUT_OPTION))
+ 
+-unprotoize.o: protoize.c $(srcdir)/../include/getopt.h \
+-   $(CONFIG_H) $(SYSTEM_H) Makefile version.h
++unprotoize.o: protoize.c $(srcdir)/../include/getopt.h $(CONFIG_H) \
++    $(SYSTEM_H) coretypes.h $(TM_H) Makefile version.h cppdefault.h intl.h
+ 	(SHLIB_LINK='$(SHLIB_LINK)' \
+ 	SHLIB_MULTILIB='$(SHLIB_MULTILIB)'; \
+ 	$(CC) -c -DUNPROTOIZE $(ALL_CFLAGS) $(ALL_CPPFLAGS) -Wno-error \

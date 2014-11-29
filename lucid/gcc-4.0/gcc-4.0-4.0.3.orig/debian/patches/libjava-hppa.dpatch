@@ -1,0 +1,101 @@
+#! /bin/sh -e
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+From: "John David Anglin" <dave@hiauly1.hia.nrc.ca>
+Sender: gcc-patches-owner@gcc.gnu.org
+To: gcc-patches@gcc.gnu.org
+Subject: [committed] Fix gcj can't make shared libs on hppa-linux
+Date: Mon, 13 Mar 2006 19:35:45 -0500 (EST)
+
+The enclosed change fixes debian bug #353346.  The subject is somewhat
+inaccurate in that gcj can make the libraries but they don't work.
+
+The problem turned out to be that the call to frame_dummy in _init
+clobbers the PIC register.  This occurs because the call is built
+up in the dummy routine call_frame_dummy and a tricky section
+switcheroo is used to put the call in the init section.  However,
+there's only one call in call_frame_dummy and no other use of the
+PIC register, so GCC deletes the restore of the PIC register.
+Then, _init calls __do_global_ctors_aux which needs the PIC register.
+
+The problem bites on Java sepcifically because frame_dummy contains
+a call to register_classes.  However, it would seem that it could
+also bite other languages because of the call to __register_frame_info.
+
+The enclosed change fixes the problem by hiding the save and restore
+of the PIC register in an asm.
+
+Tested on hppa-unknown-linux-gnu.  Committed to 4.x.
+
+Dave
+-- 
+J. David Anglin                                  dave.anglin@nrc-cnrc.gc.ca
+National Research Council of Canada              (613) 990-0752 (FAX: 952-6602)
+
+# DP: 2006-03-14  John David Anglin  <dave.anglin@nrc-cnrc.gc.ca>
+# DP: 
+# DP: 	* pa/pa32-linux.h (CRT_CALL_STATIC_FUNCTION): Fix typo.
+# DP: 
+# DP: 2006-03-13  John David Anglin  <dave.anglin@nrc-cnrc.gc.ca>
+# DP: 
+# DP: 	* pa/pa32-linux.h (CRT_CALL_STATIC_FUNCTION): Define when CRTSTUFFS_O
+# DP: 	is defined.
+
+Index: config/pa/pa32-linux.h
+===================================================================
+--- gcc/config/pa/pa32-linux.h	(revision 112016)
++++ gcc/config/pa/pa32-linux.h	(working copy)
+@@ -1,5 +1,5 @@
+ /* Definitions for PA_RISC with ELF-32 format
+-   Copyright (C) 2000, 2002, 2004 Free Software Foundation, Inc.
++   Copyright (C) 2000, 2002, 2004, 2006 Free Software Foundation, Inc.
+ 
+ This file is part of GCC.
+ 
+@@ -36,4 +36,26 @@
+ 		    aligned(sizeof(func_ptr))))				\
+     = { (func_ptr) (-1) }
+ 
++/* This is a PIC version of CRT_CALL_STATIC_FUNCTION.  The PIC
++   register has to be saved before the call and restored after
++   the call.  We assume that register %r4 is available for this
++   purpose.  The hack prevents GCC from deleting the restore.  */
++#ifdef CRTSTUFFS_O
++#define CRT_CALL_STATIC_FUNCTION(SECTION_OP, FUNC)	\
++static void __attribute__((__used__))			\
++call_ ## FUNC (void)					\
++{							\
++  asm (SECTION_OP);					\
++  asm volatile ("bl " #FUNC ",%%r2\n\t"			\
++		"copy %%r19,%%r4\n\t"			\
++		"copy %%r4,%%r19\n"			\
++		:					\
++		:					\
++		: "r1", "r2", "r4", "r20", "r21",	\
++		  "r22", "r23", "r24", "r25", "r26",	\
++		  "r27", "r28", "r29", "r31");		\
++  asm (TEXT_SECTION_ASM_OP);				\
++}
++#endif
++
+ #define MD_UNWIND_SUPPORT "config/pa/linux-unwind.h"

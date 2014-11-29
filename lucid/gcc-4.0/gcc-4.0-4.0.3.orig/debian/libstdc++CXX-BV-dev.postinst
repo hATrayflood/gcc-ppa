@@ -1,0 +1,12 @@
+#! /bin/sh -e
+
+case "$1" in
+    configure)
+	# upgrading from older experimental gcc-4.0 package
+	if [ -d /usr/include/c++/@BV@ ] && [ ! -h /usr/include/c++/@BV@ ]; then
+	    mv /usr/include/c++/@BV@ /usr/include/c++/4.0.0
+	    ln -s 4.0.0 /usr/include/c++/@BV@
+	fi
+esac
+
+#DEBHELPER#

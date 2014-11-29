@@ -1,0 +1,273 @@
+diff -urN debian/changelog gcc-4.0-4.0.3.orig/debian/changelog
+--- debian/changelog	2014-11-17 21:34:38.966165566 +0900
++++ gcc-4.0-4.0.3.orig/debian/changelog	2014-11-17 22:41:41.456588258 +0900
+@@ -1,3 +1,9 @@
++gcc-4.0 (4.0.3-1ubuntu5lucid1) lucid; urgency=low
++
++  * ppa for lucid
++
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Wed, 22 Oct 2014 04:30:00 +0900
++
+ gcc-4.0 (4.0.3-1ubuntu5) dapper; urgency=low
+ 
+   * sparc-update: config/sparc/sparc.c (emit_and_preserve): Allocate space
+diff -urN debian/control gcc-4.0-4.0.3.orig/debian/control
+--- debian/control	2014-11-17 21:34:38.956457340 +0900
++++ gcc-4.0-4.0.3.orig/debian/control	2014-11-29 12:53:27.009387876 +0900
+@@ -1,11 +1,12 @@
+ Source: gcc-4.0
+ Section: devel
+ Priority: standard
+-Maintainer: Debian GCC Maintainers <debian-gcc@lists.debian.org>
+-Uploaders: Matthias Klose <doko@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.6.2
+-Build-Depends: dpkg-dev (>= 1.13.9), libc6.1-dev (>= 2.3.5-1ubuntu5) [alpha ia64] | libc0.3-dev (>= 2.3.5-1ubuntu5) | libc0.1-dev (>= 2.3.5-1ubuntu5) | libc12-dev (>= 2.3.5-1ubuntu5) | libc6-dev (>= 2.3.5-1ubuntu5), libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], lib32gcc1 [amd64 ppc64], lib64gcc1 [i386 powerpc sparc s390], lib64z1-dev [i386 powerpc sparc s390], lib32z1-dev [amd64], libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], m4, autoconf, automake1.9, libtool, autogen, gawk, dejagnu (>= 1.4.3) [!hurd-i386], expect-tcl8.3 [!hurd-i386], bzip2, binutils (>= 2.16.1cvs20051214) | binutils-multiarch (>= 2.16.1cvs20051214), binutils-hppa64 (>= 2.16.1cvs20051214) [hppa], debhelper (>= 5.0), gperf (>= 3.0.1), bison (>= 1:1.875a-1), flex, gettext, texinfo (>= 4.3), zlib1g-dev, libmpfr-dev [!avr], locales [!hurd-i386 !knetbsd-i386 !netbsd-i386], procps [!hurd-i386], sharutils, gnat-4.0 [!arm !armeb !m68k !sh3 !sh3eb !sh4 !sh4eb !knetbsd-i386 !netbsd-i386 !hurd-i386], realpath (>= 1.9.12), chrpath, lsb-release, dash [hppa]
++Build-Depends: dpkg-dev (>= 1.13.9), libc6.1-dev (>= 2.3.5-1ubuntu5) [alpha ia64] | libc0.3-dev (>= 2.3.5-1ubuntu5) | libc0.1-dev (>= 2.3.5-1ubuntu5) | libc12-dev (>= 2.3.5-1ubuntu5) | libc6-dev (>= 2.3.5-1ubuntu5), libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], lib32gcc1 [amd64 ppc64], lib64gcc1 [i386 powerpc sparc s390], lib64z1-dev [i386 powerpc sparc s390], lib32z1-dev [amd64], libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.59, automake1.9, libtool, autogen, gawk, dejagnu (>= 1.4.3) [!hurd-i386], expect-tcl8.3 [!hurd-i386], bzip2, binutils (>= 2.16.1cvs20051214) | binutils-multiarch (>= 2.16.1cvs20051214), binutils-hppa64 (>= 2.16.1cvs20051214) [hppa], debhelper (>= 5.0), gperf (>= 3.0.1), bison (>= 1:1.875a-1), flex, gettext, texinfo (>= 4.3), zlib1g-dev, libmpfr-dev [!avr], locales [!hurd-i386 !knetbsd-i386 !netbsd-i386], procps [!hurd-i386], sharutils, realpath (>= 1.9.12), chrpath, lsb-release, dash [hppa]
+ Build-Depends-Indep: doxygen (>= 1.4.2), graphviz (>= 2.2), gsfonts-x11
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-lower
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ Package: gcc-4.0-base
+ Architecture: any
+diff -urN debian/control.m4 gcc-4.0-4.0.3.orig/debian/control.m4
+--- debian/control.m4	2014-11-17 21:34:38.976675472 +0900
++++ gcc-4.0-4.0.3.orig/debian/control.m4	2014-11-29 12:52:45.332676385 +0900
+@@ -25,15 +25,16 @@
+ Source: SRCNAME
+ Section: devel
+ Priority: PRI(standard)
+-Maintainer: MAINTAINER
+-Uploaders: Matthias Klose <doko@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.6.2
+ ifdef(`TARGET',`dnl cross
+-Build-Depends: dpkg-dev (>= 1.13.9), dpkg-cross (>= 1.25.99), LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP LIBUNWIND_BUILD_DEP LIBATOMIC_OPS_BUILD_DEP m4, autoconf, automake1.9, libtool, autogen, gawk, bzip2, BINUTILS_BUILD_DEP, debhelper (>= 5.0), bison (>= 1:1.875a-1), flex, realpath (>= 1.9.12), lsb-release
++Build-Depends: dpkg-dev (>= 1.13.9), dpkg-cross (>= 1.25.99), LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP LIBUNWIND_BUILD_DEP LIBATOMIC_OPS_BUILD_DEP m4, autoconf2.59, automake1.9, libtool, autogen, gawk, bzip2, BINUTILS_BUILD_DEP, debhelper (>= 5.0), bison (>= 1:1.875a-1), flex, realpath (>= 1.9.12), lsb-release
+ ',`dnl native
+-Build-Depends: dpkg-dev (>= 1.13.9), LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], m4, autoconf, automake1.9, libtool, autogen, gawk, dejagnu (>= 1.4.3) [check_no_archs], expect-tcl8.3 [check_no_archs], bzip2, BINUTILS_BUILD_DEP, binutils-hppa64 (>= BINUTILSV) [hppa], debhelper (>= 5.0), gperf (>= 3.0.1), bison (>= 1:1.875a-1), flex, gettext, texinfo (>= 4.3), zlib1g-dev, libmpfr-dev [f95_no_archs], locales [locale_no_archs], procps [linux_gnu_archs], sharutils, PASCAL_BUILD_DEP`'JAVA_BUILD_DEP`'GNAT_BUILD_DEP realpath (>= 1.9.12), chrpath, lsb-release, dash [hppa]
++Build-Depends: dpkg-dev (>= 1.13.9), LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.59, automake1.9, libtool, autogen, gawk, dejagnu (>= 1.4.3) [check_no_archs], expect-tcl8.3 [check_no_archs], bzip2, BINUTILS_BUILD_DEP, binutils-hppa64 (>= BINUTILSV) [hppa], debhelper (>= 5.0), gperf (>= 3.0.1), bison (>= 1:1.875a-1), flex, gettext, texinfo (>= 4.3), zlib1g-dev, libmpfr-dev [f95_no_archs], locales [locale_no_archs], procps [linux_gnu_archs], sharutils, PASCAL_BUILD_DEP`'JAVA_BUILD_DEP`'GNAT_BUILD_DEP realpath (>= 1.9.12), chrpath, lsb-release, dash [hppa]
+ Build-Depends-Indep: doxygen (>= 1.4.2), graphviz (>= 2.2), gsfonts-x11
+ ')dnl
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-lower
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ ifelse(SRCNAME,gcc-snapshot,`dnl
+ Package: gcc-snapshot
+@@ -653,6 +654,7 @@
+ ')`'dnl
+ ')`'dnl libcxx
+ 
++ifenabled(`lib32cxx',`
+ Package: lib32stdc++CXX_SO`'LS
+ Architecture: ifdef(`TARGET',`all',`biarch32_archs')
+ Section: ifdef(`TARGET',`devel',`libs')
+@@ -666,6 +668,7 @@
+  This package contains files for TARGET architecture, for use in cross-compile
+  environment.
+ ')`'dnl
++')`'dnl lib32cxx
+ 
+ ifenabled(`lib64cxx',`
+ Package: lib64stdc++CXX_SO`'LS
+diff -urN debian/patches/disable-configure-run-check.dpatch gcc-4.0-4.0.3.orig/debian/patches/disable-configure-run-check.dpatch
+--- debian/patches/disable-configure-run-check.dpatch	2014-11-17 21:34:38.956457340 +0900
++++ gcc-4.0-4.0.3.orig/debian/patches/disable-configure-run-check.dpatch	2014-11-17 23:18:48.744004752 +0900
+@@ -68,17 +68,6 @@
+    if { ac_try='./$ac_file'
+    { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+    (eval $ac_try) 2>&5
+---- ./libjava/libltdl/configure~	2004-11-24 21:01:02.000000000 +0000
+-+++ ./libjava/libltdl/configure	2005-05-28 00:52:43.306628256 +0000
+-@@ -2424,7 +2424,7 @@
+- echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+- # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+- # If not cross compiling, check that we can run a simple program.
+--if test "$cross_compiling" != yes; then
+-+if false && test "$cross_compiling" != yes; then
+-   if { ac_try='./$ac_file'
+-   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+-   (eval $ac_try) 2>&5
+ --- ./libjava/configure~	2005-05-27 22:38:55.554608432 +0000
+ +++ ./libjava/configure	2005-05-28 00:48:51.336579298 +0000
+ @@ -2053,7 +2053,7 @@
+diff -urN debian/patches/i386-biarch.dpatch gcc-4.0-4.0.3.orig/debian/patches/i386-biarch.dpatch
+--- debian/patches/i386-biarch.dpatch	2014-11-17 21:34:38.946171266 +0900
++++ gcc-4.0-4.0.3.orig/debian/patches/i386-biarch.dpatch	2014-11-25 12:24:58.107195612 +0900
+@@ -14,7 +14,7 @@
+     -patch)
+         patch $pdir -f --no-backup-if-mismatch -p0 < $0
+         cd ${dir}libcpp && autoconf
+-        cd ${dir}libjava && autoconf
++        cd ${dir}libjava && autoconf2.59
+         ;;
+     -unpatch)
+         patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+diff -urN debian/patches/libjava-biarch-awt.dpatch gcc-4.0-4.0.3.orig/debian/patches/libjava-biarch-awt.dpatch
+--- debian/patches/libjava-biarch-awt.dpatch	2014-11-17 21:34:38.936472170 +0900
++++ gcc-4.0-4.0.3.orig/debian/patches/libjava-biarch-awt.dpatch	2014-11-17 21:46:56.439294097 +0900
+@@ -14,7 +14,7 @@
+ case "$1" in
+     -patch)
+         patch $pdir -f --no-backup-if-mismatch -p0 < $0
+-	cd ${dir}libjava && autoconf
++	cd ${dir}libjava && autoconf2.59
+         ;;
+     -unpatch)
+         patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+diff -urN debian/rules.conf gcc-4.0-4.0.3.orig/debian/rules.conf
+--- debian/rules.conf	2014-11-17 21:34:38.976675472 +0900
++++ gcc-4.0-4.0.3.orig/debian/rules.conf	2014-11-18 08:47:38.327270255 +0900
+@@ -96,10 +96,6 @@
+   endif
+ endif
+ 
+-ifneq ($(PKGSOURCE),gcj-$(BASE_VERSION))
+-  GNAT_BUILD_DEP := gnat-4.0 [ada_no_archs],
+-endif
+-
+ #PASCAL_BUILD_DEP := libncurses5-dev [pascal_no_archs], tetex-bin [pascal_no_archs], libgmp3-dev [pascal_no_archs], help2man [pascal_no_archs],
+ 
+ LIBC_BIARCH_BUILD_DEP = libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], lib32gcc1 [amd64 ppc64], lib64gcc1 [i386 powerpc sparc s390], lib64z1-dev [i386 powerpc sparc s390], lib32z1-dev [amd64],
+@@ -290,7 +286,7 @@
+   addons = gccbase cdev c++dev fdev fixincl libcxx libg2c \
+ 	   libgcc libfortran libgcj libgcjdev libgnat libobjc libs \
+ 	   lib64gcc lib64cxx lib64ffi lib64gcj lib64objc lib64gfortran \
+-	   lib32objc lib32gfortran lib32gcj lib32gcc \
++	   lib32objc lib32gfortran lib32gcj lib32gcc lib32cxx \
+ 	   objcdev proto mudflap # libnof lib64gcj libffi
+   #addons += fastjar
+   ifeq ($(with_separate_libgcj),yes)
+diff -urN debian/rules.d/binary-libstdcxx.mk gcc-4.0-4.0.3.orig/debian/rules.d/binary-libstdcxx.mk
+--- debian/rules.d/binary-libstdcxx.mk	2014-11-17 21:34:38.846608305 +0900
++++ gcc-4.0-4.0.3.orig/debian/rules.d/binary-libstdcxx.mk	2014-11-18 08:30:35.884198808 +0900
+@@ -5,7 +5,7 @@
+ ifeq ($(with_lib64cxx),yes)
+   arch_binaries  := $(arch_binaries) lib64stdcxx
+ endif
+-ifeq ($(biarch32),yes)
++ifeq ($(with_lib32cxx),yes)
+   arch_binaries	:= $(arch_binaries) lib32stdcxx
+ endif
+ 
+diff -urN debian/rules.defs gcc-4.0-4.0.3.orig/debian/rules.defs
+--- debian/rules.defs	2014-11-17 21:34:38.956457340 +0900
++++ gcc-4.0-4.0.3.orig/debian/rules.defs	2014-11-19 00:24:19.714687431 +0900
+@@ -151,6 +151,8 @@
+ #  with_common_pkgs := no
+ #  with_dev := no
+ #endif
++with_common_libs := no
++with_common_pkgs := no
+ 
+ # C --------------------
+ enabled_languages := c
+@@ -283,6 +285,7 @@
+ ifeq (mudflap, $(findstring mudflap,$(WITHOUT_LANG)))
+   with_libmudflap := disabled by environment
+ endif
++with_libmudflap := no
+ 
+ # libffi -------------------
+ ifeq ($(with_common_libs),yes)
+@@ -334,7 +337,7 @@
+   with_fdev := no
+ endif
+ 
+-ifeq ($(with_common_libs)-$(with_fortran),yes-yes)
++ifeq ($(with_fortran),yes)
+   with_libfortran := yes
+ else
+   with_libfortran := no
+@@ -479,6 +482,7 @@
+ ifdef DEB_CROSS
+   with_ada := disabled for cross compiler package
+ endif
++with_ada := disabled for this build
+ 
+ ifeq ($(with_ada),yes)
+   enabled_languages += ada
+@@ -567,6 +571,7 @@
+ ifneq ($(WITHOUT_CHECK),)
+   with_check := disabled by environment
+ endif
++with_check := disabled for this build
+ 
+ locale_data = generate
+ 
+@@ -630,6 +635,7 @@
+   biarch := yes
+   with_lib64gcc	:= yes
+   with_lib64cxx	:= yes
++  with_lib64cxx	:= no
+   with_lib64objc:= yes
+   with_lib64fortran:= yes
+ 
+@@ -666,6 +672,7 @@
+   biarch32 := yes
+   with_lib32gcc := yes
+   with_lib32cxx := yes
++  with_lib32cxx := no
+   with_lib32objc:= yes
+   with_lib32fortran:= yes
+   # no lib32z1-dev yet for Debian
+diff -urN debian/rules.parameters gcc-4.0-4.0.3.orig/debian/rules.parameters
+--- debian/rules.parameters	2014-11-17 21:34:38.986174952 +0900
++++ gcc-4.0-4.0.3.orig/debian/rules.parameters	2014-11-17 22:41:53.316887204 +0900
+@@ -1,15 +1,15 @@
+ # configuration parameters taken from upstream source files
+ GCC_VERSION	:= 4.0.3
+ BASE_VERSION	:= 4.0
+-SOURCE_VERSION	:= 4.0.3-1ubuntu5
+-DEB_VERSION	:= 4.0.3-1ubuntu5
+-DEB_EVERSION	:= 1:4.0.3-1ubuntu5
++SOURCE_VERSION	:= 4.0.3-1ubuntu5lucid1
++DEB_VERSION	:= 4.0.3-1ubuntu5lucid1
++DEB_EVERSION	:= 1:4.0.3-1ubuntu5lucid1
+ GPC_BASE_VERSION	:= 2.1
+ DEB_GPC_VERSION	:= 
+ DEB_SOVERSION	:= 4.0.2
+ DEB_SOEVERSION	:= 1:4.0.2
+ DEB_LIBGCC_SOVERSION	:= 1:4.0.2
+-DEB_LIBGCC_VERSION	:= 1:4.0.3-1ubuntu5
++DEB_LIBGCC_VERSION	:= 1:4.0.3-1ubuntu5lucid1
+ DEB_STDCXX_SOVERSION	:= 4.0.2-4
+ DEB_GCJ_SOVERSION	:= 4.0.2-4
+ DEB_FFI_SOVERSION	:= 4.0.2
+diff -urN debian/rules2 gcc-4.0-4.0.3.orig/debian/rules2
+--- debian/rules2	2014-11-17 21:34:38.966165566 +0900
++++ gcc-4.0-4.0.3.orig/debian/rules2	2014-11-18 07:43:35.933415891 +0900
+@@ -16,16 +16,29 @@
+ #number of jobs to run for build
+ ifeq ($(USE_NJOBS),no)
+   NJOBS :=
+-  NJOBS_CHECK :=
++  USE_CPUS := 1
+ else
+-  NJOBS_CHECK := -j $(shell if echo $(USE_NJOBS) | grep -q -E '^[0-9]+$$'; \
++  ifeq ($(with_java),yes)
++    MEM_PER_CPU = 192
++  else
++    MEM_PER_CPU = 128
++  endif
++  NUM_CPUS := $(shell if echo $(USE_NJOBS) | grep -q -E '^[0-9]+$$'; \
+ 			then echo $(USE_NJOBS); \
+ 			else getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1; fi)
+-  ifneq ($(USE_NJOBS),)
+-    NJOBS := $(NJOBS_CHECK)
++  USE_CPUS := $(shell mt=`awk '/^MemTotal/ { print $$2 }' /proc/meminfo`; \
++			awk -vn=$(NUM_CPUS) -vmt=$$mt -vm=$(MEM_PER_CPU) \
++				'END { mt/=1024; n2 = int(mt/m); print n==1 ? 1 : n2<n+1 ? n2 : n+1}' < /dev/null)
++  ifneq (,$(strip $(USE_CPUS)))
++    NJOBS := -j $(USE_CPUS)
+   endif
+ endif
+ 
++# Support parallel=<n> in DEB_BUILD_OPTIONS (see #209008)
++ifneq (,$(filter parallel=%,$(subst $(COMMA), ,$(DEB_BUILD_OPTIONS))))
++  NJOBS := -j $(subst parallel=,,$(filter parallel=%,$(subst $(COMMA), ,$(DEB_BUILD_OPTIONS))))
++endif
++
+ # kernel-specific ulimit hack
+ ifeq ($(findstring linux,$(DEB_HOST_GNU_SYSTEM)),linux)
+   ULIMIT_M =  if [ -e /proc/meminfo ]; then \

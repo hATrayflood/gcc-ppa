@@ -1,0 +1,57 @@
+#! /bin/sh -e
+
+# DP: Search classmap.db in /var/lib/gcj-4.0 (omitting the subminor version).
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- libjava/Makefile.am.orig	2005-07-02 00:13:17.984006406 +0200
++++ libjava/Makefile.am	2005-07-02 00:14:35.147790428 +0200
+@@ -132,11 +132,11 @@
+ propdir = $(libdir)
+ 
+ ## Where the standard .db file is found.
+-dbexecdir = $(libdir)/gcj-@gcc_version@
++dbexecdir = /var/lib/gcj-4.0
+ ## Name of the default .db.
+ db_name = classmap.db
+ ## Compiler specific component of the .db file
+-db_pathtail = gcj-@gcc_version@/$(db_name)
++db_pathtail = gcj-4.0/$(db_name)
+ 
+ ## For now, only on native systems.  FIXME.
+ if NATIVE
+--- libjava/Makefile.in.orig	2005-07-02 00:13:17.998002195 +0200
++++ libjava/Makefile.in	2005-07-02 00:15:04.561936283 +0200
+@@ -4609,9 +4609,9 @@
+ @JAVA_HOME_SET_TRUE@BOOT_CLASS_PATH_DIR = $(JAVA_HOME)/lib/rt.jar
+ secdir = $(libdir)/security
+ propdir = $(libdir)
+-dbexecdir = $(libdir)/gcj-@gcc_version@
++dbexecdir = /var/lib/gcj-4.0
+ db_name = classmap.db
+-db_pathtail = gcj-@gcc_version@/$(db_name)
++db_pathtail = gcj-4.0/$(db_name)
+ @NATIVE_TRUE@dbexec_DATA = $(db_name)
+ bin_SCRIPTS = addr2name.awk
+ GCJ_WITH_FLAGS = $(GCJ) --encoding=UTF-8 -Wno-deprecated

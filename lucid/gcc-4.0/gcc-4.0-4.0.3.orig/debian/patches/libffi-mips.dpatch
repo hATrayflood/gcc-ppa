@@ -1,0 +1,555 @@
+#! /bin/sh -e
+
+# DP: libffi mips update
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- libffi/src/mips/ffi.c.orig	2005-08-03 14:41:33.000000000 +0200
++++ libffi/src/mips/ffi.c	2005-08-03 14:42:53.000000000 +0200
+@@ -50,17 +50,17 @@ static void ffi_prep_args(char *stack, 
+ 			  int bytes,
+ 			  int flags)
+ {
+-  register int i;
+-  register void **p_argv;
+-  register char *argp;
+-  register ffi_type **p_arg;
++  int i;
++  void **p_argv;
++  char *argp;
++  ffi_type **p_arg;
+ 
+ #if _MIPS_SIM == _ABIN32
+   /* If more than 8 double words are used, the remainder go
+      on the stack. We reorder stuff on the stack here to 
+      support this easily. */
+-  if (bytes > 8 * FFI_SIZEOF_ARG)
+-    argp = &stack[bytes - (8 * FFI_SIZEOF_ARG)];
++  if (bytes > 8 * sizeof(ffi_arg))
++    argp = &stack[bytes - (8 * sizeof(ffi_arg))];
+   else
+     argp = stack;
+ #else
+@@ -85,102 +85,93 @@ static void ffi_prep_args(char *stack, 
+   for (i = ecif->cif->nargs, p_arg = ecif->cif->arg_types; i; i--, p_arg++)
+     {
+       size_t z;
+-      unsigned short a;
++      unsigned int a;
+ 
+-      /* Align if necessary */
++      /* Align if necessary.  */
+       a = (*p_arg)->alignment;
+-      if (a < FFI_SIZEOF_ARG)
+-        a = FFI_SIZEOF_ARG;
++      if (a < sizeof(ffi_arg))
++        a = sizeof(ffi_arg);
+       
+-      if ((a - 1) & (unsigned) argp) {
+-	argp = (char *) ALIGN(argp, a);
+-	FIX_ARGP;
+-      }
++      if ((a - 1) & (unsigned int) argp)
++	{
++	  argp = (char *) ALIGN(argp, a);
++	  FIX_ARGP;
++	}
+ 
+-#if _MIPS_SIM == _ABIO32
+-#define OFFSET 0
+-#else
+-#define OFFSET sizeof(int)
+-#endif      
++      z = (*p_arg)->size;
++      if (z <= sizeof(ffi_arg))
++	{
++	  z = sizeof(ffi_arg);
+ 
+-	  z = (*p_arg)->size;
+-	  if (z < sizeof(ffi_arg))
++	  switch ((*p_arg)->type)
+ 	    {
+-	      z = sizeof(ffi_arg);
+-
+-	      switch ((*p_arg)->type)
+-		{
+-		case FFI_TYPE_SINT8:
+-		  *(SINT32 *) &argp[OFFSET] = (SINT32)*(SINT8 *)(* p_argv);
+-		  break;
++	      case FFI_TYPE_SINT8:
++		*(ffi_arg *)argp = *(SINT8 *)(* p_argv);
++		break;
++
++	      case FFI_TYPE_UINT8:
++		*(ffi_arg *)argp = *(UINT8 *)(* p_argv);
++		break;
+ 		  
+-		case FFI_TYPE_UINT8:
+-		  *(UINT32 *) &argp[OFFSET] = (UINT32)*(UINT8 *)(* p_argv);
+-		  break;
++	      case FFI_TYPE_SINT16:
++		*(ffi_arg *)argp = *(SINT16 *)(* p_argv);
++		break;
+ 		  
+-		case FFI_TYPE_SINT16:
+-		  *(SINT32 *) &argp[OFFSET] = (SINT32)*(SINT16 *)(* p_argv);
+-		  break;
++	      case FFI_TYPE_UINT16:
++		*(ffi_arg *)argp = *(UINT16 *)(* p_argv);
++		break;
+ 		  
+-		case FFI_TYPE_UINT16:
+-		  *(UINT32 *) &argp[OFFSET] = (UINT32)*(UINT16 *)(* p_argv);
+-		  break;
++	      case FFI_TYPE_SINT32:
++		*(ffi_arg *)argp = *(SINT32 *)(* p_argv);
++		break;
+ 		  
+-		case FFI_TYPE_SINT32:
+-		  *(SINT32 *) &argp[OFFSET] = (SINT32)*(SINT32 *)(* p_argv);
+-		  break;
+-		  
+-		case FFI_TYPE_UINT32:
+-		case FFI_TYPE_POINTER:
+-		  *(UINT32 *) &argp[OFFSET] = (UINT32)*(UINT32 *)(* p_argv);
+-		  break;
+-
+-		  /* This can only happen with 64bit slots */
+-		case FFI_TYPE_FLOAT:
+-		  *(float *) argp = *(float *)(* p_argv);
+-		  break;
+-
+-		  /* Handle small structures */
+-		case FFI_TYPE_STRUCT:
+-		  memcpy(argp, *p_argv, (*p_arg)->size);
+-		  break;
+-
+-		default:
+-		  FFI_ASSERT(0);
+-		}
++	      case FFI_TYPE_UINT32:
++	      case FFI_TYPE_POINTER:
++		*(ffi_arg *)argp = *(UINT32 *)(* p_argv);
++		break;
++
++	      /* This can only happen with 64bit slots.  */
++	      case FFI_TYPE_FLOAT:
++		*(float *) argp = *(float *)(* p_argv);
++		break;
++
++	      /* Handle small structures.  */
++	      case FFI_TYPE_STRUCT:
++	      default:
++		memcpy(argp, *p_argv, (*p_arg)->size);
++		break;
+ 	    }
+-	  else
+-	    {
+-#if _MIPS_SIM == _ABIO32	      
+-	      memcpy(argp, *p_argv, z);
++	}
++      else
++	{
++#if _MIPS_SIM == _ABIO32
++	  memcpy(argp, *p_argv, z);
+ #else
+-	      {
+-		unsigned end = (unsigned) argp+z;
+-		unsigned cap = (unsigned) stack+bytes;
++	  {
++	    unsigned end = (unsigned) argp+z;
++	    unsigned cap = (unsigned) stack+bytes;
+ 
+-		/* Check if the data will fit within the register
+-		   space. Handle it if it doesn't. */
++	    /* Check if the data will fit within the register space.
++	       Handle it if it doesn't.  */
+ 
+-		if (end <= cap)
+-		  memcpy(argp, *p_argv, z);
+-		else
+-		  {
+-		    unsigned portion = end - cap;
+-
+-		    memcpy(argp, *p_argv, portion);
+-		    argp = stack;
+-		    memcpy(argp, 
+-			   (void*)((unsigned)(*p_argv)+portion), z - portion);
+-		  }
++	    if (end <= cap)
++	      memcpy(argp, *p_argv, z);
++	    else
++	      {
++		unsigned portion = end - cap;
++
++		memcpy(argp, *p_argv, portion);
++		argp = stack;
++		memcpy(argp,
++		       (void*)((unsigned)(*p_argv)+portion), z - portion);
+ 	      }
++	  }
+ #endif
+-	    }
+-	  p_argv++;
+-	  argp += z;
+-	  FIX_ARGP;
++      }
++      p_argv++;
++      argp += z;
++      FIX_ARGP;
+     }
+-  
+-  return;
+ }
+ 
+ #if _MIPS_SIM == _ABIN32
+@@ -524,8 +515,8 @@ ffi_prep_closure (ffi_closure *closure,
+ #endif /* FFI_MIPS_O32 */
+ 
+   tramp[0] = 0x3c190000 | (fn >> 16);     /* lui  $25,high(fn) */
+-  tramp[1] = 0x3c080000 | (ctx >> 16);    /* lui  $8,high(ctx) */
+-  tramp[2] = 0x37390000 | (fn & 0xffff);  /* ori  $25,low(fn)  */
++  tramp[1] = 0x37390000 | (fn & 0xffff);  /* ori  $25,low(fn)  */
++  tramp[2] = 0x3c080000 | (ctx >> 16);    /* lui  $8,high(ctx) */
+   tramp[3] = 0x03200008;                  /* jr   $25          */
+   tramp[4] = 0x35080000 | (ctx & 0xffff); /* ori  $8,low(ctx)  */
+ 
+@@ -558,16 +549,18 @@ ffi_prep_closure (ffi_closure *closure,
+  */
+ int
+ ffi_closure_mips_inner_O32 (ffi_closure *closure,
+-			    void *rvalue, unsigned long *ar,
++			    void *rvalue, ffi_arg *ar,
+ 			    double *fpr)
+ {
+   ffi_cif *cif;
+-  void **avalue;
++  void **avaluep;
++  ffi_arg *avalue;
+   ffi_type **arg_types;
+   int i, avn, argn, seen_int;
+ 
+   cif = closure->cif;
+-  avalue = alloca (cif->nargs * sizeof (void *));
++  avalue = alloca (cif->nargs * sizeof (ffi_arg));
++  avaluep = alloca (cif->nargs * sizeof (ffi_arg));
+ 
+   seen_int = (cif->abi == FFI_O32_SOFT_FLOAT);
+   argn = 0;
+@@ -588,13 +581,43 @@ ffi_closure_mips_inner_O32 (ffi_closure 
+ 	  (arg_types[i]->type == FFI_TYPE_FLOAT ||
+ 	   arg_types[i]->type == FFI_TYPE_DOUBLE))
+ 	{
+-	  avalue[i] = ((char *) &fpr[i]);
++#ifdef _MIPSEB
++	  if (arg_types[i]->type == FFI_TYPE_FLOAT)
++	    avaluep[i] = ((char *) &fpr[i]) + sizeof (float);
++	  else
++#endif
++	    avaluep[i] = (char *) &fpr[i];
+ 	}
+       else
+ 	{
+ 	  if (arg_types[i]->alignment == 8 && (argn & 0x1))
+ 	    argn++;
+-	  avalue[i] = ((char *) &ar[argn]);
++	  switch (arg_types[i]->type)
++	    {
++	      case FFI_TYPE_SINT8:
++		avaluep[i] = &avalue[i];
++		*(SINT8 *) &avalue[i] = (SINT8) ar[argn];
++		break;
++
++	      case FFI_TYPE_UINT8:
++		avaluep[i] = &avalue[i];
++		*(UINT8 *) &avalue[i] = (UINT8) ar[argn];
++		break;
++		  
++	      case FFI_TYPE_SINT16:
++		avaluep[i] = &avalue[i];
++		*(SINT16 *) &avalue[i] = (SINT16) ar[argn];
++		break;
++		  
++	      case FFI_TYPE_UINT16:
++		avaluep[i] = &avalue[i];
++		*(UINT16 *) &avalue[i] = (UINT16) ar[argn];
++		break;
++
++	      default:
++		avaluep[i] = (char *) &ar[argn];
++		break;
++	    }
+ 	  seen_int = 1;
+ 	}
+       argn += ALIGN(arg_types[i]->size, FFI_SIZEOF_ARG) / FFI_SIZEOF_ARG;
+@@ -602,7 +625,7 @@ ffi_closure_mips_inner_O32 (ffi_closure 
+     }
+ 
+   /* Invoke the closure. */
+-  (closure->fun) (cif, rvalue, avalue, closure->user_data);
++  (closure->fun) (cif, rvalue, avaluep, closure->user_data);
+ 
+   if (cif->abi == FFI_O32_SOFT_FLOAT)
+     {
+--- libffi/src/mips/ffitarget.h.orig	2005-08-03 14:41:33.000000000 +0200
++++ libffi/src/mips/ffitarget.h	2005-08-03 14:43:01.000000000 +0200
+@@ -26,17 +26,13 @@
+ #ifndef LIBFFI_TARGET_H
+ #define LIBFFI_TARGET_H
+ 
+-#ifndef LIBFFI_ASM
+-#include <sgidefs.h>
+-#endif
+-
+ #if !defined(_MIPS_SIM)
+ -- something is very wrong --
+ #else
+ #  if (_MIPS_SIM==_ABIN32 && defined(_ABIN32)) || (_MIPS_SIM==_ABI64 && defined(_ABI64))
+ #    define FFI_MIPS_N32
+ #  else
+-#    if _MIPS_SIM==_ABIO32 && defined(_ABIO32)
++#    if (_MIPS_SIM==_ABIO32 && defined(_ABIO32))
+ #      define FFI_MIPS_O32
+ #    else
+ -- this is an unsupported platform --
+--- libffi/src/mips/o32.S.orig	2005-08-03 14:41:04.000000000 +0200
++++ libffi/src/mips/o32.S	2005-08-03 14:43:09.000000000 +0200
+@@ -35,7 +35,10 @@
+ #define bytes	 a2
+ #define flags	 a3
+ 		
+-#define SIZEOF_FRAME	( 4 * FFI_SIZEOF_ARG + 2 * FFI_SIZEOF_ARG )
++#define SIZEOF_FRAME	(4 * FFI_SIZEOF_ARG + 2 * FFI_SIZEOF_ARG)
++#define A3_OFF		(SIZEOF_FRAME + 3 * FFI_SIZEOF_ARG)
++#define FP_OFF		(SIZEOF_FRAME - 2 * FFI_SIZEOF_ARG)
++#define RA_OFF		(SIZEOF_FRAME - 1 * FFI_SIZEOF_ARG)
+ 
+ 	.text
+ 	.align	2
+@@ -44,48 +47,43 @@
+ ffi_call_O32:	
+ $LFB0:
+ 	# Prologue
+-	SUBU	$sp, SIZEOF_FRAME			# Frame size
++	SUBU	$sp, SIZEOF_FRAME	# Frame size
+ $LCFI0:
+-	REG_S	$fp, SIZEOF_FRAME - 2*FFI_SIZEOF_ARG($sp)	# Save frame pointer
++	REG_S	$fp, FP_OFF($sp)	# Save frame pointer
+ $LCFI1:
+-	REG_S	ra, SIZEOF_FRAME - 1*FFI_SIZEOF_ARG($sp)	# Save return address
++	REG_S	ra, RA_OFF($sp)		# Save return address
+ $LCFI2:
+ 	move	$fp, $sp
+ 
+ $LCFI3:
+-	move	t9, callback	# callback function pointer
+-	REG_S	flags, SIZEOF_FRAME + 3*FFI_SIZEOF_ARG($fp) # flags
++	move	t9, callback		# callback function pointer
++	REG_S	flags, A3_OFF($fp)	# flags
+ 
+ 	# Allocate at least 4 words in the argstack
+-	move	v0, bytes
+-	bge	bytes, 4 * FFI_SIZEOF_ARG, bigger	
+ 	LI	v0, 4 * FFI_SIZEOF_ARG
+-	b	sixteen
++	blt	bytes, v0, sixteen
+ 
+-bigger:	
+-	ADDU	t0, v0, 2 * FFI_SIZEOF_ARG -1	# make sure it is aligned 
+-	and	v0, t0, -2 * FFI_SIZEOF_ARG		# to an 8 byte boundry
++	ADDU	v0, bytes, 7	# make sure it is aligned 
++	and	v0, -8		# to an 8 byte boundry
+ 
+ sixteen:
+-	SUBU	$sp, $sp, v0	# move the stack pointer to reflect the
++	SUBU	$sp, v0		# move the stack pointer to reflect the
+ 				# arg space
+ 
+ 	ADDU	a0, $sp, 4 * FFI_SIZEOF_ARG
+-	ADDU	a3, $fp, SIZEOF_FRAME + 3*FFI_SIZEOF_ARG
++#	ADDU	a3, $fp, A3_OFF
+ 
+ 	jalr	t9
+ 	
+-	REG_L	t0, SIZEOF_FRAME + 3*FFI_SIZEOF_ARG($fp)  # load the flags word
+-	add	t2, t0, 0			   # and copy it into t2
+-
++	REG_L	t0, A3_OFF($fp)		# load the flags word
++	SRL	t2, t0, 4		# shift our arg info
+ 	and     t0, ((1<<4)-1)          # mask out the return type
+-	SRL	t2, 4			# shift our arg info
+ 		
+-	ADDU	$sp, $sp, 4 * FFI_SIZEOF_ARG	# adjust $sp to new args
++	ADDU	$sp, 4 * FFI_SIZEOF_ARG		# adjust $sp to new args
+ 
+ 	bnez	t0, pass_d			# make it quick for int
+-	REG_L	a0, 0*FFI_SIZEOF_ARG($sp)		# just go ahead and load the
+-	REG_L	a1, 1*FFI_SIZEOF_ARG($sp)		# four regs.
++	REG_L	a0, 0*FFI_SIZEOF_ARG($sp)	# just go ahead and load the
++	REG_L	a1, 1*FFI_SIZEOF_ARG($sp)	# four regs.
+ 	REG_L	a2, 2*FFI_SIZEOF_ARG($sp)
+ 	REG_L	a3, 3*FFI_SIZEOF_ARG($sp)
+ 	b	call_it
+@@ -175,9 +173,9 @@ noretval:	
+ 	# Epilogue
+ epilogue:	
+ 	move	$sp, $fp	
+-	REG_L	$fp, SIZEOF_FRAME - 2*FFI_SIZEOF_ARG($sp) # Restore frame pointer
+-	REG_L	ra, SIZEOF_FRAME - 1*FFI_SIZEOF_ARG($sp)  # Restore return address
+-	ADDU	$sp, SIZEOF_FRAME		      # Fix stack pointer
++	REG_L	$fp, FP_OFF($sp)	# Restore frame pointer
++	REG_L	ra, RA_OFF($sp)		# Restore return address
++	ADDU	$sp, SIZEOF_FRAME	# Fix stack pointer
+ 	j	ra
+ 
+ $LFE0:
+@@ -208,7 +206,21 @@ $LFE0:
+ 	 0 - Called function a0 save our sp, fp point here
+ 	 */
+ 	
+-#define SIZEOF_FRAME2	( 14 * FFI_SIZEOF_ARG )
++#define SIZEOF_FRAME2	(14 * FFI_SIZEOF_ARG)
++#define A3_OFF2		(SIZEOF_FRAME2 + 3 * FFI_SIZEOF_ARG)
++#define A2_OFF2		(SIZEOF_FRAME2 + 2 * FFI_SIZEOF_ARG)
++#define A1_OFF2		(SIZEOF_FRAME2 + 1 * FFI_SIZEOF_ARG)
++#define A0_OFF2		(SIZEOF_FRAME2 + 0 * FFI_SIZEOF_ARG)
++#define RA_OFF2		(SIZEOF_FRAME2 - 1 * FFI_SIZEOF_ARG)
++#define FP_OFF2		(SIZEOF_FRAME2 - 2 * FFI_SIZEOF_ARG)
++#define S0_OFF2		(SIZEOF_FRAME2 - 3 * FFI_SIZEOF_ARG)
++#define GP_OFF2		(SIZEOF_FRAME2 - 4 * FFI_SIZEOF_ARG)
++#define V1_OFF2		(SIZEOF_FRAME2 - 5 * FFI_SIZEOF_ARG)
++#define V0_OFF2		(SIZEOF_FRAME2 - 6 * FFI_SIZEOF_ARG)
++#define FA_1_1_OFF2	(SIZEOF_FRAME2 - 7 * FFI_SIZEOF_ARG)
++#define FA_1_0_OFF2	(SIZEOF_FRAME2 - 8 * FFI_SIZEOF_ARG)
++#define FA_0_1_OFF2	(SIZEOF_FRAME2 - 9 * FFI_SIZEOF_ARG)
++#define FA_0_0_OFF2	(SIZEOF_FRAME2 - 10 * FFI_SIZEOF_ARG)
+ 
+ 	.text
+ 	.align	2
+@@ -217,28 +229,28 @@ $LFE0:
+ ffi_closure_O32:
+ $LFB1:
+ 	# Prologue
+-	.frame	$fp, SIZEOF_FRAME2, $31
++	.frame	$fp, SIZEOF_FRAME2, ra
+ 	.set	noreorder
+-	.cpload	$25
++	.cpload	t9
+ 	.set	reorder
+ 	SUBU	$sp, SIZEOF_FRAME2
+-	.cprestore SIZEOF_FRAME2 - 4*FFI_SIZEOF_ARG
++	.cprestore GP_OFF2
+ $LCFI4:
+-	REG_S	$16, SIZEOF_FRAME2 - 3*FFI_SIZEOF_ARG($sp)	 # Save s0
+-	REG_S	$fp, SIZEOF_FRAME2 - 2*FFI_SIZEOF_ARG($sp)	 # Save frame pointer
+-	REG_S	ra, SIZEOF_FRAME2 - 1*FFI_SIZEOF_ARG($sp)	 # Save return address
++	REG_S	$16, S0_OFF2($sp)	 # Save s0
++	REG_S	$fp, FP_OFF2($sp)	 # Save frame pointer
++	REG_S	ra, RA_OFF2($sp)	 # Save return address
+ $LCFI6:
+ 	move	$fp, $sp
+ 
+ $LCFI7:
+ 	# Store all possible argument registers. If there are more than
+-	# four arguments, then they should be stored above where we put $7.
+-	REG_S	$4, SIZEOF_FRAME2 + 0*FFI_SIZEOF_ARG($fp)
+-	REG_S	$5, SIZEOF_FRAME2 + 1*FFI_SIZEOF_ARG($fp)
+-	REG_S	$6, SIZEOF_FRAME2 + 2*FFI_SIZEOF_ARG($fp)
+-	REG_S	$7, SIZEOF_FRAME2 + 3*FFI_SIZEOF_ARG($fp)
++	# four arguments, then they are stored above where we put a3.
++	REG_S	a0, A0_OFF2($fp)
++	REG_S	a1, A1_OFF2($fp)
++	REG_S	a2, A2_OFF2($fp)
++	REG_S	a3, A3_OFF2($fp)
+ 
+-	# Load ABI enum to $16
++	# Load ABI enum to s0
+ 	REG_L	$16, 20($8)	# cif pointer follows tramp.
+ 	REG_L	$16, 0($16)	# abi is first member.
+ 
+@@ -246,16 +258,16 @@ $LCFI7:
+ 	bne	$16, $13, 1f	# Skip fp save if FFI_O32_SOFT_FLOAT
+ 	
+ 	# Store all possible float/double registers.
+-	s.d	$f12, SIZEOF_FRAME2 - 10*FFI_SIZEOF_ARG($fp)
+-	s.d	$f14, SIZEOF_FRAME2 -  8*FFI_SIZEOF_ARG($fp)
++	s.d	$f12, FA_0_0_OFF2($fp)
++	s.d	$f14, FA_1_0_OFF2($fp)
+ 1:	
+ 	# Call ffi_closure_mips_inner_O32 to do the work.
+-	la	$25, ffi_closure_mips_inner_O32
+-	move	$4, $8	 # Pointer to the ffi_closure
+-	addu	$5, $fp, SIZEOF_FRAME2 -  6*FFI_SIZEOF_ARG
+-	addu	$6, $fp, SIZEOF_FRAME2 +  0*FFI_SIZEOF_ARG
+-	addu	$7, $fp, SIZEOF_FRAME2 - 10*FFI_SIZEOF_ARG
+-	jalr	$31, $25
++	la	t9, ffi_closure_mips_inner_O32
++	move	a0, $8	 # Pointer to the ffi_closure
++	addu	a1, $fp, V0_OFF2
++	addu	a2, $fp, A0_OFF2
++	addu	a3, $fp, FA_0_0_OFF2
++	jalr	t9
+ 
+ 	# Load the return value into the appropriate register.
+ 	move	$8, $2
+@@ -266,28 +278,28 @@ $LCFI7:
+ 	bne	$16, $13, 1f	# Skip fp restore if FFI_O32_SOFT_FLOAT
+ 
+ 	li	$9, FFI_TYPE_FLOAT
+-	l.s	$f0, SIZEOF_FRAME2 - 6*FFI_SIZEOF_ARG($fp)
++	l.s	$f0, V0_OFF2($fp)
+ 	beq	$8, $9, closure_done
+ 
+ 	li	$9, FFI_TYPE_DOUBLE
+-	l.d	$f0, SIZEOF_FRAME2 - 6*FFI_SIZEOF_ARG($fp)
++	l.d	$f0, V0_OFF2($fp)
+ 	beq	$8, $9, closure_done
+ 1:	
+-	li	$9, FFI_TYPE_SINT64
+-	REG_L	$3, SIZEOF_FRAME2 - 5*FFI_SIZEOF_ARG($fp)
+-	beq	$8, $9, integer
+-	li	$9, FFI_TYPE_UINT64
+-	beq	$8, $9, integer
++#	li	$9, FFI_TYPE_SINT64
++	REG_L	$3, V1_OFF2($fp)
++#	beq	$8, $9, integer
++#	li	$9, FFI_TYPE_UINT64
++#	beq	$8, $9, integer
+ 
+-integer:
+-	REG_L	$2, SIZEOF_FRAME2 - 6*FFI_SIZEOF_ARG($fp)
++#integer:
++	REG_L	$2, V0_OFF2($fp)
+ 
+ closure_done:
+ 	# Epilogue
+ 	move	$sp, $fp
+-	REG_L	$16, SIZEOF_FRAME2 - 3*FFI_SIZEOF_ARG($sp)	 # Restore s0
+-	REG_L	$fp, SIZEOF_FRAME2 - 2*FFI_SIZEOF_ARG($sp)	 # Restore frame pointer
+-	REG_L	ra,  SIZEOF_FRAME2 - 1*FFI_SIZEOF_ARG($sp)	 # Restore return address
++	REG_L	$16, S0_OFF2($sp)	 # Restore s0
++	REG_L	$fp, FP_OFF2($sp)	 # Restore frame pointer
++	REG_L	ra,  RA_OFF2($sp)	 # Restore return address
+ 	ADDU	$sp, SIZEOF_FRAME2
+ 	j	ra
+ $LFE1:
+

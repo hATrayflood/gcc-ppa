@@ -1,0 +1,77 @@
+#! /bin/sh -e
+
+# DP:
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+	cd ${dir}libjava && autoconf2.59
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- libjava/configure.ac.orig	2005-11-21 11:17:51.167602000 +0100
++++ libjava/configure.ac	2005-11-21 11:23:14.394464776 +0100
+@@ -501,6 +501,23 @@
+ 
+ for peer in $peerlibs ; do
+   case $peer in
++    xlib-*|gtk-*|qt-*)
++      real=$(echo $peer | sed -e 's/^\(.*\)-.*$/\1/')
++      condition=$(echo $peer | sed -e 's/^.*-\(.*\)$/\1/')
++      if test -z "${with_multisubdir}" && test "$condition" = default; then
++	new_peerlibs="$new_peerlibs $real"
++      elif test "${with_multisubdir}" && test "$condition" = "${with_multisubdir}"; then
++	new_peerlibs="$new_peerlibs $real"
++      fi
++      ;;
++    *)
++      new_peerlibs="$new_peerlibs $peer"
++      ;;
++  esac
++done
++
++for peer in $new_peerlibs ; do
++  case $peer in
+     xlib)
+       if test "$no_x" = yes; then
+         echo "*** xlib peers requested but no X library available" 1>&2
+@@ -1006,9 +1023,7 @@
+       AC_SUBST(LIBART_LIBS)
+ 
+       # We require the XTest Extension to support java.awt.Robot.
+-      AC_CHECK_LIB([Xtst], [XTestQueryExtension], [true],
+-		   [AC_MSG_ERROR([libXtst not found, required by java.awt.Robot])],
+-		   [${X_LIBS}])
++      # Debian: guaranteed by the libxtst-dev build dependency
+    fi
+ 
+    # On Solaris, and maybe other architectures, the Boehm collector
+@@ -1054,7 +1069,11 @@
+ else
+   # We are being configured with a native or crossed-native compiler
+   if test -x "${built_gcc_dir}/gcj${ac_exeext}"; then
+-     if test x"$build" = x"$host"; then
++     if test x"$with_multisubdir" = x32; then
++        which_gcj=built
++     elif test x"$with_multisubdir" = x64; then
++        which_gcj=built
++     elif test x"$build" = x"$host"; then
+         # True native build (host=target and host=build)
+         which_gcj=built
+      else

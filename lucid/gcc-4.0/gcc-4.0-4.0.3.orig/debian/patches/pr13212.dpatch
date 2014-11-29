@@ -1,0 +1,240 @@
+#! /bin/sh -e
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+# DP: Work around PR 13121
+# DP: http://gcc.gnu.org/ml/java-patches/2006-q1/msg00181.html
+
+From: Tom Tromey <tromey@redhat.com>
+Sender: gcc-patches-owner@gcc.gnu.org
+To: Java Patch List <java-patches@gcc.gnu.org>
+Cc: Gcc Patch List <gcc-patches@gcc.gnu.org>, Hans.Boehm@hp.com
+Subject: Patch: work around PR 13212
+Date: 06 Feb 2006 14:33:22 -0700
+
+I'm checking this in (or Jakub is) on the 4.1 branch and the trunk.
+
+This patch works around PR 13212 (for Linux native builds).
+
+The issue occurs when some 3rd party .so, which doesn't use the
+wrapped pthread_create, is loaded.  If code in this .so makes a new
+thread, and executes java code from there, we won't know the stack
+bounds and will run into trouble.
+
+This occurs when running Eclipse.
+
+The fix works by redefining pthread_create in the GC.
+
+I call this a workaround because it still won't support all possible
+use cases -- in particular, dynamically loading libgcj.so into a
+running application still won't have the desired effect.
+
+Tom
+
+2006-02-09  Tom Tromey  <tromey@redhat.com>
+
+	* pthread_support.c: Conditionally include dlfcn.h.
+
+2006-02-04  Jakub Jelinek  <jakub@redhat.com>
+	    Anthony Green  <green@redhat.com>
+	    Tom Tromey  <tromey@redhat.com>
+
+	* include/gc_ext_config.h.in: Added GC_PTHREAD_SYM_VERSION.
+	* include/gc_config.h.in: Rebuilt.
+	* include/gc_pthread_redirects.h (pthread_create): Conditionally
+	define.
+	* pthread_support.c (pthread_create_): New global.
+	(constr): New function.
+	(pthread_create): Conditionally renamed.
+	* configure: Rebuilt.
+	* configure.ac (GC_PTHREAD_SYM_VERSION): Define.
+
+Index: boehm-gc/configure.ac
+===================================================================
+--- boehm-gc/configure.ac	(revision 110888)
++++ boehm-gc/configure.ac	(working copy)
+@@ -450,6 +450,25 @@
+   AC_DEFINE(USE_MMAP, 1, [use MMAP instead of sbrk to get new memory])
+ fi
+ 
++symver=
++case "$target" in
++  *-*-linux* )
++    cat > conftest.c <<EOF
++#include <pthread.h>
++void *tf (void *arg) { (void) arg; return NULL; }
++int main (void) { pthread_t th; pthread_create (&th, NULL, tf, NULL); return 0; }
++EOF
++    if $CC $CFLAGS -pthread -o conftest conftest.c > /dev/null 2>&1; then
++      symver=`readelf -s conftest 2> /dev/null | sed -n '/UND pthread_create@/{s/^.*@//;s/ .*$//;p;q}'`
++    fi
++    rm -f conftest conftest.c
++    ;;
++esac
++if test -n "$symver"; then
++  AC_DEFINE_UNQUOTED(GC_PTHREAD_SYM_VERSION, "$symver", [symbol version of pthread_create])
++fi
++
++
+ if test -n "$with_cross_host" &&
+    test x"$with_cross_host" != x"no"; then
+   toolexecdir='$(exec_prefix)/$(target_noncanonical)'
+Index: boehm-gc/include/gc_ext_config.h.in
+===================================================================
+--- boehm-gc/include/gc_ext_config.h.in	(revision 110888)
++++ boehm-gc/include/gc_ext_config.h.in	(working copy)
+@@ -3,3 +3,5 @@
+ is used by libjava/include/boehm-gc.h. */
+ 
+ #undef THREAD_LOCAL_ALLOC
++
++#undef GC_PTHREAD_SYM_VERSION
+Index: boehm-gc/include/gc_pthread_redirects.h
+===================================================================
+--- boehm-gc/include/gc_pthread_redirects.h	(revision 110888)
++++ boehm-gc/include/gc_pthread_redirects.h	(working copy)
+@@ -68,7 +68,9 @@
+ # undef pthread_detach
+ #endif
+ 
++#ifndef GC_PTHREAD_SYM_VERSION
+ # define pthread_create GC_pthread_create
++#endif
+ # define pthread_join GC_pthread_join
+ # define pthread_detach GC_pthread_detach
+ 
+Index: boehm-gc/include/gc_config.h.in
+===================================================================
+--- boehm-gc/include/gc_config.h.in	(revision 110888)
++++ boehm-gc/include/gc_config.h.in	(working copy)
+@@ -45,6 +45,9 @@
+ /* support for Tru64 pthreads */
+ #undef GC_OSF1_THREADS
+ 
++/* symbol version of pthread_create */
++#undef GC_PTHREAD_SYM_VERSION
++
+ /* support for Solaris pthreads */
+ #undef GC_SOLARIS_PTHREADS
+ 
+Index: boehm-gc/configure
+===================================================================
+--- boehm-gc/configure	(revision 110888)
++++ boehm-gc/configure	(working copy)
+@@ -6566,6 +6566,29 @@
+ 
+ fi
+ 
++symver=
++case "$target" in
++  *-*-linux* )
++    cat > conftest.c <<EOF
++#include <pthread.h>
++void *tf (void *arg) { (void) arg; return NULL; }
++int main (void) { pthread_t th; pthread_create (&th, NULL, tf, NULL); return 0; }
++EOF
++    if $CC $CFLAGS -pthread -o conftest conftest.c > /dev/null 2>&1; then
++      symver=`readelf -s conftest 2> /dev/null | sed -n '/UND pthread_create@/{s/^.*@//;s/ .*$//;p;q}'`
++    fi
++    rm -f conftest conftest.c
++    ;;
++esac
++if test -n "$symver"; then
++
++cat >>confdefs.h <<_ACEOF
++#define GC_PTHREAD_SYM_VERSION "$symver"
++_ACEOF
++
++fi
++
++
+ if test -n "$with_cross_host" &&
+    test x"$with_cross_host" != x"no"; then
+   toolexecdir='$(exec_prefix)/$(target_noncanonical)'
+Index: boehm-gc/pthread_support.c
+===================================================================
+--- boehm-gc/pthread_support.c	(revision 110888)
++++ boehm-gc/pthread_support.c	(working copy)
+@@ -47,6 +47,13 @@
+ /*#define DEBUG_THREADS 1*/
+ /*#define GC_ASSERTIONS*/
+ 
++#include "gc_config.h"
++
++#ifdef GC_PTHREAD_SYM_VERSION
++#define _GNU_SOURCE
++#include <dlfcn.h>
++#endif
++
+ # include "gc.h"
+ # include "private/pthread_support.h"
+ 
+@@ -1194,8 +1201,37 @@
+     return(result);
+ }
+ 
++#ifdef GC_PTHREAD_SYM_VERSION
++
++/* Force constr to execute prior to main().  */
++static void constr (void) __attribute__ ((constructor));
++
++static int
++(*pthread_create_)(pthread_t *new_thread,
++		   const pthread_attr_t *attr_in,
++		   void * (*thread_execp)(void *), void *arg);
++
++static void
++constr (void)
++{
++  /* Get a pointer to the real pthread_create.  */
++  pthread_create_ = dlvsym (RTLD_NEXT, "pthread_create",
++			    GC_PTHREAD_SYM_VERSION);
++}
++
++#define GC_PTHREAD_CREATE_NAME pthread_create
++#define GC_PTHREAD_REAL_NAME (*pthread_create_)
++
++#else
++
++#define GC_PTHREAD_CREATE_NAME WRAP_FUNC(pthread_create)
++#define GC_PTHREAD_REAL_NAME REAL_FUNC(pthread_create)
++
++#endif
++
++
+ int
+-WRAP_FUNC(pthread_create)(pthread_t *new_thread,
++GC_PTHREAD_CREATE_NAME(pthread_t *new_thread,
+ 		  const pthread_attr_t *attr,
+                   void *(*start_routine)(void *), void *arg)
+ {
+@@ -1250,7 +1286,7 @@
+ 		   pthread_self());
+ #   endif
+ 
+-    result = REAL_FUNC(pthread_create)(new_thread, attr, GC_start_routine, si);
++    result = GC_PTHREAD_REAL_NAME(new_thread, attr, GC_start_routine, si);
+ 
+ #   ifdef DEBUG_THREADS
+         GC_printf1("Started thread 0x%X\n", *new_thread);

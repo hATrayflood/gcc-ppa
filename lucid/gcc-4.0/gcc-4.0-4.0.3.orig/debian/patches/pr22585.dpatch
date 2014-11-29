@@ -1,0 +1,89 @@
+#! /bin/sh -e
+
+# DP: Proposed patch for PR 22585.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+Hello!
+
+  This patch fixes another problem with 80387 XFmode compares. This problem is
+triggered for XFmode comparisons with integer arguments placed in memory.
+ix86_prepare_fp_compare_args() tried to outsmart itself by putting all operands
+in registers. This is true for FP operands, but 
+
+(float:XF (mem/i:SI (plus:SI (reg/f:SI 6 bp)
+            (const_int 20 [0x14])) [0 i+0 S4 A32]))
+
+operands should be left untouched.
+
+The testcase from the PR:
+
+int foo(long double d, int i)
+{
+  if (d == (long double)i)
+    return 1;
+}
+
+when compiled with 'gcc -O2 -ffast-math -march=i386 -fomit-frame-pointer' produces:
+
+foo:
+        fldt    4(%esp)
+        ficompl 16(%esp)
+        fnstsw  %ax
+        testb   $64, %ah
+        jne     .L7
+        ret 
+
+Note the ficompl insn that is generated only for TARGET_USE_HIMODE_FIOP and
+TARGET_USE_SIMODE_FIOP targets (i386 and i486).
+
+Patch is bootstrapeed on i686-pc-linux-gnu, regtested for c,c++.
+(I have no CVS access, so someone should commit this patch, if OK).
+
+BTW: Thanks to Volker for his work on providing excellent testcases!
+
+2005-07-22  Uros Bizjak  <uros@kss-loka.si>
+
+	PR target/22585
+	* config/i386/i386.c (ix86_prepare_fp_compare_args): Do not
+	force integer op1 into register for XFmode compares.
+
+Uros.
+--- /export/home/uros/gcc-back/gcc/config/i386/i386.c	2005-07-22 08:59:46.000000000 +0200
++++ gcc/config/i386/i386.c	2005-07-22 12:34:45.000000000 +0200
+@@ -8802,13 +9054,14 @@ ix86_prepare_fp_compare_args (enum rtx_c
+   /* All of the unordered compare instructions only work on registers.
+      The same is true of the fcomi compare instructions.  The same is
+      true of the XFmode compare instructions if not comparing with
+-     zero (ftst insn is used in this case).  */
++     zero (ftst insn is used in this case) or integer op1 in memory.  */
+ 
+   if (!is_sse
+       && (fpcmp_mode == CCFPUmode
+ 	  || (op_mode == XFmode
+ 	      && ! (standard_80387_constant_p (op0) == 1
+-		    || standard_80387_constant_p (op1) == 1))
++		    || standard_80387_constant_p (op1) == 1)
++	      && GET_CODE (op1) != FLOAT)
+ 	  || ix86_use_fcomi_compare (code)))
+     {
+       op0 = force_reg (op_mode, op0);

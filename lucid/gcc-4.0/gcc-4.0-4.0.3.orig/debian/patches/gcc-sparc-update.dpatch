@@ -1,0 +1,75 @@
+#! /bin/sh -e
+
+# DP: * config/sparc/sparc.c (emit_and_preserve): Allocate space for the
+# DP:   register save area.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2006-04-14  Alexey Starovoytov  <alexey.starovoytov@sun.com>
+            Eric Botcazou  <ebotcazou@libertysurf.fr>
+
+	* config/sparc/sparc.c (emit_and_preserve): Allocate space for the
+	register save area.
+
+Index: gcc/config/sparc/sparc.c
+===================================================================
+--- gcc/config/sparc/sparc.c	(revision 112951)
++++ gcc/config/sparc/sparc.c	(revision 112952)
+@@ -8905,16 +8905,24 @@
+     }
+ }
+ 
+-/* Emit the sequence of insns SEQ while preserving the registers.  */
++/* Emit the sequence of insns SEQ while preserving the registers REG and REG2.
++   This is achieved by means of a manual dynamic stack space allocation in
++   the current frame.  We make the assumption that SEQ doesn't contain any
++   function calls, with the possible exception of calls to the PIC helper.  */
+ 
+ static void
+ emit_and_preserve (rtx seq, rtx reg, rtx reg2)
+ {
+-  /* STACK_BOUNDARY guarantees that this is a 2-word slot.  */
+-  rtx slot = gen_rtx_MEM (word_mode,
+-			  plus_constant (stack_pointer_rtx, SPARC_STACK_BIAS));
++  /* We must preserve the lowest 16 words for the register save area.  */
++  HOST_WIDE_INT offset = 16*UNITS_PER_WORD;
++  /* We really need only 2 words of fresh stack space.  */
++  HOST_WIDE_INT size = SPARC_STACK_ALIGN (offset + 2*UNITS_PER_WORD);
+ 
+-  emit_insn (gen_stack_pointer_dec (GEN_INT (STACK_BOUNDARY/BITS_PER_UNIT)));
++  rtx slot
++    = gen_rtx_MEM (word_mode, plus_constant (stack_pointer_rtx,
++					     SPARC_STACK_BIAS + offset));
++
++  emit_insn (gen_stack_pointer_dec (GEN_INT (size)));
+   emit_insn (gen_rtx_SET (VOIDmode, slot, reg));
+   if (reg2)
+     emit_insn (gen_rtx_SET (VOIDmode,
+@@ -8926,7 +8934,7 @@
+ 			    reg2,
+ 			    adjust_address (slot, word_mode, UNITS_PER_WORD)));
+   emit_insn (gen_rtx_SET (VOIDmode, reg, slot));
+-  emit_insn (gen_stack_pointer_inc (GEN_INT (STACK_BOUNDARY/BITS_PER_UNIT)));
++  emit_insn (gen_stack_pointer_inc (GEN_INT (size)));
+ }
+ 
+ /* Output the assembler code for a thunk function.  THUNK_DECL is the

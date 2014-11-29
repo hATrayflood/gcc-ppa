@@ -1,0 +1,325 @@
+#! /bin/sh -e
+
+# DP: Proposed patch for PR22309 (crash with mt_allocator if libstdc++ is dlclosed)
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+From: Jakub Jelinek <jakub@redhat.com>
+Sender: gcc-patches-owner@gcc.gnu.org
+To: gcc-patches@gcc.gnu.org, libstdc++@gcc.gnu.org
+Subject: [PATCH] Fix crashes with mt_allocator if libstdc++ is dlclosed (PR libstdc++/22309, take 2)
+Date: Thu, 14 Jul 2005 09:31:31 -0400
+
+Hi!
+
+My previous patch fixed the original testcase in PR libstdc++/22309,
+but does not fix the testcase in comment #5.  There can be many
+different __gnu_cxx::__pool<true> objects (one for the common policy,
+but many for the various per type policies).  For each such
+pool object, the first time some allocation is made from that pool
+mt allocator call would call pthread_key_create with a destructor
+_S_destroy_thread_key (defined in the same shared library or binary
+as the pool object definition).  Although there could be many
+pthread_key_create calls, mt allocator was storing the key in a single
+global variable, so as soon as more than one pool is used in a
+multi-threaded environment, things start to be erratical.
+Plus my previous patch of course does not work, because pthread_key_delete
+must not be called in libstdc++.so's destructors, but in destructors of
+whatever shared library defines the _S_destroy_thread_key method
+tbat got registered with pthread_key_create.
+Another thing is that the key space is fairly limited on some targets,
+e.g. on Linux at most 1024 keys can be registered, so using one key
+per pool is inefficient and limits the maximum number of different
+allocators (and of course many applications use the key space for other
+stuff as well).
+
+So, what this patch does is it uses just one key, with a destructor
+in libstdc++.so, so libstdc++.so's destructors can easily call
+pthread_key_delete.  Also, the fix is self-contained in libstdc++.so,
+requires no recompilation of binaries/libraries.
+
+The limitation it imposes (but that did not work without this patch
+anyway) is that if you have several mt allocator pools with different
+_M_options._M_max_threads settings and create more than max concurrent
+threads of one of the allocator pools (and use one of the allocator
+pools in each of the threads), then when you attempt to allocate something
+in freshly created thread using allocator that has smaller thread limit,
+mt allocator will use the global pool rather than the thread local's one
+(and I'm afraid without appropriate locking in that case in case there
+are more such threads).
+
+2005-07-14  Jakub Jelinek  <jakub@redhat.com>
+
+	PR libstdc++/22309
+	* src/mt_allocator.cc (__gnu_internal::freelist_mutex): Make static.
+	(__gnu_internal::__freelist_key): New type.
+	(__gnu_internal::freelist): New variable.
+	(__gnu_internal::_M_destroy_thread_key): New function.
+	(__gnu_cxx::__pool<true>::_M_destroy): Don't delete
+	_M_thread_freelist_initial.
+	(__gnu_cxx::__pool<true>::_M_initialize): Add unused attribute to __d
+	argument.  Don't use _M_thread_freelist and _M_thread_freelist_initial
+	__pool<true> fields, instead use __gnu_cxx::freelist fields, call
+	gthread_key_create just once.  Use
+	__gnu_internal::_M_destroy_thread_key as key destructor.
+	(__gnu_cxx::__pool<true>::_M_get_thread_id): Store size_t id rather than
+	_Thread_record* in the thread specific value.  Don't use
+	_M_thread_freelist __pool<true> field, instead use __gnu_cxx::freelist
+	fields.
+	(__gnu_cxx::__pool<true>::_M_destroy_thread_key): Do nothing.
+
+--- libstdc++-v3/src/mt_allocator.cc.jj	2004-10-17 17:22:03.000000000 +0200
++++ libstdc++-v3/src/mt_allocator.cc	2005-07-14 14:26:30.000000000 +0200
+@@ -1,8 +1,8 @@
+ // Allocator details.
+ 
+-// Copyright (C) 2004 Free Software Foundation, Inc.
++// Copyright (C) 2004, 2005 Free Software Foundation, Inc.
+ //
+-// This file is part of the GNU ISO C++ Librarbooly.  This library is free
++// This file is part of the GNU ISO C++ Library.  This library is free
+ // software; you can redistribute it and/or modify it under the
+ // terms of the GNU General Public License as published by the
+ // Free Software Foundation; either version 2, or (at your option)
+@@ -37,10 +37,39 @@
+ 
+ namespace __gnu_internal
+ {
+-  __glibcxx_mutex_define_initialized(freelist_mutex);
++  static __glibcxx_mutex_define_initialized(freelist_mutex);
+ 
+ #ifdef __GTHREADS
+-  __gthread_key_t freelist_key;
++  static struct __freelist
++  {
++    typedef __gnu_cxx::__pool<true>::_Thread_record _Thread_record;
++    _Thread_record* _M_thread_freelist;
++    _Thread_record* _M_thread_freelist_array;
++    size_t _M_max_threads;
++    __gthread_key_t _M_key;
++    ~__freelist()
++    {
++      if (_M_thread_freelist_array)
++	{
++	  __gthread_key_delete (_M_key);
++	  ::operator delete(static_cast<void*>(_M_thread_freelist_array));
++	}
++    }
++  } freelist
++  /* Ensure freelist is destructed last.  */
++  __attribute__((init_priority (101)));
++
++  static void _M_destroy_thread_key (void* __id)
++  {
++    // Return this thread id record to front of thread_freelist.
++    typedef __gnu_cxx::__pool<true>::_Thread_record _Thread_record;
++    __gnu_cxx::lock sentry(__gnu_internal::freelist_mutex);
++    size_t _M_id = (size_t)__id;
++    _Thread_record* __tr
++      = &__gnu_internal::freelist._M_thread_freelist_array[_M_id - 1];
++    __tr->_M_next = __gnu_internal::freelist._M_thread_freelist;
++    __gnu_internal::freelist._M_thread_freelist = __tr;
++  }
+ #endif
+ }
+ 
+@@ -194,7 +223,6 @@ namespace __gnu_cxx
+ 		::operator delete(__bin._M_used);
+ 		::operator delete(__bin._M_mutex);
+ 	      }
+-	    ::operator delete(_M_thread_freelist_initial);
+ 	  }
+ 	else
+ 	  {
+@@ -386,8 +414,9 @@ namespace __gnu_cxx
+     return reinterpret_cast<char*>(__block) + __options._M_align;
+   }
+ 
+- void
+-  __pool<true>::_M_initialize(__destroy_handler __d)
++  void
++  __pool<true>::_M_initialize(__destroy_handler __d
++			      __attribute__((__unused__)))
+   {
+     // _M_force_new must not change after the first allocate(),
+     // which in turn calls this method, so if it's false, it's false
+@@ -397,7 +426,7 @@ namespace __gnu_cxx
+ 	_M_init = true;
+ 	return;
+       }
+-      
++
+     // Create the bins.
+     // Calculate the number of bins required based on _M_max_bytes.
+     // _M_bin_size is statically-initialized to one.
+@@ -433,29 +462,70 @@ namespace __gnu_cxx
+     // directly and have no need for this.
+     if (__gthread_active_p())
+       {
+-	const size_t __k = sizeof(_Thread_record) * _M_options._M_max_threads;
+-	__v = ::operator new(__k);
+-	_M_thread_freelist = static_cast<_Thread_record*>(__v);
+-	_M_thread_freelist_initial = __v;
+-	  
+-	// NOTE! The first assignable thread id is 1 since the
+-	// global pool uses id 0
+-	size_t __i;
+-	for (__i = 1; __i < _M_options._M_max_threads; ++__i)
+-	  {
+-	    _Thread_record& __tr = _M_thread_freelist[__i - 1];
+-	    __tr._M_next = &_M_thread_freelist[__i];
+-	    __tr._M_id = __i;
+-	  }
+-	  
+-	// Set last record.
+-	_M_thread_freelist[__i - 1]._M_next = NULL;
+-	_M_thread_freelist[__i - 1]._M_id = __i;
+-	  
+-	// Initialize per thread key to hold pointer to
+-	// _M_thread_freelist.
+-	__gthread_key_create(&__gnu_internal::freelist_key, __d);
+-	  
++	{
++	  __gnu_cxx::lock sentry(__gnu_internal::freelist_mutex);
++
++	  if (!__gnu_internal::freelist._M_thread_freelist_array
++	      || __gnu_internal::freelist._M_max_threads
++		 < _M_options._M_max_threads)
++	    {
++	      const size_t __k = sizeof(_Thread_record)
++				 * _M_options._M_max_threads;
++	      __v = ::operator new(__k);
++	      _Thread_record* _M_thread_freelist
++		= static_cast<_Thread_record*>(__v);
++
++	      // NOTE! The first assignable thread id is 1 since the
++	      // global pool uses id 0
++	      size_t __i;
++	      for (__i = 1; __i < _M_options._M_max_threads; ++__i)
++		{
++		  _Thread_record& __tr = _M_thread_freelist[__i - 1];
++		  __tr._M_next = &_M_thread_freelist[__i];
++		  __tr._M_id = __i;
++		}
++
++	      // Set last record.
++	      _M_thread_freelist[__i - 1]._M_next = NULL;
++	      _M_thread_freelist[__i - 1]._M_id = __i;
++
++	      if (!__gnu_internal::freelist._M_thread_freelist_array)
++		{
++		  // Initialize per thread key to hold pointer to
++		  // _M_thread_freelist.
++		  __gthread_key_create(&__gnu_internal::freelist._M_key,
++				       __gnu_internal::_M_destroy_thread_key);
++		  __gnu_internal::freelist._M_thread_freelist
++		    = _M_thread_freelist;
++		}
++	      else
++		{
++		  _Thread_record* _M_old_freelist
++		    = __gnu_internal::freelist._M_thread_freelist;
++		  _Thread_record* _M_old_array
++		    = __gnu_internal::freelist._M_thread_freelist_array;
++		  __gnu_internal::freelist._M_thread_freelist
++		    = &_M_thread_freelist[_M_old_freelist - _M_old_array];
++		  while (_M_old_freelist)
++		    {
++		      size_t next_id;
++		      if (_M_old_freelist->_M_next)
++			next_id = _M_old_freelist->_M_next - _M_old_array;
++		      else
++			next_id = __gnu_internal::freelist._M_max_threads;
++		      _M_thread_freelist[_M_old_freelist->_M_id - 1]._M_next
++			= &_M_thread_freelist[next_id];
++		      _M_old_freelist = _M_old_freelist->_M_next;
++		    }
++		  ::operator delete(static_cast<void*>(_M_old_array));
++		}
++	      __gnu_internal::freelist._M_thread_freelist_array
++		= _M_thread_freelist;
++	      __gnu_internal::freelist._M_max_threads
++		= _M_options._M_max_threads;
++	    }
++	}
++
+ 	const size_t __max_threads = _M_options._M_max_threads + 1;
+ 	for (size_t __n = 0; __n < _M_bin_size; ++__n)
+ 	  {
+@@ -514,23 +584,24 @@ namespace __gnu_cxx
+     // returns it's id.
+     if (__gthread_active_p())
+       {
+-	void* v = __gthread_getspecific(__gnu_internal::freelist_key);
+-	_Thread_record* __freelist_pos = static_cast<_Thread_record*>(v); 
+-	if (__freelist_pos == NULL)
+-	  {
+-	    // Since _M_options._M_max_threads must be larger than
+-	    // the theoretical max number of threads of the OS the
+-	    // list can never be empty.
++	void* v = __gthread_getspecific(__gnu_internal::freelist._M_key);
++	size_t _M_id = (size_t)v;
++	if (_M_id == 0)
++	  {
+ 	    {
+ 	      __gnu_cxx::lock sentry(__gnu_internal::freelist_mutex);
+-	      __freelist_pos = _M_thread_freelist;
+-	      _M_thread_freelist = _M_thread_freelist->_M_next;
++	      if (__gnu_internal::freelist._M_thread_freelist)
++		{
++		  _M_id = __gnu_internal::freelist._M_thread_freelist->_M_id;
++		  __gnu_internal::freelist._M_thread_freelist
++		    = __gnu_internal::freelist._M_thread_freelist->_M_next;
++		}
+ 	    }
+-	      
+-	    __gthread_setspecific(__gnu_internal::freelist_key, 
+-				  static_cast<void*>(__freelist_pos));
++
++	    __gthread_setspecific(__gnu_internal::freelist._M_key,
++				  (void*)_M_id);
+ 	  }
+-	return __freelist_pos->_M_id;
++	return _M_id >= _M_options._M_max_threads ? 0 : _M_id;
+       }
+ 
+     // Otherwise (no thread support or inactive) all requests are
+@@ -538,14 +609,11 @@ namespace __gnu_cxx
+     return 0;
+   }
+ 
++  // Compatibility
+   void
+-  __pool<true>::_M_destroy_thread_key(void* __freelist_pos)
++  __pool<true>::_M_destroy_thread_key(void* __freelist_pos
++				      __attribute__((__unused__)))
+   {
+-    // Return this thread id record to front of thread_freelist.
+-    __gnu_cxx::lock sentry(__gnu_internal::freelist_mutex);
+-    _Thread_record* __tr = static_cast<_Thread_record*>(__freelist_pos);
+-    __tr->_M_next = _M_thread_freelist; 
+-    _M_thread_freelist = __tr;
+   }
+ #endif
+ 
+
+	Jakub

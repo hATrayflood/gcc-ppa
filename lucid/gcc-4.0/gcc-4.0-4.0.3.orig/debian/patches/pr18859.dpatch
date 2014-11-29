@@ -1,0 +1,100 @@
+#! /bin/sh -e
+
+# DP: Fix PR middle-end/18859 (ice-on-valid-code), taken from the 4.0 branch.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+
+2006-03-13  Eric Botcazou  <ebotcazou@adacore.com>
+
+	PR middle-end/18859
+	* stmt.c (expand_case): Discard empty ranges.
+
+2006-03-13  Eric Botcazou  <ebotcazou@adacore.com>
+
+	* gcc.dg/switch-9.c: New test.
+ 
+Index: gcc/testsuite/gcc.dg/switch-9.c
+===================================================================
+--- gcc/testsuite/gcc.dg/switch-9.c	(revision 0)
++++ gcc/testsuite/gcc.dg/switch-9.c	(revision 112002)
+@@ -0,0 +1,25 @@
++/* PR middle-end/18859 */
++/* { dg-do compile } */
++/* { dg-options "" } */
++
++void foo(int a)
++{
++  switch (a)
++  {
++    case 0 ... -1:  /* { dg-warning "empty range" } */
++      a = a+2;
++      break;
++
++    case 1 ... 2:
++      a = 0;
++      break;
++
++    case 3 ... 4:
++      a = 1;
++      break;
++
++    case 5 ... 6:
++      a = 0;
++      break;
++  }
++}
+Index: gcc/stmt.c
+===================================================================
+--- gcc/stmt.c	(revision 112001)
++++ gcc/stmt.c	(revision 112002)
+@@ -2275,7 +2275,7 @@
+ #define HAVE_tablejump 0
+ #endif
+ 
+-/* Terminate a case (Pascal) or switch (C) statement
++/* Terminate a case (Pascal/Ada) or switch (C) statement
+    in which ORIG_INDEX is the expression to be tested.
+    If ORIG_TYPE is not NULL, it is the original ORIG_INDEX
+    type as given in the source before any compiler conversions.
+@@ -2337,10 +2337,18 @@
+ 
+       for (i = TREE_VEC_LENGTH (vec) - 1; --i >= 0; )
+ 	{
++	  tree low, high;
+ 	  elt = TREE_VEC_ELT (vec, i);
+-	  gcc_assert (CASE_LOW (elt));
+-	  case_list = add_case_node (case_list, index_type,
+-				     CASE_LOW (elt), CASE_HIGH (elt),
++
++	  low = CASE_LOW (elt);
++	  gcc_assert (low);
++	  high = CASE_HIGH (elt);
++
++	  /* Discard empty ranges.  */
++	  if (high && INT_CST_LT (high, low))
++	    continue;
++
++	  case_list = add_case_node (case_list, index_type, low, high,
+ 				     CASE_LABEL (elt));
+ 	}
+ 

@@ -1,0 +1,38 @@
+#! /bin/sh -e
+ 
+# DP: Set MULTILIB_OSDIRNAMES to the correct multilib path names for amd64.
+# DP: 
+# DP: 
+ 
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- src/gcc/config/i386/t-linux64~	2002-11-28 14:47:02.000000000 +0000
++++ src/gcc/config/i386/t-linux64	2004-06-02 16:07:30.533131301 +0000
+@@ -6,7 +6,7 @@
+ 
+ MULTILIB_OPTIONS = m64/m32
+ MULTILIB_DIRNAMES = 64 32 
+-MULTILIB_OSDIRNAMES = ../lib64 ../lib
++MULTILIB_OSDIRNAMES = ../lib64 ../lib32
+ 
+ LIBGCC = stmp-multilib
+ INSTALL_LIBGCC = install-multilib

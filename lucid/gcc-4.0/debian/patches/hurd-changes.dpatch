@@ -1,0 +1,93 @@
+#! /bin/sh -e
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+# DP: Traditional GNU systems don't have a /usr directory.  However, Debian
+# DP: systems do, and we support both having a /usr -> . symlink, and having a
+# DP: /usr directory like the other ports.  So this patch should NOT go
+# DP: upstream.
+# DP: 
+# DP: Define MAXPATHLEN and PATH_MAX.
+# DP:
+# DP: Add some #pragma weak for _pthread_* functions.
+
+--- gcc/config/gnu.h.orig	2005-06-22 13:23:24.000000000 +0200
++++ gcc/config/gnu.h	2005-06-22 13:24:18.000000000 +0200
+@@ -10,7 +10,8 @@
+ 
+ /* Standard include directory.  In GNU, "/usr" is a four-letter word.  */
+ #undef STANDARD_INCLUDE_DIR
+-#define STANDARD_INCLUDE_DIR "/include"
++/* Overriden for Debian GNU/Hurd.  */
++#define STANDARD_INCLUDE_DIR "/usr/include"
+ 
+ /* The system headers under GNU are C++-aware.  */
+ #define NO_IMPLICIT_EXTERN_C
+
+--- gcc/config/t-gnu.orig       2005-07-21 21:50:47.860778032 +0200
++++ gcc/config/t-gnu    2005-07-21 21:50:55.514614472 +0200
+@@ -1,2 +1,2 @@
+ # In GNU, "/usr" is a four-letter word.
+-NATIVE_SYSTEM_HEADER_DIR = /include
++NATIVE_SYSTEM_HEADER_DIR = /usr/include
+--- gcc/tlink.c	2004-11-09 11:12:19.000000000 +0100
++++ gcc/tlink.c.new	2005-06-22 13:01:44.000000000 +0200
+@@ -34,6 +34,10 @@
+ 
+ #define MAX_ITERATIONS 17
+ 
++#ifndef MAXPATHLEN
++#define MAXPATHLEN 4096
++#endif
++
+ /* Defined in the automatically-generated underscore.c.  */
+ extern int prepends_underscore;
+ 
+--- gcc/gthr-posix.h.orig	2005-07-19 13:58:06.000000000 +0200
++++ gcc/gthr-posix.h	2005-07-23 17:28:14.000000000 +0200
+@@ -40,6 +40,13 @@
+ #define _REENTRANT 1
+ #endif
+ 
++#pragma weak _pthread_mutex_lock
++#pragma weak _pthread_mutex_trylock
++#pragma weak _pthread_mutex_unlock
++
++#pragma weak _pthread_mutex_init
++#pragma weak _pthread_mutex_destroy
++
+ #include <pthread.h>
+ #include <unistd.h>
+ 
+--- gcc/ada/adaint.c.orig	2005-08-01 23:10:02.000000000 +0200
++++ gcc/ada/adaint.c	2005-08-01 23:11:10.000000000 +0200
+@@ -261,6 +261,10 @@
+ #include <sys/param.h>
+ #endif
+ 
++#ifndef MAXPATHLEN
++#define MAXPATHLEN 4096
++#endif
++
+ #define GNAT_MAX_PATH_LEN MAXPATHLEN
+ 
+ #endif

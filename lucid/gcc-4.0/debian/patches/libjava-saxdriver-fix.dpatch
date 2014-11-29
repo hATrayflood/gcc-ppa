@@ -1,0 +1,52 @@
+#! /bin/sh -e
+
+# DP: Fix bug lin SAXDriver, needeed for eclipse's AntCompletionProcessor
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2005-11-09  Chris Burdess  <dog@gnu.org>
+
+        * gnu/xml/aelfred2/SAXDriver.java: Ensure that absolutize does not
+        throw exception when custom entity resolver is set.
+
+Index: gnu/xml/aelfred2//SAXDriver.java
+===================================================================
+RCS file: /cvsroot/classpath/classpath/gnu/xml/aelfred2/SAXDriver.java,v
+retrieving revision 1.7
+diff -u -r1.7 SAXDriver.java
+--- libjava/gnu/xml/aelfred2//SAXDriver.java    2 Jul 2005 20:32:15 -0000
++++ libjava/gnu/xml/aelfred2//SAXDriver.java    9 Nov 2005 20:08:49 -0000
+@@ -717,7 +717,9 @@
+       }
+     else
+       {
+-        in.setSystemId(absolutize(baseURI, in.getSystemId(), false));
++        in.setSystemId(absolutize(baseURI,
++                                  in.getSystemId(),
++                                  entityResolver != base));
+         source = entityResolver.resolveEntity(in.getPublicId(),
+                                               in.getSystemId());
+         if (source == null)
+
+

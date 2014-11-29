@@ -1,0 +1,119 @@
+#! /bin/sh -e
+
+# DP: Set gettext's domain and textdomain to the versioned package name.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+
+--- gcc/Makefile.in.orig	2005-08-22 09:06:55.178245520 +0200
++++ gcc/Makefile.in	2005-08-22 09:08:32.162501672 +0200
+@@ -2668,6 +2668,7 @@
+ intl.o: intl.c $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) intl.h Makefile
+ 	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) \
+ 	  -DLOCALEDIR=\"$(localedir)\" \
++	  -DPACKAGE_SUFFIX=\"$(PACKAGE_SUFFIX)\" \
+ 	  -c $(srcdir)/intl.c $(OUTPUT_OPTION)
+ 
+ #
+@@ -4229,6 +4230,7 @@
+ MSGMERGE = msgmerge
+ 
+ PACKAGE = @PACKAGE@
++PACKAGE_SUFFIX = $(subst @PACKAGE@,,$(shell echo @PACKAGE@ |sed '$(program_transform_name)'))
+ CATALOGS = @CATALOGS@
+ 
+ .PHONY: build- install- build-po install-po update-po
+@@ -4275,8 +4277,8 @@
+ 	  dir=$(localedir)/$$lang/LC_MESSAGES; \
+ 	  echo $(mkinstalldirs) $(DESTDIR)$$dir; \
+ 	  $(mkinstalldirs) $(DESTDIR)$$dir || exit 1; \
+-	  echo $(INSTALL_DATA) $$cat $(DESTDIR)$$dir/$(PACKAGE).mo; \
+-	  $(INSTALL_DATA) $$cat $(DESTDIR)$$dir/$(PACKAGE).mo; \
++	  echo $(INSTALL_DATA) $$cat $(DESTDIR)$$dir/$(PACKAGE)$(PACKAGE_SUFFIX).mo; \
++	  $(INSTALL_DATA) $$cat $(DESTDIR)$$dir/$(PACKAGE)$(PACKAGE_SUFFIX).mo; \
+ 	done
+ 
+ # Rule for regenerating the message template (gcc.pot).
+--- gcc/intl.c.orig	2005-08-22 09:06:55.183244760 +0200
++++ gcc/intl.c	2005-08-22 09:07:07.858317856 +0200
+@@ -51,8 +51,8 @@
+   setlocale (LC_ALL, "");
+ #endif
+ 
+-  (void) bindtextdomain (PACKAGE, LOCALEDIR);
+-  (void) textdomain (PACKAGE);
++  (void) bindtextdomain (PACKAGE PACKAGE_SUFFIX, LOCALEDIR);
++  (void) textdomain (PACKAGE PACKAGE_SUFFIX);
+ 
+   /* Opening quotation mark.  */
+   open_quote = _("`");
+--- libcpp/system.h.orig	2005-08-22 09:06:55.196242784 +0200
++++ libcpp/system.h	2005-08-22 09:07:07.858317856 +0200
+@@ -260,7 +260,7 @@
+ #endif
+ 
+ #ifndef _
+-# define _(msgid) dgettext (PACKAGE, msgid)
++# define _(msgid) dgettext (PACKAGE PACKAGE_SUFFIX, msgid)
+ #endif
+ 
+ #ifndef N_
+--- libcpp/init.c.orig	2005-08-22 09:06:55.202241872 +0200
++++ libcpp/init.c	2005-08-22 09:07:07.861317400 +0200
+@@ -122,7 +122,7 @@
+       init_trigraph_map ();
+ 
+ #ifdef ENABLE_NLS
+-       (void) bindtextdomain (PACKAGE, LOCALEDIR);
++       (void) bindtextdomain (PACKAGE PACKAGE_SUFFIX, LOCALEDIR);
+ #endif
+     }
+ }
+--- libcpp/Makefile.in.orig	2005-08-22 09:06:55.202241872 +0200
++++ libcpp/Makefile.in	2005-08-22 09:10:20.223073968 +0200
+@@ -47,6 +47,7 @@
+ LIBICONV = @LIBICONV@
+ LIBINTL = @LIBINTL@
+ PACKAGE = @PACKAGE@
++PACKAGE_SUFFIX = -4.0
+ RANLIB = @RANLIB@
+ SHELL = @SHELL@
+ USED_CATALOGS = @USED_CATALOGS@
+@@ -62,6 +63,7 @@
+ mkinstalldirs = $(SHELL) $(srcdir)/../mkinstalldirs
+ INCLUDES = -I$(srcdir) -I. -I$(srcdir)/../include @INCINTL@ \
+ 	-I$(srcdir)/include
++CPPFLAGS += -DPACKAGE_SUFFIX=\"$(strip $(PACKAGE_SUFFIX))\"
+ 
+ ALL_CFLAGS = $(CFLAGS) $(WARN_CFLAGS) $(INCLUDES) $(CPPFLAGS)
+ 
+@@ -152,8 +154,8 @@
+ 	  else continue; \
+ 	  fi; \
+ 	  dir=$(localedir)/$$lang/LC_MESSAGES; \
+-	  echo $(INSTALL_DATA) $$cat $(DESTDIR)$$dir/$(PACKAGE).mo; \
+-	  $(INSTALL_DATA) $$cat $(DESTDIR)$$dir/$(PACKAGE).mo; \
++	  echo $(INSTALL_DATA) $$cat $(DESTDIR)$$dir/$(PACKAGE)$(PACKAGE_SUFFIX).mo; \
++	  $(INSTALL_DATA) $$cat $(DESTDIR)$$dir/$(PACKAGE)$(PACKAGE_SUFFIX).mo; \
+ 	done
+ 
+ mostlyclean:

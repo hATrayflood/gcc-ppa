@@ -1,0 +1,72 @@
+#! /bin/sh -e
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+From: Andreas Schwab <schwab@suse.de>
+Sender: gcc-patches-owner@gcc.gnu.org
+To: gcc-patches@gcc.gnu.org
+Subject: Fix extendqidi2 for m68k
+Date: Sun, 24 Jul 2005 21:16:13 +0200
+
+This fixes the extendqidi2 pattern for the m68k.  The compiler was
+generating invalid assembler code while compiling libjava by emitting a
+byte move from an address register.  While fixing the bug I noticed a very
+old bug in the 68000 code for this pattern, which exists since the pattern
+was introduced (more than 10 years ago).
+
+Andreas.
+
+# DP: 2005-07-24  Andreas Schwab  <schwab@suse.de>
+# DP: 
+# DP: 	* config/m68k/m68k.md ("extendqidi2"): When source is an address
+# DP: 	register use a word move.  Correct operand of ext.w in 68000 code.
+
+--- gcc/config/m68k/m68k.md.~1.85.~	2005-07-13 10:22:19.000000000 +0200
++++ gcc/config/m68k/m68k.md	2005-07-24 19:43:52.000000000 +0200
+@@ -1299,9 +1299,19 @@
+   if (TARGET_CFV4)
+     return "mvs%.b %1,%2\;smi %0\;extb%.l %0";
+   if (TARGET_68020 || TARGET_COLDFIRE)
+-    return "move%.b %1,%2\;extb%.l %2\;smi %0\;extb%.l %0";
++    {
++      if (ADDRESS_REG_P (operands[1]))
++	return "move%.w %1,%2\;extb%.l %2\;smi %0\;extb%.l %0";
++      else
++	return "move%.b %1,%2\;extb%.l %2\;smi %0\;extb%.l %0";
++    }
+   else
+-    return "move%.b %1,%2\;ext%.w %0\;ext%.l %2\;move%.l %2,%0\;smi %0";
++    {
++      if (ADDRESS_REG_P (operands[1]))
++	return "move%.w %1,%2\;ext%.w %2\;ext%.l %2\;move%.l %2,%0\;smi %0";
++      else
++	return "move%.b %1,%2\;ext%.w %2\;ext%.l %2\;move%.l %2,%0\;smi %0";
++    }
+ })
+ 
+ (define_insn "extendhidi2"
+
+-- 
+Andreas Schwab, SuSE Labs, schwab@suse.de
+SuSE Linux Products GmbH, Maxfeldstraße 5, 90409 Nürnberg, Germany
+Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
