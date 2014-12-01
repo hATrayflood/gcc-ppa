@@ -1,8 +1,0 @@
-#! /bin/sh -e
-
-update-alternatives --quiet --remove java /usr/bin/gij-wrapper-@BV@
-update-alternatives --quiet --remove rmiregistry /usr/bin/grmiregistry-@BV@
-
-#DEBHELPER#
-
-exit 0

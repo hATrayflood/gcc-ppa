@@ -1,4 +1,0 @@
-libobjc.so.2 libobjc2 #MINVER#
-#include "libobjc2.symbols.common"
-libobjc_gc.so.2 libobjc2 #MINVER#
-#include "libobjc2.symbols.common"

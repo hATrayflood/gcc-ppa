@@ -1,4 +1,5 @@
 *.deb
+debian
 gcc-4.0_4.0.3-*
 gcc-4.0_4.0.3.orig.*
 gcc-4.0-4.0.3.orig/*

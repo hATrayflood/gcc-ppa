@@ -1,2 +1,0 @@
-gcc-@BV@-spu: non-standard-dir-in-usr usr/spu/
-gcc-@BV@-spu: file-in-unusual-dir

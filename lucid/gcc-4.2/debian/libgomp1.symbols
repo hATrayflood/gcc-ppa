@@ -1,2 +1,0 @@
-libgomp.so.1 libgomp1 #MINVER#
-#include "libgomp1.symbols.common"
