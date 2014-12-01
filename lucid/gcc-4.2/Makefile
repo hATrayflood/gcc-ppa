@@ -1,7 +1,7 @@
 DIR = gcc-4.2-4.2.4.orig
-DEL = gcc-4.2-4.2.4-*
+DEL = gcc-4.2_4.2.4-*
 SRC = gcc-4.2_4.2.4.orig.tar.gz
-BASE_URL = http://old-releases.ubuntu.com/ubuntu/pool/main/g/gcc-4.2/
+DEB_DIFF = gcc-4.2_4.2.4-1ubuntu4.diff.gz
 
 include ../../build.mk
 

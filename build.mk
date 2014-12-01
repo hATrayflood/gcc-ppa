@@ -1,4 +1,5 @@
 PPA = buildtest
+BASE_URL = https://launchpad.net/ubuntu/+archive/primary/+files/
 
 all: debclean
 	cd $(DIR) && debuild -uc -us
@@ -36,16 +37,16 @@ extract: $(SRC)
 		tar zxf $${TAR} ; \
 	done
 
-$(SRC):
+debian: $(DEB_DIFF)
+	rm -fr $@
+	gzip -cd $< | patch -p1
+
+$(SRC) $(DEB_DIFF):
 	wget $(BASE_URL)/$@
 
 control:
 	rm -f $(DIR)/debian/control
 	$(MAKE) -C $(DIR) -f debian/rules control
 
-%.diff.gz: .FORCE
-	rm -fr debian
-	gzip -cd $@ | patch -p1
-
-.PHONY: all dput install extract clean debclean distclean control
+.PHONY: all dput install extract debian clean debclean distclean control
 .FORCE:

@@ -53,14 +53,14 @@ usage
 
 upstream
 --------
-http://old-releases.ubuntu.com/ubuntu/pool/main/g/gcc-4.0/  
-http://packages.ubuntu.com/source/lucid/gcc-4.1  
-http://old-releases.ubuntu.com/ubuntu/pool/main/g/gcc-4.2/  
-http://packages.ubuntu.com/source/precise/gcc-4.5  
-http://packages.ubuntu.com/source/precise/gcc-4.6  
-http://packages.ubuntu.com/source/trusty/gcc-4.7  
-http://packages.ubuntu.com/source/trusty/gcc-4.8  
-http://packages.ubuntu.com/source/utopic/gcc-4.9  
+https://launchpad.net/ubuntu/dapper/+source/gcc-4.0  
+https://launchpad.net/ubuntu/lucid/+source/gcc-4.1  
+https://launchpad.net/ubuntu/hardy/+source/gcc-4.2  
+https://launchpad.net/ubuntu/precise/+source/gcc-4.5  
+https://launchpad.net/ubuntu/precise/+source/gcc-4.6  
+https://launchpad.net/ubuntu/trusty/+source/gcc-4.7  
+https://launchpad.net/ubuntu/trusty/+source/gcc-4.8  
+https://launchpad.net/ubuntu/utopic/+source/gcc-4.9  
 
 launchpad
 ---------

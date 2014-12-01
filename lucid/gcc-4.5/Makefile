@@ -1,7 +1,7 @@
 DIR = gcc-4.5-4.5.3.orig
 DEL = gcc-4.5_4.5.3-*
 SRC = gcc-4.5_4.5.3.orig.tar.gz
-BASE_URL = http://archive.ubuntu.com/ubuntu/pool/main/g/gcc-4.5/
+DEB_DIFF = gcc-4.5_4.5.3-12ubuntu2.diff.gz
 
 include ../../build.mk
 

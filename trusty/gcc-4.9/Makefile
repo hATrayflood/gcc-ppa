@@ -1,7 +1,7 @@
 DIR = gcc-4.9-4.9.1.orig
 DEL = gcc-4.9_4.9.1-*
 SRC = gcc-4.9_4.9.1.orig.tar.gz
-BASE_URL = http://archive.ubuntu.com/ubuntu/pool/main/g/gcc-4.9/
+DEB_DIFF = gcc-4.9_4.9.1-16ubuntu6.diff.gz
 
 include ../../build.mk
 
