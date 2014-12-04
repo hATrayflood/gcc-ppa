@@ -1,0 +1,73 @@
+#! /bin/sh -e
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+From: Waldek Hebisch <hebisch@math.uni.wroc.pl>
+Sender: gpc-owner@gnu.de
+To: gpc@gnu.de
+Subject: Re: New (20060215) snapshot
+Date: Sat, 25 Feb 2006 13:43:33 +0100 (CET)
+
+
+Investigating Chief's report I have found that GPC parser may crash
+due to undetected parser stack overflow. To avoid the problem you
+can either apply the following patch to `parse.c' or patch `parse.y'
+and `glr.c' from bison distribution. The second way is "better",
+but requires you to have bison-2.1 and to patch its installotion.
+If you do not want to mess with bison patch to `parse.c' should be
+enough to avoid problems with GPC. Patches to `parse.y' and `glr.c'
+are in attachement. Both patches increase size of GPC parser stack.
+
+
+--- ../../../rr/gpc/p/parse.c	2006-02-15 03:05:20.000000000 +0100
++++ gcc/p/parse.c	2006-02-25 14:06:37.639531864 +0100
+@@ -287,6 +287,7 @@
+ /* Copy the first part of user declarations.  */
+ #line 63 "parse.y"
+ 
++#define YYMAXDEPTH 200000
+ #include "gpc.h"
+ 
+ /* A few keywords of some dialects can be parsed as regular identifiers
+@@ -8277,7 +8278,7 @@
+   size_t yysize, yynewSize;
+   size_t yyn;
+   yysize = yystack->yynextFree - yystack->yyitems;
+-  if (YYMAXDEPTH <= yysize)
++  if (YYMAXDEPTH < yysize + YYHEADROOM)
+     yyMemoryExhausted (yystack);
+   yynewSize = 2*yysize;
+   if (YYMAXDEPTH < yynewSize)
+
+--- gcc/p/predef.def~	2006-02-14 08:14:19.000000000 +0100
++++ gcc/p/predef.def	2006-02-28 18:24:42.585086192 +0100
+@@ -33,6 +33,10 @@
+    The identifiers that are only attributes don't have separate
+    comments and are documented under `attribute'. */
+ 
++#if defined(noinline)
++#undef noinline
++#endif
++
+ PREDEF_ID (all,        GNU_PASCAL)          /* <export> extension (`export foo = all') */
+ PREDEF_ID (export,     E_O_PASCAL)          /* module interface export */
+ PREDEF_ID (ignorable,  GNU_PASCAL)

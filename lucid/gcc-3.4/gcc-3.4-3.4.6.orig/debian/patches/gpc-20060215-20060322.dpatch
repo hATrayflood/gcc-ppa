@@ -1,0 +1,5067 @@
+#! /bin/sh -e
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+# DP: gpc update 20060215-20060322
+
+diff -urN gcc/p.old/ChangeLog gcc/p/ChangeLog
+--- gcc/p.old/ChangeLog	2006-06-10 17:45:38.383386000 +0000
++++ gcc/p/ChangeLog	2006-06-10 17:46:10.403386000 +0000
+@@ -1,5 +1,34 @@
+ ChangeLog -- Edit History for GPC, the GNU Pascal Compiler, since version 2.1
+ =============================================================================
++2006-03-09  Waldek Hebisch  <hebisch@math.uni.wroc.pl>
++
++        * predef.c: build_predef_call (): handle named exit from a method
++          parse.y: allow qualified name as an argument for `Exit'
++
++2006-03-05  Waldek Hebisch  <hebisch@math.uni.wroc.pl>
++
++        * parse.y: remove reduce-reduce conflict in `object_field_list'
++
++2006-03-04  Waldek Hebisch  <hebisch@math.uni.wroc.pl>
++
++        * types.c: is_of_string_type (): check more strictly
++
++2006-02-28  Waldek Hebisch  <hebisch@math.uni.wroc.pl>
++
++        * units/crtc.c: crt_Read (): add casts between `Char *' and
++          `char *'.
++
++2006-02-28  Frank Heckenbach  <frank@pascal.gnu.de>
++
++        * types.c: select_integer_type (): Use at least integer
++          precision for arithmetic
++
++2006-02-25  Waldek Hebisch  <hebisch@math.uni.wroc.pl>
++
++        * parse.y: increase YYMAXDEPTH
++       
++        * types.c: find_field (): remove `gcc_unreachable'
++
+ 2006-02-14  Waldek Hebisch  <hebisch@math.uni.wroc.pl>
+ 
+         * predef.c: build_read (): in ISO mode require second argument
+diff -urN gcc/p.old/Make-lang.in gcc/p/Make-lang.in
+--- gcc/p.old/Make-lang.in	2006-06-10 17:45:38.383386000 +0000
++++ gcc/p/Make-lang.in	2006-06-10 17:46:10.403386000 +0000
+@@ -52,14 +52,22 @@
+ # `'   for gcc-3.[0-3].x
+ # GCC_VERSION_FOR_GPC34 yields additionally:
+ # `34' for gcc-3.[4-9].x
++# GCC_VERSION_FOR_GPC40 yields additionally:
++# `40' for gcc-4.x
+ GPC_GCC_2_=2
+ GPC_GCC_28_=8
+ GPC_GCC_34_PPQ_=foo
+ GPC_GCC_34_PPP=$(GPC_GCC_34_PPQ_$(target_noncanonical))
+ GPC_GCC_34_PP_=34
+ GPC_GCC_34_=$(GPC_GCC_34_PP_$(GPC_GCC_34_PPP))
++GPC_GCC_40_PPQ_=fallback_to_34
++GPC_GCC_40_PPP=$(GPC_GCC_40_PPQ_$(TREE_GIMPLE_H))
++GPC_GCC_40_PP_=40
++GPC_GCC_40_PP_fallback_to_34=$(GPC_GCC_34_)
++GPC_GCC_40_=$(GPC_GCC_40_PP_$(GPC_GCC_40_PPP))
+ GCC_VERSION_FOR_GPC=$(GPC_GCC_2_$(BACKEND))$(GPC_GCC_28_$(gcc_version))
+ GCC_VERSION_FOR_GPC34=$(GCC_VERSION_FOR_GPC)$(GPC_GCC_34_)
++GCC_VERSION_FOR_GPC40=$(GCC_VERSION_FOR_GPC)$(GPC_GCC_40_)
+ GPC_GCC_VERSION_28=$(version)
+ GPC_GCC_VERSION_2=$(gcc_version)
+ GPC_GCC_VERSION_=$(gcc_version)
+@@ -67,6 +75,8 @@
+ GPC_GCC_VERSION_OBJS_28=pexecute.o
+ GPC_GCC_VERSION_OBJS_=intl.o
+ GPC_GCC_VERSION_OBJS=$(GPC_GCC_VERSION_OBJS_$(GCC_VERSION_FOR_GPC))
++GPC_OBJS_FOR_40=p/gimplify.o
++GPC_OBJS_40=$(GPC_OBJS_FOR_$(GCC_VERSION_FOR_GPC40))
+ GPC_GCC_VERSION_LINK_=p/diagnostic.o attribs.o main.o libbackend.a ../libiberty/libiberty.a
+ GPC_GCC_VERSION_LINK_2=`cat p/stamp-gbe`
+ GPC_GCC_VERSION_LINK_28=`cat p/stamp-gbe` choose-temp.o pexecute.o
+@@ -575,7 +585,8 @@
+ # Headers and flags for GPC specific files.
+ GPC_GBE_H=$(CONFIG_H) system.h tree.h input.h rtl.h flags.h output.h expr.h \
+           except.h function.h convert.h toplev.h $(GPC_GCC_VERSION_H)
+-P_H=$(GPC_GBE_H) p/gpc.h p/p-tree.def p/predef.def $(srcdir)/p/parse.h p/gbe.h
++P_H=$(GPC_GBE_H) p/gpc.h p/plant.h p/p-tree.def p/predef.def \
++          $(srcdir)/p/parse.h p/gbe.h
+ ALL_GPC_FLAGS=$(ALL_CFLAGS) $(ALL_CPPFLAGS) $(GPC_ALL_WARNINGS) $(INCLUDES) \
+   -DGPC -DGPC_UNITS_DIR=\"$(unitsubdir)\" -I$(srcdir)/p
+ 
+@@ -597,7 +608,7 @@
+ 	p/typecheck.o p/types.o p/convert.o p/dbxout.o p/dwarf2out.o \
+ 	p/expr.o p/fold-const.o p/function.o p/integrate.o p/optabs.o \
+ 	p/stor-layout.o p/toplev.o p/tree.o p/stmt.o p/emit-rtl.o \
+-	p/varasm.o p/version.o p/gpcpp.o
++	p/varasm.o p/version.o p/gpcpp.o p/plant.o $(GPC_OBJS_40)
+ 
+ # Exclude patched files from language-independent object file list.
+ # Not necessary for gcc-3 since for a library (libbackend.a), the linker does this automatically.
+@@ -620,7 +631,7 @@
+ 	 s: version.o::g;' "$<" > "$@" || { rm -f "$@"; false; }
+ 
+ gpc1$(exeext): $(P) $(GPC_GCC_VERSION_DEPS) $(GPC_OBJS) $(LIBDEPS)
+-	@grep "@@ PATCHED FOR GPC 20051114 @@" $(srcdir)/stor-layout.c > /dev/null || \
++	@grep "@@ PATCHED FOR GPC 20060322 @@" $(srcdir)/stor-layout.c > /dev/null || \
+ 	 { echo "*** There have been changes in the patch for GCC. Please start with a fresh"; \
+ 	   echo "*** copy of the GCC sources and do a new build, including configure."; \
+ 	   exit 1; } >&2
+@@ -657,6 +668,9 @@
+ p/parse.o: $(srcdir)/p/parse.c $(P_H)
+ 	$(CC) -o $@ -c $(ALL_GPC_FLAGS) $(BIG_SWITCHFLAG) $<
+ 
++p/plant.o: $(srcdir)/p/plant.c $(P_H)
++	$(CC) -o $@ -c $(ALL_GPC_FLAGS) $<
++
+ p/predef.o: p/predef.c $(P_H) $(RTSSRCDIR)/constants.def
+ 	$(CC) -o $@ -c $(ALL_GPC_FLAGS) $<
+ 
+@@ -693,6 +707,9 @@
+ p/function.o: function.c $(GPC_BE_H)
+ 	$(CC) -o $@ -c $(ALL_GPC_GBE_FLAGS) $<
+ 
++p/gimplify.o: gimplify.c $(GPC_BE_H)
++	$(CC) -o $@ -c $(ALL_GPC_GBE_FLAGS) $<
++
+ p/integrate.o: integrate.c $(GPC_BE_H)
+ 	$(CC) -o $@ -c $(ALL_GPC_GBE_FLAGS) $<
+ 
+diff -urN gcc/p.old/config-lang.in gcc/p/config-lang.in
+--- gcc/p.old/config-lang.in	2006-06-10 17:45:38.383386000 +0000
++++ gcc/p/config-lang.in	2006-06-10 17:46:10.403386000 +0000
+@@ -26,7 +26,7 @@
+ language="pascal"
+ compilers="gpc1\$(exeext)"
+ stagestuff="gpc\$(exeext) gpc-cross\$(exeext) gpc1\$(exeext) gpcpp\$(exeext) libgpc.a"
+-gtfiles="\$(srcdir)/p/gpc.h \$(srcdir)/p/declarations.c \$(srcdir)/p/module.c \$(srcdir)/p/predef.c"
++gtfiles="\$(srcdir)/p/gpc.h \$(srcdir)/p/declarations.c \$(srcdir)/p/module.c \$(srcdir)/p/predef.c \$(srcdir)/p/plant.c"
+ 
+ #echo "in p/config-lang.in"
+ #echo "srcdir=$srcdir"
+@@ -51,33 +51,45 @@
+ 
+ srcdir="$MY_SRCDIR"
+ 
+-version=`grep version_string "$srcdir/version.c" | sed -e 's/[^"]*"//;s/[ "].*//'`
++if [ -r "$srcdir/BASE-VER" ]; then
++  version=`cat "$srcdir/BASE-VER"`
++else
++  version=`grep version_string "$srcdir/version.c" | sed -e 's/[^"]*"//;s/[ "].*//'`
++fi
++
+ mainversion="$version"
+ gcc281=y
+ gcc3=n
+-if echo $version | grep '^2\.9' > /dev/null || echo $version | grep '^3\.[1-9]' > /dev/null; then
++if echo $version | grep '^2\.9' > /dev/null || echo $version | grep '^3\.[1-9]' > /dev/null || echo $version | grep '^4\.[0-9]' > /dev/null; then
+   gcc281=n
+   echo '#define EGCS' > "$gcc_version_h"
+-  if echo $version | grep '^2\.95\.[3-9]' > /dev/null || echo $version | grep '^3\.[1-9]' > /dev/null; then
++  if echo $version | grep '^2\.95\.[3-9]' > /dev/null || echo $version | grep '^3\.[1-9]' > /dev/null || echo $version | grep '^4\.[0-9]' > /dev/null; then
+     echo '#define GCC_2_95_3' >> "$gcc_version_h"
+   fi
+-  if echo $version | grep '^2\.9[6-9]' > /dev/null || echo $version | grep '^3\.[1-9]' > /dev/null; then
++  if echo $version | grep '^2\.9[6-9]' > /dev/null || echo $version | grep '^3\.[1-9]' > /dev/null || echo $version | grep '^4\.[0-9]' > /dev/null; then
+     gcc3=y
+     echo '#define EGCS97' >> "$gcc_version_h"
+-    if echo $version | grep '^3\.[3-9]' > /dev/null; then
++    if echo $version | grep '^3\.[3-9]' > /dev/null || echo $version | grep '^4\.[0-9]' > /dev/null; then
+       echo '#define GCC_3_3' >> "$gcc_version_h"
+-      if echo $version | grep '^3\.[4-9]' > /dev/null; then
++      if echo $version | grep '^3\.[4-9]' > /dev/null || echo $version | grep '^4\.[0-9]' > /dev/null; then
+         echo '#define GCC_3_4' >> "$gcc_version_h"
+-        if echo $version | grep '^3\.[5-9]' > /dev/null; then
+-          echo '#define GCC_3_5' >> "$gcc_version_h"
++        if echo $version | grep '^4\.[0-9]' > /dev/null; then
++          echo '#define GCC_4_0' >> "$gcc_version_h"
+           echo "" >&2
+           echo "***" >&2
+           echo "*** Detected GCC version $mainversion." >&2
+-          echo "*** The GPC port for GCC > 3.4.x is still in an early state." >&2
++          if echo $version | grep '^4\.[1-9]' > /dev/null; then
++            echo '#define GCC_4_1' >> "$gcc_version_h"
++
++          echo "*** The GPC port for GCC > 4.0.x does not work." >&2
+           echo "*** You can proceed now if you want to work on it." >&2
+           echo "***" >&2
++          else
++            echo "*** The GPC port for GCC 4.0.x is still in an early state." >&2
++            echo "*** You can proceed now if you want to test it." >&2
++          fi
+           echo "*** For a \"production compiler\" we currently still" >&2
+-          echo "*** recommend GPC based on gcc 2.95.x, 3.2.x or 3.3.x" >&2
++          echo "*** recommend GPC based on gcc 3.3.x or gcc 3.4.x" >&2
+           echo "***" >&2
+           echo "*** Press ENTER to continue, Ctrl-C to abort." >&2
+           echo "***" >&2
+@@ -90,6 +102,17 @@
+   echo "/* empty */" > "$gcc_version_h"
+ fi
+ 
++if echo $version | grep '^2\.[89]' > /dev/null || echo $version | grep '^3\.[1-2]' > /dev/null; then
++  echo "*** Detected GCC version $mainversion." >&2
++  echo "*** Using GPC with 2.x or 3.2.x backends is depreciated." >&2
++  echo "*** In the future support for those backends will be dropped." >&2
++  echo "*** We encourage you to try GPC based on gcc 3.3.x or gcc 3.4.x" >&2
++  echo "***" >&2
++  echo "*** Press ENTER to continue, Ctrl-C to abort." >&2
++  echo "***" >&2
++  read junk
++fi
++
+ for x in 2.95.1 2.95.2 2.95.3 2.95.3-5 2.95.3-6 2.95.3-8 2.95.4; do
+   if [ ! -r "$srcdir/p/diffs/gcc-$x.diff" ]; then
+     (cd "$srcdir/p/diffs"; ln -s "gcc-2.95.diff" "gcc-$x.diff")
+@@ -106,8 +129,11 @@
+ if [ ! -r "$srcdir/p/diffs/gcc-3.4.5.diff" ]; then
+     (cd "$srcdir/p/diffs"; ln -s "gcc-3.4.4.diff" "gcc-3.4.5.diff")
+ fi
++if [ ! -r "$srcdir/p/diffs/gcc-3.4.6.diff" ]; then
++    (cd "$srcdir/p/diffs"; ln -s "gcc-3.4.4.diff" "gcc-3.4.6.diff")
++fi
+ 
+-if grep "@@ PATCHED FOR GPC 20051114 @@" "$srcdir/stor-layout.c" > /dev/null; then
++if grep "@@ PATCHED FOR GPC 20060322 @@" "$srcdir/stor-layout.c" > /dev/null; then
+   :
+ elif grep "@@ PATCHED FOR GPC" "$srcdir/stor-layout.c" > /dev/null; then
+   echo "" >&2
+diff -urN gcc/p.old/declarations.c gcc/p/declarations.c
+--- gcc/p.old/declarations.c	2006-06-10 17:45:38.383386000 +0000
++++ gcc/p/declarations.c	2006-06-10 17:46:10.403386000 +0000
+@@ -59,7 +59,7 @@
+ tree current_function_decl;
+ #endif
+ 
+-tree pascal_global_trees[PTI_MAX];
++tree pascal_global_trees[PTI_MAX] = {0};
+ 
+ /* Nonzero while defining an explicitly `packed' record. */
+ int defining_packed_type = 0;
+@@ -240,7 +240,8 @@
+ static int resolve_forward_decl (tree);
+ static tree lookup_c_type (const char *);
+ static tree make_real (double);
+-static tree gpc_builtin_routine (const char *, const char *, int, tree, tree);
++static tree gpc_builtin_routine (const char *, const char *, int, tree,
++                                 tree, tree);
+ #if defined (EGCS97) && !defined (GCC_3_3)
+ static void mark_binding_level (void *);
+ #endif
+@@ -399,6 +400,8 @@
+ 
+   /* Output any nested inline functions within this block if not done yet. */
+   for (t = decls; t; t = TREE_CHAIN (t))
++  /* @@@@@@@@@@@@@@ */
++#ifndef GCC_4_0
+     if (TREE_CODE (t) == FUNCTION_DECL
+         && !TREE_ASM_WRITTEN (t)
+         && DECL_INITIAL (t)
+@@ -415,8 +418,11 @@
+ #endif
+         pop_function_context ();
+       }
+-    else if (TREE_CODE (t) == LABEL_DECL)
++    else 
++#endif
++    if (TREE_CODE (t) == LABEL_DECL)
+       {
++        gcc_assert (DECL_CONTEXT (t));
+         if (!PASCAL_LABEL_SET (t))
+           {
+             error_with_decl (t, "label `%s' not set");
+@@ -488,6 +494,11 @@
+   free (level);
+ #endif
+ 
++#ifdef GCC_4_0
++  if (current_function_decl)
++    plant_bind_block (block);
++#endif
++
+   return block;
+ }
+ 
+@@ -571,7 +582,9 @@
+ {
+   pushlevel (1);
+   current_binding_level->implicit = implicit;
++#ifndef GCC_4_0
+   clear_last_expr ();
++#endif
+   expand_start_bindings (0);
+ }
+ 
+@@ -933,8 +946,10 @@
+   TREE_THIS_VOLATILE (decl) |= TYPE_VOLATILE (type);
+   prediscriminate_schema (decl);
+   DECL_ARG_TYPE (decl) = TREE_TYPE (decl);
++#ifndef GCC_4_0
+   if (PROMOTE_PROTOTYPES && ORDINAL_TYPE (TREE_CODE (type)) && TYPE_PRECISION (type) < TYPE_PRECISION (integer_type_node))
+     DECL_ARG_TYPE (decl) = integer_type_node;
++#endif
+   TREE_CHAIN (decl) = list;
+   return decl;
+ }
+@@ -1091,7 +1106,12 @@
+       if (!DECL_INITIAL (x))
+         {
+           DECL_RESULT (x) = DECL_RESULT (t);
++#ifndef GCC_4_0
++          /* @@@@@@@@@@@@@@@@@@@@@@ */
+           DECL_SAVED_INSNS (x) = DECL_SAVED_INSNS (t);
++#else
++          DECL_STRUCT_FUNCTION (x) = DECL_STRUCT_FUNCTION (t);
++#endif
+           DECL_ARGUMENTS (x) = DECL_ARGUMENTS (t);
+ #ifndef EGCS97
+           DECL_FRAME_SIZE (x) = DECL_FRAME_SIZE (t);
+@@ -1130,7 +1150,8 @@
+       if (p && (p->kind == bk_const || p->kind == bk_type || p->kind == bk_var))
+         t2 = p->decl;
+     }
+-  if (t2 && TREE_CODE_CLASS (TREE_CODE (t2)) == 'd' && DECL_LANG_SPECIFIC (t2)
++  if (t2 && TREE_CODE_CLASS (TREE_CODE (t2)) == tcc_declaration
++      && DECL_LANG_SPECIFIC (t2)
+       && DECL_LANG_SPECIFIC (t2)->used_in_scope >= current_binding_level->scope)
+     error ("identifier `%s' redeclared in a scope where an outer value was used", IDENTIFIER_NAME (name));
+ 
+@@ -1253,15 +1274,27 @@
+ {
+   tree label = pushdecl (build_decl (LABEL_DECL, id, void_type_node));
+   gcc_assert (!EM (label));
++//  fprintf(stderr, "declare_label\n");
+   if (!current_function_decl || co->longjmp_all_nonlocal_labels)
+     /* Create a jmp_buf variable for non-local gotos to this label.
+        `jmp_buf' is in fact `unsigned[5]' (see ../builtins.c). */
+-    DECL_LANG_LABEL_JMPBUF (label) = make_new_variable ("jmpbuf",
+-      build_simple_array_type (unsigned_type_node, build_index_type (build_int_2 (5, 0))));
++    {
++      tree d = make_new_variable ("jmpbuf",
++                build_simple_array_type (ptr_type_node,
++                build_index_type (build_int_2 (5, 0))));
++    DECL_LANG_LABEL_JMPBUF (label) = d;
++    TREE_SIDE_EFFECTS (d) = TREE_THIS_VOLATILE (d) = 1;
++//    fprintf(stderr, "make_new_variable: jmpbuf\n");
++    }
+   else
+     {
++#ifndef GCC_4_0
+       label_rtx (label);
+       declare_nonlocal_label (label);
++#else
++//      fprintf(stderr, "declare_nonlocal_label\n");
++  //    gcc_assert (0);
++#endif
+     }
+   return label;
+ }
+@@ -1310,7 +1343,12 @@
+     }
+   TREE_USED (decl) = 1;
+   if (DECL_CONTEXT (decl) != current_function_decl)
+-    PASCAL_LABEL_NONLOCAL (decl) = 1;
++    {
++      PASCAL_LABEL_NONLOCAL (decl) = 1;
++#ifdef GCC_4_0
++      mark_decl_referenced (decl);
++#endif
++    }
+   else
+     {
+       struct binding_level *b;
+@@ -1334,7 +1372,12 @@
+             }
+         }
+     }
++#ifndef GCC_4_0
+   if (DECL_RTL_SET_P (decl))
++#else
++  if (DECL_CONTEXT (decl) == current_function_decl
++       || !DECL_LANG_LABEL_JMPBUF (decl))
++#endif
+     expand_goto (decl);
+   else if (DECL_CONTEXT (decl) || current_module->main_program)
+     {
+@@ -1379,11 +1422,21 @@
+       b->names_end = tree_last (b->names);
+     }
+   for (d = current_binding_level->names; d; d = TREE_CHAIN (d))
+-    if (TREE_CODE (d) == LABEL_DECL && !DECL_RTL_SET_P (d))
++    if (TREE_CODE (d) == LABEL_DECL
++#ifndef GCC_4_0
++         && !DECL_RTL_SET_P (d)
++#endif
++        )
+       {
++#ifndef GCC_4_0
+         label_rtx (d);
++#endif
+         /* Avoid calling `setjmp' for labels that are only used locally */
+-        if (TREE_USED (DECL_LANG_LABEL_JMPBUF (d)))
++        if (DECL_LANG_LABEL_JMPBUF (d) 
++#ifndef GCC_4_0
++            && TREE_USED (DECL_LANG_LABEL_JMPBUF (d))
++#endif
++           )
+           {
+             expand_start_cond (build_routine_call (setjmp_routine_node,
+               build_tree_list (NULL_TREE, build_unary_op (ADDR_EXPR, DECL_LANG_LABEL_JMPBUF (d), 0))), 0);
+@@ -1451,7 +1504,7 @@
+ lookup_name (tree name)
+ {
+   tree t = peek_name (name);
+-  if (t && TREE_CODE_CLASS (TREE_CODE (t)) == 'd')
++  if (t && TREE_CODE_CLASS (TREE_CODE (t)) == tcc_declaration)
+     {
+       /* Record that the declaration was used in the current scope, thus the
+          identifier may not be redefined there. Ideally, we'd store the scope
+@@ -1788,7 +1841,11 @@
+   global_binding_level = current_binding_level;
+ 
+ #ifdef EGCS97
++#ifdef GCC_4_0
++  build_common_tree_nodes (0, 0);
++#else
+   build_common_tree_nodes (0);
++#endif
+ #else
+   error_mark_node = make_node (ERROR_MARK);
+   TREE_TYPE (error_mark_node) = error_mark_node;
+@@ -1930,8 +1987,13 @@
+   long_long_boolean_type_node = build_boolean_type (TYPE_PRECISION (long_long_unsigned_type_node));
+   cboolean_type_node = make_unsigned_type (BOOL_TYPE_SIZE);
+   TREE_SET_CODE (cboolean_type_node, BOOLEAN_TYPE);
++#ifndef GCC_4_0
+   TYPE_MAX_VALUE (cboolean_type_node) = build_int_2 (1, 0);
+   TREE_TYPE (TYPE_MAX_VALUE (cboolean_type_node)) = cboolean_type_node;
++#else
++  TYPE_MAX_VALUE (cboolean_type_node) = 
++       build_int_cst_wide (cboolean_type_node, 1, 0);
++#endif
+   TYPE_PRECISION (cboolean_type_node) = 1;
+ 
+   /* Set alignment. */
+@@ -1961,8 +2023,12 @@
+                      TYPE_MODE (long_double_type_node)));
+   char_max_node = convert (char_type_node, TYPE_MAX_VALUE (char_type_node));
+   complex_zero_node = build_complex (TREE_TYPE (real_zero_node), real_zero_node, real_zero_node);
++#ifndef GCC_4_0
+   null_pointer_node = build_int_2 (0, 0);
+   TREE_TYPE (null_pointer_node) = ptr_type_node;
++#else
++  null_pointer_node = build_int_cst(ptr_type_node, 0);
++#endif
+   null_pseudo_const_node = build_indirect_ref (null_pointer_node, NULL);
+ 
+   cstring_type_node = build_pointer_type (char_type_node);
+@@ -1978,20 +2044,33 @@
+ 
+ #define dopar(type, next) tree_cons (NULL_TREE, type, next)
+ 
+-  memcpy_routine_node = gpc_builtin_routine ("__builtin_memcpy", "memcpy", BUILT_IN_MEMCPY,
+-    ptr_type_node, dopar (ptr_type_node, dopar (const_ptr_type_node, dopar (sizetype, void_list_node))));
++#define ATTR_NULL NULL_TREE
++#define ATTR_NORETURN_NOTHROW_LIST \
++  tree_cons (get_identifier ("noreturn"), NULL_TREE, NULL_TREE)
++ /*           tree_cons (get_identifier ("nothrow"), NULL_TREE, NULL_TREE) */
++
++  memcpy_routine_node = gpc_builtin_routine ("__builtin_memcpy", "memcpy",
++    BUILT_IN_MEMCPY,
++    ptr_type_node, dopar (ptr_type_node, dopar (const_ptr_type_node, dopar (sizetype, void_list_node))), ATTR_NULL);
+   memset_routine_node = gpc_builtin_routine ("__builtin_memset", "memset", BUILT_IN_MEMSET,
+-    ptr_type_node, dopar (ptr_type_node, dopar (integer_type_node, dopar (sizetype, void_list_node))));
++    ptr_type_node, dopar (ptr_type_node, dopar (integer_type_node, dopar (sizetype, void_list_node))), ATTR_NULL);
+   strlen_routine_node = gpc_builtin_routine ("__builtin_strlen", "strlen", BUILT_IN_STRLEN,
+-    sizetype, dopar (build_pointer_type (p_build_type_variant (char_type_node, 1, 0)), void_list_node));
++    sizetype, dopar (build_pointer_type (p_build_type_variant (char_type_node, 1, 0)), void_list_node), ATTR_NULL);
+   setjmp_routine_node = gpc_builtin_routine ("__builtin_setjmp", "setjmp", BUILT_IN_SETJMP,
+-    integer_type_node, dopar (ptr_type_node, void_list_node));
++    integer_type_node, dopar (ptr_type_node, void_list_node), ATTR_NULL);
+   longjmp_routine_node = gpc_builtin_routine ("__builtin_longjmp", "longjmp", BUILT_IN_LONGJMP,
+-    void_type_node, dopar (ptr_type_node, dopar (integer_type_node, void_list_node)));
++    void_type_node, dopar (ptr_type_node, dopar (integer_type_node, void_list_node)), ATTR_NORETURN_NOTHROW_LIST);
+   return_address_routine_node = gpc_builtin_routine ("__builtin_return_address", NULL, BUILT_IN_RETURN_ADDRESS,
+-    ptr_type_node, dopar (unsigned_type_node, void_list_node));
++    ptr_type_node, dopar (unsigned_type_node, void_list_node), ATTR_NULL);
+   frame_address_routine_node = gpc_builtin_routine ("__builtin_frame_address", NULL, BUILT_IN_FRAME_ADDRESS,
+-    ptr_type_node, dopar (unsigned_type_node, void_list_node));
++    ptr_type_node, dopar (unsigned_type_node, void_list_node), ATTR_NULL);
++
++#ifdef GCC_4_0
++  build_common_builtin_nodes ();
++  (*targetm.init_builtins) ();
++
++  main_identifier_node = get_identifier ("main");
++#endif
+ 
+   pedantic_lvalues = pedantic;
+ 
+@@ -2008,7 +2087,7 @@
+    If LIBRARY_NAME is nonzero, use that as the name to be called if we
+    can't opencode the function. */
+ static tree
+-gpc_builtin_routine (const char *name, const char *library_name, int function_code, tree resulttype, tree args)
++gpc_builtin_routine (const char *name, const char *library_name, int function_code, tree resulttype, tree args, tree attributes)
+ {
+   tree decl = build_decl (FUNCTION_DECL, get_identifier (name), build_function_type (resulttype, args));
+   DECL_EXTERNAL (decl) = 1;
+@@ -2016,10 +2095,12 @@
+   if (library_name)
+     SET_DECL_ASSEMBLER_NAME (decl, get_identifier (library_name));
+ #ifdef EGCS97
++#ifndef GCC_4_0
+   make_decl_rtl (decl, NULL);
++#endif
+   DECL_BUILT_IN_CLASS (decl) = BUILT_IN_NORMAL;
+   DECL_FUNCTION_CODE (decl) = function_code;
+-  decl_attributes (&decl, NULL_TREE, 0);
++  decl_attributes (&decl, attributes, 0);
+ #else
+   make_decl_rtl (decl, NULL, 1);
+   DECL_BUILT_IN (decl) = 1;
+@@ -2031,13 +2112,19 @@
+ #ifdef EGCS97
+ tree
+ #ifdef GCC_3_3
+-builtin_function (const char *name, tree type, int function_code, enum built_in_class class ATTRIBUTE_UNUSED, const char *library_name, tree dummy ATTRIBUTE_UNUSED)
++builtin_function (const char *name, tree type, int function_code, enum built_in_class class ATTRIBUTE_UNUSED, const char *library_name, tree attributes)
+ #else
+ builtin_function (const char *name, tree type, int function_code, enum built_in_class class ATTRIBUTE_UNUSED, const char *library_name)
+ #endif
+ {
+   return gpc_builtin_routine (name, library_name, function_code,
+-    TREE_TYPE (type), TYPE_ARG_TYPES (type));
++    TREE_TYPE (type), TYPE_ARG_TYPES (type),
++#ifdef GCC_3_3
++    attributes
++#else
++    NULL_TREE
++#endif
++  );
+ }
+ #endif
+ 
+@@ -2212,7 +2299,7 @@
+ check_id_redeclaration (tree name, const char * msg)
+ {
+   tree t = peek_name (name);
+-  if (t && TREE_CODE_CLASS (TREE_CODE (t)) == 'd'
++  if (t && TREE_CODE_CLASS (TREE_CODE (t)) == tcc_declaration
+       && DECL_LANG_SPECIFIC (t)
+       && DECL_LANG_SPECIFIC (t)->used_in_scope >= current_binding_level->scope)
+     {
+@@ -2312,18 +2399,30 @@
+       if (bits)
+         {
+           /* Explicit `packed' record, ordinal field (which can be bit-packed) */
++#if 1
+           if (uns != TYPE_UNSIGNED (type))
+             {
+               TREE_TYPE (x) = type = build_type_copy (type);
+               new_main_variant (type);
+               TYPE_UNSIGNED (type) = uns;
+             }
++#else
++          /* @@@@ In principle we should do this, but it causes problems
++             in inipak1[lm].pas and sam9.pas */
++          TREE_TYPE (x) = type = build_type_copy (type);
++          new_main_variant (type);
++          TYPE_UNSIGNED (type) = uns;
++          TYPE_PRECISION (type) = TREE_INT_CST_LOW (bits);
++#endif
+ #ifdef EGCS97
+           DECL_SIZE (x) = bitsize_int (TREE_INT_CST_LOW (bits));
+ #else
+           DECL_FIELD_SIZE (x) = TREE_INT_CST_LOW (bits);
+ #endif
+           DECL_BIT_FIELD (x) = 1;
++#ifdef GCC_4_0
++          DECL_NONADDRESSABLE_P (x) = 1;
++#endif
+ #if 0
+           DECL_PACKED (x) = 0;  /* suppress warning with `-Wpacked' */
+ #endif
+@@ -2623,7 +2722,9 @@
+   else
+     SET_DECL_ASSEMBLER_NAME (d, mangle_name (name));
+ 
++#ifndef GCC_4_0
+   rest_of_decl_compilation (d, 0, !DECL_CONTEXT (d), 1 /* for GPC */);
++#endif
+ 
+   /* Prevent the optimizer from removing it if it is public. */
+   if (TREE_PUBLIC (d))
+@@ -2656,7 +2757,9 @@
+   if (attributes & ER_CONST)
+     TREE_READONLY (d) = 1;
+   mark_addressable (d);
++#ifndef GCC_4_0
+   rest_of_decl_compilation (d, NULL, 1, 1);
++#endif
+   return d;
+ }
+ 
+@@ -2979,8 +3082,10 @@
+ #ifndef EGCS97
+   make_function_rtl (decl);
+ #else
++#ifndef GCC_4_0
+   make_decl_rtl (decl, NULL);
+ #endif
++#endif
+   immediate_size_expand = 0;
+   DECL_RESULT (decl) = build_decl (RESULT_DECL, NULL_TREE,
+     PROMOTING_INTEGER_TYPE (type) ? integer_type_node : type);
+@@ -3119,8 +3224,10 @@
+   make_function_rtl (decl);
+   temporary_allocation ();
+ #else
++#ifndef GCC_4_0
+   make_decl_rtl (decl, NULL);
+ #endif
++#endif
+ #ifndef GCC_3_4
+   init_function_start (decl, input_filename, lineno);
+ #else
+@@ -3178,8 +3285,10 @@
+   /* Obey `register' declarations if `setjmp' is called in this fn. */
+   if (current_function_calls_setjmp)
+     {
++#ifndef GCC_4_0
+       setjmp_protect (DECL_INITIAL (fndecl));
+       setjmp_protect_args ();
++#endif
+     }
+ 
+   /* Generate rtl for function exit. */
+@@ -3196,8 +3305,11 @@
+   ggc_push_context ();
+ #endif
+ 
++
+   /* Run the optimizers and output the assembler code for this function. */
++#ifndef GCC_4_0
+   rest_of_compilation (fndecl);
++#endif
+ 
+   if (DECL_LANG_RESULT_VARIABLE (fndecl))
+     DECL_LANG_RESULT_VARIABLE (fndecl) = DECL_NAME (DECL_LANG_RESULT_VARIABLE (fndecl));
+@@ -3211,7 +3323,12 @@
+   ggc_pop_context ();
+ #endif
+ 
++#ifndef GCC_4_0
++#ifndef GCC_4_0
+   if (!DECL_SAVED_INSNS (fndecl))
++#else
++  if (!DECL_STRUCT_FUNCTION (fndecl))
++#endif
+     {
+       /* Stop pointing to the local nodes about to be freed. But DECL_INITIAL
+          must remain nonzero (unless rest_of_compilation set this to 0),
+@@ -3220,6 +3337,7 @@
+         DECL_INITIAL (fndecl) = error_mark_node;
+       DECL_ARGUMENTS (fndecl) = NULL_TREE;
+     }
++#endif
+   if (outer_function_chain)
+     pop_function_context ();
+   else
+@@ -3373,7 +3491,9 @@
+         tree type = TREE_TYPE (TREE_PURPOSE (scan));
+         tree decl = pushdecl (TREE_PURPOSE (scan));
+         gcc_assert (!EM (decl));
++#ifndef GCC_4_0
+         rest_of_decl_compilation (decl, NULL, !DECL_CONTEXT (decl), 0);
++#endif
+         handle_autoexport (TREE_VALUE (scan));
+         if (TYPE_STUB_DECL (type))
+           rest_of_type_compilation (type, current_binding_level == global_binding_level);
+@@ -3515,14 +3635,21 @@
+       && TREE_CODE (value) != FIX_TRUNC_EXPR)
+     error ("constant has non-constant value");
+   if (!TREE_CONSTANT (value))  /* @@ Better: if contains SAVE_EXPR ... */
++#ifndef GCC_4_0
+     value = unsave_expr (value);
++#else
++    if (pascal_global_bindings_p () && !EM (TREE_TYPE (value)))
++      value = save_nonconstants (value);
++#endif
+ 
+   value = set_exp_original_code (value, ERROR_MARK);
+   d = build_decl (CONST_DECL, name, TREE_TYPE (value));
+   DECL_INITIAL (d) = value;
+   pushdecl (d);
+   handle_autoexport (name);
++#ifndef GCC_4_0
+   rest_of_decl_compilation (d, NULL, pascal_global_bindings_p (), 0);
++#endif
+   return d;
+ }
+ 
+@@ -3845,17 +3972,25 @@
+ 
+       if (!DECL_ARTIFICIAL (d))
+         d = pushdecl (d);
++#ifdef GCC_4_0
++      else
++        pushdecl_nocheck (d);
++#endif
+       gcc_assert (!EM (d));
+ 
+       if (local_static)
+         DECL_CONTEXT (d) = NULL_TREE;  /* for deferred initializers */
+ 
+       /* Output the assembler code and/or RTL code. */
++#ifndef GCC_4_0
+       rest_of_decl_compilation (d, NULL, !DECL_CONTEXT (d), 1 /* for GPC */);
++#endif
+ 
++#ifndef GCC_4_0
+       /* Compute and store the initial value. */
+       if (DECL_CONTEXT (d))
+         expand_decl_init (d);
++#endif
+ 
+       /* d might be a pointer to an undiscriminated schema. At this point,
+          we can pre-discriminate it using its own contents. */
+@@ -3926,9 +4061,21 @@
+   if (!model || PASCAL_TYPE_UNDISCRIMINATED_STRING (model))
+     {
+       int isstring = is_string_compatible_type (data, 1);
++      tree slen, olen;
+       gcc_assert (isstring);
++      olen = PASCAL_STRING_LENGTH (data);
++#if 0
++      /* @@@@@ this caused problem with cstrassign.pas */       
++      if (copy)
++        {
++          slen = make_new_variable ("string_len", TREE_TYPE (olen));
++          expand_expr_stmt1 (build_modify_expr (slen, NOP_EXPR, olen));
++        }
++      else
++#endif
++        slen = save_expr (olen);
+       type = build_pascal_string_schema (
+-        build_pascal_binary_op (MAX_EXPR, integer_one_node, save_expr (PASCAL_STRING_LENGTH (data))));
++                  build_pascal_binary_op (MAX_EXPR, integer_one_node, slen));
+     }
+   else
+     type = TYPE_MAIN_VARIANT (model);
+diff -urN gcc/p.old/doc/en/news.texi gcc/p/doc/en/news.texi
+--- gcc/p.old/doc/en/news.texi	2006-06-10 17:45:38.423386000 +0000
++++ gcc/p/doc/en/news.texi	2006-06-10 17:46:10.433386000 +0000
+@@ -39,6 +39,10 @@
+ @samp{(@@)}.
+ 
+ @itemize @bullet
++@item preliminary support for gcc-4.0.x
++@item handle named exit from a method
++@item check string parameters more strictly (@@)
++@item use at least integer precision for arithmetic (@@)
+ @item refuse @samp{--executable-file-name} on names without a suffix
+ @item do not create @samp{.gpi} files from incorrect input
+ @item @samp{CWordBool} type
+diff -urN gcc/p.old/doc/en/todo.texi gcc/p/doc/en/todo.texi
+--- gcc/p.old/doc/en/todo.texi	2006-06-10 17:45:38.423386000 +0000
++++ gcc/p/doc/en/todo.texi	2006-06-10 17:46:10.433386000 +0000
+@@ -197,6 +197,12 @@
+ @ref{News}.
+ 
+ @itemize @bullet
++@item 20060304: Do not allow passing strings to parameters of type array of
++char subrange (avoids passing out of range values).
++@item 20060228: Use at least integer precision for arithmetic (avoids
++loss of precision due to overflow)
++@item 20060225: Avoid ICE on some record types
++@item 20060225: Avoid segfault in bison parser
+ @item 20060214: Avoid ICE on unimplemented operators (ice4.pas)
+ @item 20060214: Avoid ICE on bad forward declaration (ice3.pas)
+ @item 20060214: ISO-10206 requires at least one output parameter
+diff -urN gcc/p.old/expressions.c gcc/p/expressions.c
+--- gcc/p.old/expressions.c	2006-06-10 17:45:38.393386000 +0000
++++ gcc/p/expressions.c	2006-06-10 17:46:10.403386000 +0000
+@@ -28,6 +28,11 @@
+ 
+ #include "gpc.h"
+ 
++#ifdef GCC_4_0
++#include "tree-gimple.h"
++#endif
++
++
+ static int implicit_comparison = 0;
+ int operators_defined = 0;
+ 
+@@ -55,6 +60,7 @@
+ set_string_length (tree value, int wide_flag, int length)
+ {
+   gcc_assert (length >= 0);
++//  length ++;
+   TREE_TYPE (value) = build_simple_array_type (p_build_type_variant (
+     wide_flag ? wchar_type_node : char_type_node, 1, 0),
+     build_range_type (pascal_integer_type_node, integer_one_node,
+@@ -196,9 +202,14 @@
+       *q++ = 0;
+   else
+     *q = 0;
++#ifdef GCC_4_0
++  value = build_string (length, p);
++  free (p);
++#else
+   value = make_node (STRING_CST);
+   TREE_STRING_POINTER (value) = p;
+   TREE_STRING_LENGTH (value) = length;
++#endif
+   PASCAL_CST_FRESH (value) = !!mode;
+   set_string_length (value, wide_flag, wide_flag ? length / wchar_bytes : length - 1);
+   return value;
+@@ -217,7 +228,7 @@
+ }
+ 
+ tree
+-build_range_check(tree min, tree max, tree expr, int is_io)
++build_range_check (tree min, tree max, tree expr, int is_io, int gimplifying)
+ {
+   int chklo = min != NULL_TREE;
+   int chkhi = max != NULL_TREE;
+@@ -238,7 +249,15 @@
+ #else
+           int side_effects = TREE_SIDE_EFFECTS (expr);
+           tree cond, tv, t;
+-          tree tmpvar = make_new_variable ("range_check", TREE_TYPE (expr));
++          tree tmpvar =
++#ifdef GCC_4_0
++            gimplifying ?
++              create_tmp_var (TREE_TYPE (expr), "range_check") :
++#endif
++              make_new_variable ("range_check", TREE_TYPE (expr));
++#ifndef GCC_4_0
++          gcc_assert(!gimplifying);
++#endif
+           tv = build (MODIFY_EXPR, TREE_TYPE (expr), tmpvar, expr);
+           TREE_SIDE_EFFECTS (tv) = 1;
+           PASCAL_VALUE_ASSIGNED (tmpvar) = 1;
+@@ -250,7 +269,7 @@
+             }
+           t = build (COMPOUND_EXPR, TREE_TYPE (tmpvar),
+                 build_predef_call (is_io ? p_IORangeCheckError : p_RangeCheckError,
+-                NULL_TREE), tmpvar);
++                NULL_TREE), tmpvar /* min? min : max */);
+           t = build (COND_EXPR, TREE_TYPE (tmpvar), cond, t, tmpvar);
+           t = build (COMPOUND_EXPR, TREE_TYPE (t), tv, t);
+           return t;
+@@ -309,7 +328,7 @@
+             max = NULL_TREE;
+ 
+           if (TREE_SIDE_EFFECTS (expr))
+-            return build_range_check(min, max, expr, co->range_checking>1);
++            return build_range_check(min, max, expr, co->range_checking>1, 0);
+           else if (co->range_checking>1)
+             code = IO_RANGE_CHECK_EXPR;
+           else
+@@ -374,8 +393,8 @@
+ check_discriminants (tree x, tree y)
+ {
+   tree fx, fy, cond = NULL_TREE;
+-  tree tx = TREE_CODE_CLASS (TREE_CODE (x)) == 't' ? x : TREE_TYPE (x);
+-  tree ty = TREE_CODE_CLASS (TREE_CODE (y)) == 't' ? y : TREE_TYPE (y);
++  tree tx = TREE_CODE_CLASS (TREE_CODE (x)) == tcc_type ? x : TREE_TYPE (x);
++  tree ty = TREE_CODE_CLASS (TREE_CODE (y)) == tcc_type ? y : TREE_TYPE (y);
+   if (PASCAL_TYPE_SCHEMA (tx) && PASCAL_TYPE_SCHEMA (ty)
+       && TYPE_LANG_BASE (tx) == TYPE_LANG_BASE (ty))
+     {
+@@ -498,7 +517,8 @@
+ 
+   /* For "fresh" constants try the most basic and the longest type.
+      For Char constants try Char and String. */
+-  if (TREE_CODE_CLASS (TREE_CODE (arg1)) == 'c' && PASCAL_CST_FRESH (arg1))
++  if (TREE_CODE_CLASS (TREE_CODE (arg1)) == tcc_constant
++       && PASCAL_CST_FRESH (arg1))
+     {
+       if (TREE_CODE (arg1) == INTEGER_CST && TREE_CODE (TREE_TYPE (arg1)) == INTEGER_TYPE)
+         {
+@@ -518,13 +538,15 @@
+       if (found)
+         return found;
+     }
+-  if (TREE_CODE_CLASS (TREE_CODE (arg1)) != 't' && is_string_compatible_type (arg1, 0))
++  if (TREE_CODE_CLASS (TREE_CODE (arg1)) != tcc_type
++       && is_string_compatible_type (arg1, 0))
+     {
+       found = get_operator (op_id, op_name, string_schema_proto_type, arg2, new);
+       if (found)
+         return found;
+     }
+-  if (TREE_CODE_CLASS (TREE_CODE (arg2)) == 'c' && PASCAL_CST_FRESH (arg2))
++  if (TREE_CODE_CLASS (TREE_CODE (arg2)) == tcc_constant
++       && PASCAL_CST_FRESH (arg2))
+     {
+       if (TREE_CODE (arg2) == INTEGER_CST && TREE_CODE (TREE_TYPE (arg2)) == INTEGER_TYPE)
+         {
+@@ -544,7 +566,8 @@
+       if (found)
+         return found;
+     }
+-  if (TREE_CODE_CLASS (TREE_CODE (arg2)) != 't' && is_string_compatible_type (arg2, 0))
++  if (TREE_CODE_CLASS (TREE_CODE (arg2)) != tcc_type
++       && is_string_compatible_type (arg2, 0))
+     {
+       found = get_operator (op_id, op_name, arg1, string_schema_proto_type, new);
+       if (found)
+@@ -734,7 +757,8 @@
+   }
+ 
+   /* Flag constants in parentheses for ISO 7185. */
+-  if ((TREE_CODE_CLASS (TREE_CODE (t)) == 'c' || TREE_CODE (t) == NON_LVALUE_EXPR)
++  if ((TREE_CODE_CLASS (TREE_CODE (t)) == tcc_constant
++        || TREE_CODE (t) == NON_LVALUE_EXPR)
+       && PASCAL_CST_PARENTHESES (t) != (code == NOP_EXPR))
+     {
+       t = copy_node (t);
+@@ -1059,7 +1083,8 @@
+   }
+ 
+   result = build_pascal_binary_op (code, exp1, exp2);
+-  if (TREE_CODE_CLASS (TREE_CODE (result)) == 'c' && TREE_OVERFLOW (result))
++  if (TREE_CODE_CLASS (TREE_CODE (result)) == tcc_constant
++       && TREE_OVERFLOW (result))
+     {
+       TREE_OVERFLOW (result) = 0;
+       error ("constant overflow in expression");
+@@ -1593,7 +1618,8 @@
+   }
+ 
+   result = build_binary_op (code, exp1, exp2);
+-  if (TREE_CODE_CLASS (TREE_CODE (result)) == 'c' && TREE_OVERFLOW (result))
++  if (TREE_CODE_CLASS (TREE_CODE (result)) == tcc_constant
++       && TREE_OVERFLOW (result))
+     error ("arithmetical overflow");
+   return result;
+ }
+@@ -1662,8 +1688,8 @@
+ 
+   /* -42 is still a simple constant, but -(42) is not. */
+   if ((code == NEGATE_EXPR || code == CONVERT_EXPR)
+-      && TREE_CODE_CLASS (TREE_CODE (t)) == 'c'
+-      && TREE_CODE_CLASS (TREE_CODE (xarg)) == 'c')
++      && TREE_CODE_CLASS (TREE_CODE (t)) == tcc_constant
++      && TREE_CODE_CLASS (TREE_CODE (xarg)) == tcc_constant)
+     {
+       PASCAL_CST_FRESH (t) = PASCAL_CST_FRESH (xarg);
+       PASCAL_CST_PARENTHESES (t) = PASCAL_CST_PARENTHESES (xarg);
+@@ -1820,10 +1846,14 @@
+         {
+           tree length = convert (pascal_integer_type_node,
+                           build_int_2 (TREE_STRING_LENGTH (factor) - 1, 0));
++          tree st = build_pascal_string_schema (length);
++          tree capf = TYPE_FIELDS (st);
++          tree lenf = TREE_CHAIN (capf);
++          tree schf = TREE_CHAIN (lenf);
+           factor = build_constructor (build_pascal_string_schema (length),
+-                     tree_cons (NULL_TREE, length,
+-                     tree_cons (NULL_TREE, length,
+-                     build_tree_list (NULL_TREE, factor))));
++                     tree_cons (capf, length,
++                     tree_cons (lenf, length,
++                     build_tree_list (schf, factor))));
+           /* Make this a valid lvalue for taking addresses. */
+           TREE_CONSTANT (factor) = 1;
+           TREE_STATIC (factor) = 1;
+@@ -1839,7 +1869,7 @@
+       if (TREE_CODE (t) == VAR_DECL)
+         PASCAL_VALUE_ASSIGNED (t) = 1;
+ 
+-      if (TREE_CODE_CLASS (TREE_CODE (t)) == 'c')
++      if (TREE_CODE_CLASS (TREE_CODE (t)) == tcc_constant)
+         {
+           error ("trying to take the address of a constant");
+           return error_mark_node;
+@@ -2194,6 +2224,8 @@
+ truthvalue_conversion (tree expr)
+ {
+   CHK_EM (expr);
++  /* @@@@@@@@@ Gimplifier puts error_mark_node as a type */
++  CHK_EM (TREE_TYPE (expr));
+   switch (TREE_CODE (expr))
+   {
+     case EQ_EXPR:
+@@ -2202,13 +2234,19 @@
+     case GE_EXPR:
+     case LT_EXPR:
+     case GT_EXPR:
++      return convert (boolean_type_node, expr);
++
+     case TRUTH_ANDIF_EXPR:
+     case TRUTH_ORIF_EXPR:
+     case TRUTH_AND_EXPR:
+     case TRUTH_OR_EXPR:
+     case TRUTH_XOR_EXPR:
+     case TRUTH_NOT_EXPR:
+-      gcc_assert (TREE_TYPE (expr) == boolean_type_node);
++      if (TREE_TYPE (expr) != boolean_type_node)
++        return fold (build (TREE_CODE (expr), boolean_type_node,
++                              truthvalue_conversion (TREE_OPERAND (expr, 0)),
++                              truthvalue_conversion (TREE_OPERAND (expr, 1))));
++//      gcc_assert (TREE_TYPE (expr) == boolean_type_node);
+       return expr;
+ 
+     case INTEGER_CST:
+@@ -2675,7 +2713,9 @@
+ 
+     /* dead code was here */
+     case IN_EXPR:
++#ifndef GCC_4_0
+     case CARD_EXPR:
++#endif
+       gcc_unreachable ();
+ 
+     default:
+@@ -2929,7 +2969,12 @@
+ #else
+   t = size_binop (CEIL_DIV_EXPR, TYPE_SIZE (type), size_int (BITS_PER_UNIT));
+ #endif
++#ifdef GCC_4_0
++  if (TREE_CODE (t) == INTEGER_CST)
++    force_fit_type (t, 0, 0, 0);
++#else
+   force_fit_type (t, 0);
++#endif
+   return t;
+ }
+ 
+@@ -3152,7 +3197,7 @@
+          to which the address will point. Note that you can't get a
+          restricted pointer by taking the address of something, so we
+          only have to deal with `const' and `volatile' here. */
+-      if ((DECL_P (arg) || TREE_CODE_CLASS (TREE_CODE (arg)) == 'r')
++      if ((DECL_P (arg) || TREE_CODE_CLASS (TREE_CODE (arg)) == tcc_reference)
+           && (TREE_READONLY (arg) || TREE_THIS_VOLATILE (arg)))
+         argtype = c_build_type_variant (argtype, TREE_READONLY (arg), TREE_THIS_VOLATILE (arg));
+ 
+@@ -3162,8 +3207,11 @@
+         return error_mark_node;
+ 
+       if (TREE_CODE (arg) == BIT_FIELD_REF && PASCAL_TYPE_PACKED (TREE_TYPE (TREE_OPERAND (arg, 0))))
+-        error ("invalid use of component of packed array `%s'",
++        {
++          error ("invalid use of component of packed array `%s'",
+                IDENTIFIER_NAME (DECL_NAME (TREE_OPERAND (arg, 0))));
++          return error_mark_node;
++        }
+ 
+       if (TREE_CODE (arg) == COMPONENT_REF)
+         {
+@@ -3239,7 +3287,8 @@
+ 
+   if (type == TREE_TYPE (value))
+     {
+-      if (TREE_CODE_CLASS (TREE_CODE (value)) == 'c' && PASCAL_CST_FRESH (value))
++      if (TREE_CODE_CLASS (TREE_CODE (value)) == tcc_constant
++           && PASCAL_CST_FRESH (value))
+         {
+           value = copy_node (value);
+           PASCAL_CST_FRESH (value) = 0;
+@@ -3767,8 +3816,15 @@
+         }
+       lastfield = tree_last (field);
+       return build_memcpy (
++#ifndef GCC_4_0
+         build_unary_op (ADDR_EXPR, build (COMPONENT_REF, TREE_TYPE (field), lhs, field), 1),
+         build_unary_op (ADDR_EXPR, build (COMPONENT_REF, TREE_TYPE (field2), rhs, field2), 2),
++#else
++        build_unary_op (ADDR_EXPR, build3 (COMPONENT_REF, TREE_TYPE (field),
++           lhs, field, NULL_TREE), 1),
++        build_unary_op (ADDR_EXPR, build3 (COMPONENT_REF, TREE_TYPE (field2),
++           rhs, field2,  NULL_TREE), 2),
++#endif
+         size_binop (CEIL_DIV_EXPR,
+           size_binop (MINUS_EXPR, size_binop (PLUS_EXPR, bit_position (lastfield), DECL_SIZE (lastfield)), bit_position (field)),
+           bitsize_int (TYPE_PRECISION (byte_integer_type_node))));
+diff -urN gcc/p.old/gbe.h gcc/p/gbe.h
+--- gcc/p.old/gbe.h	2006-06-10 17:45:38.393386000 +0000
++++ gcc/p/gbe.h	2006-06-10 17:46:10.403386000 +0000
+@@ -44,11 +44,15 @@
+ 
+ #include "config.h"
+ 
+-#ifndef GCC_4
++#ifndef GCC_4_0
+ #define TYPE_UNSIGNED TREE_UNSIGNED
+ #define BIT_FIELD_REF_UNSIGNED TREE_UNSIGNED
+ #endif
+ 
++#ifdef GCC_4_0
++extern int immediate_size_expand;
++#endif
++
+ #ifndef GCC_3_4
+ #define build_constructor(type, elements) (build (CONSTRUCTOR, (type), NULL_TREE, (elements)))
+ #endif
+diff -urN gcc/p.old/gpc-lex.c gcc/p/gpc-lex.c
+--- gcc/p.old/gpc-lex.c	2006-06-10 17:45:38.393386000 +0000
++++ gcc/p/gpc-lex.c	2006-06-10 17:46:10.403386000 +0000
+@@ -512,7 +512,13 @@
+           type = long_long_integer_type_node;
+         else
+           type = long_long_unsigned_type_node;
++#ifdef GCC_4_0
++        t = build_int_cst_wide (type, 
++                                TREE_INT_CST_LOW (t),
++                                TREE_INT_CST_HIGH (t));
++#else
+         TREE_TYPE (t) = type;
++#endif
+         PASCAL_CST_FRESH (t) = 1;
+         yylval.ttype = t;
+         break;
+diff -urN gcc/p.old/gpc.c gcc/p/gpc.c
+--- gcc/p.old/gpc.c	2006-06-10 17:45:38.393386000 +0000
++++ gcc/p/gpc.c	2006-06-10 17:46:10.413386000 +0000
+@@ -207,7 +207,10 @@
+ extern void pfatal_with_name (const char *) ATTRIBUTE_NORETURN;
+ extern void fatal (const char *, ...) ATTRIBUTE_PRINTF_1 ATTRIBUTE_NORETURN;
+ extern void error (const char *, ...);
++#ifndef GCC_4_0
+ void fancy_abort (void);
++#endif
++
+ #ifndef EGCS
+ static char *concat (const char *, ...);
+ extern char *xmalloc (size_t);
+@@ -869,12 +872,23 @@
+ /* config.h can define LIBGCC_SPEC to override how and when libgcc.a is
+    included.  */
+ #ifndef LIBGCC_SPEC
++#ifndef GCC_4_0
+ #if defined(LINK_LIBGCC_SPECIAL) || defined(LINK_LIBGCC_SPECIAL_1)
+ /* Have gcc do the search for libgcc.a.  */
+ #define LIBGCC_SPEC "libgcc.a%s"
+ #else
+ #define LIBGCC_SPEC "-lgcc"
+ #endif
++#else
++#if defined(REAL_LIBGCC_SPEC)
++#define LIBGCC_SPEC REAL_LIBGCC_SPEC
++#elif defined(LINK_LIBGCC_SPECIAL_1)
++/* Have gcc do the search for libgcc.a.  */
++#define LIBGCC_SPEC "libgcc.a%s"
++#else
++#define LIBGCC_SPEC "-lgcc"
++#endif
++#endif
+ #endif
+ 
+ /* config.h can define STARTFILE_SPEC to override the default crt0 files.  */
+@@ -954,6 +968,7 @@
+ #endif
+ 
+ #ifndef LINK_LIBGCC_SPEC
++#ifndef GCC_4_0
+ # ifdef LINK_LIBGCC_SPECIAL
+ /* Don't generate -L options for startfile prefix list.  */
+ #  define LINK_LIBGCC_SPEC ""
+@@ -961,6 +976,9 @@
+ /* Do generate them.  */
+ #  define LINK_LIBGCC_SPEC "%D"
+ # endif
++#else
++#  define LINK_LIBGCC_SPEC "%D"
++#endif
+ #endif
+ 
+ #ifndef STARTFILE_PREFIX_SPEC
+@@ -1137,6 +1155,7 @@
+ 
+ /* This defines which multi-letter switches take arguments.  */
+ 
++#ifndef DEFAULT_WORD_SWITCH_TAKES_ARG
+ #define DEFAULT_WORD_SWITCH_TAKES_ARG(STR)              \
+  (!strcmp (STR, "Tdata") || !strcmp (STR, "Ttext")      \
+   || !strcmp (STR, "Tbss") || !strcmp (STR, "include")  \
+@@ -1146,6 +1165,7 @@
+   || !strcmp (STR, "isystem") || !strcmp (STR, "-param") \
+   || !strcmp (STR, "specs") \
+   || !strcmp (STR, "MF") || !strcmp (STR, "MT") || !strcmp (STR, "MQ"))
++#endif
+ 
+ #ifndef WORD_SWITCH_TAKES_ARG
+ #define WORD_SWITCH_TAKES_ARG(STR) DEFAULT_WORD_SWITCH_TAKES_ARG (STR)
+@@ -5191,9 +5211,11 @@
+                           if (is_directory (buffer, multilib_dir, 1))
+                             {
+                               do_spec_1 ("-L", 0, NULL);
++#ifndef GCC_4_0
+ #ifdef SPACE_AFTER_L_OPTION
+                               do_spec_1 (" ", 0, NULL);
+ #endif
++#endif
+                               do_spec_1 (buffer, 1, NULL);
+                               do_spec_1 (multilib_dir, 1, NULL);
+                               /* Make this a separate argument.  */
+@@ -5205,9 +5227,11 @@
+                           if (is_directory (pl->prefix, multi_dir, 1))
+                             {
+                               do_spec_1 ("-L", 0, NULL);
++#ifndef GCC_4_0
+ #ifdef SPACE_AFTER_L_OPTION
+                               do_spec_1 (" ", 0, NULL);
+ #endif
++#endif
+                               do_spec_1 (pl->prefix, 1, NULL);
+                               do_spec_1 (multi_dir, 1, NULL);
+                               /* Make this a separate argument.  */
+@@ -5220,9 +5244,11 @@
+                       if (is_directory (pl->prefix, machine_suffix, 1))
+                         {
+                           do_spec_1 ("-L", 0, NULL);
++#ifndef GCC_4_0
+ #ifdef SPACE_AFTER_L_OPTION
+                           do_spec_1 (" ", 0, NULL);
+ #endif
++#endif
+                           do_spec_1 (pl->prefix, 1, NULL);
+                           /* Remove slash from machine_suffix.  */
+                           if (strlen (machine_suffix) >= bufsize)
+@@ -5242,9 +5268,11 @@
+                       if (is_directory (pl->prefix, "", 1))
+                         {
+                           do_spec_1 ("-L", 0, NULL);
++#ifndef GCC_4_0
+ #ifdef SPACE_AFTER_L_OPTION
+                           do_spec_1 (" ", 0, NULL);
+ #endif
++#endif
+                           /* Remove slash from pl->prefix.  */
+                           if (strlen (pl->prefix) >= bufsize)
+                             bufsize = strlen (pl->prefix) * 2 + 1;
+@@ -7560,10 +7588,15 @@
+   pfatal_with_name (errmsg_fmt);
+ }
+ 
+-/* Output an error message and exit.  */
+ 
++/* Output an error message and exit.  */
++#ifdef GCC_4_0
++void 
++fancy_abort (const char * file_name, int line_number, const char * fun_name)
++#else
+ void
+ fancy_abort (void)
++#endif
+ {
+   fatal ("internal gpc abort");
+ }
+diff -urN gcc/p.old/gpc.h gcc/p/gpc.h
+--- gcc/p.old/gpc.h	2006-06-10 17:45:38.393386000 +0000
++++ gcc/p/gpc.h	2006-06-10 17:46:10.413386000 +0000
+@@ -26,7 +26,7 @@
+ #ifndef _GPC_H_
+ #define _GPC_H_
+ 
+-/*#define PG__NEW_STRINGS*/
++#define PG__NEW_STRINGS
+ 
+ /* GPC compile time configuration switches */
+ 
+@@ -49,6 +49,40 @@
+ 
+ #include "gbe.h"
+ 
++#ifdef GCC_4_0
++extern tree xnon_lvalue (tree x);
++// #define non_lvalue(x) (build1 (NON_LVALUE_EXPR, TREE_TYPE (x), x))
++#define non_lvalue(x) (xnon_lvalue (x))
++#define PASCAL_BIT_FIELD_REF_UNSIGNED(x) \
++  (TREE_CHECK2(x, BIT_FIELD_REF, PASCAL_BIT_FIELD_REF)->common.unsigned_flag)
++#define fold(x) (pascal_fold1 (x))
++#define build_int_cst_wide(x, y, z) (pascal_build_int_cst ((x), (y), (z)))
++#define usizetype sizetype
++#define ubitsizetype bitsizetype
++#define build_int_2(x, y)  (build_int_cst_wide (integer_type_node, x, y))
++#define build_type_copy(x) (build_variant_type_copy (x))
++
++extern tree
++pascal_build_int_cst (tree type, unsigned HOST_WIDE_INT low, HOST_WIDE_INT hi);
++extern tree pascal_fold1 (tree t);
++
++extern int lvalue_or_else (tree ref, const char *string);
++extern tree builtin_function (const char *name, tree type, int function_code,
++       enum built_in_class class, const char *library_name, tree dummy);
++#include "plant.h"
++#else
++#define PASCAL_BIT_FIELD_REF_UNSIGNED(x) TREE_UNSIGNED (x)
++#define tcc_exceptional 'x'
++#define tcc_constant 'c'
++#define tcc_type 't'
++#define tcc_declaration 'd'
++#define tcc_reference 'r'
++#define tcc_comparison '<'
++#define tcc_unary '1'
++#define tcc_binary '2'
++#define tcc_expression 'e'
++#endif
++
+ #undef abort
+ #define abort() USE_GCC_ASSERT_RATHER_THAN_ABORT
+ #undef assert
+@@ -57,7 +91,7 @@
+ /* GCC 4.0.0 and up have gcc_assert and gcc_unreachable. Timing data shows
+    that removing asserts, but keeping gcc_unreachable's speeds up the compile.
+    gcc_assert does not evaluate the expression if assertions are disabled. */
+-#ifndef GCC_4
++#ifndef GCC_4_0
+ #ifndef __GNUC__
+ #define __PRETTY_FUNCTION__ NULL
+ #endif
+@@ -101,10 +135,11 @@
+ #define sbitsizetype ssizetype
+ #define ubitsizetype usizetype
+ #define TREE_CHECK(t, code) (t)
+-#define TYPE_P(TYPE) (TREE_CODE_CLASS (TREE_CODE (TYPE)) == 't')
+-#define DECL_P(DECL) (TREE_CODE_CLASS (TREE_CODE (DECL)) == 'd')
++#define TYPE_P(TYPE) (TREE_CODE_CLASS (TREE_CODE (TYPE)) == tcc_type)
++#define DECL_P(DECL) (TREE_CODE_CLASS (TREE_CODE (DECL)) == tcc_declaration)
+ #define IS_EXPR_CODE_CLASS(CLASS) \
+-  (CLASS == '<' || CLASS == '1' || CLASS == '2' || CLASS == 'e')
++  (CLASS == tcc_comparison || CLASS == tcc_unary || \
++   CLASS == tcc_binary || CLASS == tcc_expression)
+ #define IDENTIFIER_NODE_CHECK(NODE) (TREE_CHECK (NODE, IDENTIFIER_NODE))
+ #define INTERFACE_NAME_NODE_CHECK(NODE) (TREE_CHECK (NODE, INTERFACE_NAME_NODE))
+ #define IMPORT_NODE_CHECK(NODE) (TREE_CHECK (NODE, IMPORT_NODE))
+@@ -349,7 +384,8 @@
+ #define HAS_EXP_ORIGINAL_CODE_FIELD(exp) \
+   (IS_EXPR_CODE_CLASS (TREE_CODE_CLASS (TREE_CODE (exp))) && TREE_CODE (exp) != CONSTRUCTOR)
+ 
+-#define IS_EXPR_OR_REF_CODE_CLASS(c) (IS_EXPR_CODE_CLASS (c) || c == 'r')
++#define IS_EXPR_OR_REF_CODE_CLASS(c) (IS_EXPR_CODE_CLASS (c) || \
++                                      c == tcc_reference)
+ 
+ #define PROMOTING_INTEGER_TYPE(t) \
+   (TREE_CODE (t) == INTEGER_TYPE && TYPE_PRECISION (t) < TYPE_PRECISION (integer_type_node))
+@@ -1296,7 +1332,7 @@
+ extern tree build_caret_string_constant (int);
+ extern tree combine_strings (tree, int);
+ extern void constant_expression_warning (tree);
+-extern tree build_range_check (tree min, tree max, tree expr, int is_io);
++extern tree build_range_check (tree min, tree max, tree expr, int is_io, int gimplifying);
+ extern tree range_check_2 (tree, tree, tree);
+ extern tree range_check (tree, tree);
+ extern tree convert_and_check (tree, tree);
+@@ -1350,6 +1386,7 @@
+ 
+ /* typecheck.c */
+ 
++extern tree copy_expr (tree);
+ extern void cstring_inform (void);
+ extern void ptrarith_inform (void);
+ extern tree require_complete_type (tree);
+@@ -1380,6 +1417,7 @@
+ extern tree digest_init (tree, tree, int);
+ extern tree build_pascal_initializer (tree, tree, const char *, int);
+ extern tree find_variant (tree, tree);
++// extern int allow_packed_addresses;
+ 
+ /* types.c */
+ 
+@@ -1403,9 +1441,9 @@
+ extern int is_string_type (tree, int);
+ extern int is_of_string_type (tree, int);
+ extern int is_variable_string_type (tree);
+-extern tree build_discriminants (tree, tree);
++extern tree build_discriminants (tree, tree, tree);
+ extern tree maybe_schema_discriminant (tree);
+-extern tree build_schema_type (tree, tree, tree);
++extern tree build_schema_type (tree, tree, tree, tree);
+ extern int number_of_schema_discriminants (tree);
+ extern void prediscriminate_schema (tree);
+ extern tree base_type (tree);
+@@ -1647,42 +1685,55 @@
+ #define return_address_routine_node PGT(57)
+ #define frame_address_routine_node PGT(58)
+ #define checkinoutres_routine_node PGT(59)
++#define setbits_routine_node PGT(60)
+ 
+ /* Identifiers */
+-#define self_id PGT(60)
+-#define schema_id PGT(61)
+-#define vmt_id PGT(62)
++#define self_id PGT(61)
++#define schema_id PGT(62)
++#define vmt_id PGT(63)
+ 
+ /* All the nodes above are once initialized and should not change afterwards. */
+ 
+ /* A list of all exported names in all modules seen so far.
+    TREE_VALUE is an IDENTIFIER_NODE of an exported interface name, TREE_PURPOSE
+    is a TREE_LIST of the names exported by this interface. */
+-#define exported_interface_list PGT(63)
++#define exported_interface_list PGT(64)
+ 
+ /* A list of all initializers that were deferred. */
+-#define deferred_initializers PGT(64)
++#define deferred_initializers PGT(65)
+ 
+ /* The types in the current `type' declaration part. */
+-#define current_type_list PGT(65)
++#define current_type_list PGT(66)
+ 
+ /* While in a `case' statement, a TREE_LIST:
+    TREE_VALUE: current case expression
+    TREE_PURPOSE: list of case ranges seen (if needed) */
+-#define current_case_values PGT(66)
++#define current_case_values PGT(67)
++
++/* While in a schema definition, (incomplete) type of the schema */
++#define current_schema PGT(68)
++
++#define cword_boolean_type_node PGT(69)
+ 
+-#define cword_boolean_type_node PGT(67)
++#define global_save_list PGT(70)
++
++#define current_statement_list PGT(71)
++
++/* #define global_var_type_list (72) */
++
++#define PTI_MAX 72
+ 
+-#define PTI_MAX 68
+ extern GTY(()) tree pascal_global_trees[PTI_MAX];
+ 
+ #define pascal_integer_type_node  ptrsize_integer_type_node
+ #define pascal_cardinal_type_node ptrsize_unsigned_type_node
+ 
++#ifndef GCC_3_3
+ /* @@ gcc>3.2 defines size_type_node in tree.h. After dropping support for
+       gcc-3.2.x, we can remove pascal_size_type_node (or make it #ifndef EGCS97
+       if gcc-2 support is still wanted), and remove the following definition. */
+ #undef size_type_node
+ #define size_type_node pascal_size_type_node
++#endif
+ 
+ #endif /* _GPC_H_ */
+diff -urN gcc/p.old/lang.c gcc/p/lang.c
+--- gcc/p.old/lang.c	2006-06-10 17:45:38.393386000 +0000
++++ gcc/p/lang.c	2006-06-10 17:46:10.413386000 +0000
+@@ -35,6 +35,10 @@
+ #include "gtype-p.h"
+ #endif
+ 
++#ifdef GCC_4_0
++#include "tree-gimple.h"
++#endif
++
+ /* The following functions are not called from GPC, but needed by
+    the backend. Depending on the GCC version, they're simply called
+    as extern, so we can't make them static (yet). */
+@@ -102,6 +106,7 @@
+ #endif
+ #endif
+ {
++#ifndef GCC_4_0
+   enum tree_code code = TREE_CODE (t);
+   if (code == PASCAL_BIT_FIELD_REF)
+     return expand_expr (
+@@ -117,8 +122,8 @@
+                TREE_OPERAND (t, 0),
+                TREE_OPERAND (t, 1),
+                TREE_OPERAND (t, 2),
+-               code == IO_RANGE_CHECK_EXPR),
+-              r, mm, em);
++               code == IO_RANGE_CHECK_EXPR, 0),
++             r, mm, em);
+   else if (code == PASCAL_CONSTRUCTOR_CALL)
+     return expand_expr (
+              build_predef_call (p_New, TREE_OPERAND (t, 0)),
+@@ -132,9 +137,152 @@
+     }
+ #endif
+   else
++#endif
+     gcc_unreachable ();
+ }
+ 
++#ifdef GCC_4_0
++int
++pascal_gimplify_expr (tree *expr_p, tree *pre_p ATTRIBUTE_UNUSED,
++                   tree *post_p ATTRIBUTE_UNUSED)
++{
++  tree t = *expr_p;
++  enum tree_code code = TREE_CODE (t);
++  tree res;
++  switch (code)
++    {
++    case PASCAL_BIT_FIELD_REF:      
++      res = build_pascal_packed_array_ref (
++               TREE_OPERAND (t, 0),
++               TREE_OPERAND (t, 1),
++               TREE_OPERAND (t, 2),
++               1);
++      res = unshare_expr (res);
++      break;
++
++    case RANGE_CHECK_EXPR:
++    case IO_RANGE_CHECK_EXPR:
++      res = build_range_check (
++               TREE_OPERAND (t, 0),
++               TREE_OPERAND (t, 1),
++               TREE_OPERAND (t, 2),
++               code == IO_RANGE_CHECK_EXPR, 1);
++      res = unshare_expr (res);
++      break;
++
++    case PASCAL_CONSTRUCTOR_CALL:
++      {
++        tree save_statement_list = current_statement_list;
++        current_statement_list = NULL_TREE;
++        res = build_predef_call (p_New, TREE_OPERAND (t, 0));
++        res = build (COMPOUND_EXPR, TREE_TYPE (res),
++                       current_statement_list, res);
++        current_statement_list = save_statement_list;
++        unshare_all_trees (res);
++      }
++      break;
++
++    case ADDR_EXPR:
++      /* Case taken for Ada front end */
++      /* If we're taking the address of a constant CONSTRUCTOR, force it to
++         be put into static memory.  We know it's going to be readonly given
++         the semantics we have and it's required to be static memory in
++         the case when the reference is in an elaboration procedure.  */
++      if (TREE_CODE (TREE_OPERAND (t, 0)) == CONSTRUCTOR
++          && TREE_CONSTANT (TREE_OPERAND (t, 0)))
++        {
++          tree new_var
++            = create_tmp_var (TREE_TYPE (TREE_OPERAND (t, 0)), "constructor");
++
++          TREE_READONLY (new_var) = 1;
++          TREE_STATIC (new_var) = 1;
++          TREE_ADDRESSABLE (new_var) = 1;
++          DECL_INITIAL (new_var) = TREE_OPERAND (t, 0);
++
++          TREE_OPERAND (t, 0) = new_var;
++          return GS_ALL_DONE;
++        }
++      return GS_UNHANDLED;
++
++    case CONSTRUCTOR:
++      if (TREE_CODE (TREE_TYPE (t)) == SET_TYPE)
++        {
++          tree type = TREE_TYPE (t);
++          tree elt = CONSTRUCTOR_ELTS (t);
++          tree domain = TYPE_DOMAIN (type);
++          tree domain_min = convert (sbitsizetype, TYPE_MIN_VALUE (domain));
++          tree domain_max = convert (sbitsizetype, TYPE_MAX_VALUE (domain));
++          tree bitlength;
++          tree st;
++          tree dest;
++          res = create_tmp_var (type, "set_constructor");
++          dest = build_unary_op (ADDR_EXPR, res, 0);
++
++      /* Align the set.  */
++      if (set_alignment)
++        domain_min = size_binop (BIT_AND_EXPR, domain_min, sbitsize_int (-(int)
++set_alignment));
++
++      bitlength = size_binop (PLUS_EXPR,
++                              size_binop (MINUS_EXPR, domain_max, domain_min),
++                              sbitsize_int (1));
++
++
++     if (TREE_INT_CST_HIGH (bitlength)) {
++        error ("set size too big for host integers");
++        return GS_ERROR;
++      }
++      bitlength = convert (sizetype, bitlength);
++
++          /* Clear storage */
++          st = build_memset (dest, TYPE_SIZE_UNIT (type), integer_zero_node);
++          gimplify_and_add (st, pre_p);
++          /* Set bits */
++          for (; elt != NULL_TREE; elt = TREE_CHAIN (elt))
++            { 
++              tree startbit = TREE_PURPOSE (elt);
++              tree endbit   = TREE_VALUE (elt);
++              if (startbit == NULL_TREE)
++            {
++              startbit = save_expr (endbit);
++              endbit = startbit;
++            }
++              
++          startbit = convert (sizetype, startbit);
++          endbit = convert (sizetype, endbit);
++          if (! integer_zerop (domain_min))
++            {
++              startbit = convert (sbitsizetype, startbit);
++              endbit = convert (sbitsizetype, endbit);
++              startbit = size_binop (MINUS_EXPR, startbit, domain_min);
++              endbit = size_binop (MINUS_EXPR, endbit, domain_min);
++            }
++          startbit = convert (sizetype, startbit);
++          endbit = convert (sizetype, endbit);
++
++              st = build_routine_call (setbits_routine_node,
++                     tree_cons (NULL_TREE, dest,
++                     tree_cons (NULL_TREE, bitlength, 
++                     tree_cons (NULL_TREE, startbit,
++                     build_tree_list (NULL_TREE, endbit)))));
++              gimplify_and_add (st, pre_p);
++            }
++          break;
++        }
++      else
++        {
++//          fprintf(stderr, "pascal_gimplify_expr");
++//          debug_tree (t);
++        }
++      /* Falltrough */
++    default:
++      return GS_UNHANDLED;
++    }
++    *expr_p = res;
++    return GS_OK;
++}
++#endif
++
+ const char *
+ pascal_decl_name (tree decl, int verbosity ATTRIBUTE_UNUSED)
+ {
+@@ -404,12 +552,19 @@
+ 
+ /* Tree code classes. */
+ #define DEFTREECODE(SYM, NAME, TYPE, LENGTH) TYPE,
+-
++#ifdef GCC_4_0
++const enum tree_code_class tree_code_type[] = {
++#include "tree.def"
++ tcc_exceptional,
++#include "p-tree.def"
++};
++#else
+ const char tree_code_type[] = {
+ #include "tree.def"
+   'x',
+ #include "p-tree.def"
+ };
++#endif
+ #undef DEFTREECODE
+ 
+ /* Table indexed by tree code giving number of expression
+@@ -502,19 +657,23 @@
+   return 0;
+ }
+ 
+-extern void cpp_define (void *, const char *);
++extern void gpc_cpp_define (void *, const char *);
+ void
+-cpp_define (void *r ATTRIBUTE_UNUSED, const char *s)
++gpc_cpp_define (void *r ATTRIBUTE_UNUSED, const char *s)
+ {
+   builtin_define_std (s);
+ }
+ 
+-extern void cpp_assert (void *, const char *);
++#define cpp_define(r, s) gpc_cpp_define(r, s)
++
++extern void gpc_cpp_assert (void *, const char *);
+ void
+-cpp_assert (void *pfile ATTRIBUTE_UNUSED, const char *str ATTRIBUTE_UNUSED)
++gpc_cpp_assert (void *pfile ATTRIBUTE_UNUSED, const char *str ATTRIBUTE_UNUSED)
+ {
+ }
+ 
++#define cpp_assert(pfile, str) gpc_cpp_assert(pfile, str)
++
+ #define preprocessing_asm_p() 0
+ #define preprocessing_trad_p() 0
+ /* @@ Backend bug: TARGET_OS_CPP_BUILTINS on some targets uses them
+@@ -591,9 +750,18 @@
+ static int
+ pascal_handle_option (size_t scode, const char *arg, int value)
+ {
++#ifdef GCC_4_0
++  if ((enum opt_code) scode == OPT_Werror)
++    {
++      global_dc->warning_as_error_requested = value;
++      return 1;
++    }
++#endif
++
+   switch ((enum opt_code) scode)
+   {
+ #include "handle-opts.c"
++
+     default:
+       break;
+   }
+@@ -679,7 +847,9 @@
+      (gcc-2 only), and it seems to cause a hard to reproduce memory management
+      problem (gcc-3 only, reported by David Wood <DJWOOD1@qinetiq.com>).
+      So we just turn it off here. */
++#ifndef GCC_4_0
+   debug_no_type_hash = 1;
++#endif
+ 
+ #ifndef EGCS
+   init_gpc_lex (input_filename);
+@@ -1354,8 +1524,12 @@
+ #undef LANG_HOOKS_POST_OPTIONS
+ #define LANG_HOOKS_POST_OPTIONS pascal_post_options
+ #endif
++
++#ifndef GCC_4_0
+ #undef LANG_HOOKS_CLEAR_BINDING_STACK
+ #define LANG_HOOKS_CLEAR_BINDING_STACK pascal_clear_binding_stack
++#endif
++
+ #undef LANG_HOOKS_DECODE_OPTION
+ #define LANG_HOOKS_DECODE_OPTION lang_decode_option
+ #undef LANG_HOOKS_INIT_OPTIONS
+@@ -1388,7 +1562,7 @@
+ #define LANG_HOOKS_TYPE_FOR_SIZE type_for_size
+ #define LANG_HOOKS_TYPE_FOR_MODE type_for_mode
+ 
+-#define LANG_HOOKS_MARK_ADDRESSABLE mark_addressable
++#define LANG_HOOKS_MARK_ADDRESSABLE pascal_mark_addressable
+ #define LANG_HOOKS_TRUTHVALUE_CONVERSION truthvalue_conversion
+ 
+ #undef LANG_HOOKS_DUP_LANG_SPECIFIC_DECL
+@@ -1403,6 +1577,62 @@
+ #undef LANG_HOOKS_HASH_TYPES
+ #define LANG_HOOKS_HASH_TYPES false
+ 
++
++#ifdef GCC_4_0
++#undef LANG_HOOKS_CALLGRAPH_EXPAND_FUNCTION
++#define LANG_HOOKS_CALLGRAPH_EXPAND_FUNCTION pascal_expand_function
++
++#undef LANG_HOOKS_GIMPLIFY_EXPR
++#define LANG_HOOKS_GIMPLIFY_EXPR pascal_gimplify_expr
++
++#undef LANG_HOOKS_TYPES_COMPATIBLE_P
++#define LANG_HOOKS_TYPES_COMPATIBLE_P pascal_types_compatible_p
++
++int 
++pascal_types_compatible_p (tree t1, tree t2)
++{
++  if (TREE_CODE (t1) == POINTER_TYPE && TREE_CODE (t2) == POINTER_TYPE)
++    {
++      t1 = TREE_TYPE (t1);
++      t2 = TREE_TYPE (t2);
++    }
++  if (PASCAL_TYPE_STRING (t1) && PASCAL_TYPE_STRING (t2))
++    return 1;
++  else if (PASCAL_TYPE_SCHEMA (t1) && PASCAL_TYPE_SCHEMA (t2))
++    {
++      tree base1 = t1, base2 = t2;
++      if (TYPE_LANG_BASE (t1))
++        base1 = TYPE_LANG_BASE (t1);
++      if (TYPE_LANG_BASE (t2))
++        base2 = TYPE_LANG_BASE (t2);
++      base1 = TYPE_MAIN_VARIANT (base1);
++      base2 = TYPE_MAIN_VARIANT (base2);
++      if (base1 == base2)
++        return 1;
++    }
++  return strictly_comp_types (TYPE_MAIN_VARIANT (t1), TYPE_MAIN_VARIANT (t2));
++}
++
++static void
++pascal_expand_function (tree fndecl)
++{
++  /* We have nothing special to do while expanding functions for Pascal.  */
++  tree_rest_of_compilation (fndecl);
++}
++#endif
++
++#ifdef GCC_3_3
++bool
++#else
++int
++#endif
++pascal_mark_addressable (tree exp)
++{
++  return mark_addressable2 (exp, 1);
++}
++
++
++
+ static void
+ pascal_parse (int debug)
+ {
+diff -urN gcc/p.old/module.c gcc/p/module.c
+--- gcc/p.old/module.c	2006-06-10 17:45:38.403386000 +0000
++++ gcc/p/module.c	2006-06-10 17:46:10.413386000 +0000
+@@ -28,6 +28,9 @@
+ 
+ #include "gpc.h"
+ #include "p/p-version.h"
++#ifdef GCC_4_0
++#include "version.h"
++#endif
+ 
+ #ifdef EGCS
+ #define HOST_PTR_PRINTF_CAST_TYPE PTR
+@@ -1816,6 +1819,8 @@
+   STORE_ANY (n);
+ }
+ 
++static int loading_module_interface;
++
+ static tree
+ load_tree (MEMFILE *s, gpi_int start_of_nodes, gpi_int size_of_offsets, int module_interface)
+ {
+@@ -1850,13 +1855,17 @@
+   push_obstacks_nochange ();
+   end_temporary_allocation ();
+ #endif
++  loading_module_interface = module_interface ;
+   result = load_node ();
+   /* Do this here after all nodes have been loaded and are thus complete. */
+   for (n = NUM_SPECIAL_NODES; n < nodes_count; n++)
+     {
+       tree t = rb.nodes[n];
+       if (t && (TREE_CODE (t) == FUNCTION_DECL || (TREE_CODE (t) == VAR_DECL))
+-          && !DECL_RTL_SET_P (t))
++/* #ifndef GCC_4_0 */
++          && !DECL_RTL_SET_P (t)
++/* #endif */
++          )
+         {
+           if (!module_interface)
+             {
+@@ -1864,10 +1873,34 @@
+                 PASCAL_FORWARD_DECLARATION (t) = 0;
+               else
+                 DECL_EXTERNAL (t) = 1;  /* not for module interface so init_any won't ignore it */
++#if 0
++              if (TREE_CODE (t) == VAR_DECL)
++                DECL_INITIAL (t) = NULL_TREE;
++#endif
+             }
++#if 0
++          else
++            {
++              mark_decl_referenced (t);
++            }
++#endif
+           PASCAL_DECL_WEAK (t) = 0;
+           PASCAL_DECL_IMPORTED (t) = 1;
++          if (module_interface && TREE_CODE (t) == VAR_DECL
++              && DECL_INITIAL (t))
++            {
++#if 0
++              fprintf (stderr, "DECL_INITIAL (%p)\n", t);
++              debug_tree (t);
++              debug_tree (DECL_INITIAL (t));
++#endif
++            }
++#ifdef GCC_4_0
++          /* @@@@@@@ Otherwise we have problems with vmt */
++          rest_of_decl_compilation (t, 1, 0);
++#else
+           rest_of_decl_compilation (t, NULL, 1, 1);
++#endif
+         }
+       /* Support `private' for object fields/methods */
+       if (!module_interface
+@@ -1930,7 +1963,11 @@
+ 
+ /* Storing/loading a node's flags. @@@@ Very much GCC version dependent. */
+ #ifdef EGCS97
++#ifdef GCC_4_0
++#define DECL_FLAGS_SIZE 8
++#else
+ #define DECL_FLAGS_SIZE 6
++#endif
+ #define DECL_EXTRA_STORED(t) (t->decl.u1.i)
+ #else
+ #ifdef EGCS
+@@ -1940,6 +1977,12 @@
+ #endif
+ #define DECL_EXTRA_STORED(t) DECL_FRAME_SIZE (t)
+ #endif
++#ifndef GCC_4_0
++#define FLAGS_OFFSET 2
++#else
++#define FLAGS_OFFSET 3
++#endif
++
+ static void
+ store_flags (tree t)
+ {
+@@ -1948,10 +1991,10 @@
+      where it refers to debug info (see ../tree.h). */
+   if (TYPE_P (t))
+     TREE_ASM_WRITTEN (t) = 0;
+-  store_length ((tree *) t + 2, 4);
++  store_length ((tree *) t + FLAGS_OFFSET, 4);
+   TREE_ASM_WRITTEN (t) = save;
+ }
+-#define load_flags(t) LOAD_LENGTH ((tree *) t + 2, 4)
++#define load_flags(t) LOAD_LENGTH ((tree *) t + FLAGS_OFFSET, 4)
+ 
+ /* Store the fields of a node in a stream. */
+ static void
+@@ -2019,7 +2062,7 @@
+     store_flags (t);
+   switch (TREE_CODE_CLASS (code))
+   {
+-    case 't':
++    case tcc_type:
+       store_length (&TYPE_UID (t) + 1, 4 + sizeof (TYPE_ALIGN (t)));
+       store_node (TYPE_NAME (t));
+       store_node (TYPE_SIZE (t));
+@@ -2030,7 +2073,7 @@
+       store_node (TYPE_GET_INITIALIZER (t));
+       store_node (TYPE_MAIN_VARIANT (t) == t ? NULL_TREE : TYPE_MAIN_VARIANT (t));
+       break;
+-    case 'd':
++    case tcc_declaration:
+       {
+         gpi_int n;
+         store_length ((&DECL_SIZE (t)) + 1, DECL_FLAGS_SIZE);
+@@ -2049,15 +2092,17 @@
+         STORE_ANY (n);
+         break;
+       }
+-    case 'c':
++    case tcc_constant:
+       store_node (TREE_TYPE (t));
+       break;
+-    case '1':
+-    case '2':
++    case tcc_unary:
++    case tcc_binary:
++#ifndef GCC_4_0
+     case '3':
+-    case '<':
+-    case 'e':
+-    case 'r':
++#endif
++    case tcc_comparison:
++    case tcc_expression:
++    case tcc_reference:
+       {
+         int i, l = NUMBER_OF_OPERANDS (code);
+         store_node (TREE_TYPE (t));
+@@ -2282,7 +2327,11 @@
+ 
+     case VAR_DECL:
+       store_node (TREE_TYPE (t));
+-      /* No need to store DECL_INITIAL. */
++#if 1
++      /* We need to store DECL_INITIAL to pass initial value from
++         interface to the implementation */
++      store_node (DECL_INITIAL (t));
++#endif
+       store_string (IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (t)));
+       break;
+ 
+@@ -2295,7 +2344,11 @@
+       break;
+ 
+     default:
++#ifdef GCC_4_0
++      gcc_assert (class_done);
++#else
+       gcc_assert (class_done && code != RTL_EXPR);
++#endif
+   }
+ }
+ 
+@@ -2475,16 +2528,33 @@
+       t = get_identifier (id);
+       free (id);
+     }
++  else if (code == STRING_CST)
++    {
++        char *s;
++        struct {char c[4];} pp;
++        gpi_int l;
++        tree ty;
++        LOAD_ANY(pp);
++        ty = load_node ();
++        LOAD_ANY(l);
++        s = xmalloc (l + 1);
++        LOAD_LENGTH (s, l);
++        t = build_string (l, s);
++        memcpy ((tree *) t + FLAGS_OFFSET, &pp, 4);
++        TREE_TYPE (t) = ty;
++        free (s);
++    }
+   else
+     t = make_node (code);
+   itab_store_node (itab, original_uid, t);
+   gcc_assert (!rb.nodes[uid]);
+   rb.nodes[uid] = t;
+-  if (code != IDENTIFIER_NODE && code != INTERFACE_NAME_NODE)
++  if (code != IDENTIFIER_NODE && code != INTERFACE_NAME_NODE
++      && code != STRING_CST)
+     load_flags (t);
+   switch (TREE_CODE_CLASS (code))
+   {
+-    case 't':
++    case tcc_type:
+       {
+         tree tmp;
+         LOAD_LENGTH (&TYPE_UID (t) + 1, 4 + sizeof (TYPE_ALIGN (t)));
+@@ -2494,6 +2564,10 @@
+         TYPE_SIZE_UNIT (t) = load_node ();
+ #endif
+         TYPE_POINTER_TO (t) = load_node ();
++#ifdef GCC_4_0
++        TYPE_CACHED_VALUES_P (t) = 0;
++        TYPE_CACHED_VALUES (t) = NULL_TREE;
++#endif
+         tmp = load_node ();
+         if (tmp)
+           {
+@@ -2510,7 +2584,7 @@
+           }
+         break;
+       }
+-    case 'd':
++    case tcc_declaration:
+       {
+         gpi_int n;
+         char *s;
+@@ -2533,15 +2607,18 @@
+         DECL_IN_SYSTEM_HEADER (t) = 1;
+         break;
+       }
+-    case 'c':
+-      TREE_TYPE (t) = load_node ();
++    case tcc_constant:
++      if (code != STRING_CST)
++        TREE_TYPE (t) = load_node ();
+       break;
+-    case '1':
+-    case '2':
++    case tcc_unary:
++    case tcc_binary:
++#ifndef GCC_4_0
+     case '3':
+-    case '<':
+-    case 'e':
+-    case 'r':
++#endif
++    case tcc_comparison:
++    case tcc_expression:
++    case tcc_reference:
+       {
+         int i, l = NUMBER_OF_OPERANDS (code);
+         TREE_TYPE (t) = load_node ();
+@@ -2730,22 +2807,6 @@
+       TREE_IMAGPART (t) = load_node ();
+       break;
+ 
+-    case STRING_CST:
+-      {
+-        char *s;
+-        gpi_int l;
+-        LOAD_ANY(l);
+-        TREE_STRING_LENGTH (t) = l;
+-#ifdef EGCS97
+-        s = xmalloc (l + 1);
+-#else
+-        s = oballoc (l + 1);
+-#endif
+-        LOAD_LENGTH (s, l);
+-        TREE_STRING_POINTER (t) = s;
+-        break;
+-      }
+-
+     case FUNCTION_DECL:
+       {
+         char *assembler_name_str;
+@@ -2812,7 +2873,13 @@
+     case VAR_DECL:
+       {
+         char *assembler_name_str;
++        tree init;
+         TREE_TYPE (t) = load_node ();
++#if 1
++        init = load_node ();
++        if (loading_module_interface && itab == current_interface_table)
++          DECL_INITIAL (t) = init;
++#endif
+         assembler_name_str = load_string (rb.infile);
+         gcc_assert (*assembler_name_str);
+         SET_DECL_ASSEMBLER_NAME (t, get_identifier (assembler_name_str));
+diff -urN gcc/p.old/objects.c gcc/p/objects.c
+--- gcc/p.old/objects.c	2006-06-10 17:45:38.403386000 +0000
++++ gcc/p/objects.c	2006-06-10 17:46:10.413386000 +0000
+@@ -67,7 +67,12 @@
+       return build (COMPOUND_EXPR, TREE_TYPE (value), TREE_OPERAND (obj, 0), value);
+     }
+   vmt_field = TYPE_LANG_VMT_FIELD (TREE_TYPE (obj));
++#ifndef GCC_4_0
+   return build (COMPONENT_REF, TREE_TYPE (vmt_field), obj, vmt_field);
++#else
++  return build3 (COMPONENT_REF, TREE_TYPE (vmt_field), obj, vmt_field,
++                   NULL_TREE);
++#endif
+ }
+ 
+ static tree
+@@ -199,7 +204,12 @@
+       char *n = ACONCAT (("method_", IDENTIFIER_POINTER (DECL_NAME (fun)), NULL));
+       method = simple_get_field (get_identifier (n), TREE_TYPE (TREE_TYPE (TYPE_LANG_VMT_FIELD (TREE_TYPE (obj)))), NULL);
+       type_save = TREE_TYPE (fun);
++#ifndef GCC_4_0
+       fun = build (COMPONENT_REF, TREE_TYPE (method), vmt_deref, method);
++#else
++      fun = build3 (COMPONENT_REF, TREE_TYPE (method), vmt_deref, 
++                      method, NULL_TREE);
++#endif
+       /* In the VMT, only generic pointers are stored to avoid
+          confusion in GPI files. Repair them here. */
+       TREE_TYPE (fun) = build_pointer_type (type_save);
+@@ -510,7 +520,9 @@
+         /* Push also abstract methods (for better error messages on attempts to implement them). */
+         method = pushdecl (method);
+         gcc_assert (!EM (method));
++#ifndef GCC_4_0
+         rest_of_decl_compilation (method, 0, 1, 1);
++#endif
+         if (PASCAL_FORWARD_DECLARATION (method))
+           {
+             set_forward_decl (method, 1);
+@@ -801,8 +813,16 @@
+      from being pushed as a regular declaration (which is unnecessary). */
+   n = ACONCAT (("vmt_", IDENTIFIER_POINTER (object_type_name), NULL));
+   TYPE_LANG_VMT_VAR (type) = declare_variable (get_identifier (n), vmt_type,
+-    build_tree_list (NULL_TREE, vmt_entry), VQ_IMPLICIT | VQ_CONST | (current_module->implementation ? VQ_STATIC : 0));
++    build_tree_list (NULL_TREE, vmt_entry), VQ_IMPLICIT | VQ_CONST |
++      (current_module->implementation ? VQ_STATIC : 0));
+ 
++#ifdef GCC_4_0
++  if (current_module->implementation || !(co->interface_only))
++    {
++      mark_decl_referenced (TYPE_LANG_VMT_VAR (type));
++      make_decl_rtl (TYPE_LANG_VMT_VAR (type));
++    }
++#endif
+   /* Attach VMT_TYPE to the implicit VMT field of the object.
+      (Until here it still has the inherited type or ^void type.)
+      We also need this for abstract types because their methods
+diff -urN gcc/p.old/options.c gcc/p/options.c
+--- gcc/p.old/options.c	2006-06-10 17:45:38.403386000 +0000
++++ gcc/p/options.c	2006-06-10 17:46:10.413386000 +0000
+@@ -26,6 +26,10 @@
+ #include "gpc.h"
+ #include "gpc-options.h"
+ #include "p/p-version.h"
++#ifdef GCC_4_0
++#include "version.h"
++#endif
++
+ 
+ #ifdef GCC_3_4
+ #include "options.h"
+diff -urN gcc/p.old/opts.sum gcc/p/opts.sum
+--- gcc/p.old/opts.sum	2006-06-10 17:45:38.403386000 +0000
++++ gcc/p/opts.sum	2006-06-10 17:46:10.413386000 +0000
+@@ -9,6 +9,7 @@
+ U:Joined Separate:-U<macro>       Undefine <macro>
+ Wall::
+ Wcomment::
++Werror::
+ Wmissing-declarations::
+ Wmissing-prototypes::
+ Wpointer-arith::
+diff -urN gcc/p.old/p-tree.def gcc/p/p-tree.def
+--- gcc/p.old/p-tree.def	2006-06-10 17:45:38.403386000 +0000
++++ gcc/p/p-tree.def	2006-06-10 17:46:10.413386000 +0000
+@@ -22,6 +22,21 @@
+   Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+   02111-1307, USA. */
+ 
++#ifdef GCC_4_0
++DEFTREECODE (OPERATOR_DECL, "operator_decl", tcc_declaration, 0)
++/* The field `gpi_int checksum' might be larger than a pointer, so
++   reserve two pointer sizes for it. */
++DEFTREECODE (INTERFACE_NAME_NODE, "interface_name_node", tcc_exceptional, 3)
++DEFTREECODE (IMPORT_NODE, "import_node", tcc_exceptional, 4)
++DEFTREECODE (PASCAL_BIT_FIELD_REF, "pascal_bit_field_ref", tcc_reference, 3)
++DEFTREECODE (PASCAL_CONSTRUCTOR_CALL, "pascal_constructor_call", tcc_binary, 2)
++DEFTREECODE (POWER_EXPR, "power_expr", tcc_binary, 2)
++DEFTREECODE (POW_EXPR, "pow_expr", tcc_binary, 2)
++DEFTREECODE (SYMDIFF_EXPR, "symdiff_expr", tcc_binary, 2)
++DEFTREECODE (RANGE_CHECK_EXPR, "range_check_expr", tcc_expression, 3)
++DEFTREECODE (IO_RANGE_CHECK_EXPR, "io_range_check_expr", tcc_expression, 3)
++DEFTREECODE (IN_EXPR, "in_expr", tcc_binary, 2)
++#else
+ #ifdef EGCS
+ DEFTREECODE (OPERATOR_DECL, "operator_decl", 'd', 0)
+ /* The field `gpi_int checksum' might be larger than a pointer, so
+@@ -48,3 +63,4 @@
+ DEFTREECODE (RANGE_CHECK_EXPR, "range_check_expr", "e", 3)
+ DEFTREECODE (IO_RANGE_CHECK_EXPR, "io_range_check_expr", "e", 3)
+ #endif
++#endif
+diff -urN gcc/p.old/p-version.h gcc/p/p-version.h
+--- gcc/p.old/p-version.h	2006-06-10 17:45:38.403386000 +0000
++++ gcc/p/p-version.h	2006-06-10 17:46:10.413386000 +0000
+@@ -3,5 +3,5 @@
+ 
+ #define GPC_MAJOR "2"
+ #define GPC_MINOR "1"
+-#define GPC_VERSION_STRING "20060215"
++#define GPC_VERSION_STRING "20060325"
+ #define GPC_RELEASE_STRING GPC_VERSION_STRING
+diff -urN gcc/p.old/parse.y gcc/p/parse.y
+--- gcc/p.old/parse.y	2006-06-10 17:45:38.403386000 +0000
++++ gcc/p/parse.y	2006-06-10 17:46:10.413386000 +0000
+@@ -61,7 +61,11 @@
+   token LEX_CONST_EQUAL. */
+ 
+ %{
++#define YYMAXDEPTH 200000
+ #include "gpc.h"
++#ifdef GCC_4_0
++#include "cgraph.h"
++#endif
+ 
+ /* A few keywords of some dialects can be parsed as regular identifiers
+    and checked from the parser actions => fewer special tokens. */
+@@ -102,7 +106,7 @@
+ %glr-parser
+ %no-default-prec
+ %expect 62
+-%expect-rr 189
++%expect-rr 24
+ 
+ /* The semantic values */
+ %union {
+@@ -722,7 +726,9 @@
+             build_type_decl ($1, $4, $5);
+           }
+       }
+-  | new_identifier formal_schema_discriminants equals
++  | new_identifier 
++      { current_schema = start_struct (RECORD_TYPE); }
++    formal_schema_discriminants equals
+       {
+         $<itype>$ = immediate_size_expand;
+         immediate_size_expand = 0;
+@@ -730,35 +736,48 @@
+       }
+     type_denoter_with_attributes optional_value_specification
+       {
+-        build_type_decl ($1, build_schema_type ($5, $2, $6), NULL_TREE);
+-        immediate_size_expand = $<itype>4;
++        build_type_decl ($1, build_schema_type ($6, $3, $7, current_schema), 
++                          NULL_TREE);
++        immediate_size_expand = $<itype>5;
+         size_volatile--;
++        current_schema = NULL_TREE;
++      }
++  | new_identifier 
++      { current_schema = start_struct (RECORD_TYPE); }
++    formal_schema_discriminants error
++      { build_schema_type (error_mark_node, $3, NULL_TREE, current_schema);
++        current_schema = NULL_TREE;
+       }
+-  | new_identifier formal_schema_discriminants error
+-      { build_schema_type (error_mark_node, $2, NULL_TREE); }
+   | new_identifier enable_lce equals
+       { $<ttype>$ = start_object_type ($1, 0); }
+-    optional_abstract p_object object_parent object_field_list p_end
++    optional_abstract p_object object_parent
++      { push_scope (); }
++    object_field_list p_end
+       {
+         lex_const_equal = -1;
+-        finish_object_type ($<ttype>4, $7, $8, $5 != NULL_TREE);
++        finish_object_type ($<ttype>4, $7, $9, $5 != NULL_TREE);
+         pop_record_level ($<ttype>4);
+         yyerrok;
+       }
++
+   | new_identifier enable_lce equals
+       { $<ttype>$ = start_object_type ($1, 1); }
+-    optional_abstract p_class object_parent object_field_list p_end
++    optional_abstract p_class object_parent
++      { push_scope (); }
++    object_field_list p_end
+       {
+         lex_const_equal = -1;
+-        finish_object_type ($<ttype>4, $7, $8, $5 != NULL_TREE);
++        finish_object_type ($<ttype>4, $7, $9, $5 != NULL_TREE);
+         pop_record_level ($<ttype>4);
+         yyerrok;
+       }
+-  | new_identifier enable_lce equals
+-    p_view p_of typename object_parent object_field_list p_end
++
++  | new_identifier enable_lce equals p_view p_of typename object_parent
++      { push_scope (); }
++    object_field_list p_end
+       {
+         lex_const_equal = -1;
+-        finish_view_type ($1, $6, $7, $8);
++        finish_view_type ($1, $6, $7, $9);
+         pop_record_level (NULL_TREE);
+         yyerrok;
+       }
+@@ -803,7 +822,7 @@
+ 
+ discriminant_specification:
+     id_list ':' typename
+-      { $$ = build_discriminants ($1, $3); }
++      { $$ = build_discriminants ($1, $3, current_schema); }
+   ;
+ 
+ type_denoter_with_attributes:
+@@ -1068,10 +1087,9 @@
+   ;
+ 
+ object_field_list:
+-    { push_scope (); } object_field_list_1 { $$ = $2; }
+-  | { push_scope (); } object_field_list_1 object_section
+-      { $$ = chainon ($2, $3); }
+-  | { push_scope (); } error
++    object_field_list_1 { $$ = $1; }
++  | object_field_list_1 object_section { $$ = chainon ($1, $2); }
++  | error
+       { $$ = error_mark_node; }
+   ;
+ 
+@@ -1497,6 +1515,8 @@
+       { build_predef_call (p_Exit, build_tree_list (NULL_TREE, void_type_node)); }
+   | p_Exit '(' id ')'
+       { build_predef_call (p_Exit, build_tree_list (NULL_TREE, $3)); }
++  | p_Exit '(' id '.' id ')'
++      { build_predef_call (p_Exit, build_tree_list ($3, $5)); }
+   | builtin_procedure_statement
+   | p_with with_list p_do pushlevel optional_statement poplevel
+       { restore_identifiers ($2); }
+@@ -1741,7 +1761,7 @@
+         if (PEDANTIC (NOT_CLASSIC_PASCAL)
+             && ( PASCAL_CST_PARENTHESES ($$)
+                  || !(TREE_CODE ($$) == STRING_CST
+-                      || (TREE_CODE_CLASS (TREE_CODE ($$)) == 'c'
++                      || (TREE_CODE_CLASS (TREE_CODE ($$)) == tcc_constant
+                           && PASCAL_CST_FRESH ($$)))))
+           error ("ISO 7185 Pascal allows only simple constants");
+       }
+@@ -2475,6 +2495,23 @@
+ int
+ yyparse (void)
+ {
++  int res;
+   init_predef ();
+-  return main_yyparse ();
++  res = main_yyparse ();
++#ifdef GCC_4_0
++  /* @@@@@ cgraphunit do not notice if address of a routine is
++     referenced from static global variable */
++  {
++    tree decl = getdecls();
++    while (decl) 
++      {
++        if (TREE_CODE (decl) == FUNCTION_DECL && TREE_ADDRESSABLE (decl))
++          mark_decl_referenced (decl);
++        decl = TREE_CHAIN (decl);
++      }
++  }
++  cgraph_finalize_compilation_unit ();
++  cgraph_optimize ();
++#endif
++  return res;
+ }
+diff -urN gcc/p.old/pascal-lex.l gcc/p/pascal-lex.l
+--- gcc/p.old/pascal-lex.l	2006-06-10 17:45:38.403386000 +0000
++++ gcc/p/pascal-lex.l	2006-06-10 17:46:10.413386000 +0000
+@@ -347,13 +347,13 @@
+         else
+           switch (*++c)
+             {
+-              case 'n':  *d++ = TARGET_NEWLINE; break;
+-              case 't':  *d++ = TARGET_TAB;     break;
+-              case 'r':  *d++ = TARGET_CR;      break;
+-              case 'f':  *d++ = TARGET_FF;      break;
+-              case 'b':  *d++ = TARGET_BS;      break;
+-              case 'v':  *d++ = TARGET_VT;      break;
+-              case 'a':  *d++ = TARGET_BELL;    break;
++              case 'n':  *d++ = '\n' /* TARGET_NEWLINE */; break;
++              case 't':  *d++ = '\t' /* TARGET_TAB */;     break;
++              case 'r':  *d++ = '\r' /* TARGET_CR */;      break;
++              case 'f':  *d++ = '\f' /* TARGET_FF */;      break;
++              case 'b':  *d++ = '\b' /* TARGET_BS */;      break;
++              case 'v':  *d++ = '\v' /* TARGET_VT */;      break;
++              case 'a':  *d++ = '\a' /* TARGET_BELL */;    break;
+               case 'e':
+               case 'E':  *d++ = 27;             break;
+               case 'x':  {
+diff -urN gcc/p.old/plant.c gcc/p/plant.c
+--- gcc/p.old/plant.c	1970-01-01 00:00:00.000000000 +0000
++++ gcc/p/plant.c	2006-06-10 11:22:38.000000000 +0000
+@@ -0,0 +1,795 @@
++/* Emulate old expand_* routines using Tree-SSA infrastructure.
++
++  Copyright (C) 2006 Free Software Foundation, Inc.
++
++  Authors: Waldek Hebisch <hebisch@math.uni.wroc.pl>
++
++  This file is part of GNU Pascal.
++
++  GNU Pascal is free software; you can redistribute it and/or modify
++  it under the terms of the GNU General Public License as published
++  by the Free Software Foundation; either version 2, or (at your
++  option) any later version.
++
++  GNU Pascal is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  General Public License for more details.
++
++  You should have received a copy of the GNU General Public License
++  along with GNU Pascal; see the file COPYING. If not, write to the
++  Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA
++  02111-1307, USA. */
++
++#include <gpc.h>
++
++#ifdef GCC_3_3
++#include <varray.h>
++
++/* Made unconditional for 3.3 to avoid Makefile tricks */
++typedef struct plant_nesting GTY(()) {
++  enum tree_code code;
++  int flags;
++  struct plant_nesting * next;
++  tree arg0;
++  tree arg1;
++  tree arg2;
++  tree statement_list;
++  location_t locus;
++} plant_nesting;
++
++
++/* static GGTY(()) tree current_statement_list = NULL_TREE; */
++
++static GTY(()) plant_nesting * plant_stack = NULL;
++
++static GTY(()) varray_type gimplified_types = 0;
++static GTY(()) varray_type gimplified_sizes = 0;
++static GTY(()) varray_type gimplified_size_addrs = 0;
++#endif
++
++#ifdef GCC_4_0
++#include "cgraph.h"
++#include "tree-gimple.h"
++#include "tree-dump.h"
++
++/* @@@@@@@@@@@@@@@@@@@@@@@@@@ */
++int immediate_size_expand;
++#if 0
++int set_words_big_endian;
++int set_word_size;
++#endif
++
++location_t plant_locus;
++int plant_locus_initialized = 0;
++
++#define LOOP_HAS_CONTINUE 1
++
++void
++clear_last_expr (void)
++{
++  gcc_assert (0);
++}
++
++void
++plant_decl_init (tree decl)
++{
++  gcc_assert (0);
++}
++
++void
++plant_decl (tree decl)
++{
++  tree de = build (DECL_EXPR, void_type_node, decl);
++        {
++          tree id = DECL_NAME (decl);
++          const char * n = IDENTIFIER_POINTER (id);
++//          fprintf(stderr, "var %s\n", n? n : "???");
++        }
++
++  plant_expr_stmt (de);
++}
++
++void
++plant_line_note (location_t loc)
++{
++  plant_locus = loc;
++  plant_locus_initialized = 1;
++}
++
++void
++plant_asm (tree string, int vol)
++{
++  gcc_assert (0);
++}
++
++void
++plant_nop (void)
++{
++  // gcc_assert (0);
++}
++
++void
++plant_asm_operands (tree string, tree outputs,
++      tree inputs, tree clobbers, int vol, location_t loc_aux)
++{
++//  gcc_assert (0);
++  tree ae = build (ASM_EXPR, void_type_node, string, outputs, inputs, clobbers);
++  plant_expr_stmt (ae);
++}
++
++void
++plant_function_start (tree decl, int i)
++{
++  // gcc_assert (0);
++//  fprintf (stderr, "plant_function_start\n");
++  struct plant_nesting * nest = ggc_alloc (sizeof (*nest));
++  nest->code = FUNCTION_DECL;
++  nest->arg0 = nest->arg1 = nest->arg2 = NULL_TREE;
++  nest->next = plant_stack;
++  nest->statement_list = current_statement_list;
++  nest->locus = plant_locus;
++  current_statement_list = NULL_TREE;
++  plant_stack = nest;
++}
++
++static void
++pascal_remember_gimplified_type (tree t)
++{
++  VARRAY_PUSH_TREE (gimplified_types, t);
++}
++
++static void
++pascal_remember_gimplified_sizepos (tree * exp)
++{
++  VARRAY_PUSH_TREE (gimplified_sizes, * exp);
++  VARRAY_PUSH_TREE_PTR (gimplified_size_addrs, exp);
++}
++
++extern void (*lang_remember_gimplified_type)(tree);
++extern void (*lang_remember_gimplified_sizepos)(tree *);
++
++static void
++pascal_gimplify_function (tree fndecl)
++{
++  struct cgraph_node *cgn;
++  static long gimplifying = 0;
++  if (!gimplifying)
++    {
++      VARRAY_TREE_INIT (gimplified_types, 32, "gimplified_types");
++      VARRAY_TREE_INIT (gimplified_sizes, 64, "gimplified_sizes");
++      VARRAY_TREE_PTR_INIT (gimplified_size_addrs, 64, 
++                           "gimplified_size_addrs");
++      lang_remember_gimplified_type = pascal_remember_gimplified_type;
++      lang_remember_gimplified_sizepos = pascal_remember_gimplified_sizepos;
++    }
++  gimplifying ++;
++  dump_function (TDI_original, fndecl);
++  gimplify_function_tree (fndecl);
++  dump_function (TDI_generic, fndecl);
++
++  /* Convert all nested functions to GIMPLE now.  We do things in this order
++     so that items like VLA sizes are expanded properly in the context of the
++     correct function.  */
++  cgn = cgraph_node (fndecl);
++  for (cgn = cgn->nested; cgn; cgn = cgn->next_nested)
++    pascal_gimplify_function (cgn->decl);
++  gimplifying --;
++  if (!gimplifying)
++    {
++      size_t i;
++#if 0
++      /* Restore sizes */
++      i = VARRAY_ACTIVE_SIZE (gimplified_sizes);
++      while (i > 0)
++        {
++          i--;
++          *VARRAY_TREE_PTR (gimplified_size_addrs, i) = 
++             VARRAY_TREE (gimplified_sizes, i);
++        } 
++      /* Restore types */
++      i = VARRAY_ACTIVE_SIZE (gimplified_types);
++      while (i > 0)
++        {
++          tree type = VARRAY_TREE (gimplified_types, i - 1);
++          tree t = TYPE_NEXT_VARIANT (type);
++          i--;
++          TYPE_SIZES_GIMPLIFIED (type) = 0;
++          for (; t; t = TYPE_NEXT_VARIANT (t))
++            {
++              TYPE_SIZE (t) = TYPE_SIZE (type);
++              TYPE_SIZE_UNIT (t) = TYPE_SIZE_UNIT (type);
++              TYPE_SIZES_GIMPLIFIED (t) = 0;
++              switch (TREE_CODE (type))
++                {
++                case INTEGER_TYPE:
++                case ENUMERAL_TYPE:
++                case BOOLEAN_TYPE:
++                case CHAR_TYPE:
++                case REAL_TYPE:
++                  TYPE_MIN_VALUE (t) = TYPE_MIN_VALUE (type);
++                  TYPE_MAX_VALUE (t) = TYPE_MAX_VALUE (type);
++                  break;
++
++                default:
++                  break;
++                }
++            }
++        }
++#endif
++        varray_type gimplified_types = 0;
++        varray_type gimplified_sizes = 0;
++        varray_type gimplified_size_addrs = 0;
++    }
++}
++
++static void
++pascal_dump_tree (tree t, int indent)
++{
++  int i;
++  enum tree_code code;
++
++  for (i=0; i<indent; i++)
++    fputc(' ', stdout);
++  if (!t)
++    {
++      fprintf(stdout, "<null_tree>\n");
++      return;
++    }
++  code = TREE_CODE (t);
++  fprintf(stdout, "<%s %p>\n", tree_code_name[code], t);
++  switch (code) {
++    case VAR_DECL:
++    case CONST_DECL:
++    case FUNCTION_DECL:
++      return;
++    case BIND_EXPR:
++      pascal_dump_tree (BIND_EXPR_BODY (t), indent+2);
++      return;
++  }
++  if (IS_EXPR_OR_REF_CODE_CLASS (TREE_CODE_CLASS (code)))
++    {
++      int i, l = NUMBER_OF_OPERANDS (code);
++      for (i = FIRST_OPERAND (code); i < l; i++)
++        pascal_dump_tree (TREE_OPERAND (t, i), indent+2);
++    }
++}
++
++void
++plant_function_end (void)
++{
++  // gcc_assert (0);
++  location_t loc_aux;
++  tree the_fun = current_function_decl;
++  loc_aux.file = input_filename;
++  loc_aux.line = lineno;
++
++// fprintf (stderr, "plant_function_end\n");
++//  fflush (0);
++#if 1
++  gcc_assert (plant_stack && plant_stack->code == FUNCTION_DECL
++              && current_statement_list && the_fun
++              && TREE_CODE (current_statement_list) == BIND_EXPR);
++#endif
++//  pascal_dump_tree (current_statement_list, 0);
++  DECL_SAVED_TREE (current_function_decl) = current_statement_list;
++/*  DECL_SOURCE_LOCATION (current_function_decl) = loc_aux; */
++  cfun->function_end_locus = loc_aux;
++#if 0
++  gimplify_function_tree (the_fun);
++  current_function_decl = NULL_TREE;
++  cfun = NULL;
++  (void)cgraph_node (the_fun);
++  cgraph_finalize_function (the_fun, false);
++#else
++  current_function_decl = DECL_CONTEXT (the_fun);
++  cfun = NULL;
++
++  if (!DECL_CONTEXT (the_fun)
++      || TREE_CODE (DECL_CONTEXT (the_fun)) != FUNCTION_DECL
++         /* PASCAL_METHOD (the_fun) */)
++    {
++//      current_function_decl = NULL_TREE;
++      current_function_decl = the_fun;
++//      allow_packed_addresses = 1;
++      pascal_gimplify_function (the_fun);
++//      allow_packed_addresses = 0;
++      cgraph_finalize_function (the_fun, false);
++      current_function_decl = NULL_TREE;
++    }
++  else
++    /* Register this function with cgraph just far enough to get it
++       added to our parent's nested function list.  */
++    (void) cgraph_node (the_fun);
++#endif
++  current_statement_list = plant_stack->statement_list;
++  plant_stack = plant_stack->next;
++}
++
++void
++plant_return (tree result)
++{
++  tree type = result? TREE_TYPE (result) : void_type_node;
++//  fprintf (stderr, "plant_return_statement\n");
++//  fflush (0);
++  plant_expr_stmt (build1 (RETURN_EXPR, type, result));
++}
++
++void
++plant_null_return (void)
++{
++  plant_return (NULL_TREE);
++}
++
++void
++plant_start_cond (tree condition, int i)
++{
++  // gcc_assert (0);
++  struct plant_nesting * nest = ggc_alloc (sizeof (*nest));
++  nest->code = COND_EXPR;
++  nest->arg0 = condition;
++  nest->arg1 = nest->arg2 = NULL_TREE;
++  nest->next = plant_stack;
++  nest->statement_list = current_statement_list;
++  nest->locus = plant_locus;
++  current_statement_list = NULL_TREE;
++  plant_stack = nest;
++//  fprintf (stderr, "plant_start_cond\n");
++//  fflush (0);
++}
++
++void
++plant_end_cond (void)
++{
++  // gcc_assert (0);
++  tree st1, st2;
++//  fprintf (stderr, "plant_end_cond\n");
++//  fflush (0);
++  gcc_assert (plant_stack && plant_stack->code == COND_EXPR);
++  if (!current_statement_list)
++    current_statement_list = build_empty_stmt ();
++  if (plant_stack->arg1)
++    {
++      st1 = plant_stack->arg1;
++      st2 = current_statement_list;
++    }
++  else
++    {
++      st1 = current_statement_list;
++      st2 = build_empty_stmt ();
++    }
++  st1 = build3 (COND_EXPR, void_type_node, plant_stack->arg0, st1, st2);
++  SET_EXPR_LOCATION (st1, plant_stack->locus);
++  current_statement_list = plant_stack->statement_list;
++  plant_stack = plant_stack->next;
++  plant_expr_stmt (st1);
++}
++
++void
++plant_start_else (void)
++{
++  // gcc_assert (0);
++//  fprintf (stderr, "plant_start_else\n");
++//  fflush (0);
++  gcc_assert (plant_stack && plant_stack->code == COND_EXPR);
++  gcc_assert (!plant_stack->arg1);
++  if (current_statement_list)
++    {
++      plant_stack->arg1 = current_statement_list;
++      current_statement_list = NULL_TREE;
++    }
++  else
++    plant_stack->arg1 = build_empty_stmt ();
++}
++
++void
++plant_label (tree label)
++{
++  tree st = build1 (LABEL_EXPR, void_type_node, label);
++  gcc_assert (DECL_CONTEXT (label) 
++               && DECL_CONTEXT (label) == current_function_decl);
++//  gcc_assert (0);
++  plant_expr_stmt (st);
++}
++
++void
++plant_goto (tree label)
++{
++  tree st = build1 (GOTO_EXPR, void_type_node, label);
++//  gcc_assert (0);
++  plant_expr_stmt (st);
++}
++
++/* pushcase */
++void
++plant_exit_something (void)
++{
++//  gcc_assert (0);
++  tree jump_stmt;
++//  fprintf (stderr, "plant_exit_something\n");
++//  fflush (0);
++  /* david3.pas, gale2a.pas */
++  if (!plant_stack || plant_stack->code != SWITCH_EXPR)
++    return;
++  gcc_assert (plant_stack && (plant_stack->code == SWITCH_EXPR
++                            /*  || plant_stack->code == LOOP_EXPR */));
++  if (!plant_stack->arg2)
++    {
++      tree id = get_unique_identifier ("exit_something");
++      tree label = build_decl (LABEL_DECL, id, void_type_node);
++      plant_stack->arg2 = build1 (LABEL_EXPR, void_type_node, label);
++    }
++  gcc_assert (TREE_CODE (plant_stack->arg2) == LABEL_EXPR);
++  jump_stmt = build_and_jump (&LABEL_EXPR_LABEL (plant_stack->arg2));
++  plant_expr_stmt (jump_stmt);
++}
++
++
++void
++plant_start_case (int exit_flag, tree expr, tree type,
++                   const char *printname)
++{
++//  gcc_assert (0);
++  struct plant_nesting * nest = ggc_alloc (sizeof (*nest));
++  nest->code = SWITCH_EXPR;
++  nest->arg0 = expr;
++  nest->arg1 = type;
++  nest->arg2 = NULL_TREE;
++  nest->next = plant_stack;
++  nest->statement_list = current_statement_list;
++  nest->locus = plant_locus;
++  current_statement_list = NULL_TREE;
++  plant_stack = nest;
++//  fprintf (stderr, "plant_start_case\n");
++//  fflush (0);
++}
++
++
++void
++plant_end_case (tree expr)
++{
++//  gcc_assert (0);
++  tree st;
++  tree body = current_statement_list;
++  gcc_assert (plant_stack);
++  if (plant_stack->code != SWITCH_EXPR)
++    {
++      error ("unexpected end of case");
++      return;
++    }
++  if (plant_stack->arg2)
++    {
++      tree label = LABEL_EXPR_LABEL (plant_stack->arg2);
++//      body = build (COMPOUND_EXPR, void_type_node, plant_stack->arg2, body);
++      body = build (COMPOUND_EXPR, void_type_node, body, plant_stack->arg2);
++      pushdecl_nocheck (label);
++      PASCAL_LABEL_SET (label) = 1;
++      TREE_USED (label) = 1;
++      DECL_CONTEXT (label) = current_function_decl;
++//      st = build1 (DECL_EXPR, void_type_node, 
++//                     LABEL_EXPR_LABEL (plant_stack->arg2));
++//      body = build (COMPOUND_EXPR, void_type_node, st, body);
++    }
++  st = build3 (SWITCH_EXPR, void_type_node, plant_stack->arg0,
++               body, NULL_TREE);
++  SET_EXPR_LOCATION (st, plant_stack->locus);
++  current_statement_list = plant_stack->statement_list;
++  plant_stack = plant_stack->next;
++  plant_expr_stmt (st); 
++//  fprintf(stderr, "plant_end_case\n");
++}
++
++static void
++plant_case_label (tree low, tree high, tree label)
++{
++  tree st = build3 (CASE_LABEL_EXPR,
++                    void_type_node, 
++                    low,
++                    high,
++                    label);
++  if (!DECL_CONTEXT (label))
++    DECL_CONTEXT (label) = current_function_decl;
++  plant_expr_stmt (st);
++//  fprintf(stderr, "plant_case_label\n"); 
++}
++
++int
++pushcase (tree value, tree (*converter) (tree, tree), tree label,
++          tree *duplicate)
++{
++//  gcc_assert (0);
++  tree index_type;
++  tree nominal_type;
++  gcc_assert (plant_stack);
++  if (plant_stack->code != SWITCH_EXPR)
++    {
++      error("unexpected case label");
++      return 0;
++    }
++  index_type = TREE_TYPE (plant_stack->arg0);
++  nominal_type = plant_stack->arg1;
++  if (index_type == error_mark_node)
++    return 0;
++
++  /* Convert VALUE to the type in which the comparisons are nominally done.  */
++  if (value != 0)
++    value = (*converter) (nominal_type, value);
++  
++  plant_case_label (value, NULL_TREE, label);  
++//  plant_case_label (value, value, label);
++  return 0;
++}
++
++int
++pushcase_range (tree value1, tree value2, tree (*converter) (tree, tree),
++                tree label, tree *duplicate)
++{
++//  gcc_assert (0);
++  tree index_type;
++  tree nominal_type;
++  gcc_assert (plant_stack);
++  if (plant_stack->code != SWITCH_EXPR)
++    {
++      error("unexpected case label");
++      return 0;
++    }
++  index_type = TREE_TYPE (plant_stack->arg0);
++  nominal_type = plant_stack->arg1;
++  if (index_type == error_mark_node)
++    return 0;
++
++  /* Convert VALUEs to type in which the comparisons are nominally done
++     and replace any unspecified value with the corresponding bound.  */
++
++  if (value1 == 0)
++    value1 = TYPE_MIN_VALUE (index_type);
++  if (value2 == 0)
++    value2 = TYPE_MAX_VALUE (index_type);
++
++  /* Fail if the range is empty.  Do this before any conversion since
++     we want to allow out-of-range empty ranges.  */
++  if (value2 != 0 && tree_int_cst_lt (value2, value1))
++    return 4;
++
++  /* If the max was unbounded, use the max of the nominal_type we are
++     converting to.  Do this after the < check above to suppress false
++     positives.  */
++  if (value2 == 0)
++    value2 = TYPE_MAX_VALUE (nominal_type);
++
++  value1 = (*converter) (nominal_type, value1);
++  value2 = (*converter) (nominal_type, value2);
++
++  plant_case_label (value1, value2, label);
++
++  return 0;
++}
++
++
++
++struct plant_nesting *
++plant_start_loop (int i)
++{
++  // gcc_assert (0);
++  struct plant_nesting * nest = ggc_alloc (sizeof (*nest));
++//  fprintf (stderr, "plant_start_loop_continue_elsewhere(%d)\n", i);
++//  fflush (0);
++  
++  nest->code = LOOP_EXPR;
++  nest->flags = 0;
++  nest->arg0 = nest->arg1 = nest->arg2 = NULL_TREE;
++  nest->next = plant_stack;
++  nest->statement_list = current_statement_list;
++  nest->locus = plant_locus;
++  current_statement_list = NULL_TREE;
++  plant_stack = nest;
++  return nest;
++}
++
++void
++plant_loop_continue_here (void)
++{
++  // gcc_assert (0);
++//  fprintf (stderr, "plant_loop_continue_here\n");
++//  fflush (0);
++  plant_nesting * ll = plant_stack;
++  while (ll && ll->code == BIND_EXPR)
++    ll = ll->next;
++  gcc_assert (ll && ll->code == LOOP_EXPR);
++  gcc_assert (!(LOOP_HAS_CONTINUE & ll->flags));
++  if (!ll->arg0)
++    ll->arg0 = build1 (LABEL_EXPR, void_type_node, NULL_TREE);
++  gcc_assert (TREE_CODE (ll->arg0) == LABEL_EXPR);
++  plant_expr_stmt (ll->arg0);
++  ll->flags |= LOOP_HAS_CONTINUE;
++}
++
++int
++plant_continue_loop (struct plant_nesting * loop)
++{
++  // gcc_assert (0);
++  tree jump_stmt;
++//  fprintf (stderr, "plant_continue_loop\n");
++//  fflush (0);
++  if (!loop)
++    {
++      loop = plant_stack;
++      while (loop && loop->code != LOOP_EXPR)
++        loop = loop->next;
++    }
++  gcc_assert (loop && loop->code == LOOP_EXPR);
++  if (!loop->arg0)
++    loop->arg0 = build1 (LABEL_EXPR, void_type_node, NULL_TREE);
++  gcc_assert (TREE_CODE (loop->arg0) == LABEL_EXPR);
++  jump_stmt = build_and_jump (&LABEL_EXPR_LABEL (loop->arg0));
++  plant_expr_stmt (jump_stmt);
++  return 1;
++}
++
++int
++plant_exit_loop (struct plant_nesting * loop)
++{
++  // gcc_assert (0);
++  tree exit_st;
++  gcc_assert (!loop);
++//  fprintf (stderr, "plant_exit_loop\n");
++//  fflush (0);
++  if (!loop)
++    {
++      loop = plant_stack;
++      while (loop && loop->code != LOOP_EXPR)
++        loop = loop->next;
++    }
++  gcc_assert (loop && loop->code == LOOP_EXPR);
++  exit_st = build1 (EXIT_EXPR, void_type_node, boolean_true_node);
++  plant_expr_stmt (exit_st);
++  return 1;
++}
++
++int
++plant_exit_loop_if_false (struct plant_nesting * loop, tree condition)
++{
++  // gcc_assert (0);
++  tree exit_st;
++  gcc_assert (!loop);
++//  fprintf (stderr, "plant_exit_loop_if_false\n");
++//  fflush (0);
++  condition = build1 (TRUTH_NOT_EXPR, TREE_TYPE (condition), condition);
++  exit_st = build1 (EXIT_EXPR, void_type_node, condition);
++  plant_expr_stmt (exit_st);
++  return 1;
++}
++
++void
++plant_end_loop (void)
++{
++  // gcc_assert (0);
++  tree body = current_statement_list;
++//  fprintf (stderr, "plant_end_loop\n");
++//  fflush (0);
++  gcc_assert (plant_stack && plant_stack->code == LOOP_EXPR);
++  if (plant_stack->arg0 && LABEL_EXPR_LABEL (plant_stack->arg0) 
++      && !(LOOP_HAS_CONTINUE & plant_stack->flags))
++     body = build (COMPOUND_EXPR, void_type_node, plant_stack->arg0, body);
++  if (plant_stack->arg0 && !LABEL_EXPR_LABEL (plant_stack->arg0))
++    LABEL_EXPR_LABEL (plant_stack->arg0) = create_artificial_label ();
++  body = build1 (LOOP_EXPR, void_type_node, body);
++  SET_EXPR_LOCATION (body, plant_stack->locus);
++  current_statement_list = plant_stack->statement_list;
++  plant_stack = plant_stack->next;
++  plant_expr_stmt (body);
++}
++
++
++void
++plant_start_bindings (int flags)
++{
++#if 1
++  // gcc_assert (0);
++  struct plant_nesting * nest = ggc_alloc (sizeof (*nest));
++  nest->code = BIND_EXPR;
++  nest->arg0 = nest->arg1 = nest->arg2 = NULL_TREE;
++  nest->next = plant_stack;
++  nest->statement_list = current_statement_list;
++  nest->locus = plant_locus;
++  current_statement_list = NULL_TREE;
++  plant_stack = nest;
++
++//  fprintf (stderr, "plant_start_bindings\n");
++  fflush (0);
++#endif
++}
++
++void
++plant_end_bindings (tree vars, int mark_ends, int dont_jump_in)
++{
++#if 1
++  // gcc_assert (0);
++//  fprintf (stderr, "plant_end_bindings\n");
++//  if (!vars)
++//    fprintf (stderr, "  no vars\n");
++//  else
++//    debug_tree (vars);
++  fflush (0);
++#endif
++}
++
++
++void
++plant_expr_stmt (tree expr)
++{
++//  fprintf (stderr, "plant_expr_stmt\n");
++//  fflush (0);
++  if (EM (expr))
++    return;
++  if (!EXPR_HAS_LOCATION (expr) 
++       && TREE_CODE (expr) != LABEL_EXPR
++       && TREE_CODE (expr) != COMPOUND_EXPR
++       && plant_locus_initialized) 
++    SET_EXPR_LOCATION (expr, plant_locus);
++  if (current_statement_list)
++    current_statement_list = build (COMPOUND_EXPR, 
++                                  TREE_TYPE (expr),
++                                  current_statement_list,
++                                  expr);
++  else
++    current_statement_list = expr;
++}
++
++
++void
++plant_bind_block (tree block)
++{
++  tree statement_list;
++#if 0
++  fprintf (stderr, "plant_bind_block\n");
++  if (block)
++    debug_tree(block);
++  else
++    fprintf (stderr, " no block\n");
++  fflush (0);
++#endif
++  if (errorcount && !(plant_stack->code == BIND_EXPR
++              || plant_stack->code == FUNCTION_DECL))
++    {
++      exit_compilation ();
++    }
++  gcc_assert (plant_stack->code == BIND_EXPR 
++              || plant_stack->code == FUNCTION_DECL);
++  statement_list = current_statement_list;
++  if (block)
++    {
++      tree t;
++#if 0
++      for (t = BLOCK_VARS (block); t ; t = TREE_CHAIN (t))
++        {
++          tree id = DECL_NAME (t);
++          const char * n = IDENTIFIER_POINTER (id);
++          fprintf(stderr, "block var %s\n", n? n : "???");
++        }
++#endif
++
++      if (!statement_list)
++        statement_list = build_empty_stmt ();
++#if 1
++      statement_list = build3 (BIND_EXPR,
++                               void_type_node,
++                               BLOCK_VARS (block),
++                               statement_list,
++                               block);
++#endif
++   }
++   if (plant_stack->code != FUNCTION_DECL)
++     {
++       current_statement_list = plant_stack->statement_list;
++       if (statement_list)
++         plant_expr_stmt (statement_list);
++       plant_stack = plant_stack->next;
++     }
++   else
++     current_statement_list = statement_list;
++}
++#endif
++#ifdef GCC_3_3
++#include "gt-p-plant.h"
++#endif
+diff -urN gcc/p.old/plant.h gcc/p/plant.h
+--- gcc/p.old/plant.h	1970-01-01 00:00:00.000000000 +0000
++++ gcc/p/plant.h	2006-03-03 02:36:35.000000000 +0000
+@@ -0,0 +1,127 @@
++/* Compatibility macros: redirect expand_* calls to plant.c.
++
++   Copyright (C) 2006 Free Software Foundation, Inc.
++
++   Authors: Waldek Hebisch <hebisch@math.uni.wroc.pl>
++
++  This file is part of GNU Pascal.
++
++  GNU Pascal is free software; you can redistribute it and/or modify
++  it under the terms of the GNU General Public License as published
++  by the Free Software Foundation; either version 2, or (at your
++  option) any later version.
++
++  GNU Pascal is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  General Public License for more details.
++
++  You should have received a copy of the GNU General Public License
++  along with GNU Pascal; see the file COPYING. If not, write to the
++  Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA
++  02111-1307, USA. */
++
++#define expand_goto(x) plant_goto (x)
++#define expand_label(x) plant_label (x)
++#define expand_decl(x) plant_decl (x)
++#define label_rtx(x)  0
++#define emit_line_note(x) plant_line_note (x)
++#define emit_nop() plant_nop()
++#define expand_decl_init(x) plant_decl_init(x)
++#define expand_function_start(x, y) plant_function_start (x, y)
++#define expand_function_end() plant_function_end ()
++#define expand_return(x) plant_return (x)
++#define expand_null_return() plant_null_return ()
++#define expand_start_cond(x, y) plant_start_cond (x, y)
++#define expand_end_cond() plant_end_cond ()
++#define expand_start_else() plant_start_else ()
++#define expand_exit_something() plant_exit_something ()
++#define expand_start_case(x, y, z, w) plant_start_case(x, y, z, w)
++#define expand_end_case(x) plant_end_case (x)
++#define expand_start_loop_continue_elsewhere(x) plant_start_loop (x)
++#define expand_loop_continue_here() plant_loop_continue_here ()
++#define expand_continue_loop(x) plant_continue_loop(x)
++#define expand_exit_loop(x) plant_exit_loop(x)
++#define expand_exit_loop_if_false(x, y) plant_exit_loop_if_false (x, y)
++#define expand_end_loop() plant_end_loop ()
++#define expand_start_loop(x) plant_start_loop (x)
++#define expand_start_bindings(x) plant_start_bindings (x)
++#define expand_end_bindings(x, y, z) plant_end_bindings (x, y, z)
++#define expand_expr_stmt(x) plant_expr_stmt (x)
++#define expand_asm plant_asm
++#define expand_asm_operands(x, y, z, u, v, w) plant_asm_operands(x, y, z, u, v, w)
++
++/* #define pushcase(x, y, z, w) plant_case(x, y, z, w) */
++
++
++extern void clear_last_expr (void);
++
++extern int
++pushcase (tree value, tree (*converter) (tree, tree), tree label,
++          tree *duplicate);
++
++extern int
++pushcase_range (tree value1, tree value2, tree (*converter) (tree, tree),
++                tree label, tree *duplicate);
++
++extern void plant_line_note (location_t loc);
++
++extern void plant_decl (tree decl);
++
++extern void plant_decl_init (tree decl);
++
++extern void plant_nop (void);
++
++extern void plant_goto (tree label);
++
++extern void plant_label (tree label);
++
++/* extern void plant_decl (tree decl); */
++
++extern void plant_asm (tree string, int vol);
++
++extern void plant_asm_operands (tree string, tree outputs,
++      tree inputs, tree clobbers, int vol, location_t loc_aux);
++
++extern void plant_function_start (tree decl, int i);
++
++extern void plant_function_end (void);
++
++extern void plant_return (tree result);
++
++extern void plant_null_return (void);
++
++extern void plant_start_cond (tree condition, int i);
++
++extern void plant_end_cond (void);
++
++extern void plant_start_else (void);
++
++extern void plant_exit_something (void);
++
++extern void plant_start_case (int exit_flag, tree expr, tree type,
++                   const char *printname);
++
++extern void plant_end_case (tree expr);
++
++extern struct plant_nesting * plant_start_loop_continue_elsewhere (int i);
++
++extern struct plant_nesting * plant_start_loop (int i);
++
++extern void plant_loop_continue_here (void);
++
++extern int plant_continue_loop (struct plant_nesting * loop);
++
++extern int plant_exit_loop (struct plant_nesting * loop);
++
++extern int plant_exit_loop_if_false (struct plant_nesting * loop, tree condition);
++
++extern void plant_end_loop (void);
++
++extern void plant_start_bindings (int flags);
++
++extern void plant_end_bindings (tree vars, int mark_ends, int dont_jump_in);
++
++extern void plant_expr_stmt (tree expr);
++
++extern void plant_bind_block (tree block);
+diff -urN gcc/p.old/predef.c gcc/p/predef.c
+--- gcc/p.old/predef.c	2006-06-10 17:45:38.403386000 +0000
++++ gcc/p/predef.c	2006-06-10 17:46:10.413386000 +0000
+@@ -35,14 +35,16 @@
+ /* Implementation-defined length of the `Name' field of `BindingType'. */
+ #define BINDING_NAME_LENGTH 2048
+ 
+-#ifndef EGCS
+-static tree
++// #ifndef EGCS
++tree
+ xnon_lvalue (tree x)
+ {
+-  return TREE_CODE (x) == INTEGER_CST ? x : non_lvalue (x);
++  return TREE_CODE (x) == INTEGER_CST ? x : 
++     build1 (NON_LVALUE_EXPR, TREE_TYPE (x), x);
+ }
+-#define non_lvalue xnon_lvalue
+-#endif
++// #undef non_lvalue
++// #define non_lvalue xnon_lvalue
++// #endif
+ 
+ #undef EOF
+ #undef asm
+@@ -279,6 +281,19 @@
+   paramstr_variable_node = declare_variable (get_identifier ("_p_CParameters"),
+     build_pointer_type (cstring_type_node), NULL_TREE, VQ_EXTERNAL | VQ_IMPLICIT);
+ 
++  /* routine to set bits to 1. Used in set constructors */
++  temp = build_implicit_routine_decl (get_identifier ("__setbits"),
++    void_type_node, tree_cons (NULL_TREE, ptr_type_node, 
++           tree_cons (NULL_TREE, long_integer_type_node,
++           tree_cons (NULL_TREE, long_integer_type_node,
++           tree_cons (NULL_TREE, long_integer_type_node, void_list_node)))),
++           ER_EXTERNAL);
++  DECL_ARTIFICIAL (temp) = 1;
++  setbits_routine_node = temp;
++/*
++build1 (ADDR_EXPR, build_pointer_type (
++    p_build_type_variant (TREE_TYPE (temp), TREE_READONLY (temp), TREE_THIS_VOLATILE (temp))), temp);
++*/
+   /* This procedure may return if InOutRes = 0. But it is called automatically
+      only if InOutRes <> 0 (more efficient, to save function calls in the
+      normal case). Declaring it noreturn here is thus correct in this
+@@ -320,7 +335,7 @@
+               tree v = *predef_table[i].value;
+               decl = build_decl (CONST_DECL, id, TREE_TYPE (v));
+               DECL_INITIAL (decl) = v;
+-              if (TREE_CODE_CLASS (TREE_CODE (v)) == 'c')
++              if (TREE_CODE_CLASS (TREE_CODE (v)) == tcc_constant)
+                 PASCAL_CST_FRESH (v) = 1;
+             }
+           if (kind == bk_type)
+@@ -331,7 +346,9 @@
+               TYPE_NAME (type) = decl = build_decl (TYPE_DECL, id, type);
+               DECL_ORIGINAL_TYPE (decl) = NULL_TREE  /* orig @@ dwarf-2 and gcc-3.3 */;
+               /* necessary to get debug info (e.g. fjf910.pas, tested with gcc-2.8.1, stabs) */
++#ifndef GCC_4_0
+               rest_of_decl_compilation (decl, NULL, 1, 1);
++#endif
+             }
+           if (kind == bk_var)
+             decl = *predef_table[i].value;
+@@ -492,7 +509,11 @@
+   if (is_string_compatible_type (*str, 1))
+     {
+       tree t = save_expr_string (*str);
+-      *str = build1 (ADDR_EXPR, cstring_type_node, PASCAL_STRING_VALUE (t));
++      tree ptype = cstring_type_node;
++      if (TREE_CODE (TREE_TYPE (t)) == CHAR_TYPE)
++        ptype = build_pointer_type (TREE_TYPE (t));
++      *str = build1 (ADDR_EXPR, ptype, PASCAL_STRING_VALUE (t));
++      *str = convert (cstring_type_node, *str);
+       return PASCAL_STRING_LENGTH (t);
+     }
+   else if ((co->cstrings_as_strings || (co->pascal_dialect & B_D_M_PASCAL))
+@@ -621,12 +642,14 @@
+                   p = save_expr_string (p);
+                   expand_expr_stmt (build_modify_expr (PASCAL_STRING_LENGTH (p), NOP_EXPR,
+                     build_predef_call (p_Read_String, tree_cons (NULL_TREE, file,
+-                      tree_cons (NULL_TREE, build1 (ADDR_EXPR, ptr_type_node, PASCAL_STRING_VALUE (p)),
++                      tree_cons (NULL_TREE, convert (ptr_type_node, 
++                        build_unary_op (ADDR_EXPR, PASCAL_STRING_VALUE (p), 1)),
+                         build_tree_list (NULL_TREE, PASCAL_STRING_CAPACITY (p)))))));
+                 }
+               else
+                 expand_expr_stmt (build_predef_call (p_Read_FixedString,
+-                  tree_cons (NULL_TREE, file, tree_cons (NULL_TREE, build1 (ADDR_EXPR, ptr_type_node, p),
++                  tree_cons (NULL_TREE, file, tree_cons (NULL_TREE, 
++                    convert (ptr_type_node, build_unary_op (ADDR_EXPR, p, 1)),
+                     build_tree_list (NULL_TREE, pascal_array_type_nelts (type))))));
+               continue;
+             }
+@@ -1216,18 +1239,44 @@
+   if (r_num == p_Exit && apar)
+     {
+       tree id = TREE_VALUE (apar);
++      tree obn = TREE_PURPOSE (apar);
+       apar = NULL_TREE;
+-      chk_dialect ("`Exit' with an argument is", U_M_PASCAL);
++      if (obn)
++        chk_dialect ("`Exit' with a qualified identifier as an argument is", 
++                     GNU_PASCAL);
++      else
++        chk_dialect ("`Exit' with an argument is", U_M_PASCAL);
+       if (id == void_type_node || (current_module->main_program && id == current_module->name))
+         r_num = p_Halt;
+-      else if (!(current_function_decl && id == DECL_NAME (current_function_decl)))
++      else if (!(current_function_decl && !obn
++                 && id == DECL_NAME (current_function_decl)))
+         {
+-          struct function *p;
++          struct function *p = outer_function_chain;
++          while (p)
++            {
++              if (!obn && DECL_NAME (p->decl) == id)
++                break;
++              if (PASCAL_METHOD (p->decl))
++                {
++                  tree ot = DECL_CONTEXT (p->decl);
++                  tree on, mn;
++                  gcc_assert (ot && PASCAL_TYPE_OBJECT (ot));
++                  if (TYPE_POINTER_TO (ot) &&
++                      PASCAL_TYPE_CLASS (TYPE_POINTER_TO (ot)))
++                    ot = TYPE_POINTER_TO (ot);
++                  on = DECL_NAME (TYPE_NAME (TYPE_MAIN_VARIANT (ot)));
++                  if (obn && on != obn)
++                    continue;
++                  mn = get_method_name (on, id);
++                  if (mn == DECL_NAME (p->decl))
++                    break;
++                } 
+ #ifdef EGCS97
+-          for (p = outer_function_chain; p && DECL_NAME (p->decl) != id; p = p->outer) ;
++              p = p->outer;
+ #else
+-          for (p = outer_function_chain; p && DECL_NAME (p->decl) != id; p = p->next) ;
++              p = p->next;
+ #endif
++            }
+           if (!p)
+             error ("invalid argument `%s' to `Exit'", IDENTIFIER_NAME (id));
+           else if (DECL_LANG_SPECIFIC (p->decl) && DECL_LANG_NONLOCAL_EXIT_LABEL (p->decl))
+@@ -1938,7 +1987,28 @@
+                 schema_type = TYPE_LANG_BASE (schema_type);
+               gcc_assert (TREE_CODE (schema_type) != TYPE_DECL);
+               for (tmp = tags; tmp; tmp = TREE_CHAIN (tmp))
+-                TREE_VALUE (tmp) = save_expr (TREE_VALUE (tmp));
++                {
++                  tree v1 = TREE_VALUE (tmp);
++                  if (TREE_CODE (v1) == NON_LVALUE_EXPR)
++                    v1 = TREE_OPERAND (v1, 0);
++
++/* @@@@@@@@@@@@@@@@ ??????
++   if (TREE_SIDE_EFFECTS (v1))
++     var
++   else
++     save_expr 
++*/
++                  if (TREE_CODE (v1) != INTEGER_CST 
++                      && TREE_CODE (v1) != STRING_CST)
++                    {
++                      tree v2 = make_new_variable ("new_disc", TREE_TYPE (v1));
++                      expand_expr_stmt (build_modify_expr (v2, NOP_EXPR, v1));
++                      TREE_VALUE (tmp) = v2;
++//                    TREE_VALUE (tmp) = save_expr (TREE_VALUE (tmp));
++                    }
++                  else
++                    TREE_VALUE (tmp) = v1;
++                }
+               type = build_discriminated_schema_type (schema_type, tags, 1);
+               CHK_EM (type);
+               type = build_pointer_type (type);
+@@ -1963,6 +2033,11 @@
+           chk_dialect_1 ("function-style `%s' call is", B_D_M_PASCAL, r_name);
+           result = make_new_variable ("new", type);
+           expand_expr_stmt (build_modify_expr (result, NOP_EXPR, retval));
++#if 0
++          result = build (COMPOUND_EXPR, type, 
++                           build_modify_expr (result, NOP_EXPR, retval),
++                           result);
++#endif
+           retval = result;
+           /* @@ This would be easier (fjf226k.pas), but then init_any below must
+                 return an expression and we have to use COMPOUND_EXPR's here
+@@ -2422,7 +2497,8 @@
+         /* If 3rd parameter is missing, pass MaxInt and let the RTS truncate */
+         if (argcount == 2)
+           apar = chainon (apar, build_tree_list (NULL_TREE, pascal_maxint_node));
+-        apar = tree_cons (NULL_TREE, build1 (ADDR_EXPR, ptr_type_node, PASCAL_STRING_VALUE (val)),
++        apar = tree_cons (NULL_TREE, convert (ptr_type_node, 
++          build_unary_op (ADDR_EXPR, PASCAL_STRING_VALUE (val), 1)),
+           tree_cons (NULL_TREE, PASCAL_STRING_LENGTH (val), TREE_CHAIN (apar)));
+         apar = chainon (apar, tree_cons (NULL_TREE, actual_result, build_tree_list (NULL_TREE,
+           r_num == p_Copy ? integer_zero_node : argcount == 2 ? integer_one_node : build_int_2 (2, 0))));
+@@ -2624,8 +2700,15 @@
+     else if (!integer_onep (val))
+       errstr = "first argument to `%s' is False";
+     if (argcount == 2)
+-      retval = val2;
+-    else
++      {
++        if (TREE_CODE (val2) == FUNCTION_DECL
++            || (TREE_CODE (TREE_TYPE (val2)) == REFERENCE_TYPE && 
++                TREE_CODE (TREE_TYPE (TREE_TYPE (val2))) == FUNCTION_TYPE))
++          errstr = "`%s' can not return a routine";
++        else
++          retval = val2;
++      }
++    else 
+       {
+         retval = copy_node (boolean_true_node);
+         PASCAL_CST_FRESH (retval) = 0;
+@@ -2734,14 +2817,22 @@
+       }
+     else if (r_num == p_SizeOf)
+       {
++#if 0
+ #ifdef PG__NEW_STRINGS
+         /* @@@@@@ what if val is a TYPE_DECL ??? */
+         if (PASCAL_TYPE_PREDISCRIMINATED_STRING (type))
++#if 1
++          // gcc_assert (0);
++            0;
++//          retval = SUBSTITUTE_PLACEHOLDER_IN_EXPR (retval, val);
++#else
+           retval = fold (non_lvalue (
+                      build (WITH_RECORD_EXPR, size_type_node,
+                        convert (size_type_node, retval), val)));
++#endif
+         else
+ #endif
++#endif
+ #ifdef EGCS97
+         retval = non_lvalue (build_pascal_binary_op (CEIL_DIV_EXPR, convert (size_type_node, TYPE_SIZE_UNIT (type)),
+                    build_int_2 (TYPE_PRECISION (byte_integer_type_node) / BITS_PER_UNIT, 0)));
+@@ -2749,6 +2840,13 @@
+         retval = non_lvalue (build_pascal_binary_op (CEIL_DIV_EXPR, convert (size_type_node, TYPE_SIZE (type)),
+                    build_int_2 (TYPE_PRECISION (byte_integer_type_node), 0)));
+ #endif
++        if (PASCAL_TYPE_PREDISCRIMINATED_STRING (type))
++#ifdef GCC_4_0
++          retval = SUBSTITUTE_PLACEHOLDER_IN_EXPR (retval, val); 
++#else
++          retval = fold (non_lvalue (build (WITH_RECORD_EXPR, size_type_node,
++                       convert (size_type_node, retval), val)));
++#endif
+       }
+     else if (r_num == p_BitSizeOf)
+       retval = non_lvalue (convert (long_long_integer_type_node, TYPE_SIZE (type)));
+diff -urN gcc/p.old/rts/rts-version gcc/p/rts/rts-version
+--- gcc/p.old/rts/rts-version	2006-06-10 17:45:38.423386000 +0000
++++ gcc/p/rts/rts-version	2006-06-10 17:46:10.433386000 +0000
+@@ -1 +1 @@
+-20060215
++20060325
+diff -urN gcc/p.old/statements.c gcc/p/statements.c
+--- gcc/p.old/statements.c	2006-06-10 17:45:38.413386000 +0000
++++ gcc/p/statements.c	2006-06-10 17:46:10.423386000 +0000
+@@ -743,8 +743,13 @@
+         tree comp_ref;
+         if (PASCAL_FIELD_SHADOWED (field))
+            /* No need to recurse. Avoid `find_field' */
++#ifndef GCC_4_0
+            comp_ref = fold (build (COMPONENT_REF, TREE_TYPE (field),
+                                     base, field));
++#else
++           comp_ref = fold (build3 (COMPONENT_REF, TREE_TYPE (field),
++                                    base, field, NULL_TREE));
++#endif
+         else
+           comp_ref = build_component_ref_no_schema_dereference (base,
+                         DECL_NAME (field), 1);
+@@ -994,9 +999,9 @@
+             {
+               tree field = TREE_VALUE (variant), init = TYPE_GET_INITIALIZER (TREE_TYPE (field));
+               tree c = TREE_PURPOSE (variant);
+-              tree label = build_decl (LABEL_DECL, NULL_TREE, NULL_TREE);
+               if (!c)  /* otherwise */
+                 {
++                  tree label = build_decl (LABEL_DECL, NULL_TREE, NULL_TREE);
+                   int r = pushcase (NULL_TREE, NULL, label, &duplicate);
+                   gcc_assert (!r);
+                   have_otherwise = 1;
+@@ -1004,6 +1009,7 @@
+               else
+                 for (; c; c= TREE_CHAIN (c))
+                   {
++                    tree label = build_decl (LABEL_DECL, NULL_TREE, NULL_TREE);
+                     int r = TREE_PURPOSE (c)
+                       ? pushcase_range (TREE_VALUE (c), TREE_PURPOSE (c), convert_and_check, label, &duplicate)
+                       : pushcase (TREE_VALUE (c), convert_and_check, label, &duplicate);
+@@ -1062,7 +1068,12 @@
+       if (TREE_CODE (t) == VAR_DECL && !DECL_EXTERNAL (t))
+         {
+           if (global || !TREE_STATIC (t))
+-            init_any (t, the_end, 1);
++            {
++              gcc_assert (the_end || !DECL_ARTIFICIAL (t) 
++                 || !PASCAL_TYPE_FILE (TREE_TYPE (t)));
++              if (!DECL_ARTIFICIAL (t) || !PASCAL_TYPE_FILE (TREE_TYPE (t)))
++                init_any (t, the_end, 1);
++            }
+           else if (!the_end)
+ #ifndef EGCS97
+             {
+@@ -1112,13 +1123,19 @@
+     {
+       if (PASCAL_TREE_IGNORABLE (t))
+         {
+-          if (TREE_CODE_CLASS (TREE_CODE (t)) == 'c')
+-            t = convert (void_type_node, t);
++          if (TREE_CODE_CLASS (TREE_CODE (t)) == tcc_constant)
++            return;
+         }
+       else if (!function_called)
+-        error ("expression used as a statement");
++        {
++          error ("expression used as a statement");
++          return;
++        }
+       else if (TREE_CODE (t) == FUNCTION_DECL)
+-        error ("missing arguments in routine call");
++        {
++          error ("missing arguments in routine call");
++          return;
++        }
+       else if (TREE_TYPE (t) != void_type_node
+                && !(TREE_CODE (t) == CALL_EXPR
+                     && TREE_CODE (TREE_OPERAND (t, 0)) == ADDR_EXPR
+@@ -1196,6 +1213,8 @@
+   schema_target = undo_schema_dereference (target);
+   DEREFERENCE_SCHEMA (source);
+   DEREFERENCE_SCHEMA (target);
++  CHK_EM (source);
++  CHK_EM (target);
+ 
+   /* Restricted types. @@@@ Maybe this needs further checking */
+   if (TREE_CODE (source) == CALL_EXPR && PASCAL_TYPE_RESTRICTED (TREE_TYPE (source)))
+@@ -1233,7 +1252,8 @@
+         {
+           if (!lvalue_or_else (schema_target, "assignment") || !mark_lvalue (schema_target, "assignment", 1))
+             return;
+-          stmt = build (MODIFY_EXPR, TREE_TYPE (schema_target), schema_target, schema_source);
++          stmt = build (MODIFY_EXPR, TREE_TYPE (schema_target),
++                          schema_target, schema_source);
+           TREE_SIDE_EFFECTS (stmt) = 1;
+           if (TREE_CODE (schema_check) != INTEGER_CST)
+             stmt = build (COMPOUND_EXPR, TREE_TYPE (stmt), schema_check, stmt);
+@@ -1343,6 +1363,7 @@
+                 length = integer_zero_node;
+               else
+                 {
++#if 0
+                   /* Use save_expr, so the length is not computed twice (for the
+                      number of chars to move and the assignment to the target length). */
+                   length = save_expr (fold (build_pascal_binary_op (MIN_EXPR, PASCAL_STRING_LENGTH (source), capacity)));
+@@ -1350,6 +1371,21 @@
+                      be e.g. an array returned by a function or whatever. */
+                   expr1 = build_memcpy (build_unary_op (ADDR_EXPR, PASCAL_STRING_VALUE (target), 1),
+                     build1 (ADDR_EXPR, cstring_type_node, PASCAL_STRING_VALUE (source)), length);
++#else
++                  /* save_expr would cause problems */
++                  tree olen = PASCAL_STRING_LENGTH (source);
++                  tree las;
++                  length = make_new_variable ("str_len", TREE_TYPE (olen));
++                  las = build_pascal_binary_op (MIN_EXPR, olen, capacity);
++                  las = build_modify_expr (length, NOP_EXPR, fold (las));
++                  expr1 = build_memcpy (
++                            build_unary_op (ADDR_EXPR,
++                                            PASCAL_STRING_VALUE (target), 1),
++                            build1 (ADDR_EXPR, cstring_type_node, 
++                                    PASCAL_STRING_VALUE (source)),
++                            length);
++                  expr1 = build (COMPOUND_EXPR, TREE_TYPE (expr1), las, expr1);
++#endif
+                 }
+             }
+           break;
+@@ -1505,6 +1541,8 @@
+   tree decl_argv = add_parm_decl (decl_argc, cstring_ptr_type_node, get_identifier ("argv"));
+   tree decl_envp = add_parm_decl (decl_argv, cstring_ptr_type_node, get_identifier ("envp"));
+   start_implicit_routine (NULL_TREE, get_identifier (name), integer_type_node, decl_envp);
++  
++  TREE_USED (decl_argc) = TREE_USED (decl_argv) = TREE_USED (decl_envp) = 1;
+ 
+   /* If it is called `main', let the backend do any necessary magic. */
+   if (!strcmp (name, "main"))
+@@ -1650,10 +1688,15 @@
+   un_initialize_block (decls, 0, 1);
+ 
+   if (!implicit || DECL_INITIAL (current_module->finalizer))
++    {
+     expand_expr_stmt (build_routine_call (
+       build_implicit_routine_decl (get_identifier ("_p_AtExit"), void_type_node,
+         tree_cons (NULL_TREE, ptr_type_node, void_list_node), ER_EXTERNAL),
+-      build_tree_list (NULL_TREE, build1 (ADDR_EXPR, ptr_type_node, current_module->finalizer))));
++      build_tree_list (NULL_TREE, convert(ptr_type_node, 
++              build_unary_op (ADDR_EXPR, current_module->finalizer, 0)))
++         ));
++//      TREE_USED (current_module->finalizer) = 1;
++    }
+   if (current_module->main_program)
+     call_no_args (get_identifier ("_p_DoInitProc"), 1);
+ }
+@@ -1684,7 +1727,7 @@
+ implicit_module_structors (void)
+ {
+   const char *save_filename = start_dummy_file_name ();
+-  if (TREE_USED (current_module->finalizer) && !DECL_INITIAL (current_module->finalizer))
++  if (/* 1 TREE_USED (current_module->finalizer) && */ !DECL_INITIAL (current_module->finalizer) )
+     {
+       start_destructor ();
+       finish_destructor ();
+diff -urN gcc/p.old/test/fjf597.pas gcc/p/test/fjf597.pas
+--- gcc/p.old/test/fjf597.pas	2006-06-10 17:45:38.423386000 +0000
++++ gcc/p/test/fjf597.pas	2006-06-10 17:46:10.433386000 +0000
+@@ -3,7 +3,7 @@
+   This test didn't reproduce the crash per se, but (before the fix)
+   it could be used to show with debug_tree() some obstack problems
+   (in finish_function() at the end of function f). }
+-
++{$W-}
+ program fjf597;
+ 
+ type
+diff -urN gcc/p.old/test/fjf904j.pas gcc/p/test/fjf904j.pas
+--- gcc/p.old/test/fjf904j.pas	2006-06-10 17:45:38.423386000 +0000
++++ gcc/p/test/fjf904j.pas	2006-06-10 17:46:10.433386000 +0000
+@@ -1,4 +1,4 @@
+ program fjf904j;
+ begin
+-  CompilerAssert (True, 42)  { WARN }
++  CompilerAssert (True, 42)  { WRONG }
+ end.
+diff -urN gcc/p.old/test/test_run gcc/p/test/test_run
+--- gcc/p.old/test/test_run	2006-06-10 17:45:38.423386000 +0000
++++ gcc/p/test/test_run	2006-06-10 17:46:10.433386000 +0000
+@@ -93,14 +93,8 @@
+ echo "program Dummy (Output); begin WriteLn ('1723') end." > dummy.pas
+ 
+ if [ x"$GP" = x ]; then
+-  NEEDED_OPTIONS="`$PC $PFLAGS --print-needed-options dummy.pas 3>&2 2>&1 1>&3`"
+-  if $echon "$NEEDED_OPTIONS" | grep '^[^-]' > /dev/null; then
+-    echo "$0: fatal: \`--print-needed-options' yields:" >&2
+-    echo "$NEEDED_OPTIONS" >&2
+-    exit 1
+-  fi
+   DEFAULT_UNIT_DIR="`$PC $PFLAGS --print-file-name=units`"
+-  INVOKE_PC1="$PC $NEEDED_OPTIONS --unit-path=$DEFAULT_UNIT_DIR -I $DEFAULT_UNIT_DIR"
++  INVOKE_PC1="$PC --unit-path=$DEFAULT_UNIT_DIR -I $DEFAULT_UNIT_DIR"
+   INVOKE_PC="$INVOKE_PC1"
+   PC_WITHOUT_GP=""
+ else
+diff -urN gcc/p.old/typecheck.c gcc/p/typecheck.c
+--- gcc/p.old/typecheck.c	2006-06-10 17:45:38.413386000 +0000
++++ gcc/p/typecheck.c	2006-06-10 17:46:10.423386000 +0000
+@@ -33,8 +33,8 @@
+ static tree decl_constant_value (tree);
+ static int is_discriminant_of (tree, tree);
+ static tree pascal_fold (tree);
+-static tree re_fold (tree, tree, int *);
+-static tree re_layout_type (tree, tree);
++static tree re_fold (tree, tree, tree, int *);
++static tree re_layout_type (tree, tree, tree);
+ static void assignment_error_or_warning (const char *, const char *, tree, int, int);
+ static void push_string (const char *);
+ static void push_member_name (tree);
+@@ -59,6 +59,8 @@
+ static void output_pending_init_elements (int);
+ static void process_init_element (tree);
+ 
++int allow_packed_addresses = 0;
++
+ void
+ cstring_inform (void)
+ {
+@@ -623,7 +625,7 @@
+   int constp = TYPE_READONLY (type), volatilep = TYPE_VOLATILE (type);
+   gcc_assert (TREE_CODE (type) == ARRAY_TYPE);
+ 
+-  if (TREE_CODE_CLASS (TREE_CODE (exp)) == 'r' || DECL_P (exp))
++  if (TREE_CODE_CLASS (TREE_CODE (exp)) == tcc_reference || DECL_P (exp))
+     {
+       constp |= TREE_READONLY (exp);
+       volatilep |= TREE_THIS_VOLATILE (exp);
+@@ -665,7 +667,7 @@
+       adr = build1 (ADDR_EXPR, ptrtype, exp);
+       if (!mark_addressable (exp))
+         return error_mark_node;
+-      TREE_CONSTANT (adr) = staticp (exp);
++      TREE_CONSTANT (adr) = staticp (exp) != 0;
+       TREE_SIDE_EFFECTS (adr) = 0;  /* Default would be, same as EXP. */
+       return adr;
+     }
+@@ -1279,9 +1281,11 @@
+ 
+               parmval = convert_for_assignment (type, val, NULL, /* arg passing */ errc->fundecl, errc->parmnum);
+ 
++#ifndef GCC_4_0
+               if (PROMOTE_PROTOTYPES && ORDINAL_TYPE (TREE_CODE (type))
+                   && (TYPE_PRECISION (type) < TYPE_PRECISION (integer_type_node)))
+                 parmval = default_conversion (parmval);
++#endif
+             }
+   return parmval;
+ }
+@@ -1748,10 +1752,22 @@
+                 }
+               if (t && TREE_CODE (t) == IDENTIFIER_NODE)
+                 t = TREE_PURPOSE (index) = check_identifier (t);
+-              if (t)
+-                t = probably_call_function (t);
+-              if (t2)
+-                t2 = probably_call_function (t2);
++
++              /* @@@@@ We should use only one piece of code to verify 
++                 case-constant-list, so the code below should be common 
++                 to initializers, variant records and case instruction. */
++
++              if (t && TREE_CODE (t) == NON_LVALUE_EXPR)
++                t = TREE_OPERAND (t, 0);
++              if (t2 && TREE_CODE (t2) == NON_LVALUE_EXPR)
++                t2 = TREE_OPERAND (t2, 0);
++
++              if ((t && TREE_CODE (t) != INTEGER_CST) 
++                  || (t2 && TREE_CODE (t2) != INTEGER_CST))
++                {
++                  error ("array indices in initializers must be constant");
++                  return 1;
++                }
+               if ((t && EM (t)) || (t2 && EM (t2)))
+                 return 1;
+               if ((t && !comptypes (TYPE_MAIN_VARIANT (TREE_TYPE (t)), domain))
+@@ -2058,6 +2074,9 @@
+   return TREE_CODE (TREE_TYPE (TREE_VALUE (init))) != TREE_CODE (type);
+ }
+ 
++/* Schema handling */
++#if 0
++
+ /* Returns 1 if expr is the CONVERT_EXPR representing an unresolved
+    schema discriminant belonging to one of the given fields. */
+ static int
+@@ -2071,6 +2090,7 @@
+           return 1;
+   return 0;
+ }
++#endif
+ 
+ /* Returns 1 if type_or_expr contains somewhere in it an unresolved
+    schema discriminant. If fields is NULL, any discriminant is
+@@ -2079,12 +2099,24 @@
+ contains_discriminant (tree type_or_expr, tree fields)
+ {
+   enum tree_code code = TREE_CODE (type_or_expr);
++  gcc_assert (!fields || TREE_CODE_CLASS TREE_CODE ((fields)) == tcc_type);
+   switch (code)
+   {
+     case ERROR_MARK:
+       return 0;
+ 
++    case COMPONENT_REF:
++      {
++        tree op0 = TREE_OPERAND (type_or_expr, 0);
++        if (TREE_CODE (op0) == PLACEHOLDER_EXPR)
++           return !fields || TREE_TYPE (op0) == fields;
++        break; /* Check operand below */
++      }
++
+     case VAR_DECL:
++#if 1
++      return 0;
++#else
+       if (PASCAL_TREE_DISCRIMINANT (type_or_expr))
+         {
+           tree field;
+@@ -2101,6 +2133,7 @@
+           && (!fields || is_discriminant_of (type_or_expr, fields)))
+         return 1;
+       break;  /* Check operand below */
++#endif
+ 
+     case BOOLEAN_TYPE:
+     case CHAR_TYPE:
+@@ -2139,8 +2172,10 @@
+         }
+       break;
+ 
++#ifndef GCC_4_0
+     case RTL_EXPR:
+       return 0;
++#endif
+ 
+     case TREE_LIST:
+       {
+@@ -2166,12 +2201,14 @@
+   return 0;
+ }
+ 
++#if 1
+ /* fold() doesn't know about our Boolean constants and constant array references.
+    Important: Do this *after* folding the operands! */
+ static tree
+ pascal_fold (tree expr)
+ {
+   enum tree_code code = TREE_CODE (expr);
++  tree res;
+   if ((code == NON_LVALUE_EXPR || code == CONVERT_EXPR || code == NOP_EXPR)
+       && TREE_CODE (TREE_TYPE (expr)) == BOOLEAN_TYPE)
+     {
+@@ -2181,9 +2218,21 @@
+       else if (integer_onep (op))
+         return boolean_true_node;
+     }
++#if 0
+   if (TREE_CODE (expr) == ARRAY_REF)
+     return fold_array_ref (expr);
+   return fold (expr);
++#else
++  if (TREE_CODE (expr) == ARRAY_REF)
++    res = fold_array_ref (expr);
++  else
++    res = fold (expr);
++  if (TREE_CODE (res) == INTEGER_CST)
++    {
++      res = copy_node (res);
++    }
++  return res;
++#endif
+ }
+ 
+ /* fold() doesn't fold constants below (one or several) CONVERT_EXPR's
+@@ -2199,12 +2248,38 @@
+    prevents this!). p_foreign_discr can be NULL, otherwise the variable it
+    points to must have been initialized.
+    This function is slightly tricky. ;-) */
++#endif
++
+ static tree
+-re_fold (tree expr, tree fields, int *p_foreign_discr)
++re_fold (tree expr, tree stype, tree fields, int *p_foreign_discr)
+ {
+   enum tree_code code = TREE_CODE (expr);
+-  int foreign_discr = 0;
++//  int foreign_discr = 0;
+   CHK_EM (expr);
++
++  if (code == COMPONENT_REF)
++    {
++       tree op0 = TREE_OPERAND (expr, 0);
++       tree field = TREE_OPERAND (expr, 1);
++       tree nf = fields;
++       if (TREE_CODE (op0) == PLACEHOLDER_EXPR && TREE_TYPE (op0) == stype)
++         /* Substitute value */
++         {
++           tree val;
++           while (nf && TREE_PURPOSE (nf) != field)
++           nf = TREE_CHAIN (nf);
++           gcc_assert (nf);
++           val = TREE_VALUE (nf);
++           gcc_assert (TREE_CODE (val) != FUNCTION_DECL);
++           if (TREE_CODE (val) != VAR_DECL)
++             val = copy_node (val);
++           return pascal_fold (re_fold (val,
++                             stype, fields, p_foreign_discr));
++         }
++       if (TREE_CODE (op0) == PLACEHOLDER_EXPR && p_foreign_discr)
++         *p_foreign_discr = 1;
++    }
++#if 0
+   if (code == CONVERT_EXPR && PASCAL_TREE_DISCRIMINANT (expr))
+     {
+       if (!is_discriminant_of (expr, fields))
+@@ -2229,20 +2304,24 @@
+             return pascal_fold (expr);
+         }
+     }
+-  else if (code == SAVE_EXPR)
++  else 
++#endif
++  if (code == SAVE_EXPR)
+     /* Copying a SAVE_EXPR is no good idea. ;-) Therefore, we can't
+        modify its fields, i.e., we can't fold below it. This should only
+        happen in `New' (hopefully) when it doesn't matter that the type
+        can't be folded completely. */
+-    ;
++    {
++      if (contains_discriminant (expr, stype))
++        gcc_unreachable ();
++    }
+   else if (IS_EXPR_OR_REF_CODE_CLASS (TREE_CODE_CLASS (code)))
+     {
+       int i, l = NUMBER_OF_OPERANDS (code);
+       expr = copy_node (expr);
+       for (i = FIRST_OPERAND (code); i < l; i++)
+         if (TREE_OPERAND (expr, i))
+-          CHK_EM (TREE_OPERAND (expr, i) = re_fold (TREE_OPERAND (expr, i), fields, &foreign_discr));
+-      if (!foreign_discr)
++          CHK_EM (TREE_OPERAND (expr, i) = re_fold (TREE_OPERAND (expr, i), stype, fields, p_foreign_discr));
+         return pascal_fold (expr);
+     }
+   else if (code == TREE_LIST)
+@@ -2252,20 +2331,26 @@
+       for (t = expr; t; t = TREE_CHAIN (t))
+         {
+           if (TREE_VALUE (t))
+-            CHK_EM (TREE_VALUE (t) = re_fold (TREE_VALUE (t), fields, &foreign_discr));
++            CHK_EM (TREE_VALUE (t) = re_fold (TREE_VALUE (t), stype, fields, p_foreign_discr));
+           if (TREE_PURPOSE (t))
+-            CHK_EM (TREE_PURPOSE (t) = re_fold (TREE_PURPOSE (t), fields, &foreign_discr));
++            CHK_EM (TREE_PURPOSE (t) = re_fold (TREE_PURPOSE (t), stype, fields, p_foreign_discr));
+         }
+     }
+-  if (foreign_discr && p_foreign_discr)
+-    *p_foreign_discr = 1;
+   return expr;
+ }
+ 
++tree
++copy_expr (tree expr)
++{
++  return re_fold (expr, void_type_node, NULL_TREE, 0);
++}
++
++#if 1
++
+ /* Recursive subroutine of build_discriminated_schema_type:
+    Re-build a type with actual discriminants replacing the formal ones. */
+ static tree
+-re_layout_type (tree type, tree fields)
++re_layout_type (tree type, tree stype, tree fields)
+ {
+   int was_packed = PASCAL_TYPE_PACKED (type);
+ 
+@@ -2273,7 +2358,7 @@
+      that don't depend on the discriminants) is not only made for
+      efficiency, it also prevents the creation of incompatible types
+      (fjf590.pas). */
+-  if (!contains_discriminant (type, fields))
++  if (!contains_discriminant (type, stype))
+     return build_type_copy (type);
+ 
+   CHK_EM (type);
+@@ -2289,8 +2374,8 @@
+         copy_type_lang_specific (type);
+         new_main_variant (type);
+ 
+-        CHK_EM (TYPE_MIN_VALUE (type) = re_fold (TYPE_MIN_VALUE (type), fields, &foreign_discr_min));
+-        CHK_EM (TYPE_MAX_VALUE (type) = re_fold (TYPE_MAX_VALUE (type), fields, &foreign_discr_max));
++        CHK_EM (TYPE_MIN_VALUE (type) = re_fold (TYPE_MIN_VALUE (type), stype, fields, &foreign_discr_min));
++        CHK_EM (TYPE_MAX_VALUE (type) = re_fold (TYPE_MAX_VALUE (type), stype, fields, &foreign_discr_max));
+ 
+         /* size_volatile >= 2: prediscriminating (kludge?) */
+         if (size_volatile < 2 && !foreign_discr_min && !foreign_discr_max && !check_subrange (TYPE_MIN_VALUE (type), TYPE_MAX_VALUE (type)))
+@@ -2309,17 +2394,22 @@
+ 
+         /* Subrange type. */
+         if (TREE_TYPE (type))
+-          CHK_EM (TREE_TYPE (type) = re_layout_type (TREE_TYPE (type), fields));
++          CHK_EM (TREE_TYPE (type) = re_layout_type (TREE_TYPE (type), stype, fields));
+ 
+         if (TYPE_PRECISION (type) < TYPE_PRECISION (TREE_TYPE (TYPE_MAX_VALUE (type))))
+           TYPE_PRECISION (type) = TYPE_PRECISION (TREE_TYPE (TYPE_MAX_VALUE (type)));
+         if (TYPE_PRECISION (type) < TYPE_PRECISION (TREE_TYPE (TYPE_MIN_VALUE (type))))
+           TYPE_PRECISION (type) = TYPE_PRECISION (TREE_TYPE (TYPE_MIN_VALUE (type)));
++#ifdef GCC_4_0
++        TYPE_CACHED_VALUES_P (type) = 0;
++        TYPE_CACHED_VALUES (type) = NULL_TREE;
++#endif
+         break;
+       }
+     case ARRAY_TYPE:
+-      type = build_simple_array_type (re_layout_type (TREE_TYPE (type), fields),
+-                                      re_layout_type (TYPE_DOMAIN (type), fields));
++      type = build_simple_array_type (
++               re_layout_type (TREE_TYPE (type), stype, fields),
++               re_layout_type (TYPE_DOMAIN (type), stype, fields));
+       CHK_EM (type);
+       break;
+     case RECORD_TYPE:
+@@ -2327,13 +2417,17 @@
+       if (PASCAL_TYPE_STRING (type))
+         {
+           tree capacity = TYPE_LANG_DECLARED_CAPACITY (type);
++          int dummy = 0;
+           if (capacity)
+-            CHK_EM (type = build_pascal_string_schema (re_fold (capacity, fields, NULL)));
++            CHK_EM (type = build_pascal_string_schema (
++                  re_fold (capacity, stype, fields, &dummy)));
+           break;
+         }
+       else
+         {
+-          tree field, new_field, old_fields = TYPE_FIELDS (type), new_fields = NULL_TREE;
++          tree field, new_field, old_fields = TYPE_FIELDS (type);
++          tree new_fields = NULL_TREE;
++          tree old_type = type;
+           struct lang_type *lang_specific = TYPE_LANG_SPECIFIC (type);
+           int iv = PASCAL_TYPE_INITIALIZER_VARIANTS (type);
+ #ifndef EGCS97
+@@ -2342,7 +2436,8 @@
+           int save_defining_packed_type;
+           for (field = old_fields; field; field = TREE_CHAIN (field))
+             {
+-              tree f = build_field (DECL_NAME (field), re_layout_type (TREE_TYPE (field), fields));
++              tree f = build_field (DECL_NAME (field),
++                  re_layout_type (TREE_TYPE (field), stype, fields));
+               CHK_EM (f);
+               new_fields = chainon (new_fields, f);
+             }
+@@ -2364,7 +2459,8 @@
+               tree tag = TYPE_LANG_VARIANT_TAG (type), t = TREE_VALUE (TREE_PURPOSE (tag));
+               if (t)
+                 {
+-                  t = re_fold (t, fields, NULL);
++                  int dummy;
++                  t = re_fold (t, stype, fields, &dummy);
+                   CHK_EM (t);
+                   TYPE_LANG_VARIANT_TAG (type) = build_tree_list (
+                     build_tree_list (TREE_PURPOSE (TREE_PURPOSE (tag)), t), TREE_VALUE (tag));
+@@ -2382,7 +2478,12 @@
+              the fields parameter which refers to the main record's fields,
+              but is actually passed for other purposes. But doing it like this
+              saves us from passing another parameter through the recursion. */
++#if 0
+           if (old_fields != fields && PASCAL_TYPE_SCHEMA (type))
++#else
++          if (TYPE_MAIN_VARIANT (old_type) != stype 
++               && PASCAL_TYPE_SCHEMA (type))
++#endif
+             for (field = old_fields, new_field = TYPE_FIELDS (type);
+                  field && new_field;
+                  field = TREE_CHAIN (field), new_field = TREE_CHAIN (new_field))
+@@ -2391,12 +2492,14 @@
+                   /* Inner schemata must have been (formally) discriminated
+                      before, i.e. PASCAL_TREE_DISCRIMINANT contains the
+                      discriminant's initializer now. */
++                  int dummy;
+                   tree fixup = DECL_LANG_FIXUPLIST (field);
+                   gcc_assert (fixup && TREE_CODE (fixup) != TREE_LIST);
+                   PASCAL_TREE_DISCRIMINANT (new_field) = 1;
+                   gcc_assert (!DECL_LANG_SPECIFIC (new_field));
+                   allocate_decl_lang_specific (new_field);
+-                  CHK_EM (DECL_LANG_FIXUPLIST (new_field) = re_fold (fixup, fields, NULL));
++                  CHK_EM (DECL_LANG_FIXUPLIST (new_field) = 
++                    re_fold (fixup, stype, fields, &dummy));
+                 }
+           break;
+         }
+@@ -2417,6 +2520,7 @@
+ 
+   return type;
+ }
++#endif
+ 
+ /* Return a discriminated schema type derived from TYPE (which must
+    be a schema type as returned by build_schema_type) using the
+@@ -2425,6 +2529,7 @@
+ build_discriminated_schema_type (tree type, tree discriminants, int prediscriminating)
+ {
+   tree type_template = type, field, disc, fix;
++  tree fix_list = NULL_TREE;
+ #ifndef EGCS97
+   struct obstack *ambient_obstack;
+ #endif
+@@ -2466,6 +2571,7 @@
+       TREE_VALUE (disc) = val;
+       val = convert_for_assignment (TREE_TYPE (field), val, "schema discrimination", NULL_TREE, 0);
+ 
++#if 0
+       for (fix = DECL_LANG_FIXUPLIST (field); fix; fix = TREE_CHAIN (fix))
+         {
+           tree target = TREE_VALUE (fix);
+@@ -2479,11 +2585,16 @@
+           TREE_PURPOSE (fix) = TREE_OPERAND (target, 0);
+           TREE_OPERAND (target, 0) = val;
+         }
+-    }
++#else
++    fix_list = tree_cons (field, val, fix_list);
++#endif
++  }
++  fix_list = nreverse (fix_list);
++  
+   if (!field || DECL_NAME (field) != schema_id || disc)
+     error ("number of discriminants does not match schema declaration");
+ 
+-  type = re_layout_type (type, TYPE_FIELDS (type));
++  type = re_layout_type (type, TYPE_MAIN_VARIANT (type), fix_list);
+   CHK_EM (type);
+ 
+   TYPE_LANG_SPECIFIC (type) = TYPE_LANG_SPECIFIC (type_template);
+@@ -2492,7 +2603,9 @@
+ 
+   if (TYPE_LANG_INITIAL (type))
+     {
+-      tree t = re_fold (TYPE_LANG_INITIAL (type), TYPE_FIELDS (type_template), NULL);
++      int dummy;
++      tree t = re_fold (TYPE_LANG_INITIAL (type), 
++                         TYPE_MAIN_VARIANT (type_template), fix_list, &dummy);
+       CHK_EM (t);
+       if (check_pascal_initializer (type, t))
+         {
+@@ -2509,6 +2622,7 @@
+   if (TYPE_MAIN_VARIANT (type) == TYPE_MAIN_VARIANT (type_template))
+     new_main_variant (type);
+ 
++#if 0
+   /* Restore the type template for future use. */
+   for (field = TYPE_FIELDS (type_template); field; field = TREE_CHAIN (field))
+     if (PASCAL_TREE_DISCRIMINANT (field))
+@@ -2517,6 +2631,7 @@
+           TREE_OPERAND (TREE_VALUE (fix), 0) = TREE_PURPOSE (fix);
+           TREE_PURPOSE (fix) = NULL_TREE;
+         }
++#endif
+ 
+   CHK_EM (type);
+ 
+@@ -2585,8 +2700,10 @@
+       return TREE_CODE (TREE_TYPE (ref)) != FUNCTION_TYPE && TREE_CODE (TREE_TYPE (ref)) != METHOD_TYPE;
+ 
+     case BIND_EXPR:
++#ifndef GCC_4_0
+     case RTL_EXPR:
+       return TREE_CODE (TREE_TYPE (ref)) == ARRAY_TYPE;
++#endif
+ 
+     case NOP_EXPR:
+       {
+@@ -2689,11 +2806,14 @@
+             error ("address of register variable `%s' requested", IDENTIFIER_NAME (DECL_NAME (x)));
+             return 0;
+           }
++  /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ */
++#ifndef GCC_4_0
+ #ifdef GCC_3_3
+         put_var_into_stack (x, true);
+ #else
+         put_var_into_stack (x);
+ #endif
++#endif
+         /* FALLTHROUGH */
+       case FUNCTION_DECL:
+         TREE_ADDRESSABLE (x) = 1;
+@@ -2925,6 +3045,18 @@
+   return error_mark_node;
+ }
+ 
++#if 0
++tree
++convert_for_assignment (tree type, tree rhs, const char *errtype, tree fundecl, int parmnum)
++{
++  tree res = convert_for_assignment0 (type, rhs, errtype, fundecl, parmnum);
++  CHK_EM (res);
++  if (TYPE_MAIN_VARIANT (type) != TYPE_MAIN_VARIANT (TREE_TYPE (res)))
++    res = build (NOP_EXPR, type, res);
++  return res;
++}
++#endif
++
+ /* Same as warn_for_assignment(), but as an error message. */
+ static void
+ assignment_error_or_warning (const char *msg, const char *errtype, tree fundecl, int argnum, int error_flag)
+@@ -3836,7 +3968,12 @@
+ {
+   tree constructor = build_constructor (type, nreverse (el));
+   if (constructor_constant)
+-    TREE_CONSTANT (constructor) = 1;
++    {
++      TREE_CONSTANT (constructor) = 1;
++#ifdef GCC_4_0
++      TREE_INVARIANT (constructor) = 1;
++#endif
++    }
+   if (constructor_constant && constructor_simple)
+     TREE_STATIC (constructor) = 1;
+   return constructor;
+@@ -4004,7 +4141,12 @@
+           else
+             constructor = build_constructor (constructor_type, nreverse (constructor_elements));
+           if (constructor_constant)
+-            TREE_CONSTANT (constructor) = 1;
++            {
++              TREE_CONSTANT (constructor) = 1;
++#ifdef GCC_4_0
++              TREE_INVARIANT (constructor) = 1;
++#endif
++            }
+           if (constructor_constant && constructor_simple)
+             TREE_STATIC (constructor) = 1;
+ #ifndef EGCS97
+diff -urN gcc/p.old/types.c gcc/p/types.c
+--- gcc/p.old/types.c	2006-06-10 17:45:38.413386000 +0000
++++ gcc/p/types.c	2006-06-10 17:46:10.423386000 +0000
+@@ -37,6 +37,32 @@
+ static int count_unsigned_bits (tree);
+ static void check_nonconstants (tree);
+ 
++#ifdef GCC_4_0
++tree
++pascal_build_int_cst (tree type, unsigned HOST_WIDE_INT low, HOST_WIDE_INT hi)
++{
++  tree t = make_node (INTEGER_CST);
++
++  TREE_INT_CST_LOW (t) = low;
++  TREE_INT_CST_HIGH (t) = hi;
++  TREE_TYPE (t) = type;
++  return t;
++}
++
++tree
++pascal_fold1 (tree t)
++{
++  /* Force call to original fold */
++  tree res = (fold) (t);
++  if (TREE_CODE (res) == INTEGER_CST)
++    return copy_node (res);
++  else
++   return res;
++}
++
++#endif
++
++
+ tree
+ check_result_type (tree type)
+ {
+@@ -316,6 +342,9 @@
+   TREE_TYPE (t) = empty_set_type_node;  /* real type not yet known */
+   CONSTRUCTOR_ELTS (t) = elements;
+   TREE_CONSTANT (t) = TREE_STATIC (t) = is_constant;
++#ifdef GCC_4_0
++  TREE_INVARIANT (t) = is_constant;
++#endif
+   PASCAL_CONSTRUCTOR_INT_CST (t) = is_intcst;
+   TREE_SIDE_EFFECTS (t) = side_effects;
+   TREE_ADDRESSABLE (t) = 1;
+@@ -625,8 +654,13 @@
+             pedwarn ("assignment of empty string to a char yields a space");
+           ch = ' ';
+         }
++#ifndef GCC_4_0
+       t = build_int_2 (ch & ((1 << BITS_PER_UNIT) - 1), 0);
+       TREE_TYPE (t) = char_type_node;
++#else
++      t = build_int_cst_wide (char_type_node, 
++                                ch & ((1 << BITS_PER_UNIT) - 1), 0);
++#endif
+       PASCAL_CST_FRESH (t) = PASCAL_CST_FRESH (expr);
+       return t;
+     }
+@@ -692,12 +726,18 @@
+ #ifdef PG__NEW_STRINGS
+   if (!capacity)
+     {
++#ifdef GCC_4_0
++      internal_capacity = build3 (COMPONENT_REF, pascal_cardinal_type_node,
++        build (PLACEHOLDER_EXPR, string), fields, NULL_TREE);
++#else
+       internal_capacity = build (COMPONENT_REF, pascal_cardinal_type_node,
+         build (PLACEHOLDER_EXPR, string), fields);
++#endif
+ #if 0
+       capacity = integer_zero_node;
+ #else
+       capacity = pascal_maxint_node; /* @@@@ */
++//      capacity = internal_capacity;
+ #endif
+     }
+   size_volatile++;  /* @@ Otherwise compilation of 'russ3a.pas' crashes */
+@@ -754,7 +794,8 @@
+   if (PASCAL_TYPE_STRING (type))
+     return 1;
+ 
+-  if (TREE_CODE (type) != ARRAY_TYPE || TREE_CODE (TREE_TYPE (type)) != CHAR_TYPE)
++  if (TREE_CODE (type) != ARRAY_TYPE
++      || TYPE_MAIN_VARIANT (TREE_TYPE (type)) != char_type_node)
+     return 0;
+ 
+   if (!PASCAL_TYPE_PACKED (type))
+@@ -767,7 +808,12 @@
+ 
+   /* String type low index must be one and nonvarying according to ISO */
+   if (tree_int_cst_equal (TYPE_MIN_VALUE (TYPE_DOMAIN (type)), integer_one_node))
+-    return 1;
++    if ((co->pascal_dialect & CLASSIC_PASCAL) &&
++         tree_int_cst_equal (TYPE_MAX_VALUE (TYPE_DOMAIN (type)),
++                             integer_one_node))
++      return 0;
++    else
++      return 1;
+ 
+   if (co->pascal_dialect & C_E_O_PASCAL)
+     return 0;
+@@ -784,7 +830,7 @@
+ }
+ 
+ tree
+-build_discriminants (tree names, tree type)
++build_discriminants (tree names, tree type, tree stype)
+ {
+   tree t;
+   if (!ORDINAL_TYPE (TREE_CODE (type)))
+@@ -798,10 +844,23 @@
+          Store the previous meanings of the identifiers
+          in the TREE_PURPOSE fields of the id_list. */
+       tree id = TREE_VALUE (t);
++#if 0
+       tree decl = TREE_VALUE (t) = build_decl (VAR_DECL, id, type);
+       SET_DECL_ASSEMBLER_NAME (decl, id);
+       allocate_decl_lang_specific (decl);
+       PASCAL_TREE_DISCRIMINANT (decl) = 1;
++#else
++      tree decl = build_decl (CONST_DECL, id, type);
++#endif
++      tree field = build_field (id, type);
++#ifdef GCC_4_0
++      tree val = build3 (COMPONENT_REF, TREE_TYPE (field),
++            build (PLACEHOLDER_EXPR, stype), field, NULL_TREE);
++#else
++      tree val = build (COMPONENT_REF, TREE_TYPE (field),
++            build (PLACEHOLDER_EXPR, stype), field);
++#endif
++      DECL_INITIAL (decl) = val;
+       TREE_PURPOSE (t) = IDENTIFIER_VALUE (id);
+       IDENTIFIER_VALUE (id) = decl;
+     }
+@@ -851,7 +910,7 @@
+ has_side_effects (tree t, int had)
+ {
+   enum tree_code code = TREE_CODE (t);
+-  if (TREE_CODE_CLASS (code) == 't')
++  if (TREE_CODE_CLASS (code) == tcc_type)
+     {
+       tree i = TYPE_GET_INITIALIZER (t);
+       if (i && has_side_effects (i, 0))
+@@ -911,7 +970,7 @@
+    its TYPE_LANG_CODE set accordingly, having as fields the discriminants plus a
+    `_p_Schema' field which contains the actual type. */
+ tree
+-build_schema_type (tree type, tree discriminants, tree init)
++build_schema_type (tree type, tree discriminants, tree init, tree stype)
+ {
+   tree fields = NULL_TREE, d, tmp, t;
+   chk_dialect ("schema types are", E_O_M_PASCAL);
+@@ -922,10 +981,29 @@
+     }
+   /* Release the identifiers of the discriminants. We must do this also in case
+      of a previous error, but check_pascal_initializer still needs them! */
++#if 0
++  t = stype;
++#endif
+   for (d = discriminants; d; d = TREE_CHAIN (d))
+     {
+-      tree id = DECL_NAME (TREE_VALUE (d));
+-      fields = chainon (fields, build_field (id, TREE_TYPE (TREE_VALUE (d))));
++//      tree id = DECL_NAME (TREE_VALUE (d));
++#if 0
++      tree field = build_field (id, TREE_TYPE (TREE_VALUE (d)));
++      tree val = build3 (COMPONENT_REF, TREE_TYPE (field), 
++            build (PLACEHOLDER_EXPR, t), field, NULL_TREE);
++      tree fix = DECL_LANG_FIXUPLIST (TREE_VALUE (d));
++      for (; fix; fix = TREE_CHAIN (fix))
++        {
++          tree target = TREE_VALUE (fix);
++          gcc_assert (TREE_CODE (target) == CONVERT_EXPR && PASCAL_TREE_DISCRIMINANT (target));
++          TREE_OPERAND (target, 0) = val;
++        }
++#else
++      tree id = TREE_VALUE (d);
++      tree val = DECL_INITIAL (IDENTIFIER_VALUE (id));
++      tree field = TREE_OPERAND (val, 1);
++#endif
++      fields = chainon (fields, field);
+       IDENTIFIER_VALUE (id) = TREE_PURPOSE (d);
+     }
+   /* Do not return before this point! */
+@@ -936,7 +1014,7 @@
+   for (t = fields; t && !has_side_effects (TREE_TYPE (t), 0); t = TREE_CHAIN (t)) ;
+   if (t || (init && has_side_effects (init, 0)))
+     error ("expressions with side-effects are not allowed in schema types");
+-  t = finish_struct (start_struct (RECORD_TYPE), fields, 1);
++  t = finish_struct (stype, fields, 1);
+   CHK_EM (t);
+   TREE_USED (t) = TREE_USED (type);
+   allocate_type_lang_specific (t);
+@@ -949,7 +1027,7 @@
+        d && tmp; d = TREE_CHAIN (d), tmp = TREE_CHAIN (tmp))
+     {
+       allocate_decl_lang_specific (tmp);
+-      DECL_LANG_FIXUPLIST (tmp) = DECL_LANG_FIXUPLIST (TREE_VALUE (d));
++      DECL_LANG_FIXUPLIST (tmp) = NULL_TREE /* DECL_LANG_FIXUPLIST (TREE_VALUE (d)) */;
+       PASCAL_TREE_DISCRIMINANT (tmp) = 1;
+     }
+   return t;
+@@ -990,9 +1068,9 @@
+   if (PASCAL_TYPE_UNDISCRIMINATED_STRING (TREE_TYPE (TREE_TYPE (decl))))
+     {
+       tree new_type, string_type = TREE_TYPE (TREE_TYPE (decl));
+-#ifndef PG__NEW_STRINGS
++/* #ifndef PG__NEW_STRINGS */
++#if 1
+       tree val = build_component_ref (build_indirect_ref (decl, NULL), get_identifier ("Capacity"));
+-
+       size_volatile++;
+       new_type = build_pascal_string_schema (val);
+       size_volatile--;
+@@ -1066,7 +1144,21 @@
+     t = p_build_type_variant (t, 0, TYPE_VOLATILE (t));
+   gcc_assert (!PASCAL_TYPE_UNDISCRIMINATED_STRING (t) && !PASCAL_TYPE_UNDISCRIMINATED_SCHEMA (t));
+   if (PASCAL_TYPE_PREDISCRIMINATED_STRING (t))
++#if 0
+     t = build_pascal_string_schema (save_nonconstants (TYPE_LANG_DECLARED_CAPACITY (t)));
++#else
++    {
++// = build_component_ref (build_indirect_ref (decl, NULL), get_identifier ("Capacity")); 
++//      tree l = TYPE_LANG_DECLARED_CAPACITY (t);
++      tree l = build_component_ref (d, get_identifier ("Capacity"));
++#ifdef GCC_4_0
++      l = SUBSTITUTE_PLACEHOLDER_IN_EXPR (l, d);
++#else
++      l = build (WITH_RECORD_EXPR, TREE_TYPE (l), l, d);
++#endif
++      t = build_pascal_string_schema (save_nonconstants (l));
++    }
++#endif
+   else if (PASCAL_TYPE_PREDISCRIMINATED_SCHEMA (t))
+     {
+       tree field, discr = NULL_TREE;
+@@ -1169,8 +1261,17 @@
+       if (!selector_field && TREE_CODE (selector_type) == IDENTIFIER_NODE)
+         {
+           tree decl = lookup_name (selector_type);
++#if 0
+           if (decl && TREE_CODE (decl) == VAR_DECL && PASCAL_TREE_DISCRIMINANT (decl))
+             selector_field = maybe_schema_discriminant (decl);
++#endif
++          if (decl && TREE_CODE (decl) == CONST_DECL 
++              && TREE_CODE (DECL_INITIAL (decl)) == COMPONENT_REF 
++              && TREE_CODE (TREE_OPERAND (DECL_INITIAL (decl), 0))
++                   == PLACEHOLDER_EXPR
++              && TREE_TYPE (TREE_OPERAND (DECL_INITIAL (decl), 0)) 
++                   == current_schema)
++            selector_field = DECL_INITIAL (decl);
+           else if (!(decl && TREE_CODE (decl) == TYPE_DECL))
+             {
+               error ("selector type name or discriminant identifier expected, `%s' given",
+@@ -1180,6 +1281,11 @@
+           selector_type = TREE_TYPE (decl);
+         }
+       CHK_EM (selector_type);
++
++      /* @@@@@ We should use only one piece of code to verify
++         case-constant-list, so the code below should be common
++         to initializers, variant records and case instruction. */
++
+       for (t = variant_list; t; t = TREE_CHAIN (t))
+         {
+           tree f = TREE_VALUE (t), c;
+@@ -1322,11 +1428,24 @@
+           return type;
+         }
+ 
++#if 1      
+       if (uns != TYPE_UNSIGNED (type))
+         {
+           TREE_TYPE (type) = build_type_copy (TREE_TYPE (type));
+           TYPE_UNSIGNED (TREE_TYPE (type)) = uns;
+         }
++#else
++      {
++        tree el_type = build_type_copy (TREE_TYPE (type));
++        TYPE_UNSIGNED (el_type) = uns;
++        TYPE_PRECISION (el_type) = TREE_INT_CST_LOW (bits);
++        TYPE_SIZE (el_type) = NULL_TREE;
++#ifdef EGCS
++        TYPE_SIZE_UNIT (el_type) = NULL_TREE;
++#endif
++        layout_type (type);
++      }
++#endif
+ 
+       TYPE_ALIGN (type) = TYPE_PRECISION (packed_array_unsigned_short_type_node);
+       align = bitsize_int (TYPE_ALIGN (type));
+@@ -1340,6 +1459,11 @@
+       TYPE_SIZE_UNIT (type) = convert (sizetype,
+         size_binop (CEIL_DIV_EXPR, new_size, bitsize_int (BITS_PER_UNIT)));
+ #endif
++#ifdef GCC_4_0
++      /* @@@@@@ Maybe */
++      /* TYPE_NO_FORCE_BLK (type) = 1; */
++      TYPE_MODE (type) = BLKmode;
++#endif
+     }
+   else if (ORDINAL_TYPE (TREE_CODE (type)))
+     {
+@@ -1438,10 +1562,10 @@
+ count_bits (tree type, int *punsigned)
+ {
+   int positive, lo_bits, hi_bits, bits;
+-  tree lo = TYPE_MIN_VALUE (type), hi = TYPE_MAX_VALUE (type), result;
++  tree lo, hi, result;
+   if (!ORDINAL_TYPE (TREE_CODE (type))
+-      || !lo || TREE_CODE (lo) != INTEGER_CST
+-      || !hi || TREE_CODE (hi) != INTEGER_CST)
++      || !(lo = TYPE_MIN_VALUE (type)) || TREE_CODE (lo) != INTEGER_CST
++      || !(hi = TYPE_MAX_VALUE (type)) || TREE_CODE (hi) != INTEGER_CST)
+     return NULL_TREE;
+   positive = tree_int_cst_sgn (lo) >= 0 && tree_int_cst_sgn (hi) >= 0;
+   lo_bits = count_unsigned_bits (lo);
+@@ -1558,6 +1682,9 @@
+           val1 = val2;
+           val2 = tmp;
+         }
++
++      if (why != NOP_EXPR && MAX (TYPE_PRECISION (TREE_TYPE (val1)), TYPE_PRECISION (TREE_TYPE (val2))) < TYPE_PRECISION (pascal_integer_type_node))
++        return pascal_integer_type_node;
+       if (TREE_CODE (val1) == INTEGER_CST
+           && TREE_CODE (TREE_TYPE (val2)) == INTEGER_TYPE
+           && TYPE_MIN_VALUE (TREE_TYPE (val2))
+@@ -1566,7 +1693,8 @@
+           && TREE_CODE (TYPE_MAX_VALUE (TREE_TYPE (val2))) == INTEGER_CST
+           && !const_lt (val1, TYPE_MIN_VALUE (TREE_TYPE (val2)))
+           && !const_lt (TYPE_MAX_VALUE (TREE_TYPE (val2)), val1))
+-        return TREE_TYPE (val2);
++        return (why != NOP_EXPR && TYPE_PRECISION (TREE_TYPE (val2)) < TYPE_PRECISION (pascal_integer_type_node))
++               ? pascal_integer_type_node : TYPE_MAIN_VARIANT (TREE_TYPE (val2));
+       return common_type (TREE_TYPE (val1), TREE_TYPE (val2));
+     }
+ 
+@@ -1583,14 +1711,16 @@
+       min_val = val2;
+       max_val = val1;
+     }
+-  if (!(TREE_CODE_CLASS (TREE_CODE (val1)) == 'c' && PASCAL_CST_FRESH (val1)))
++  if (!(TREE_CODE_CLASS (TREE_CODE (val1)) == tcc_constant
++         && PASCAL_CST_FRESH (val1)))
+     {
+       if (const_lt (TYPE_MIN_VALUE (TREE_TYPE (val1)), min_val))
+         min_val = TYPE_MIN_VALUE (TREE_TYPE (val1));
+       if (const_lt (max_val, TYPE_MAX_VALUE (TREE_TYPE (val1))))
+         max_val = TYPE_MAX_VALUE (TREE_TYPE (val1));
+     }
+-  if (!(TREE_CODE_CLASS (TREE_CODE (val2)) == 'c' && PASCAL_CST_FRESH (val2)))
++  if (!(TREE_CODE_CLASS (TREE_CODE (val2)) == tcc_constant
++         && PASCAL_CST_FRESH (val2)))
+     {
+       if (const_lt (TYPE_MIN_VALUE (TREE_TYPE (val2)), min_val))
+         min_val = TYPE_MIN_VALUE (TREE_TYPE (val2));
+@@ -1722,7 +1852,12 @@
+ 
+   /* Constant expressions are ok. Discriminants are substituted elsewhere. */
+   if (TREE_CONSTANT (expr)
++#if 0
+       || ((code == VAR_DECL || code == FIELD_DECL || code == CONVERT_EXPR) && PASCAL_TREE_DISCRIMINANT (expr)))
++#else
++      || (code == COMPONENT_REF 
++          && TREE_CODE (TREE_OPERAND (expr, 0)) == PLACEHOLDER_EXPR))
++#endif
+     return expr;
+ 
+   if (code == COMPOUND_EXPR)
+@@ -1884,7 +2019,6 @@
+                 tree field2 = sorted_fields[i], ret;
+                 if (DECL_NAME (field2) == component)
+                   {
+-                    gcc_unreachable ();
+                     field = field2;
+                     break;
+                   }
+@@ -2000,11 +2134,22 @@
+         {
+           tree ref1, ftype = TREE_TYPE (TREE_VALUE (field));
+           CHK_EM (ftype);
++#ifndef GCC_4_0
+           ref1 = build (COMPONENT_REF, ftype, ref, TREE_VALUE (field));
++#else
++          ref1 = build3 (COMPONENT_REF, ftype, ref, TREE_VALUE (field),
++                          NULL_TREE);
++#endif
+           if (TREE_READONLY (ref) || TREE_READONLY (TREE_VALUE (field)))
+             TREE_READONLY (ref1) = 1;
+           if (TREE_THIS_VOLATILE (ref) || TREE_THIS_VOLATILE (TREE_VALUE (field)))
+             TREE_THIS_VOLATILE (ref1) = 1;
++#if 0
++          if (DECL_BIT_FIELD (TREE_VALUE (field))
++              && TREE_INT_CST_LOW (DECL_SIZE (field)) 
++                 < TYPE_PRECISION (integer_type_node))
++             ref1 = convert (integer_type_node, ref1);
++#endif
+           ref = fold (ref1);
+         }
+       return ref;
+@@ -2045,7 +2190,11 @@
+ tree
+ simple_component_ref (tree expr, tree field)
+ {
++#ifndef GCC_4_0
+   tree ref = build (COMPONENT_REF, TREE_TYPE (field), expr, field);
++#else
++  tree ref = build3 (COMPONENT_REF, TREE_TYPE (field), expr, field, NULL_TREE);
++#endif
+   if (TREE_CODE (expr) == CONSTRUCTOR)
+     ref = save_expr (ref);
+   if (TREE_READONLY (expr) || TREE_READONLY (field))
+@@ -2383,8 +2532,13 @@
+ 
+           if (TREE_CODE (array) == STRING_CST && TREE_CODE (index) == INTEGER_CST)
+             {
++#ifndef GCC_4_0
+               array = build_int_2 (TREE_STRING_POINTER (array)[TREE_INT_CST_LOW (index) - 1], 0);
+               TREE_TYPE (array) = char_type_node;
++#else
++              array = build_int_cst_wide (char_type_node,
++                TREE_STRING_POINTER (array)[TREE_INT_CST_LOW (index) - 1], 0);
++#endif
+             }
+           else if (!bits || TREE_INT_CST_LOW (bits) == TREE_INT_CST_LOW (TYPE_SIZE (TREE_TYPE (TREE_TYPE (array)))))
+             /* Not packed. Just a normal array reference. */
+@@ -2468,7 +2622,12 @@
+                 }
+               else
+                 array = build (PASCAL_BIT_FIELD_REF, TREE_TYPE (array_type), array, bits, index);
++#if 1
++              PASCAL_BIT_FIELD_REF_UNSIGNED (array) =
++                TYPE_UNSIGNED (TREE_TYPE (array_type));
++#else
+               BIT_FIELD_REF_UNSIGNED (array) = TYPE_UNSIGNED (TREE_TYPE (array_type));
++#endif
+             }
+         }
+       if (EM (array))
+@@ -2489,8 +2648,13 @@
+     {
+       arg1 = range_check_2 (integer_one_node, build_int_2 (TREE_STRING_LENGTH (arg0) - 1, 0), arg1);
+       CHK_EM (arg1);
++#ifndef GCC_4_0
+       t = build_int_2 (TREE_STRING_POINTER (arg0)[TREE_INT_CST_LOW (arg1) - 1], 0);
+       TREE_TYPE (t) = char_type_node;
++#else
++      t = build_int_cst_wide (char_type_node, 
++         TREE_STRING_POINTER (arg0)[TREE_INT_CST_LOW (arg1) - 1], 0);
++#endif
+     }
+   else if (TREE_CODE (arg1) == INTEGER_CST && TREE_CODE (arg0) == CONSTRUCTOR)
+     {
+@@ -2564,7 +2728,11 @@
+         }
+ 
+       type = TYPE_MAIN_VARIANT (TREE_TYPE (TREE_TYPE (array)));
++#ifndef GCC_4_0
+       rval = build (ARRAY_REF, type, array, index);
++#else
++      rval = build4 (ARRAY_REF, type, array, index, NULL_TREE, NULL_TREE);
++#endif
+       /* Array ref is const/volatile if the array elements are or if the array is. */
+       TREE_READONLY (rval) |= (TYPE_READONLY (TREE_TYPE (TREE_TYPE (array))) | TREE_READONLY (array));
+       TREE_SIDE_EFFECTS (rval) |= (TYPE_VOLATILE (TREE_TYPE (TREE_TYPE (array))) | TREE_SIDE_EFFECTS (array));
+@@ -2612,6 +2780,10 @@
+   if (type == TREE_TYPE (e) || EM (e) || EM (type))
+     return e;
+   CHK_EM (TREE_TYPE (e));
++/*
++  if (code = INTEGER_TYPE || code == ENUMERAL_TYPE)
++    e = copy_node (e);
++*/
+   if (TYPE_MAIN_VARIANT (type) == TYPE_MAIN_VARIANT (TREE_TYPE (e)))
+     return fold (build1 (NOP_EXPR, type, e));
+   if (code == SET_TYPE && TREE_CODE (TREE_TYPE (e)) == SET_TYPE)
+@@ -2631,8 +2803,10 @@
+             expression here to avoid this bug in case there are other
+             references to it (as in fact there are in `case', casebool.pas). */
+       enum tree_code c = TREE_CODE (e);
+-      tree e2 = (TREE_CODE_CLASS (c) == '<' || c == TRUTH_AND_EXPR || c == TRUTH_ANDIF_EXPR
+-        || c == TRUTH_OR_EXPR || c == TRUTH_ORIF_EXPR || c == TRUTH_XOR_EXPR || c == TRUTH_NOT_EXPR) ? copy_node (e) : e;
++      tree e2 = (TREE_CODE_CLASS (c) == tcc_comparison || c == TRUTH_AND_EXPR
++                 || c == TRUTH_ANDIF_EXPR || c == TRUTH_OR_EXPR
++                 || c == TRUTH_ORIF_EXPR || c == TRUTH_XOR_EXPR
++                 || c == TRUTH_NOT_EXPR) ? copy_node (e) : e;
+       tree result = fold (convert_to_integer (type, e2));
+       return result;
+     }
+diff -urN gcc/p.old/units/crtc.c gcc/p/units/crtc.c
+--- gcc/p.old/units/crtc.c	2006-06-10 17:45:38.423386000 +0000
++++ gcc/p/units/crtc.c	2006-06-10 17:46:10.433386000 +0000
+@@ -2614,7 +2614,7 @@
+       do
+         {
+           errno = 0;
+-          res = wgetnstr (crt_ActivePanel->w, crt_LineBuf, MAXLENGTH - 1);
++          res = wgetnstr (crt_ActivePanel->w, (char *)crt_LineBuf, MAXLENGTH - 1);
+         }
+       while
+         #ifdef EINTR
+@@ -2630,12 +2630,12 @@
+             {
+               do
+                 {
+-                  p = strchr (crt_LineBuf, 26);
++                  p = (Char *)strchr ((char *)crt_LineBuf, 26);
+                   if (p) *p = 0;
+                 }
+               while (p);
+             }
+-          crt_LineBufCount = strlen (crt_LineBuf);
++          crt_LineBufCount = strlen ((char *)crt_LineBuf);
+           crt_LineBuf[crt_LineBufCount++] = '\n';
+         }
+       crt_LineBufPos = crt_LineBuf;
+diff -urN gcc/p.old/utils/Makefile gcc/p/utils/Makefile
+--- gcc/p.old/utils/Makefile	2006-06-10 17:45:38.433386000 +0000
++++ gcc/p/utils/Makefile	2006-06-10 17:46:10.433386000 +0000
+@@ -44,20 +44,14 @@
+ EXE=binobj$(exeext) gpidump$(exeext)
+ EXE2=binobj gpidump
+ DOC=binobj.1 gpidump.1
+-PC_WITH_FLAGS=$(PC) --automake --executable-file-name $(UTILS_WARN) $(CFLAGS) $(PFLAGS) $(PFLAGS1) `cat needed-options`
++PC_WITH_FLAGS=$(PC) --automake --executable-file-name $(UTILS_WARN) $(CFLAGS) $(PFLAGS) $(PFLAGS1)
+ 
+ all: $(EXE) $(DOC)
+ 
+-# The Pascal source is not used, but we have to provide any.
+-# `-x Preprocessed-Pascal /dev/null' works as well, except on mingw.
+-needed-options: binobj.pas $(GCC_DIR)/p/p-version.h
+-	$(PC) $(UTILS_WARN) $(CFLAGS) $(PFLAGS) $(PFLAGS1) --print-needed-options "$<" 2> "$@" || true
+-	if grep '^[^-]' "$@" > /dev/null; then echo "needed-options: `cat "$@"`" >&2; rm -f "$@"; false; else true; fi
+-
+-binobj$(exeext): binobj.pas needed-options
++binobj$(exeext): binobj.pas
+ 	$(PC_WITH_FLAGS) "$<"
+ 
+-gpidump$(exeext): gpidump.pas tree.inc needed-options
++gpidump$(exeext): gpidump.pas tree.inc
+ 	$(PC_WITH_FLAGS) -I. -I "$(GCC_DIR)/p" "$<"
+ 
+ binobj.1: binobj
+@@ -100,4 +94,4 @@
+ 	done
+ 
+ clean:
+-	rm -f *.o *.i *.s *.gpi *.gpd $(EXE) $(EXE2) $(DOC) tree.inc needed-options
++	rm -f *.o *.i *.s *.gpi *.gpd $(EXE) $(EXE2) $(DOC) tree.inc
+diff -urN gcc/p.old/utils/gpidump.pas gcc/p/utils/gpidump.pas
+--- gcc/p.old/utils/gpidump.pas	2006-06-10 17:45:38.433386000 +0000
++++ gcc/p/utils/gpidump.pas	2006-06-10 17:46:10.443386000 +0000
+@@ -46,6 +46,17 @@
+ 
+ const
+   ExprClasses = ['e', '1', '2', '<', 's'];
++  tcc_type = 't';
++  tcc_declaration = 'd';
++  tcc_constant = 'c';
++  tcc_unary = '1';
++  tcc_binary = '2';
++  tcc_comparison = '<';
++  tcc_expression = 'e';
++  tcc_reference = 'r';
++  tcc_exceptional = 'x';
++  tcc_statement = 's';
++  
+   TreeCodes: array [TTreeCode] of record
+     Name: ^String;
+     CodeClass: Char;
+@@ -361,7 +372,7 @@
+         fprotected,
+         {$ifdef GCC_3_4}
+         deprecated,
+-        unused_flag_1,
++        invariant,
+         {$elif defined (EGCS97)}
+         bounded,
+         deprecated,
+@@ -416,7 +427,8 @@
+       if f.fprotected then OutputFlag ('protected');
+       {$ifdef GCC_3_4}
+       if f.deprecated then OutputFlag ('!deprecated');
+-      if f.unused_flag_1 then OutputFlag ('!unused_flag_1');
++      if f.invariant then OutputFlag (
++        {$ifdef GCC_4_0} 'invariant' {$else} '!unused_flag_1' {$endif});
+       {$elif defined (EGCS97)}
+       if f.bounded then OutputFlag ('bounded');
+       if f.deprecated then OutputFlag ('!deprecated');
+@@ -630,9 +642,12 @@
+         thread_local,
+         declared_inline_flag: Boolean;
+         {$endif}
++        {$ifdef GCC_4_0}
++        seen_in_bind_expr: Boolean;
++        {$endif}
+         {$ifdef GCC_3_4}
+         visibility: 0 .. 3;
+-        unused: Boolean;
++        visibility_specified: Boolean;
+         {$endif}
+         {$endif}
+         unused_decl_flag_0,
+@@ -643,6 +658,14 @@
+         decl_flag_5,
+         decl_flag_6,
+         decl_flag_7: Boolean;
++        {$ifdef GCC_4_0}
++        possibly_inlined,
++        preserve_flag,
++        gimple_formal_temp,
++        debug_expr_is_from : Boolean;
++        sp1, sp2, sp3, sp4, sp5, sp6, sp7,
++        sp8, sp9, sp10, sp11 : Boolean;
++        {$endif}
+         {$if defined (EGCS) and not defined (EGCS97)}
+         non_addr_const_p,
+         no_instrument_function_entry_exit,
+@@ -652,7 +675,11 @@
+         Misc: TDeclMisc
+       end;
+     begin
+-      CompilerAssert (SizeOf (f) = {$ifdef EGCS97} 6 {$elif defined (EGCS)} 5 {$else} 4 {$endif} + SizeOf (TDeclMisc));
++      CompilerAssert (SizeOf (f) = {$ifdef GCC_4_0} 8 
++                           {$elif defined (EGCS97)} 6 
++                             {$elif defined (EGCS)} 5
++                                            {$else} 4
++                            {$endif} + SizeOf (TDeclMisc));
+       GetSize (Pos1, f, SizeOf (f));
+       Comma;
+       Write ('machine_mode ', Number (f.MachineMode, 0));
+@@ -692,7 +719,8 @@
+       {$endif}
+       {$ifdef GCC_3_4}
+       OutputFlag2 ('visibility', f.visibility);
+-      if f.unused then OutputFlag ('!unused');
++      if f.visibility_specified then OutputFlag (
++           {$ifdef GCC_4_0} 'visibility_specified' {$else} '!unused' {$endif});
+       {$endif}
+       {$endif}
+       if f.unused_decl_flag_0 then OutputFlag ('!unused_decl_flag_0');
+@@ -725,12 +753,15 @@
+         case TreeCode of
+           VAR_DECL:  OutputFlag ('initialized');
+           PARM_DECL: OutputFlag ('procedural_parameter');
++          FUNCTION_DECL: 
++                     OutputFlag ('reintroduce');
+           else       OutputFlag ('!lang_decl_flag_6')
+         end;
+       if f.decl_flag_7 then
+         case TreeCode of
+           FUNCTION_DECL: OutputFlag ('forward');
+           CONST_DECL:    OutputFlag ('principal');
++          VAR_DECL:      OutputFlag ('for_loop_counter');
+           else           OutputFlag ('!lang_decl_flag_7')
+         end;
+       {$if defined (EGCS) and not defined (EGCS97)}
+@@ -1129,12 +1160,15 @@
+       TYPE_DECL:        Ref ('type');
+       VAR_DECL:         begin
+                           Ref ('type');
++                          Ref ('initial');
+                           Discard (OptStr ('linker_name '))
+                         end;
+       OPERATOR_DECL:    ;
+       PLACEHOLDER_EXPR: Ref ('type');
+       NON_LVALUE_EXPR:  if IsPackedAccess then Ref ('packed_info');
+-      else              if not ClassDone or (TreeCode = RTL_EXPR) then Error ('unknown tree code')
++      else              if not ClassDone 
++                           {$ifndef GCC_4_0} or (TreeCode = RTL_EXPR) {$endif}
++                          then Error ('unknown tree code')
+     end;
+     if not First then WriteLn;
+     if Pos1 <= Pos2 then
+diff -urN gcc/p.old/utils/mk-t-inc gcc/p/utils/mk-t-inc
+--- gcc/p.old/utils/mk-t-inc	2006-06-10 17:45:38.433386000 +0000
++++ gcc/p/utils/mk-t-inc	2006-06-10 17:46:10.443386000 +0000
+@@ -61,22 +61,9 @@
+ {\$define GCC_VERSION '$version'}
+ EOF
+ 
+-# Mostly copied from GPC's config-lang.in
+-if echo $version | grep '^2\.9' > /dev/null || echo $version | grep '^3\.[1-9]' > /dev/null || echo $version | grep egcs > /dev/null; then
+-  echo '{$define EGCS}'
+-  if echo $version | grep '^2\.95\.[3-9]' > /dev/null || echo $version | grep '^3\.[1-9]' > /dev/null; then
+-    echo '{$define GCC_2_95_3}'
+-  fi
+-  if echo $version | grep '^2\.9[6-9]' > /dev/null || echo $version | grep '^3\.[1-9]' > /dev/null; then
+-    echo '{$define EGCS97}'
+-    if echo $version | grep '^3\.[3-9]' > /dev/null; then
+-      echo '{$define GCC_3_3}'
+-      if echo $version | grep '^3\.[4-9]' > /dev/null; then
+-        echo '{$define GCC_3_4}'
+-      fi
+-    fi
+-  fi
+-fi
++# Use result of GPC's config-lang.in
++sed -ne 's,#define\(.*\),{$define\1},p' ../../gcc-version.h
++
+ sed -ne '/Start GPI info/,/End GPI info/{s,/\*.*\*/,,g;s/0x/$/g;s/#/{$/g;s/[^\]$/&}/;s/\\$//;p;}' "$GCCDIR/p/module.c"
+ echo '{$endif}'
+ echo ""
+@@ -84,7 +71,6 @@
+ {
+   cat "$GCCDIR/tree.def"
+   echo 'DEFTREECODE (LAST_AND_UNUSED_C_TREE_CODE, "unused", '"'x', 0)"
+-  sed -e '/#else/,/#endif/d' "$GCCDIR/p/p-tree.def"
+-} | sed -ne '/^DEFTREECODE/{s,/\*.*\*/,,;s/["'"'"']x["'"'"'].*/'"'x', 0)/;p;}"
+-
++  sed -e '/#ifdef EGCS/,${/#ifdef EGCS/d;/#else/,/#endif/d}'  "$GCCDIR/p/p-tree.def"
++} | sed -ne ':loop;/\\$/{N;b loop};/^DEFTREECODE/{s,/\*.*\*/,,;s/["'"'"']x["'"'"'].*/'"'x', 0)/;p;};/^#/p"
+ } > "$2" || { rm -f "$2"; false; }
+--- gcc/p/diffs/gcc-3.4.4.diff~	2005-11-16 06:24:39.000000000 +0100
++++ gcc/p/diffs/gcc-3.4.4.diff	2006-06-10 20:42:27.493386000 +0200
+@@ -496,7 +496,7 @@
+   02111-1307, USA.  */
+   
+   
+-+ /* @@ PATCHED FOR GPC 20051114 @@ */
+++ /* @@ PATCHED FOR GPC 20060322 @@ */
+ + 
+   #include "config.h"
+   #include "system.h"

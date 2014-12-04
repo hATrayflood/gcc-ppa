@@ -1,0 +1,580 @@
+#! /bin/sh -e
+# 
+#
+# DP: Author: Kazuhiro Inaoka
+# DP: libffi implementation
+
+if [ $# -eq 3 ] && [ "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+       -patch)
+		patch $pdir -f --no-backup-if-mismatch -p1 < $0
+		cd ${dir}libffi && autoconf
+		;;
+       -unpatch) patch $pdir -f --no-backup-if-mismatch -R -p1 < $0;;
+	*)
+		echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+		exit 1;;
+esac
+
+exit 0
+
+--- gcc-3.4.1/libffi/Makefile.am.orig	2004-11-02 22:25:42.000000000 +0900
++++ gcc-3.4.1/libffi/Makefile.am	2004-11-12 12:20:22.000000000 +0900
+@@ -9,6 +9,7 @@ EXTRA_DIST = LICENSE ChangeLog.v1 \
+ 	src/arm/ffi.c src/arm/sysv.S src/arm/ffitarget.h \
+ 	src/mips/ffi.c src/mips/n32.S src/mips/o32.S \
+ 	src/mips/ffitarget.h \
++	src/m32r/ffi.c src/m32r/sysv.S src/m32r/ffitarget.h \
+ 	src/m68k/ffi.c src/m68k/sysv.S src/m68k/ffitarget.h \
+ 	src/pa/ffi.c src/pa/linux.S src/pa/ffitarget.h \
+ 	src/powerpc/ffi.c src/powerpc/sysv.S \
+@@ -25,7 +26,6 @@ EXTRA_DIST = LICENSE ChangeLog.v1 \
+ 	src/x86/ffi.c src/x86/sysv.S src/x86/win32.S \
+ 	src/x86/ffi64.c src/x86/unix64.S src/x86/ffitarget.h
+ 
+-
+ VPATH = @srcdir@:@srcdir@/src:@srcdir@/src/@TARGETDIR@
+ 
+ ## ################################################################
+@@ -105,6 +105,7 @@ TARGET_SRC_S390 =  src/s390/sysv.S src/s
+ TARGET_SRC_X86_64 = src/x86/ffi64.c src/x86/unix64.S src/x86/ffi.c src/x86/sysv.S
+ TARGET_SRC_SH =  src/sh/sysv.S src/sh/ffi.c
+ TARGET_SRC_SH64 =  src/sh64/sysv.S src/sh64/ffi.c
++TARGET_SRC_M32R = src/m32r/sysv.S src/m32r/ffi.c
+ 
+ ##libffi_la_SOURCES = src/debug.c src/prep_cif.c src/types.c $(TARGET_SRC_@TARGET@)
+ ## Work around automake deficiency
+@@ -178,6 +179,10 @@ if PA
+ libffi_la_SOURCES = $(libffi_la_common_SOURCES) $(TARGET_SRC_PA)
+ libffi_convenience_la_SOURCES = $(libffi_la_common_SOURCES) $(TARGET_SRC_PA)
+ endif
++if M32R
++libffi_la_SOURCES = $(libffi_la_common_SOURCES) $(TARGET_SRC_M32R)
++libffi_convenience_la_SOURCES = $(libffi_la_common_SOURCES) $(TARGET_SRC_M32R)
++endif
+ 
+ AM_CFLAGS = -Wall -g -fexceptions
+ 
+--- gcc-3.4.1/libffi/Makefile.in.orig	2004-11-12 16:52:34.000000000 +0900
++++ gcc-3.4.1/libffi/Makefile.in	2004-11-12 16:57:15.000000000 +0900
+@@ -98,6 +98,7 @@
+ EXTRA_DIST = LICENSE ChangeLog.v1 \
+ 	src/alpha/ffi.c src/alpha/osf.S src/alpha/ffitarget.h \
+ 	src/arm/ffi.c src/arm/sysv.S src/arm/ffitarget.h \
++	src/m32r/ffi.c src/m32r/sysv.S src/m32r/ffitarget.h \
+ 	src/mips/ffi.c src/mips/n32.S src/mips/o32.S \
+ 	src/mips/ffitarget.h \
+ 	src/m68k/ffi.c src/m68k/sysv.S src/m68k/ffitarget.h \
+@@ -187,6 +188,7 @@
+ TARGET_SRC_X86_64 = src/x86/ffi64.c src/x86/unix64.S src/x86/ffi.c src/x86/sysv.S
+ TARGET_SRC_SH = src/sh/sysv.S src/sh/ffi.c
+ TARGET_SRC_SH64 = src/sh64/sysv.S src/sh64/ffi.c
++TARGET_SRC_M32R = src/m32r/sysv.S src/m32r/ffi.c
+ 
+ libffi_la_common_SOURCES = src/debug.c src/prep_cif.c src/types.c \
+ 		src/raw_api.c src/java_raw_api.c
+@@ -207,6 +209,7 @@
+ @X86_64_TRUE@libffi_la_SOURCES = @X86_64_TRUE@$(libffi_la_common_SOURCES) $(TARGET_SRC_X86_64)
+ @SH_TRUE@libffi_la_SOURCES = @SH_TRUE@$(libffi_la_common_SOURCES) $(TARGET_SRC_SH)
+ @SH64_TRUE@libffi_la_SOURCES = @SH64_TRUE@$(libffi_la_common_SOURCES) $(TARGET_SRC_SH64)
++@M32R_TRUE@libffi_la_SOURCES = @M32R_TRUE@$(libffi_la_common_SOURCES) $(TARGET_SRC_M32R)
+ @MIPS_IRIX_TRUE@libffi_convenience_la_SOURCES = @MIPS_IRIX_TRUE@$(libffi_la_common_SOURCES) $(TARGET_SRC_MIPS_IRIX)
+ @MIPS_LINUX_TRUE@libffi_convenience_la_SOURCES = @MIPS_LINUX_TRUE@$(libffi_la_common_SOURCES) $(TARGET_SRC_MIPS_LINUX)
+ @X86_TRUE@libffi_convenience_la_SOURCES = @X86_TRUE@$(libffi_la_common_SOURCES) $(TARGET_SRC_X86)
+@@ -223,6 +226,7 @@
+ @X86_64_TRUE@libffi_convenience_la_SOURCES = @X86_64_TRUE@$(libffi_la_common_SOURCES) $(TARGET_SRC_X86_64)
+ @SH_TRUE@libffi_convenience_la_SOURCES = @SH_TRUE@$(libffi_la_common_SOURCES) $(TARGET_SRC_SH)
+ @SH64_TRUE@libffi_convenience_la_SOURCES = @SH64_TRUE@$(libffi_la_common_SOURCES) $(TARGET_SRC_SH64)
++@M32R_TRUE@libffi_convenience_la_SOURCES = @M32R_TRUE@$(libffi_la_common_SOURCES) $(TARGET_SRC_M32R)
+ 
+ AM_CFLAGS = -Wall -g -fexceptions
+ 
+@@ -242,6 +246,9 @@
+ LIBS = @LIBS@
+ libffi_convenience_la_LDFLAGS = 
+ libffi_convenience_la_LIBADD = 
++@M32R_TRUE@libffi_convenience_la_OBJECTS =  src/debug.lo src/prep_cif.lo \
++@M32R_TRUE@src/types.lo src/raw_api.lo src/java_raw_api.lo \
++@M32R_TRUE@src/m32r/ffi.lo src/m32r/sysv.lo \
+ @X86_64_TRUE@libffi_convenience_la_OBJECTS =  src/debug.lo \
+ @X86_64_TRUE@src/prep_cif.lo src/types.lo src/raw_api.lo \
+ @X86_64_TRUE@src/java_raw_api.lo src/x86/ffi64.lo src/x86/unix64.lo \
+@@ -299,6 +306,9 @@
+ @IA64_TRUE@src/types.lo src/raw_api.lo src/java_raw_api.lo \
+ @IA64_TRUE@src/ia64/ffi.lo src/ia64/unix.lo
+ libffi_la_LIBADD = 
++@M32R_TRUE@libffi_la_OBJECTS =  src/debug.lo src/prep_cif.lo \
++@M32R_TRUE@src/types.lo src/raw_api.lo src/java_raw_api.lo \
++@M32R_TRUE@src/m32r/ffi.lo src/m32r/sysv.lo \
+ @X86_64_TRUE@libffi_la_OBJECTS =  src/debug.lo src/prep_cif.lo \
+ @X86_64_TRUE@src/types.lo src/raw_api.lo src/java_raw_api.lo \
+ @X86_64_TRUE@src/x86/ffi64.lo src/x86/unix64.lo src/x86/ffi.lo \
+--- gcc-3.4.1/libffi/configure.in.orig	2004-11-02 22:25:28.000000000 +0900
++++ gcc-3.4.1/libffi/configure.in	2004-11-12 12:14:04.000000000 +0900
+@@ -88,6 +88,7 @@ x86_64-*-linux*) TARGET=X86_64; TARGETDI
+ sh-*-linux* | sh[[34]]*-*-linux*) TARGET=SH; TARGETDIR=sh;;
+ sh64-*-linux* | sh5*-*-linux*) TARGET=SH64; TARGETDIR=sh64;;
+ hppa-*-linux* | parisc-*-linux*) TARGET=PA; TARGETDIR=pa;;
++m32r*-*-linux* ) TARGET=M32R; TARGETDIR=m32r;;
+ esac
+ 
+ AC_SUBST(AM_RUNTESTFLAGS)
+@@ -113,6 +114,7 @@ AM_CONDITIONAL(X86_64, test x$TARGET = x
+ AM_CONDITIONAL(SH, test x$TARGET = xSH)
+ AM_CONDITIONAL(SH64, test x$TARGET = xSH64)
+ AM_CONDITIONAL(PA, test x$TARGET = xPA)
++AM_CONDITIONAL(M32R, test x$TARGET = xM32R)
+ 
+ case x$TARGET in
+   xMIPS*) TARGET=MIPS ;;
+--- gcc-3.4.1/libffi/src/m32r/ffi.c	1970-01-01 09:00:00.000000000 +0900
++++ gcc-3.4.1/libffi/src/m32r/ffi.c	2004-10-22 11:16:10.000000000 +0900
+@@ -0,0 +1,246 @@
++/* -----------------------------------------------------------------------
++   ffi.c - Copyright (c) 2004  Renesas Technology
++   
++   M32R Foreign Function Interface 
++
++   Permission is hereby granted, free of charge, to any person obtaining
++   a copy of this software and associated documentation files (the
++   ``Software''), to deal in the Software without restriction, including
++   without limitation the rights to use, copy, modify, merge, publish,
++   distribute, sublicense, and/or sell copies of the Software, and to
++   permit persons to whom the Software is furnished to do so, subject to
++   the following conditions:
++
++   The above copyright notice and this permission notice shall be included
++   in all copies or substantial portions of the Software.
++
++   THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND, EXPRESS
++   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
++   IN NO EVENT SHALL CYGNUS SOLUTIONS BE LIABLE FOR ANY CLAIM, DAMAGES OR
++   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
++   ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++   OTHER DEALINGS IN THE SOFTWARE.
++   ----------------------------------------------------------------------- */
++
++#include <ffi.h>
++#include <ffi_common.h>
++
++#include <stdlib.h>
++
++/* ffi_prep_args is called by the assembly routine once stack space
++   has been allocated for the function's arguments */
++
++/*@-exportheader@*/
++void ffi_prep_args(char *stack, extended_cif *ecif)
++/*@=exportheader@*/
++{
++  register unsigned int i;
++  register int tmp;
++  register unsigned int avn;
++  register void **p_argv;
++  register char *argp;
++  register ffi_type **p_arg;
++
++  tmp = 0;
++  argp = stack;
++
++  if ( ecif->cif->rtype->type == FFI_TYPE_STRUCT && ecif->cif->rtype->size > 8 ) {
++    *(void **) argp = ecif->rvalue;
++    argp += 4;
++  }
++
++  avn = ecif->cif->nargs;
++  p_argv = ecif->avalue;
++
++  for (i = ecif->cif->nargs, p_arg = ecif->cif->arg_types;
++       (i != 0) && (avn != 0);
++       i--, p_arg++)
++    {
++      size_t z;
++
++      /* Align if necessary */
++      if (((*p_arg)->alignment - 1) & (unsigned) argp) {
++	argp = (char *) ALIGN(argp, (*p_arg)->alignment);
++      }
++
++      if (avn != 0) 
++	{
++	  avn--;
++	  z = (*p_arg)->size;
++	  if (z < sizeof(int))
++	    {
++	      z = sizeof(int);
++	      switch ((*p_arg)->type)
++		{
++		case FFI_TYPE_SINT8:
++		  *(signed int *) argp = (signed int)*(SINT8 *)(* p_argv);
++		  break;
++		  
++		case FFI_TYPE_UINT8:
++		  *(unsigned int *) argp = (unsigned int)*(UINT8 *)(* p_argv);
++		  break;
++		  
++		case FFI_TYPE_SINT16:
++		  *(signed int *) argp = (signed int)*(SINT16 *)(* p_argv);
++		  break;
++		  
++		case FFI_TYPE_UINT16:
++		  *(unsigned int *) argp = (unsigned int)*(UINT16 *)(* p_argv);
++		  break;
++		  
++		case FFI_TYPE_STRUCT:
++	  	  z = (*p_arg)->size;
++	  	  if ( (*p_arg)->alignment != 1 )
++	          	memcpy(argp, *p_argv, z);
++		  else
++	          	memcpy(argp + 4 - z, *p_argv, z);
++	  	  z = sizeof(int);
++		  break;
++
++		default:
++		  FFI_ASSERT(0);
++		}
++	    }
++	  else if (z == sizeof(int))
++	    {
++	       *(unsigned int *) argp = (unsigned int)*(UINT32 *)(* p_argv);
++	    }
++	  else
++	    {
++	      if ( (*p_arg)->type == FFI_TYPE_STRUCT )
++	        {
++		  if ( z > 8 )
++		    {
++		      *(unsigned int *) argp = (unsigned int)(void *)(* p_argv);
++		      z = sizeof(void *);
++		    }
++		  else
++		    {
++	              memcpy(argp, *p_argv, z);
++		      z = 8;
++		    }
++	        }
++	      else
++	        { /* double or long long 64bit */
++	          memcpy(argp, *p_argv, z);
++	        }
++	    }
++	  p_argv++;
++	  argp += z;
++	}
++    }
++  
++  return;
++}
++
++/* Perform machine dependent cif processing */
++ffi_status ffi_prep_cif_machdep(ffi_cif *cif)
++{
++  /* Set the return type flag */
++  switch (cif->rtype->type)
++    {
++    case FFI_TYPE_VOID:
++      cif->flags = (unsigned) cif->rtype->type;
++      break;
++
++    case FFI_TYPE_STRUCT:
++      if (cif->rtype->size <= 4)
++	{
++          cif->flags = FFI_TYPE_INT;
++	}
++      else if (cif->rtype->size <= 8)
++	{
++          cif->flags = FFI_TYPE_DOUBLE;
++	}
++      else
++	{
++          cif->flags = (unsigned) cif->rtype->type;
++	}
++      break;
++
++    case FFI_TYPE_SINT64:
++    case FFI_TYPE_UINT64:
++    case FFI_TYPE_DOUBLE:
++      cif->flags = FFI_TYPE_DOUBLE;
++      break;
++
++    case FFI_TYPE_FLOAT:
++    default:
++      cif->flags = FFI_TYPE_INT;
++      break;
++    }
++
++  return FFI_OK;
++}
++
++/*@-declundef@*/
++/*@-exportheader@*/
++extern void ffi_call_SYSV(void (*)(char *, extended_cif *), 
++			  /*@out@*/ extended_cif *, 
++			  unsigned, unsigned, 
++			  /*@out@*/ unsigned *, 
++			  void (*fn)());
++/*@=declundef@*/
++/*@=exportheader@*/
++
++void ffi_call(/*@dependent@*/ ffi_cif *cif, 
++	      void (*fn)(), 
++	      /*@out@*/ void *rvalue, 
++	      /*@dependent@*/ void **avalue)
++{
++  extended_cif ecif;
++
++  ecif.cif = cif;
++  ecif.avalue = avalue;
++  
++  /* If the return value is a struct and we don't have a return	*/
++  /* value address then we need to make one		        */
++
++  if ((rvalue == NULL) && 
++      (cif->rtype->type == FFI_TYPE_STRUCT))
++    {
++      /*@-sysunrecog@*/
++      ecif.rvalue = alloca(cif->rtype->size);
++      /*@=sysunrecog@*/
++    }
++  else
++    ecif.rvalue = rvalue;
++    
++  
++  switch (cif->abi) 
++    {
++    case FFI_SYSV:
++      /*@-usedef@*/
++      ffi_call_SYSV(ffi_prep_args, &ecif, cif->bytes, 
++		    cif->flags, ecif.rvalue, fn);
++      if ( cif->rtype->type == FFI_TYPE_STRUCT )
++	{
++	  int size = cif->rtype->size;
++	  int align = cif->rtype->alignment;
++	  if (size < 4)
++	    {
++	      if ( align == 1 )
++	        *(unsigned long *)(ecif.rvalue) <<= (4 - size)*8;
++	    }
++	  else if ( 4 < size && size < 8 )
++	    {
++	       if ( align == 1 )
++	         {
++	            memcpy(ecif.rvalue, ecif.rvalue + 8-size, size);
++	         }
++	       else if (align == 2)
++	         {
++		    if (size & 1) size += 1;
++		    if (size != 8)
++	              memcpy(ecif.rvalue, ecif.rvalue + 8-size, size);
++	         }
++	    }
++	}
++      /*@=usedef@*/
++      break;
++    default:
++      FFI_ASSERT(0);
++      break;
++    }
++}
+--- gcc-3.4.1/libffi/src/m32r/ffitarget.h	1970-01-01 09:00:00.000000000 +0900
++++ gcc-3.4.1/libffi/src/m32r/ffitarget.h	2004-10-22 10:22:24.000000000 +0900
+@@ -0,0 +1,48 @@
++/* -----------------------------------------------------------------*-C-*-
++   ffitarget.h - Copyright (c) 2004  Renesas Technology.
++   Target configuration macros for M32R.
++
++   Permission is hereby granted, free of charge, to any person obtaining
++   a copy of this software and associated documentation files (the
++   ``Software''), to deal in the Software without restriction, including
++   without limitation the rights to use, copy, modify, merge, publish,
++   distribute, sublicense, and/or sell copies of the Software, and to
++   permit persons to whom the Software is furnished to do so, subject to
++   the following conditions:
++
++   The above copyright notice and this permission notice shall be included
++   in all copies or substantial portions of the Software.
++
++   THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND, EXPRESS
++   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
++   IN NO EVENT SHALL CYGNUS SOLUTIONS BE LIABLE FOR ANY CLAIM, DAMAGES OR
++   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
++   ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++   OTHER DEALINGS IN THE SOFTWARE.
++
++   ----------------------------------------------------------------------- */
++
++#ifndef LIBFFI_TARGET_H
++#define LIBFFI_TARGET_H
++
++/* ---- Generic type definitions ----------------------------------------- */
++
++#ifndef LIBFFI_ASM
++typedef unsigned long          ffi_arg;
++typedef signed long            ffi_sarg;
++
++typedef enum ffi_abi {
++  FFI_FIRST_ABI = 0,
++  FFI_SYSV,
++  FFI_DEFAULT_ABI = FFI_SYSV,
++  FFI_LAST_ABI = FFI_DEFAULT_ABI + 1
++} ffi_abi;
++#endif
++
++#define FFI_CLOSURES 0
++#define FFI_TRAMPOLINE_SIZE 24
++#define FFI_NATIVE_RAW_API 0
++
++#endif
++
+--- gcc-3.4.1/libffi/src/m32r/sysv.S	1970-01-01 09:00:00.000000000 +0900
++++ gcc-3.4.1/libffi/src/m32r/sysv.S	2004-10-22 10:22:24.000000000 +0900
+@@ -0,0 +1,122 @@
++/* -----------------------------------------------------------------------
++   sysv.S - Copyright (c) 2004 Renesas Technology
++   
++   M32R Foreign Function Interface 
++
++   Permission is hereby granted, free of charge, to any person obtaining
++   a copy of this software and associated documentation files (the
++   ``Software''), to deal in the Software without restriction, including
++   without limitation the rights to use, copy, modify, merge, publish,
++   distribute, sublicense, and/or sell copies of the Software, and to
++   permit persons to whom the Software is furnished to do so, subject to
++   the following conditions:
++
++   The above copyright notice and this permission notice shall be included
++   in all copies or substantial portions of the Software.
++
++   THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND, EXPRESS
++   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
++   IN NO EVENT SHALL CYGNUS SOLUTIONS BE LIABLE FOR ANY CLAIM, DAMAGES OR
++   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
++   ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++   OTHER DEALINGS IN THE SOFTWARE.
++   ----------------------------------------------------------------------- */
++
++#define LIBFFI_ASM	
++#include <fficonfig.h>
++#include <ffi.h>
++#ifdef HAVE_MACHINE_ASM_H
++#include <machine/asm.h>
++#else
++/* XXX these lose for some platforms, I'm sure. */
++#define CNAME(x) x
++#define ENTRY(x) .globl CNAME(x)! .type CNAME(x),%function! CNAME(x):
++#endif
++	
++.text
++
++	/* R0:   ffi_prep_args */
++	/* R1:   &ecif */
++	/* R2:   cif->bytes */
++	/* R3:   fig->flags */
++	/* sp+0: ecif.rvalue */
++	/* sp+4: fn */
++
++	/* This assumes we are using gas. */
++ENTRY(ffi_call_SYSV)
++	/* Save registers */
++	push	fp
++	push	lr
++	push	r3
++	push	r2
++	push	r1
++	push	r0
++	mv	fp, sp
++
++	/* Make room for all of the new args. */
++	sub	sp, r2
++
++	/* Place all of the ffi_prep_args in position */
++	mv	lr, r0	
++	mv	r0, sp
++	/* R1 already set */
++
++	/* And call */
++	jl	lr
++
++	/* move first 4 parameters in registers */
++	ld	r0, @(0,sp)
++	ld	r1, @(4,sp)
++	ld	r2, @(8,sp)
++        ld	r3, @(12,sp)
++
++	/* and adjust stack */
++	ld	lr, @(8,fp)
++        cmpi	lr, #16
++	bc	adjust_stack
++	ldi	lr, #16
++adjust_stack:
++        add	sp, lr
++
++	/* call function */
++	ld	lr, @(28,fp)
++	jl	lr	
++
++	/* Remove the space we pushed for the args */
++	mv	sp, fp	
++
++	/* Load R2 with the pointer to storage for the return value */
++	ld	r2, @(24,sp)
++
++	/* Load R3 with the return type code */
++	ld	r3, @(12,sp)
++
++	/* If the return value pointer is NULL, assume no return value. */
++	beqz	r2, epilogue
++
++/* return INT */
++	ldi	r4, #FFI_TYPE_INT
++	bne	r3, r4, return_double
++	st	r0, @r2	
++	bra	epilogue
++
++return_double:
++/* return DOUBLE or LONGDOUBLE */
++	ldi	r4, #FFI_TYPE_DOUBLE
++	bne	r3, r4, epilogue
++	st	r0, @r2	
++	st	r1, @(4,r2)
++
++epilogue:
++	pop	r0
++	pop	r1
++	pop	r2
++	pop	r3
++	pop	lr
++	pop	fp
++        jmp lr
++
++.ffi_call_SYSV_end:
++        .size    CNAME(ffi_call_SYSV),.ffi_call_SYSV_end-CNAME(ffi_call_SYSV)
++
+--- gcc-3.4.1/libffi/src/types.c	2004-03-12 10:35:31.000000000 +0900
++++ gcc-3.4.1/libffi/src/types.c	2004-10-22 10:22:24.000000000 +0900
+@@ -53,7 +53,7 @@ FFI_INTEGRAL_TYPEDEF(pointer, 4, 4, FFI_
+ 
+ #endif
+ 
+-#if defined X86 || defined X86_WIN32 || defined ARM || defined M68K
++#if defined X86 || defined X86_WIN32 || defined ARM || defined M68K || defined M32R
+ 
+ FFI_INTEGRAL_TYPEDEF(uint64, 8, 4, FFI_TYPE_UINT64);
+ FFI_INTEGRAL_TYPEDEF(sint64, 8, 4, FFI_TYPE_SINT64);
+@@ -76,7 +76,7 @@ FFI_INTEGRAL_TYPEDEF(sint64, 8, 8, FFI_T
+ FFI_INTEGRAL_TYPEDEF(double, 8, 4, FFI_TYPE_DOUBLE);
+ FFI_INTEGRAL_TYPEDEF(longdouble, 12, 4, FFI_TYPE_LONGDOUBLE);
+ 
+-#elif defined ARM || defined SH || defined POWERPC_AIX || defined POWERPC_DARWIN
++#elif defined ARM || defined SH || defined M32R || defined POWERPC_AIX || defined POWERPC_DARWIN
+ 
+ FFI_INTEGRAL_TYPEDEF(double, 8, 4, FFI_TYPE_DOUBLE);
+ FFI_INTEGRAL_TYPEDEF(longdouble, 8, 4, FFI_TYPE_LONGDOUBLE);

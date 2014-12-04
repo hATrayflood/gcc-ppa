@@ -1,0 +1,60 @@
+#! /bin/sh -e
+
+# DP: Correct makeinfo version check.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        cd ${dir}gcc && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        rm -f ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- gcc/configure.ac.orig	2008-05-02 11:33:50.744014990 +0200
++++ gcc/configure.ac	2008-05-02 11:34:05.654239908 +0200
+@@ -648,7 +648,7 @@
+   # that we can use it.
+   gcc_AC_CHECK_PROG_VER(MAKEINFO, makeinfo, --version,
+   [GNU texinfo.* \([0-9][0-9.]*\)],
+-  [4.[2-9]*])
++  [4.[2-9]*|4.[1-9][0-9]*|[5-9]*|[1-9][0-9]*])
+ fi
+ 
+ if test $gcc_cv_prog_makeinfo_modern = no; then
+--- Makefile.tpl.orig	2004-09-24 02:43:53.000000000 +0200
++++ Makefile.tpl	2008-05-07 08:30:52.225028226 +0200
+@@ -189,7 +189,7 @@
+ USUAL_MAKEINFO = `if [ -f $$r/texinfo/makeinfo/makeinfo ] ; \
+ 	then echo $$r/texinfo/makeinfo/makeinfo ; \
+ 	else if (makeinfo --version \
+-	  | egrep 'texinfo[^0-9]*([1-3][0-9]|4\.[2-9]|[5-9])') >/dev/null 2>&1; \
++	  | egrep 'texinfo[^0-9]*([1-3][0-9]|4\.[2-9]|4\.[1-9][0-9]*|[5-9])') >/dev/null 2>&1; \
+         then echo makeinfo; else echo $$s/missing makeinfo; fi; fi`
+ 
+ # This just becomes part of the MAKEINFO definition passed down to
+--- Makefile.in.orig	2004-09-24 02:43:53.000000000 +0200
++++ Makefile.in	2008-05-07 08:30:52.235028377 +0200
+@@ -186,7 +186,7 @@
+ USUAL_MAKEINFO = `if [ -f $$r/texinfo/makeinfo/makeinfo ] ; \
+ 	then echo $$r/texinfo/makeinfo/makeinfo ; \
+ 	else if (makeinfo --version \
+-	  | egrep 'texinfo[^0-9]*([1-3][0-9]|4\.[2-9]|[5-9])') >/dev/null 2>&1; \
++	  | egrep 'texinfo[^0-9]*([1-3][0-9]|4\.[2-9]|4\.[1-9][0-9]*|[5-9])') >/dev/null 2>&1; \
+         then echo makeinfo; else echo $$s/missing makeinfo; fi; fi`
+ 
+ # This just becomes part of the MAKEINFO definition passed down to

@@ -1,0 +1,217 @@
+#! /bin/sh -e
+
+# DP: biarch-include.dpatch
+# DP:
+# DP: Adds biarch include directories
+# DP:     /usr/include/c++/<ver>/<arch>-linux-gnu
+# DP:     /usr/local/include/<arch>-linux-gnu
+# DP:     /usr/include/<arch>-linux-gnu
+# DP: to the system include paths, depending on 32/64 bit mode.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- gcc/cppdefault.h.orig	2005-08-20 16:47:56.400240680 +0000
++++ gcc/cppdefault.h	2005-08-20 16:49:22.777109400 +0000
+@@ -43,6 +43,7 @@
+ 				   C++.  */
+   const char add_sysroot;	/* FNAME should be prefixed by
+ 				   cpp_SYSROOT.  */
++  const char biarch;            /* 32/64 bit biarch include */
+ };
+ 
+ extern const struct default_include cpp_include_defaults[];
+--- gcc/c-incpath.c.orig	2005-08-20 16:47:56.401240528 +0000
++++ gcc/c-incpath.c	2005-08-20 16:49:22.877094200 +0000
+@@ -137,6 +137,13 @@
+ 		 now.  */
+ 	      if (sysroot && p->add_sysroot)
+ 		continue;
++	      if (p->biarch)
++		{
++		  if (p->biarch == 64 && !(target_flags & MASK_64BIT))
++		    continue;
++		  if (p->biarch == 32 && (target_flags & MASK_64BIT))
++		    continue;
++		}
+ 	      if (!strncmp (p->fname, cpp_GCC_INCLUDE_DIR, len))
+ 		{
+ 		  char *str = concat (iprefix, p->fname + len, NULL);
+@@ -148,6 +155,14 @@
+ 
+   for (p = cpp_include_defaults; p->fname; p++)
+     {
++      if (p->biarch)
++	{
++	  if (p->biarch == 64 && !(target_flags & MASK_64BIT))
++	    continue;
++	  if (p->biarch == 32 && (target_flags & MASK_64BIT))
++	    continue;
++	}
++
+       if (!p->cplusplus || cxx_stdinc)
+ 	{
+ 	  char *str;
+--- gcc/cppdefault.c.orig	2005-08-20 16:47:56.454232472 +0000
++++ gcc/cppdefault.c	2005-08-20 16:52:11.278493296 +0000
+@@ -29,6 +29,22 @@
+ #define STANDARD_INCLUDE_DIR "/usr/include"
+ #endif
+ 
++#ifndef STANDARD32_INCLUDE_DIR
++#define STANDARD32_INCLUDE_DIR STANDARD_INCLUDE_DIR "/" TARGET32_MACHINE
++#endif
++
++#ifndef LOCAL32_INCLUDE_DIR
++#define LOCAL32_INCLUDE_DIR LOCAL_INCLUDE_DIR "/" TARGET32_MACHINE
++#endif
++
++#ifndef STANDARD64_INCLUDE_DIR
++#define STANDARD64_INCLUDE_DIR STANDARD_INCLUDE_DIR "/" TARGET64_MACHINE
++#endif
++
++#ifndef LOCAL64_INCLUDE_DIR
++#define LOCAL64_INCLUDE_DIR LOCAL_INCLUDE_DIR "/" TARGET64_MACHINE
++#endif
++
+ #ifndef STANDARD_INCLUDE_COMPONENT
+ #define STANDARD_INCLUDE_COMPONENT 0
+ #endif
+@@ -37,6 +53,10 @@
+ # undef LOCAL_INCLUDE_DIR
+ # undef SYSTEM_INCLUDE_DIR
+ # undef STANDARD_INCLUDE_DIR
++# undef STANDARD32_INCLUDE_DIR
++# undef LOCAL32_INCLUDE_DIR
++# undef STANDARD64_INCLUDE_DIR
++# undef LOCAL64_INCLUDE_DIR
+ #else
+ # undef CROSS_INCLUDE_DIR
+ #endif
+@@ -52,12 +72,21 @@
+ #endif
+ #ifdef GPLUSPLUS_TOOL_INCLUDE_DIR
+     /* Pick up GNU C++ target-dependent include files.  */
+-    { GPLUSPLUS_TOOL_INCLUDE_DIR, "G++", 1, 1, 0 },
++    { GPLUSPLUS_INCLUDE_DIR "/" TARGET32_MACHINE, "G++", 1, 1, 0, 32 },
++    { GPLUSPLUS_INCLUDE_DIR "/" TARGET64_MACHINE, "G++", 1, 1, 0, 64 },
+ #endif
+ #ifdef GPLUSPLUS_BACKWARD_INCLUDE_DIR
+     /* Pick up GNU C++ backward and deprecated include files.  */
+     { GPLUSPLUS_BACKWARD_INCLUDE_DIR, "G++", 1, 1, 0 },
+ #endif
++#ifdef LOCAL32_INCLUDE_DIR
++    /* /usr/local/include/$target_alias comes before the fixincluded header files.  */
++    { LOCAL32_INCLUDE_DIR, 0, 0, 1, 1, 32 },
++#endif
++#ifdef LOCAL64_INCLUDE_DIR
++    /* /usr/local/include/$target_alias comes before the fixincluded header files.  */
++    { LOCAL64_INCLUDE_DIR, 0, 0, 1, 1, 64 },
++#endif
+ #ifdef LOCAL_INCLUDE_DIR
+     /* /usr/local/include comes before the fixincluded header files.  */
+     { LOCAL_INCLUDE_DIR, 0, 0, 1, 1 },
+@@ -73,7 +102,7 @@
+     /* One place the target system's headers might be.  */
+     { CROSS_INCLUDE_DIR, "GCC", 0, 0, 0 },
+ #endif
+-#ifdef TOOL_INCLUDE_DIR
++#if defined(TOOL_INCLUDE_DIR) && !defined(STANDARD32_INCLUDE_DIR) && !defined(STANDARD64_INCLUDE_DIR)
+     /* Another place the target system's headers might be.  */
+     { TOOL_INCLUDE_DIR, "BINUTILS", 0, 1, 0 },
+ #endif
+@@ -81,6 +110,14 @@
+     /* Some systems have an extra dir of include files.  */
+     { SYSTEM_INCLUDE_DIR, 0, 0, 0, 1 },
+ #endif
++#ifdef STANDARD32_INCLUDE_DIR
++    /* /usr/include/$target_alias comes before the fixincluded header files.  */
++    { STANDARD32_INCLUDE_DIR, STANDARD_INCLUDE_COMPONENT, 0, 1, 1, 32 },
++#endif
++#ifdef STANDARD64_INCLUDE_DIR
++    /* /usr/include/$target_alias comes before the fixincluded header files.  */
++    { STANDARD64_INCLUDE_DIR, STANDARD_INCLUDE_COMPONENT, 0, 1, 1, 64 },
++#endif
+ #ifdef STANDARD_INCLUDE_DIR
+     /* /usr/include comes dead last.  */
+     { STANDARD_INCLUDE_DIR, STANDARD_INCLUDE_COMPONENT, 0, 0, 1 },
+--- gcc/Makefile.in.orig	2005-08-20 16:47:56.559216512 +0000
++++ gcc/Makefile.in	2005-08-20 16:49:23.040069424 +0000
+@@ -2353,6 +2353,13 @@
+   -DTOOL_INCLUDE_DIR=\"$(gcc_tooldir)/include\" \
+   @TARGET_SYSTEM_ROOT_DEFINE@
+ 
++ifneq (,$(TARGET32_MACHINE))
++  PREPROCESSOR_DEFINES += -DTARGET32_MACHINE=\"$(strip $(TARGET32_MACHINE))\"
++endif
++ifneq (,$(TARGET64_MACHINE))
++  PREPROCESSOR_DEFINES += -DTARGET64_MACHINE=\"$(strip $(TARGET64_MACHINE))\"
++endif
++
+ LIBCPP_OBJS =	cpplib.o cpplex.o cppmacro.o cppexp.o cppfiles.o cpptrad.o \
+ 		cpphash.o cpperror.o cppinit.o cppcharset.o \
+ 		hashtable.o line-map.o mkdeps.o cpppch.o
+--- libstdc++-v3/include/Makefile.am.orig	2004-09-27 19:26:45.000000000 +0200
++++ libstdc++-v3/include/Makefile.am	2005-11-16 20:29:35.334986776 +0100
+@@ -335,6 +335,7 @@
+ 
+ host_srcdir = ${glibcxx_srcdir}/$(OS_INC_SRCDIR)
+ host_builddir = ./${host_alias}/bits
++host_installdir = ./${host_alias}/bits
+ host_headers = \
+ 	${host_srcdir}/ctype_base.h \
+ 	${host_srcdir}/ctype_inline.h \
+@@ -601,10 +602,10 @@
+ 	$(mkinstalldirs) $(DESTDIR)${gxx_include_dir}/${debug_builddir}
+ 	for file in ${debug_headers}; do \
+ 	  $(INSTALL_DATA) $${file} $(DESTDIR)${gxx_include_dir}/${debug_builddir}; done
+-	$(mkinstalldirs) $(DESTDIR)${gxx_include_dir}/${host_builddir}
++	$(mkinstalldirs) $(DESTDIR)${gxx_include_dir}/${host_installdir}
+ 	for file in ${host_headers} ${host_headers_extra} \
+ 	 ${thread_host_headers}; do \
+-	  $(INSTALL_DATA) $${file} $(DESTDIR)${gxx_include_dir}/${host_builddir}; done
++	  $(INSTALL_DATA) $${file} $(DESTDIR)${gxx_include_dir}/${host_installddir}; done
+ 
+ install-pch:
+ 	$(mkinstalldirs) $(DESTDIR)${gxx_include_dir}/${pch_output_builddir}
+--- libstdc++-v3/include/Makefile.in.orig	2004-09-27 19:26:45.000000000 +0200
++++ libstdc++-v3/include/Makefile.in	2005-11-16 20:29:35.335986624 +0100
+@@ -534,6 +534,7 @@
+ 
+ host_srcdir = ${glibcxx_srcdir}/$(OS_INC_SRCDIR)
+ host_builddir = ./${host_alias}/bits
++host_installdir = ./${host_alias}/bits
+ host_headers = \
+ 	${host_srcdir}/ctype_base.h \
+ 	${host_srcdir}/ctype_inline.h \
+@@ -953,10 +954,10 @@
+ 	$(mkinstalldirs) $(DESTDIR)${gxx_include_dir}/${debug_builddir}
+ 	for file in ${debug_headers}; do \
+ 	  $(INSTALL_DATA) $${file} $(DESTDIR)${gxx_include_dir}/${debug_builddir}; done
+-	$(mkinstalldirs) $(DESTDIR)${gxx_include_dir}/${host_builddir}
++	$(mkinstalldirs) $(DESTDIR)${gxx_include_dir}/${host_installdir}
+ 	for file in ${host_headers} ${host_headers_extra} \
+ 	 ${thread_host_headers}; do \
+-	  $(INSTALL_DATA) $${file} $(DESTDIR)${gxx_include_dir}/${host_builddir}; done
++	  $(INSTALL_DATA) $${file} $(DESTDIR)${gxx_include_dir}/${host_installdir}; done
+ 
+ install-pch:
+ 	$(mkinstalldirs) $(DESTDIR)${gxx_include_dir}/${pch_output_builddir}

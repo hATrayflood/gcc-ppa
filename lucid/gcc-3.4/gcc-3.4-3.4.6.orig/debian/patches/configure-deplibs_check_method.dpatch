@@ -1,0 +1,145 @@
+#! /bin/sh -e
+
+# DP: In all configure scripts for libraries, generated with autoconf2.13, use
+# DP: deplibs_check_method=pass_all unconditionally for all linux architectures.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- ./boehm-gc/configure~	2005-05-11 01:22:34.000000000 +0200
++++ ./boehm-gc/configure	2005-05-11 16:09:05.563271432 +0200
+@@ -1937,13 +1937,7 @@
+ 
+ # This must be Linux ELF.
+ linux-gnu*)
+-  case $host_cpu in
+-  alpha* | mips* | hppa* | i*86 | powerpc* | sparc* | ia64* | sh* )
+-    lt_cv_deplibs_check_method=pass_all ;;
+-  *)
+-    # glibc up to 2.1.1 does not perform some relocations on ARM
+-    lt_cv_deplibs_check_method='file_magic ELF [0-9][0-9]*-bit [LM]SB (shared object|dynamic lib )' ;;
+-  esac
++  lt_cv_deplibs_check_method=pass_all
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+--- ./libf2c/configure~	2004-05-18 11:08:39.000000000 +0200
++++ ./libf2c/configure	2005-05-11 16:11:20.281791104 +0200
+@@ -1607,13 +1607,7 @@
+ 
+ # This must be Linux ELF.
+ linux-gnu*)
+-  case $host_cpu in
+-  alpha* | mips* | hppa* | i*86 | powerpc* | sparc* | ia64* | sh* )
+-    lt_cv_deplibs_check_method=pass_all ;;
+-  *)
+-    # glibc up to 2.1.1 does not perform some relocations on ARM
+-    lt_cv_deplibs_check_method='file_magic ELF [0-9][0-9]*-bit [LM]SB (shared object|dynamic lib )' ;;
+-  esac
++  lt_cv_deplibs_check_method=pass_all
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+--- ./libffi/configure~	2004-05-18 11:08:39.000000000 +0200
++++ ./libffi/configure	2005-05-11 16:14:41.595186816 +0200
+@@ -1322,13 +1322,7 @@
+ 
+ # This must be Linux ELF.
+ linux-gnu*)
+-  case $host_cpu in
+-  alpha* | mips* | hppa* | i*86 | powerpc* | sparc* | ia64* | sh* )
+-    lt_cv_deplibs_check_method=pass_all ;;
+-  *)
+-    # glibc up to 2.1.1 does not perform some relocations on ARM
+-    lt_cv_deplibs_check_method='file_magic ELF [0-9][0-9]*-bit [LM]SB (shared object|dynamic lib )' ;;
+-  esac
++  lt_cv_deplibs_check_method=pass_all
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+--- ./libjava/libltdl/configure~	2005-05-11 01:22:34.000000000 +0200
++++ ./libjava/libltdl/configure	2005-05-11 16:16:17.684579008 +0200
+@@ -3619,13 +3619,7 @@
+ 
+ # This must be Linux ELF.
+ linux*)
+-  case $host_cpu in
+-  alpha* | hppa* | i*86 | ia64* | m68* | mips | mipsel | powerpc* | sparc* | s390* | sh*)
+-    lt_cv_deplibs_check_method=pass_all ;;
+-  *)
+-    # glibc up to 2.1.1 does not perform some relocations on ARM
+-    lt_cv_deplibs_check_method='file_magic ELF [0-9][0-9]*-bit [LM]SB (shared object|dynamic lib )' ;;
+-  esac
++  lt_cv_deplibs_check_method=pass_all
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+--- ./libjava/configure~	2005-05-11 01:22:34.000000000 +0200
++++ ./libjava/configure	2005-05-11 16:15:22.253005888 +0200
+@@ -2033,13 +2033,7 @@
+ 
+ # This must be Linux ELF.
+ linux-gnu*)
+-  case $host_cpu in
+-  alpha* | mips* | hppa* | i*86 | powerpc* | sparc* | ia64* | sh* )
+-    lt_cv_deplibs_check_method=pass_all ;;
+-  *)
+-    # glibc up to 2.1.1 does not perform some relocations on ARM
+-    lt_cv_deplibs_check_method='file_magic ELF [0-9][0-9]*-bit [LM]SB (shared object|dynamic lib )' ;;
+-  esac
++  lt_cv_deplibs_check_method=pass_all
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+--- ./libobjc/configure~	2004-05-18 11:08:42.000000000 +0200
++++ ./libobjc/configure	2005-05-11 16:16:59.467227080 +0200
+@@ -1612,13 +1612,7 @@
+ 
+ # This must be Linux ELF.
+ linux-gnu*)
+-  case $host_cpu in
+-  alpha* | mips* | hppa* | i*86 | powerpc* | sparc* | ia64* | sh* )
+-    lt_cv_deplibs_check_method=pass_all ;;
+-  *)
+-    # glibc up to 2.1.1 does not perform some relocations on ARM
+-    lt_cv_deplibs_check_method='file_magic ELF [0-9][0-9]*-bit [LM]SB (shared object|dynamic lib )' ;;
+-  esac
++  lt_cv_deplibs_check_method=pass_all
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+--- ./zlib/configure~	2004-05-18 11:09:14.000000000 +0200
++++ ./zlib/configure	2005-05-11 16:17:57.642383112 +0200
+@@ -1579,13 +1579,7 @@
+ 
+ # This must be Linux ELF.
+ linux-gnu*)
+-  case $host_cpu in
+-  alpha* | mips* | hppa* | i*86 | powerpc* | sparc* | ia64* | sh* )
+-    lt_cv_deplibs_check_method=pass_all ;;
+-  *)
+-    # glibc up to 2.1.1 does not perform some relocations on ARM
+-    lt_cv_deplibs_check_method='file_magic ELF [0-9][0-9]*-bit [LM]SB (shared object|dynamic lib )' ;;
+-  esac
++  lt_cv_deplibs_check_method=pass_all
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 

@@ -1,0 +1,162 @@
+#! /bin/sh -e
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+# DP: gpc fixes for bison-2.2
+
+--- gcc/p/ChangeLog.orig	Fri Mar 24 02:47:15 2006
++++ gcc/p/ChangeLog	Sat May 20 02:55:11 2006
+@@ -1,5 +1,22 @@
+ ChangeLog -- Edit History for GPC, the GNU Pascal Compiler, since version 2.1
+ =============================================================================
++
++2006-05-19  Frank Heckenbach  <frank@pascal.gnu.de>
++
++        * gpc.h: correct conditional check for including "parse.h"
++          (recent Bison versions output tokens as enum values, not
++          as #defines anymore)
++
++        * parse.y: move most of the first section of C code below
++          the token declarations, so it doesn't appear in parse.h
++          with Bison 2.2, as it is parser-private stuff which would
++          cause some unused-warnings otherwise; correct "%expect-rr"
++          number as Bison 2.2 gives errors instead of warnings on
++          mismatch
++
++        * utils/mk-t-inc: minor portability fix (some sed versions
++          require ";" before "}")
++
+ 2006-03-09  Waldek Hebisch  <hebisch@math.uni.wroc.pl>
+ 
+         * predef.c: build_predef_call (): handle named exit from a method
+--- gcc/p/gpc.h.orig	Sat May 20 02:09:15 2006
++++ gcc/p/gpc.h	Sat May 20 02:12:07 2006
+@@ -887,7 +887,7 @@
+ #define YYLTYPE_IS_DECLARED
+ 
+ /* parse.c contains the same declarations again */
+-#ifndef LEX_ID
++#ifndef YYTOKENTYPE
+ #include "parse.h"
+ #endif
+ 
+--- gcc/p/parse.y.orig	Fri Mar 24 02:47:15 2006
++++ gcc/p/parse.y	Sat May 20 02:37:44 2006
+@@ -66,38 +66,6 @@
+ #ifdef GCC_4_0
+ #include "cgraph.h"
+ #endif
+-
+-/* A few keywords of some dialects can be parsed as regular identifiers
+-   and checked from the parser actions => fewer special tokens. */
+-#define ASSERT_ID(id, location, pseudo_keyword) \
+-  do if (!IDENTIFIER_IS_BUILT_IN (id, pseudo_keyword) || !PD_ACTIVE (IDENTIFIER_BUILT_IN_VALUE (id))) \
+-    { yyerror_id (id, &location); YYERROR; } while (0)
+-
+-enum { od_none, od_uses, od_label, od_const, od_type, od_var, od_routine };
+-static int check_decl_order (int, int);
+-
+-extern int main_yyparse (void);
+-#define yyparse main_yyparse
+-
+-union yyGLRStackItem;
+-static void locations (YYLTYPE *, const union yyGLRStackItem *, int);
+-#define YYLLOC_DEFAULT(DEST, SRC, N) locations (&DEST, SRC, N)
+-#ifndef GCC_3_4
+-#define LOCATION_NOTE(LOC) if (current_function_decl) emit_line_note ((LOC).first_file, (LOC).first_line)
+-#else
+-#define LOCATION_NOTE(LOC) if (current_function_decl) \
+-  { \
+-    location_t loc_aux; \
+-    loc_aux.file = (LOC).first_file; \
+-    loc_aux.line = (LOC).first_line; \
+-    emit_line_note (loc_aux); \
+-  }
+-#endif
+-#define COPYLOC(D, S) /* @@ ? (* (YYLTYPE *) memcpy (&(D), &(S), sizeof (YYLTYPE))) */ (S)
+-
+-#define YYASSERT gcc_assert
+-#define YYMALLOC (void *) xmalloc
+-#define YYREALLOC (void *) xrealloc
+ %}
+ 
+ %debug
+@@ -106,7 +74,7 @@
+ %glr-parser
+ %no-default-prec
+ %expect 62
+-%expect-rr 24
++%expect-rr 25
+ 
+ /* The semantic values */
+ %union {
+@@ -206,6 +174,40 @@
+   array_index_list remote_directive operator_symbol string_constant variant_list
+   rest_of_variant new_pointer_type conformant_array enumerated_type id_list1 err
+   optional_rename attrib id_list id optional_formal_parameter_list0
++
++%{
++/* A few keywords of some dialects can be parsed as regular identifiers
++   and checked from the parser actions => fewer special tokens. */
++#define ASSERT_ID(id, location, pseudo_keyword) \
++  do if (!IDENTIFIER_IS_BUILT_IN (id, pseudo_keyword) || !PD_ACTIVE (IDENTIFIER_BUILT_IN_VALUE (id))) \
++    { yyerror_id (id, &location); YYERROR; } while (0)
++
++enum { od_none, od_uses, od_label, od_const, od_type, od_var, od_routine };
++static int check_decl_order (int, int);
++
++extern int main_yyparse (void);
++#define yyparse main_yyparse
++
++union yyGLRStackItem;
++static void locations (YYLTYPE *, const union yyGLRStackItem *, int);
++#define YYLLOC_DEFAULT(DEST, SRC, N) locations (&DEST, SRC, N)
++#ifndef GCC_3_4
++#define LOCATION_NOTE(LOC) if (current_function_decl) emit_line_note ((LOC).first_file, (LOC).first_line)
++#else
++#define LOCATION_NOTE(LOC) if (current_function_decl) \
++  { \
++    location_t loc_aux; \
++    loc_aux.file = (LOC).first_file; \
++    loc_aux.line = (LOC).first_line; \
++    emit_line_note (loc_aux); \
++  }
++#endif
++#define COPYLOC(D, S) /* @@ ? (* (YYLTYPE *) memcpy (&(D), &(S), sizeof (YYLTYPE))) */ (S)
++
++#define YYASSERT gcc_assert
++#define YYMALLOC (void *) xmalloc
++#define YYREALLOC (void *) xrealloc
++%}
+ 
+ %%
+ 
+--- gcc/p/utils/mk-t-inc.orig	Sat May 20 02:48:14 2006
++++ gcc/p/utils/mk-t-inc	Sat May 20 02:48:16 2006
+@@ -71,6 +71,6 @@
+ {
+   cat "$GCCDIR/tree.def"
+   echo 'DEFTREECODE (LAST_AND_UNUSED_C_TREE_CODE, "unused", '"'x', 0)"
+-  sed -e '/#ifdef EGCS/,${/#ifdef EGCS/d;/#else/,/#endif/d}'  "$GCCDIR/p/p-tree.def"
++  sed -e '/#ifdef EGCS/,${/#ifdef EGCS/d;/#else/,/#endif/d;}'  "$GCCDIR/p/p-tree.def"
+ } | sed -ne ':loop;/\\$/{N;b loop};/^DEFTREECODE/{s,/\*.*\*/,,;s/["'"'"']x["'"'"'].*/'"'x', 0)/;p;};/^#/p"
+ } > "$2" || { rm -f "$2"; false; }

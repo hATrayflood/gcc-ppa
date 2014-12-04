@@ -1,0 +1,60 @@
+#! /bin/sh -e
+
+# DP: multiarch-include.dpatch
+# DP:
+# DP: Adds multiarch include directories
+# DP:     /usr/local/include/<arch>-linux-gnu
+# DP:     /usr/include/<arch>-linux-gnu
+# DP: to the system include paths.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- gcc/cppdefault.c~	2006-07-14 13:52:45.873955680 +0000
++++ gcc/cppdefault.c	2006-07-14 14:00:13.684878072 +0000
+@@ -59,6 +59,8 @@
+     { GPLUSPLUS_BACKWARD_INCLUDE_DIR, "G++", 1, 1, 0 },
+ #endif
+ #ifdef LOCAL_INCLUDE_DIR
++    /* /usr/local/include/$target_alias comes before the fixincluded header files.  */
++    { LOCAL_INCLUDE_DIR "/" TARGET_NONCANONICAL, 0, 0, 1, 1 },
+     /* /usr/local/include comes before the fixincluded header files.  */
+     { LOCAL_INCLUDE_DIR, 0, 0, 1, 1 },
+ #endif
+@@ -82,6 +84,8 @@
+     { SYSTEM_INCLUDE_DIR, 0, 0, 0, 1 },
+ #endif
+ #ifdef STANDARD_INCLUDE_DIR
++    /* /usr/include/$target_alias comes before the fixincluded header files.  */
++    { STANDARD_INCLUDE_DIR "/" TARGET_NONCANONICAL, STANDARD_INCLUDE_COMPONENT, 0, 1, 1 },
+     /* /usr/include comes dead last.  */
+     { STANDARD_INCLUDE_DIR, STANDARD_INCLUDE_COMPONENT, 0, 0, 1 },
+ #endif
+--- gcc/Makefile.in~	2006-07-14 13:52:45.877955072 +0000
++++ gcc/Makefile.in	2006-07-14 13:58:11.596438336 +0000
+@@ -2351,6 +2351,7 @@
+   -DLOCAL_INCLUDE_DIR=\"$(local_includedir)\" \
+   -DCROSS_INCLUDE_DIR=\"$(CROSS_SYSTEM_HEADER_DIR)\" \
+   -DTOOL_INCLUDE_DIR=\"$(gcc_tooldir)/include\" \
++  -DTARGET_NONCANONICAL=\"$(target_noncanonical)\" \
+   @TARGET_SYSTEM_ROOT_DEFINE@
+ 
+ LIBCPP_OBJS =	cpplib.o cpplex.o cppmacro.o cppexp.o cppfiles.o cpptrad.o \

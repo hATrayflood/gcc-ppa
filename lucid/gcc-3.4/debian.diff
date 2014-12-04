@@ -1,0 +1,194 @@
+diff -urN debian/changelog gcc-3.4-3.4.6.orig/debian/changelog
+--- debian/changelog	2014-12-02 16:35:34.332822982 +0900
++++ gcc-3.4-3.4.6.orig/debian/changelog	2014-12-04 13:37:20.038564501 +0900
+@@ -1,3 +1,9 @@
++gcc-3.4 (3.4.6-6ubuntu5lucid1) lucid; urgency=low
++
++  * ppa for lucid
++
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Thu, 04 Dec 2014 13:00:00 +0900
++
+ gcc-3.4 (3.4.6-6ubuntu5) hardy-proposed; urgency=low
+ 
+   * Correct makeinfo version check in toplevel makefile as well.
+diff -urN debian/control gcc-3.4-3.4.6.orig/debian/control
+--- debian/control	2014-12-02 16:35:34.332822982 +0900
++++ gcc-3.4-3.4.6.orig/debian/control	2014-12-04 13:37:30.345644145 +0900
+@@ -1,11 +1,12 @@
+ Source: gcc-3.4
+ Section: devel
+ Priority: optional
+-Maintainer: Debian GCC Maintainers <debian-gcc@lists.debian.org>
+-Uploaders: Matthias Klose <doko@debian.org>, Gerhard Tonn <gt@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.6.2
+-Build-Depends: dpkg-dev (>= 1.13.9), libc6.1-dev (>= 2.3.5-10) [alpha ia64] | libc0.3-dev (>= 2.3.5-10) [hurd-i386] | libc0.1-dev (>= 2.3.5-10) [kfreebsd-i386 knetbsd-gnu] | libc12-dev (>= 2.3.5-10) [netbsd-elf-gnu] | libc6-dev (>= 2.3.5-10), libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], lib32gcc1 [amd64 ppc64], lib64gcc1 [powerpc i386 sparc s390], libunwind7-dev (>= 0.98.5-7) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.13, autoconf, automake1.4, automake1.7, libtool, autotools-dev, gawk, dejagnu (>= 1.4.3) [!hppa !hurd-i386 !knetbsd-gnu], bzip2, binutils (>= 2.16.1-3) | binutils-multiarch (>= 2.16.1-3), binutils-hppa64 (>= 2.16.1-3) [hppa], debhelper (>= 4.1), gperf (>= 2.7-3), bison (>= 1:2.3), flex (>= 2.5.33), gettext, texinfo (>= 4.3), zlib1g-dev, gcc-3.4, locales [!knetbsd-gnu !netbsd-elf-gnu !hurd-i386], procps [!hppa !hurd-i386 !knetbsd-gnu], sharutils, libncurses5-dev [!netbsd-elf-gnu], texlive-latex-base [!netbsd-elf-gnu], libgmp3-dev [!netbsd-elf-gnu], help2man [!netbsd-elf-gnu],   realpath (>= 1.9.12), lsb-release
++Build-Depends: dpkg-dev (>= 1.13.9), libc6.1-dev (>= 2.3.5-10) [alpha ia64] | libc0.3-dev (>= 2.3.5-10) [hurd-i386] | libc0.1-dev (>= 2.3.5-10) [kfreebsd-i386 knetbsd-gnu] | libc12-dev (>= 2.3.5-10) [netbsd-elf-gnu] | libc6-dev (>= 2.3.5-10), libc6-dev-amd64 [i386], libc6-dev-sparc64 [sparc], libc6-dev-s390x [s390], libc6-dev-i386 [amd64], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], lib32gcc1 [amd64 ppc64], lib64gcc1 [powerpc i386 sparc s390], libunwind7-dev (>= 0.98.5-7) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.13, autoconf, automake1.4, automake1.7, libtool, autotools-dev, gawk, dejagnu (>= 1.4.3) [!hppa !hurd-i386 !knetbsd-gnu], bzip2, binutils (>= 2.16.1-3) | binutils-multiarch (>= 2.16.1-3), binutils-hppa64 (>= 2.16.1-3) [hppa], debhelper (>= 4.1), gperf (>= 2.7-3), bison (>= 1:2.3), flex (>= 2.5.33), gettext, texinfo (>= 4.3), zlib1g-dev, gcc, locales [!knetbsd-gnu !netbsd-elf-gnu !hurd-i386], procps [!hppa !hurd-i386 !knetbsd-gnu], sharutils, libncurses5-dev [!netbsd-elf-gnu], texlive-latex-base [!netbsd-elf-gnu], libgmp3-dev [!netbsd-elf-gnu], help2man [!netbsd-elf-gnu],   realpath (>= 1.9.12), lsb-release
+ Build-Depends-Indep: doxygen (>= 1.4.2), graphviz (>= 2.2), gsfonts-x11
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-lower
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ Package: gcc-3.4-base
+ Architecture: any
+@@ -76,6 +77,17 @@
+  mips, mipsel, sparc). Please read /usr/share/doc/gcc-3.4/README.Debian
+  for more details. Do not mix code compiled with g++-3.3 and g++-3.4.
+ 
++Package: gobjc-3.4
++Architecture: any
++Priority: optional
++Depends: gcc-3.4-base (= ${gcc:Version}), gcc-3.4 (= ${gcc:Version}), ${shlibs:Depends}, libobjc1 (>= ${gcc:EpochVersion})
++Suggests: gcc-3.4-doc (>= ${gcc:SoftVersion})
++Provides: objc-compiler
++Description: The GNU Objective-C compiler
++ This is the GNU Objective-C compiler, which compiles
++ Objective-C on platforms supported by the gcc compiler. It uses the
++ gcc backend to generate optimized code.
++
+ Package: g77-3.4
+ Architecture: any
+ Priority: optional
+diff -urN debian/control.m4 gcc-3.4-3.4.6.orig/debian/control.m4
+--- debian/control.m4	2014-12-02 16:35:34.332822982 +0900
++++ gcc-3.4-3.4.6.orig/debian/control.m4	2014-12-04 09:00:14.765273524 +0900
+@@ -25,17 +25,19 @@
+ Source: SRCNAME
+ Section: devel
+ Priority: PRI(standard)
+-Maintainer: MAINTAINER
+-Uploaders: Matthias Klose <doko@debian.org>, Gerhard Tonn <gt@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.6.2
+ ifdef(`TARGET',`dnl cross
+ Build-Depends: dpkg-dev (>= 1.13.9), LIBC_BUILD_DEP, m4, autoconf2.13, autoconf, automake1.4, automake1.7, libtool, autotools-dev, gawk, bzip2, dpkg-cross (>= 1.18.1), BINUTILS_BUILD_DEP, debhelper (>= 4.1), bison (>= 1:2.3), flex (>= 2.5.33), realpath (>= 1.9.12), lsb-release`'TARGETBD
+ ',`dnl native
+-Build-Depends: dpkg-dev (>= 1.13.9), LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP libunwind7-dev (>= 0.98.5-7) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.13, autoconf, automake1.4, automake1.7, libtool, autotools-dev, gawk, dejagnu (>= 1.4.3) [check_no_archs], bzip2, BINUTILS_BUILD_DEP, binutils-hppa64 (>= BINUTILSV) [hppa], debhelper (>= 4.1), gperf (>= 2.7-3), bison (>= 1:2.3), flex (>= 2.5.33), gettext, texinfo (>= 4.3), zlib1g-dev, gcc-3.4, locales [locale_no_archs !hurd-i386], procps [check_no_archs], sharutils, PASCAL_BUILD_DEP JAVA_BUILD_DEP GNAT_BUILD_DEP realpath (>= 1.9.12), lsb-release
++Build-Depends: dpkg-dev (>= 1.13.9), LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP libunwind7-dev (>= 0.98.5-7) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.13, autoconf, automake1.4, automake1.7, libtool, autotools-dev, gawk, dejagnu (>= 1.4.3) [check_no_archs], bzip2, BINUTILS_BUILD_DEP, binutils-hppa64 (>= BINUTILSV) [hppa], debhelper (>= 4.1), gperf (>= 2.7-3), bison (>= 1:2.3), flex (>= 2.5.33), gettext, texinfo (>= 4.3), zlib1g-dev, gcc, locales [locale_no_archs !hurd-i386], procps [check_no_archs], sharutils, PASCAL_BUILD_DEP JAVA_BUILD_DEP GNAT_BUILD_DEP realpath (>= 1.9.12), lsb-release
+ Build-Depends-Indep: doxygen (>= 1.4.2), graphviz (>= 2.2), gsfonts-x11
+ ')dnl
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-lower
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ ifdef(`TARGET', `', `
++ifenabled(`gccbase',`
+ Package: gcc`'PV-base
+ Architecture: any
+ Section: devel
+@@ -48,6 +50,7 @@
+  This version of GCC is not yet available for this architecture.
+  Please use the compilers from the gcc-snapshot package for testing.
+ ')`'dnl
++')`'dnl gccbase
+ ')`'dnl native
+ 
+ ifenabled(`libgcc',`
+diff -urN debian/rules.conf gcc-3.4-3.4.6.orig/debian/rules.conf
+--- debian/rules.conf	2014-12-02 16:35:34.342920420 +0900
++++ gcc-3.4-3.4.6.orig/debian/rules.conf	2014-12-04 11:56:49.766113003 +0900
+@@ -241,6 +241,8 @@
+   addons = cdev c++dev fdev libg2c lib64g2c lib32g2c libs \
+ 	   # libcxx lib64cxx \
+ 	   # lib64objc lib64gcc libgcc objcdev proto # libnof
++  languages += objc
++  addons += gccbase objcdev
+   #languages += java treelang ada objc
+   #addons += fixincl fastjar javadev libffi libgcj lib64ffi lib64gcj
+   #addons += libgnat libobjc 
+diff -urN debian/rules.defs gcc-3.4-3.4.6.orig/debian/rules.defs
+--- debian/rules.defs	2014-12-02 16:35:34.342920420 +0900
++++ gcc-3.4-3.4.6.orig/debian/rules.defs	2014-12-04 12:01:16.576136578 +0900
+@@ -388,6 +388,7 @@
+ ifeq (pascal, $(findstring pascal,$(WITHOUT_LANG)))
+   with_pascal := disabled by environment
+ endif
++with_pascal := disabled for the gcc-3.4 build
+ ifdef DEB_CROSS
+   with_pascal := disabled for cross compiler package
+ endif
+@@ -420,7 +421,6 @@
+ ifeq (objc, $(findstring objc,$(WITHOUT_LANG)))
+   with_objc := disabled by environment
+ endif
+-with_objc := disabled for the gcc-3.4 build
+ 
+ ifneq ($(with_objc),yes)
+   with_objc_gc := $(with_objc)
+@@ -547,6 +547,7 @@
+ ifneq ($(WITHOUT_CHECK),)
+   with_check := disabled by environment
+ endif
++with_check := disabled for this build
+ 
+ # powerpc nof libraries --------------------
+ with_libnof := no
+diff -urN debian/rules.parameters gcc-3.4-3.4.6.orig/debian/rules.parameters
+--- debian/rules.parameters	2014-12-02 16:35:34.324591361 +0900
++++ gcc-3.4-3.4.6.orig/debian/rules.parameters	2014-12-04 13:37:30.345644145 +0900
+@@ -1,16 +1,16 @@
+ # configuration parameters taken from upstream source files
+ VER		:= 3.4.6
+ BASE_VERSION	:= 3.4
+-SOURCE_VERSION	:= 3.4.6-6ubuntu4
+-DEB_VERSION	:= 3.4.6-6ubuntu4
++SOURCE_VERSION	:= 3.4.6-6ubuntu5lucid1
++DEB_VERSION	:= 3.4.6-6ubuntu5lucid1
+ DEB_VERSION_NOREL	:= 3.4.6
+-DEB_EVERSION	:= 1:3.4.6-6ubuntu4
++DEB_EVERSION	:= 1:3.4.6-6ubuntu5lucid1
+ GPC_BASE_VERSION	:= 2.1
+-DEB_GPC_VERSION	:= 3.4.6-6ubuntu4
++DEB_GPC_VERSION	:= 3.4.6-6ubuntu5lucid1
+ DEB_SOVERSION	:= 3.4.4
+ DEB_SOEVERSION	:= 1:3.4.4
+ DEB_LIBGCC_SOVERSION	:= 1:3.4.4
+-DEB_LIBGCC_VERSION	:= 1:3.4.6-6ubuntu4
++DEB_LIBGCC_VERSION	:= 1:3.4.6-6ubuntu5lucid1
+ DEB_STDCXX_SOVERSION	:= 3.4.4
+ DEB_FFI_SOVERSION	:= 3.4.4
+ DEB_F2C_SOVERSION	:= 1:3.4.4-5
+diff -urN debian/rules2 gcc-3.4-3.4.6.orig/debian/rules2
+--- debian/rules2	2014-12-02 16:35:34.342920420 +0900
++++ gcc-3.4-3.4.6.orig/debian/rules2	2014-12-02 17:01:11.724724194 +0900
+@@ -14,10 +14,29 @@
+ IS	= install -m 755	# Install script
+ 
+ #number of jobs to run for build
+-ifneq ($(USE_NJOBS),)
+-  NJOBS   = -j$(shell if [ -f /proc/cpuinfo ]; \
+-		    then echo `cat /proc/cpuinfo | grep 'processor' | wc -l`; \
+-		    else echo 1; fi)
++ifeq ($(USE_NJOBS),no)
++  NJOBS :=
++  USE_CPUS := 1
++else
++  ifeq ($(with_java),yes)
++    MEM_PER_CPU = 192
++  else
++    MEM_PER_CPU = 128
++  endif
++  NUM_CPUS := $(shell if echo $(USE_NJOBS) | grep -q -E '^[0-9]+$$'; \
++			then echo $(USE_NJOBS); \
++			else getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1; fi)
++  USE_CPUS := $(shell mt=`awk '/^MemTotal/ { print $$2 }' /proc/meminfo`; \
++			awk -vn=$(NUM_CPUS) -vmt=$$mt -vm=$(MEM_PER_CPU) \
++				'END { mt/=1024; n2 = int(mt/m); print n==1 ? 1 : n2<n+1 ? n2 : n+1}' < /dev/null)
++  ifneq (,$(strip $(USE_CPUS)))
++    NJOBS := -j $(USE_CPUS)
++  endif
++endif
++
++# Support parallel=<n> in DEB_BUILD_OPTIONS (see #209008)
++ifneq (,$(filter parallel=%,$(subst $(COMMA), ,$(DEB_BUILD_OPTIONS))))
++  NJOBS := -j $(subst parallel=,,$(filter parallel=%,$(subst $(COMMA), ,$(DEB_BUILD_OPTIONS))))
+ endif
+ 
+ # kernel-specific ulimit hack
+@@ -44,7 +63,7 @@
+ ifeq ($(with_ada),yes)
+   CC		= gnatgcc $(CPPFLAGS)
+ else
+-  CC		= gcc-3.4 $(CPPFLAGS)
++  CC		= gcc $(CPPFLAGS)
+ endif
+ 
+ ifeq ($(DEB_HOST_ARCH), $(findstring $(DEB_HOST_ARCH),m68k))

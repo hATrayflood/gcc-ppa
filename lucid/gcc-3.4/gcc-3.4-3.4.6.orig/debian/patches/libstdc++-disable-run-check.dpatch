@@ -1,0 +1,48 @@
+#! /bin/sh -e
+
+# DP: don't bogusly check if the ppc64 binaries also work, which did break on ppc32.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- libstdc++-v3/configure.orig	2005-05-26 21:03:35.000000000 +0200
++++ libstdc++-v3/configure	2005-05-26 21:04:38.000000000 +0200
+@@ -2485,7 +2485,8 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
++# Check disabled as it didn't catch building ppc64 biarch on ppc32.
+-if test "$cross_compiling" != yes; then
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+   (eval $ac_try) 2>&5
+--- libiberty/configure~	2003-10-01 19:11:29.000000000 +0200
++++ libiberty/configure	2005-11-28 21:43:46.157800992 +0100
+@@ -2145,7 +2145,7 @@
+ echo $ECHO_N "checking whether the C compiler works... $ECHO_C" >&6
+ # FIXME: These cross compiler hacks should be removed for Autoconf 3.0
+ # If not cross compiling, check that we can run a simple program.
+-if test "$cross_compiling" != yes; then
++if false && test "$cross_compiling" != yes; then
+   if { ac_try='./$ac_file'
+   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+   (eval $ac_try) 2>&5

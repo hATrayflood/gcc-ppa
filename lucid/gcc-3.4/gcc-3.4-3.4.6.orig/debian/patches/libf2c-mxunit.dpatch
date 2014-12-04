@@ -1,0 +1,36 @@
+#! /bin/sh -e
+
+# DP: libf2c/libI77/fio.c: Set MXUNIT to 1000.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- libf2c/libI77/fio.h~	2002-06-01 14:38:29.000000000 +0200
++++ libf2c/libI77/fio.h	2005-07-06 10:15:17.579613491 +0200
+@@ -86,7 +86,7 @@
+ #define errfl(f,m,s) do {return err__fl((int)f,m,s);} while(0)
+ 
+ /*Table sizes*/
+-#define MXUNIT 100
++#define MXUNIT 1000
+ 
+ extern int f__recpos;		/*position in current record */
+ extern int f__cursor;		/* offset to move to */
