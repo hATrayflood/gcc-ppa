@@ -1,0 +1,6 @@
+*.deb
+debian
+gcc-3.3_3.3.6ds1-*
+gcc-3.3_3.3.6ds1.orig.*
+gcc-3.3-3.3.6ds1.orig/*
+!gcc-3.3-3.3.6ds1.orig/debian

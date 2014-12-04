@@ -1,0 +1,56 @@
+#! /bin/sh -e
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- gcc/treelang/Make-lang.in.orig	2003-07-08 22:28:41.000000000 +0900
++++ gcc/treelang/Make-lang.in	2014-12-04 09:42:09.818348270 +0900
+@@ -56,7 +56,7 @@
+ 
+ # GCC_FOR_TREELANG = ./xgcc $(GCC_EXTRAS)
+ 
+-TREE_GENERATED = $(srcdir)/treelang/lex.c $(srcdir)/treelang/parse.c\
++TREE_GENERATED = $(srcdir)/treelang/lex.c $(srcdir)/treelang/parse.c \
+ 	$(srcdir)/treelang/parse.h $(srcdir)/treelang/parse.output $(srcdir)/treelang/TAGS
+ 
+ TREE_SOURCE = ${srcdir}/treelang/parse.y ${srcdir}/treelang/lex.l ${srcdir}/treelang/tree1.c ${srcdir}/treelang/treelang.h ${srcdir}/treelang/treetree.c $(srcdir)/treelang/treetree.h
+@@ -79,10 +79,10 @@
+ # no preprocessor
+ 
+ # core compiler 
+-tree1$(exeext): treelang/tree1.o treelang/treetree.o treelang/lex.o treelang/parse.o\
++tree1$(exeext): treelang/tree1.o treelang/treetree.o treelang/lex.o treelang/parse.o \
+ 	$(TREE_BE_LIBS) c-convert.o c-typeck.o c-common.o c-decl.o attribs.o
+ 	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ \
+-	treelang/tree1.o treelang/treetree.o treelang/lex.o treelang/parse.o c-convert.o\
++	treelang/tree1.o treelang/treetree.o treelang/lex.o treelang/parse.o c-convert.o \
+ 	c-typeck.o c-common.o c-decl.o attribs.o $(TREE_BE_LIBS)
+ 
+ #
+@@ -115,7 +115,7 @@
+ 	$(LEX) $(LEXFLAGS) -o$(srcdir)/treelang/lex.c $(srcdir)/treelang/lex.l
+ 
+ $(srcdir)/treelang/parse.c $(srcdir)/treelang/parse.h: $(srcdir)/treelang/parse.y
+-	$(BISON) $(BISONFLAGS) -v $(srcdir)/treelang/parse.y\
++	$(BISON) $(BISONFLAGS) -v $(srcdir)/treelang/parse.y \
+ 	--output=$(srcdir)/treelang/parse.c --defines
+ # -v
+ 

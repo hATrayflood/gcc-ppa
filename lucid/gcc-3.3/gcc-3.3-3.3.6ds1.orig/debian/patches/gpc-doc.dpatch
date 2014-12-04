@@ -1,0 +1,38 @@
+#! /bin/sh -e
+
+# DP: gpc documentation: Fix hyperlinks to the example files.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+--- gcc/p/doc/macros.texi~	2005-01-01 23:47:29.000000000 +0100
++++ gcc/p/doc/macros.texi	2005-08-09 11:25:36.472607454 +0200
+@@ -49,7 +49,7 @@
+ @end macro
+ 
+ @macro xhrefexample{FILENAME,DESCRIPTION}
+-@uref{../demos/\FILENAME\,[\DESCRIPTION\]}
++@uref{../examples/\FILENAME\,[\DESCRIPTION\]}
+ @end macro
+ 
+ @macro htmlhrule

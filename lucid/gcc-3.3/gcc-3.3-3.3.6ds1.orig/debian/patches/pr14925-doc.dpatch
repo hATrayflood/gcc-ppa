@@ -1,0 +1,107 @@
+#! /bin/sh -e
+
+# DP: Backport of PR14925 to the gcc-3.3 branch
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        cd ${dir}gcc && autoconf2.13
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        rm -f ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2004-09-03  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR target/14925:
+	Makefile.in (LIB2ADDEHSTATIC): New.
+	(LIB2ADDEHSHARED): New.
+	(LIBUNWIND): New.
+	(LIBUNWINDDEP): New.
+	(SHLIBUNWIND_LINK): New.
+	(SHLIBUNWIND_INSTALL): New.
+	(libgcc.mk): Pass LIB2ADDEHSTATIC, LIB2ADDEHSHARED, LIBUNWIND,
+	LIBUNWINDDEP, SHLIBUNWIND_LINK and SHLIBUNWIND_INSTALL.
+	(clean): Remove libunwind*
+	(stage1-start): Remove and copy stage1/libunwind*.
+	(stage2-start): Remove and copy stage2/libunwind*.
+	(stage3-start): Remove and copy stage3/libunwind*.
+	(stage4-start): Remove and copy stage4/libunwind*.
+	(stageprofile-start): Remove and copy stageprofile/libunwind*.
+	(stagefeedback-start): Remove and copy stagefeedback/libunwind*.
+
+	* config.gcc (ia64*-*-linux*): Always add t-libunwind to
+	tmake_file. Add t-libunwind-elf and ia64/t-glibc-libunwind to
+	tmake_file if --with-system-libunwind isn't used.
+
+	* config/ia64/t-glibc-libunwind: New file.
+	* config/t-libunwind-elf: Likewise.
+	* unwind-compat.c: Likewise.
+	* unwind-compat.h: Likewise.
+	* unwind-dw2-fde-compat.c: Likewise.
+
+	* config/ia64/t-glibc (LIB2ADDEH): Updated.
+	* config/ia64/t-hpux (T_CFLAGS): Add -DUSE_LIBUNWIND_EXCEPTIONS.
+
+	* config/ia64/unwind-ia64.c: Include "unwind-compat.h". Define
+	aliases if needed.
+	* unwind-dw2-fde-glibc.c: Likewise.
+	* unwind-dw2.c: Likewise.
+
+	* config/t-libunwind (LIB2ADDEH): Updated.
+	(LIB2ADDEHSTATIC): New.
+	(T_CFLAGS): Add -DUSE_LIBUNWIND_EXCEPTIONS.
+	(TARGET_LIBGCC2_CFLAGS): Set to -DUSE_GAS_SYMVER.
+
+	* configure.in: Change --enable-libunwind-exceptions to
+	--with-system-libunwind. Don't define USE_LIBUNWIND_EXCEPTIONS.
+	* configure: Regenerated.
+	* config.in: Updated.
+
+	* doc/install.texi (ia64-*-linux): Require libunwind 0.98 or
+	above and mention --with-system-libunwind.
+	(ia64-*-hpux*): Mention --enable-libunwind-exceptions is
+	removed in gcc 3.4.2 and later.
+
+	* gcc.c (init_spec): Add -lunwind to -lgcc_s if
+	USE_LIBUNWIND_EXCEPTIONS is defined.
+
+	* mklibgcc.in: Support libunwind.
+
+diff -urN src.old/gcc/doc/install.texi src/gcc/doc/install.texi
+--- src.old/gcc/doc/install.texi	2004-05-08 19:37:31.000000000 +0200
++++ src/gcc/doc/install.texi	2004-12-10 13:51:02.000000000 +0100
+@@ -2433,6 +2433,10 @@
+ IA-64 processor (also known as IPF, or Itanium Processor Family)
+ running GNU/Linux.
+ 
++If you are using the installed system libunwind library with
++@option{--with-system-libunwind}, then you must use libunwind 0.98 or
++later.
++
+ The toolchain is not completely finished, so requirements will continue
+ to change.
+ GCC 3.0.1 and later require glibc 2.2.4.
+@@ -2461,6 +2465,8 @@
+ The GCC libunwind library has not been ported to HPUX. This means that for
+ GCC versions 3.2.3 and earlier, @option{--enable-libunwind-exceptions}
+ is required to build GCC. For GCC 3.3 and later, this is the default.
++For gcc 3.4.3 and later, @option{--enable-libunwind-exceptions} is
++removed and the system libunwind library will always be used.
+ 
+ @html
+ <hr />
