@@ -1,15 +1,15 @@
 # configuration parameters taken from upstream source files
 GCC_VERSION	:= 4.0.3
 BASE_VERSION	:= 4.0
-SOURCE_VERSION	:= 4.0.3-1ubuntu5lucid1
-DEB_VERSION	:= 4.0.3-1ubuntu5lucid1
-DEB_EVERSION	:= 1:4.0.3-1ubuntu5lucid1
+SOURCE_VERSION	:= 4.0.3-1ubuntu5lucid1.1
+DEB_VERSION	:= 4.0.3-1ubuntu5lucid1.1
+DEB_EVERSION	:= 1:4.0.3-1ubuntu5lucid1.1
 GPC_BASE_VERSION	:= 2.1
 DEB_GPC_VERSION	:= 
 DEB_SOVERSION	:= 4.0.2
 DEB_SOEVERSION	:= 1:4.0.2
 DEB_LIBGCC_SOVERSION	:= 1:4.0.2
-DEB_LIBGCC_VERSION	:= 1:4.0.3-1ubuntu5lucid1
+DEB_LIBGCC_VERSION	:= 1:4.0.3-1ubuntu5lucid1.1
 DEB_STDCXX_SOVERSION	:= 4.0.2-4
 DEB_GCJ_SOVERSION	:= 4.0.2-4
 DEB_FFI_SOVERSION	:= 4.0.2

@@ -1,19 +1,19 @@
 diff -urN debian/changelog gcc-4.0-4.0.3.orig/debian/changelog
---- debian/changelog	2014-11-17 21:34:38.966165566 +0900
-+++ gcc-4.0-4.0.3.orig/debian/changelog	2014-11-17 22:41:41.456588258 +0900
+--- debian/changelog	2014-12-02 02:26:37.054297582 +0900
++++ gcc-4.0-4.0.3.orig/debian/changelog	2014-12-04 12:55:27.519483401 +0900
 @@ -1,3 +1,9 @@
-+gcc-4.0 (4.0.3-1ubuntu5lucid1) lucid; urgency=low
++gcc-4.0 (4.0.3-1ubuntu5lucid1.1) lucid; urgency=low
 +
 +  * ppa for lucid
 +
-+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Wed, 22 Oct 2014 04:30:00 +0900
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Fri, 04 Dec 2014 13:00:00 +0900
 +
  gcc-4.0 (4.0.3-1ubuntu5) dapper; urgency=low
  
    * sparc-update: config/sparc/sparc.c (emit_and_preserve): Allocate space
 diff -urN debian/control gcc-4.0-4.0.3.orig/debian/control
---- debian/control	2014-11-17 21:34:38.956457340 +0900
-+++ gcc-4.0-4.0.3.orig/debian/control	2014-11-29 12:53:27.009387876 +0900
+--- debian/control	2014-12-02 02:26:37.054297582 +0900
++++ gcc-4.0-4.0.3.orig/debian/control	2014-12-04 12:55:44.205878504 +0900
 @@ -1,11 +1,12 @@
  Source: gcc-4.0
  Section: devel
@@ -31,7 +31,7 @@ diff -urN debian/control gcc-4.0-4.0.3.orig/debian/control
  Package: gcc-4.0-base
  Architecture: any
 diff -urN debian/control.m4 gcc-4.0-4.0.3.orig/debian/control.m4
---- debian/control.m4	2014-11-17 21:34:38.976675472 +0900
+--- debian/control.m4	2014-12-02 02:26:37.083012556 +0900
 +++ gcc-4.0-4.0.3.orig/debian/control.m4	2014-11-29 12:52:45.332676385 +0900
 @@ -25,15 +25,16 @@
  Source: SRCNAME
@@ -71,7 +71,7 @@ diff -urN debian/control.m4 gcc-4.0-4.0.3.orig/debian/control.m4
  ifenabled(`lib64cxx',`
  Package: lib64stdc++CXX_SO`'LS
 diff -urN debian/patches/disable-configure-run-check.dpatch gcc-4.0-4.0.3.orig/debian/patches/disable-configure-run-check.dpatch
---- debian/patches/disable-configure-run-check.dpatch	2014-11-17 21:34:38.956457340 +0900
+--- debian/patches/disable-configure-run-check.dpatch	2014-12-02 02:26:37.054297582 +0900
 +++ gcc-4.0-4.0.3.orig/debian/patches/disable-configure-run-check.dpatch	2014-11-17 23:18:48.744004752 +0900
 @@ -68,17 +68,6 @@
     if { ac_try='./$ac_file'
@@ -92,7 +92,7 @@ diff -urN debian/patches/disable-configure-run-check.dpatch gcc-4.0-4.0.3.orig/d
  +++ ./libjava/configure	2005-05-28 00:48:51.336579298 +0000
  @@ -2053,7 +2053,7 @@
 diff -urN debian/patches/i386-biarch.dpatch gcc-4.0-4.0.3.orig/debian/patches/i386-biarch.dpatch
---- debian/patches/i386-biarch.dpatch	2014-11-17 21:34:38.946171266 +0900
+--- debian/patches/i386-biarch.dpatch	2014-12-02 02:26:37.042913046 +0900
 +++ gcc-4.0-4.0.3.orig/debian/patches/i386-biarch.dpatch	2014-11-25 12:24:58.107195612 +0900
 @@ -14,7 +14,7 @@
      -patch)
@@ -104,7 +104,7 @@ diff -urN debian/patches/i386-biarch.dpatch gcc-4.0-4.0.3.orig/debian/patches/i3
      -unpatch)
          patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
 diff -urN debian/patches/libjava-biarch-awt.dpatch gcc-4.0-4.0.3.orig/debian/patches/libjava-biarch-awt.dpatch
---- debian/patches/libjava-biarch-awt.dpatch	2014-11-17 21:34:38.936472170 +0900
+--- debian/patches/libjava-biarch-awt.dpatch	2014-12-02 02:26:37.032845233 +0900
 +++ gcc-4.0-4.0.3.orig/debian/patches/libjava-biarch-awt.dpatch	2014-11-17 21:46:56.439294097 +0900
 @@ -14,7 +14,7 @@
  case "$1" in
@@ -116,7 +116,7 @@ diff -urN debian/patches/libjava-biarch-awt.dpatch gcc-4.0-4.0.3.orig/debian/pat
      -unpatch)
          patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
 diff -urN debian/rules.conf gcc-4.0-4.0.3.orig/debian/rules.conf
---- debian/rules.conf	2014-11-17 21:34:38.976675472 +0900
+--- debian/rules.conf	2014-12-02 02:26:37.073680131 +0900
 +++ gcc-4.0-4.0.3.orig/debian/rules.conf	2014-11-18 08:47:38.327270255 +0900
 @@ -96,10 +96,6 @@
    endif
@@ -139,7 +139,7 @@ diff -urN debian/rules.conf gcc-4.0-4.0.3.orig/debian/rules.conf
    #addons += fastjar
    ifeq ($(with_separate_libgcj),yes)
 diff -urN debian/rules.d/binary-libstdcxx.mk gcc-4.0-4.0.3.orig/debian/rules.d/binary-libstdcxx.mk
---- debian/rules.d/binary-libstdcxx.mk	2014-11-17 21:34:38.846608305 +0900
+--- debian/rules.d/binary-libstdcxx.mk	2014-12-02 02:26:36.972982508 +0900
 +++ gcc-4.0-4.0.3.orig/debian/rules.d/binary-libstdcxx.mk	2014-11-18 08:30:35.884198808 +0900
 @@ -5,7 +5,7 @@
  ifeq ($(with_lib64cxx),yes)
@@ -151,8 +151,8 @@ diff -urN debian/rules.d/binary-libstdcxx.mk gcc-4.0-4.0.3.orig/debian/rules.d/b
  endif
  
 diff -urN debian/rules.defs gcc-4.0-4.0.3.orig/debian/rules.defs
---- debian/rules.defs	2014-11-17 21:34:38.956457340 +0900
-+++ gcc-4.0-4.0.3.orig/debian/rules.defs	2014-11-19 00:24:19.714687431 +0900
+--- debian/rules.defs	2014-12-02 02:26:37.054297582 +0900
++++ gcc-4.0-4.0.3.orig/debian/rules.defs	2014-12-04 12:38:03.517068380 +0900
 @@ -151,6 +151,8 @@
  #  with_common_pkgs := no
  #  with_dev := no
@@ -187,7 +187,15 @@ diff -urN debian/rules.defs gcc-4.0-4.0.3.orig/debian/rules.defs
  
  ifeq ($(with_ada),yes)
    enabled_languages += ada
-@@ -567,6 +571,7 @@
+@@ -517,6 +521,7 @@
+   with_treelang := disabled by environment
+ endif
+ #with_treelang := disabled for gcc-4.0
++with_treelang := disabled for gcc-4.0
+ 
+ ifeq ($(with_treelang),yes)
+   enabled_languages += treelang
+@@ -567,6 +572,7 @@
  ifneq ($(WITHOUT_CHECK),)
    with_check := disabled by environment
  endif
@@ -195,7 +203,7 @@ diff -urN debian/rules.defs gcc-4.0-4.0.3.orig/debian/rules.defs
  
  locale_data = generate
  
-@@ -630,6 +635,7 @@
+@@ -630,6 +636,7 @@
    biarch := yes
    with_lib64gcc	:= yes
    with_lib64cxx	:= yes
@@ -203,7 +211,7 @@ diff -urN debian/rules.defs gcc-4.0-4.0.3.orig/debian/rules.defs
    with_lib64objc:= yes
    with_lib64fortran:= yes
  
-@@ -666,6 +672,7 @@
+@@ -666,6 +673,7 @@
    biarch32 := yes
    with_lib32gcc := yes
    with_lib32cxx := yes
@@ -212,8 +220,8 @@ diff -urN debian/rules.defs gcc-4.0-4.0.3.orig/debian/rules.defs
    with_lib32fortran:= yes
    # no lib32z1-dev yet for Debian
 diff -urN debian/rules.parameters gcc-4.0-4.0.3.orig/debian/rules.parameters
---- debian/rules.parameters	2014-11-17 21:34:38.986174952 +0900
-+++ gcc-4.0-4.0.3.orig/debian/rules.parameters	2014-11-17 22:41:53.316887204 +0900
+--- debian/rules.parameters	2014-12-02 02:26:37.083012556 +0900
++++ gcc-4.0-4.0.3.orig/debian/rules.parameters	2014-12-04 12:55:44.205878504 +0900
 @@ -1,15 +1,15 @@
  # configuration parameters taken from upstream source files
  GCC_VERSION	:= 4.0.3
@@ -221,21 +229,21 @@ diff -urN debian/rules.parameters gcc-4.0-4.0.3.orig/debian/rules.parameters
 -SOURCE_VERSION	:= 4.0.3-1ubuntu5
 -DEB_VERSION	:= 4.0.3-1ubuntu5
 -DEB_EVERSION	:= 1:4.0.3-1ubuntu5
-+SOURCE_VERSION	:= 4.0.3-1ubuntu5lucid1
-+DEB_VERSION	:= 4.0.3-1ubuntu5lucid1
-+DEB_EVERSION	:= 1:4.0.3-1ubuntu5lucid1
++SOURCE_VERSION	:= 4.0.3-1ubuntu5lucid1.1
++DEB_VERSION	:= 4.0.3-1ubuntu5lucid1.1
++DEB_EVERSION	:= 1:4.0.3-1ubuntu5lucid1.1
  GPC_BASE_VERSION	:= 2.1
  DEB_GPC_VERSION	:= 
  DEB_SOVERSION	:= 4.0.2
  DEB_SOEVERSION	:= 1:4.0.2
  DEB_LIBGCC_SOVERSION	:= 1:4.0.2
 -DEB_LIBGCC_VERSION	:= 1:4.0.3-1ubuntu5
-+DEB_LIBGCC_VERSION	:= 1:4.0.3-1ubuntu5lucid1
++DEB_LIBGCC_VERSION	:= 1:4.0.3-1ubuntu5lucid1.1
  DEB_STDCXX_SOVERSION	:= 4.0.2-4
  DEB_GCJ_SOVERSION	:= 4.0.2-4
  DEB_FFI_SOVERSION	:= 4.0.2
 diff -urN debian/rules2 gcc-4.0-4.0.3.orig/debian/rules2
---- debian/rules2	2014-11-17 21:34:38.966165566 +0900
+--- debian/rules2	2014-12-02 02:26:37.073680131 +0900
 +++ gcc-4.0-4.0.3.orig/debian/rules2	2014-11-18 07:43:35.933415891 +0900
 @@ -16,16 +16,29 @@
  #number of jobs to run for build

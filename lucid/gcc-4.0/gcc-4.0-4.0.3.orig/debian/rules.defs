@@ -521,6 +521,7 @@ ifeq (treelang, $(findstring treelang,$(WITHOUT_LANG)))
   with_treelang := disabled by environment
 endif
 #with_treelang := disabled for gcc-4.0
+with_treelang := disabled for gcc-4.0
 
 ifeq ($(with_treelang),yes)
   enabled_languages += treelang

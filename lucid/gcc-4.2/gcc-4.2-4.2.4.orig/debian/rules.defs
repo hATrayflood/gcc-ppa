@@ -699,6 +699,7 @@ ifdef DEB_CROSS
 endif
 with_treelang := $(call envfilt, treelang, , , $(with_treelang))
 #with_treelang := disabled for gcc-4.2
+with_treelang := disabled for gcc-4.2
 
 ifeq ($(with_treelang),yes)
   enabled_languages += treelang
