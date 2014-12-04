@@ -13,9 +13,11 @@ apt-get -y install sharutils
 
 apt-get -y install g++-multilib
 apt-get -y install libc6-dbg
+apt-get -y install automake1.7
 apt-get -y install automake1.9
 apt-get -y install libtool
 apt-get -y install zlib1g-dev
+apt-get -y install libgc-dev
 apt-get -y install gawk
 apt-get -y install gperf
 apt-get -y install bison
@@ -42,11 +44,13 @@ apt-get -y install expect-tcl8.3
 apt-get -y install autogen
 apt-get -y install lib64z1-dev
 apt-get -y install lib32z1-dev
+apt-get -y install help2man
 apt-get -y install realpath
 apt-get -y install chrpath
 apt-get -y install doxygen
 apt-get -y install graphviz
 apt-get -y install gsfonts-x11
+apt-get -y install libncurses5-dev
 apt-get -y install texlive-latex-base
 apt-get -y install xsltproc
 apt-get -y install libxml2-utils

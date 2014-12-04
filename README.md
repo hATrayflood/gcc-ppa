@@ -8,6 +8,10 @@ Porting missing version of gcc from upper/lower LTS to LTS
 provides
 --------
     # lucid
+    /usr/bin/gcc-3.3
+    /usr/bin/g++-3.3
+    /usr/bin/gcc-3.4
+    /usr/bin/g++-3.4
     /usr/bin/gcc-4.0
     /usr/bin/g++-4.0
     /usr/bin/gcc-4.1
@@ -53,6 +57,8 @@ usage
 
 upstream
 --------
+https://launchpad.net/ubuntu/+source/gcc-3.3  
+https://launchpad.net/ubuntu/hardy/+source/gcc-3.4  
 https://launchpad.net/ubuntu/dapper/+source/gcc-4.0  
 https://launchpad.net/ubuntu/lucid/+source/gcc-4.1  
 https://launchpad.net/ubuntu/hardy/+source/gcc-4.2  
