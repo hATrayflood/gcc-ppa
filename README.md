@@ -29,6 +29,8 @@ provides
     /usr/bin/gcc-4.9
     /usr/bin/g++-4.9
     # precise
+    /usr/bin/gcc-3.3
+    /usr/bin/g++-3.3
     /usr/bin/gcc-4.5
     /usr/bin/g++-4.5
     /usr/bin/gcc-4.7
@@ -38,6 +40,8 @@ provides
     /usr/bin/gcc-4.9
     /usr/bin/g++-4.9
     # trusty
+    /usr/bin/gcc-3.3
+    /usr/bin/g++-3.3
     /usr/bin/gcc-4.5
     /usr/bin/g++-4.5
     /usr/bin/gcc-4.9
