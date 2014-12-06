@@ -1,0 +1,53 @@
+#! /bin/sh -e
+
+# DP: Fix PR rtl-optimization/23241
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        #cd ${dir}gcc && autoconf2.13
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        #rm ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+http://gcc.gnu.org/ml/gcc-patches/2005-08/msg00446.html
+
+Index: gcc/combine.c
+===================================================================
+RCS file: /cvsroot/gcc/gcc/gcc/combine.c,v
+retrieving revision 1.325.2.19
+diff -c -3 -p -r1.325.2.19 combine.c
+*** gcc/combine.c	18 Jan 2005 08:39:05 -0000	1.325.2.19
+--- gcc/combine.c	5 Aug 2005 18:50:13 -0000
+*************** simplify_comparison (code, pop0, pop1)
+*** 10863,10869 ****
+  		      /* (A - C1) always sign-extends, like C2.  */
+  		      && num_sign_bit_copies (a, inner_mode)
+  			 > (unsigned int) (GET_MODE_BITSIZE (inner_mode)
+! 					   - mode_width - 1)))
+  		{
+  		  op0 = SUBREG_REG (op0);
+  		  continue;
+--- 10863,10869 ----
+  		      /* (A - C1) always sign-extends, like C2.  */
+  		      && num_sign_bit_copies (a, inner_mode)
+  			 > (unsigned int) (GET_MODE_BITSIZE (inner_mode)
+! 					   - (mode_width - 1))))
+  		{
+  		  op0 = SUBREG_REG (op0);
+  		  continue;

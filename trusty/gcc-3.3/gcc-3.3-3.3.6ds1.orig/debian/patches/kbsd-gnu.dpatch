@@ -1,0 +1,787 @@
+#! /bin/sh -e
+
+# Description: GNU/k*BSD support
+# Author: Robert Millan <robertmh@gnu.org>
+# Status: merged in 4.0 branch
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+	for dir in . boehm-gc ; do
+	  mv -f $3/$dir/config.guess $3/$dir/config.guess.old
+	  cp -f /usr/share/misc/config.guess $3/$dir/config.guess
+	  mv -f $3/$dir/config.sub $3/$dir/config.sub.old
+	  cp -f /usr/share/misc/config.sub $3/$dir/config.sub
+	done
+        ;;
+    -unpatch)
+	for dir in . boehm-gc ; do
+	  mv -f $3/$dir/config.guess.old $3/$dir/config.guess
+	  mv -f $3/$dir/config.sub.old $3/$dir/config.sub
+	done
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+# append the patch here and adjust the -p? flag in the patch calls.
+
+diff -Nur gcc-3.3.6.orig/boehm-gc/configure gcc-3.3.6/boehm-gc/configure
+--- gcc-3.3.6.orig/boehm-gc/configure	2005-05-03 14:37:08.000000000 +0200
++++ gcc-3.3.6/boehm-gc/configure	2005-07-18 01:53:05.000000000 +0200
+@@ -1872,7 +1872,7 @@
+   esac
+   ;;
+ 
+-freebsd* )
++freebsd* | kfreebsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     case $host_cpu in
+     i*86 )
+@@ -1940,7 +1940,7 @@
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+-netbsd*)
++netbsd* | knetbsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     lt_cv_deplibs_check_method='match_pattern /lib[^/\.]+\.so\.[0-9]+\.[0-9]+$'
+   else
+diff -Nur gcc-3.3.6.orig/configure.in gcc-3.3.6/configure.in
+--- gcc-3.3.6.orig/configure.in	2004-01-02 15:09:48.000000000 +0100
++++ gcc-3.3.6/configure.in	2005-07-18 01:53:05.000000000 +0200
+@@ -306,7 +306,7 @@
+     # newlib is not 64 bit ready
+     noconfigdirs="$noconfigdirs target-newlib target-libgloss"
+     ;;
+-  alpha*-*-freebsd*)
++  alpha*-*-freebsd* | alpha*-*-kfreebsd*-gnu)
+     noconfigdirs="$noconfigdirs target-newlib target-libgloss"
+     ;;
+   alpha*-*-*)
+@@ -421,7 +421,7 @@
+   i[3456]86-*-coff | i[3456]86-*-elf)
+     noconfigdirs="$noconfigdirs ${libgcj}"
+     ;;
+-  i[34567]86-*-freebsd*)
++  i[34567]86-*-freebsd* | i[34567]86-*-kfreebsd*-gnu)
+     noconfigdirs="$noconfigdirs target-newlib target-libgloss"
+     ;;
+   i[3456]86-*-linux*)
+@@ -1131,7 +1131,7 @@
+   powerpc-*-netware*)
+     target_makefile_frag="config/mt-netware"
+     ;;
+-  *-*-linux*)
++  *-*-linux* | *-*-gnu* | *-*-k*bsd*-gnu)
+     target_makefile_frag="config/mt-linux"
+     ;;
+   *-*-aix4.[3456789]* | *-*-aix[56789].*)
+diff -Nur gcc-3.3.6.orig/gcc/config/i386/kfreebsd-gnu.h gcc-3.3.6/gcc/config/i386/kfreebsd-gnu.h
+--- gcc-3.3.6.orig/gcc/config/i386/kfreebsd-gnu.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-3.3.6/gcc/config/i386/kfreebsd-gnu.h	2005-07-18 01:53:05.000000000 +0200
+@@ -0,0 +1,45 @@
++/* Definitions for Intel 386 running kFreeBSD-based GNU systems with ELF format
++   Copyright (C) 2004
++   Free Software Foundation, Inc.
++   Contributed by Robert Millan.
++
++This file is part of GCC.
++
++GCC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++GCC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GCC; see the file COPYING.  If not, write to
++the Free Software Foundation, 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.  */
++
++#undef LINK_EMULATION
++#define LINK_EMULATION "elf_i386_fbsd"
++#undef REG_NAME
++#define REG_NAME(reg) sc_ ## reg
++
++#undef TARGET_OS_CPP_BUILTINS    
++#define TARGET_OS_CPP_BUILTINS()		\
++  do						\
++    {						\
++	builtin_define ("__FreeBSD_kernel__");	\
++	builtin_define ("__GLIBC__");		\
++	builtin_define_std ("unix");		\
++	builtin_define ("__ELF__");		\
++	builtin_assert ("system=unix");		\
++	builtin_assert ("system=posix");	\
++	if (flag_pic)				\
++	  {					\
++	    builtin_define ("__PIC__");		\
++	    builtin_define ("__pic__");		\
++	  }					\
++    }						\
++  while (0)
++
+diff -Nur gcc-3.3.6.orig/gcc/config/i386/knetbsd-gnu.h gcc-3.3.6/gcc/config/i386/knetbsd-gnu.h
+--- gcc-3.3.6.orig/gcc/config/i386/knetbsd-gnu.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-3.3.6/gcc/config/i386/knetbsd-gnu.h	2005-07-18 01:53:05.000000000 +0200
+@@ -0,0 +1,24 @@
++/* Definitions for Intel 386 running kNetBSD-based GNU systems with ELF format
++   Copyright (C) 2004
++   Free Software Foundation, Inc.
++   Contributed by Robert Millan.
++
++This file is part of GCC.
++
++GCC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++GCC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GCC; see the file COPYING.  If not, write to
++the Free Software Foundation, 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.  */
++
++#undef REG_NAME
++#define REG_NAME(reg) sc_ ## reg
+diff -Nur gcc-3.3.6.orig/gcc/config/i386/linux.h gcc-3.3.6/gcc/config/i386/linux.h
+--- gcc-3.3.6.orig/gcc/config/i386/linux.h	2003-11-14 07:46:12.000000000 +0100
++++ gcc-3.3.6/gcc/config/i386/linux.h	2005-07-18 01:59:40.000000000 +0200
+@@ -116,10 +116,18 @@
+ 
+ /* If ELF is the default format, we should not use /lib/elf.  */
+ 
++#undef  SUBTARGET_EXTRA_SPECS
++#define SUBTARGET_EXTRA_SPECS \
++  { "link_emulation", LINK_EMULATION },\
++  { "dynamic_linker", DYNAMIC_LINKER }
++
++#ifndef LINK_EMULATION
++# define LINK_EMULATION "elf_i386"
++#endif
++
+ #undef	LINK_SPEC
+-#ifdef USE_GNULIBC_1
+ #ifndef LINUX_DEFAULT_ELF
+-#define LINK_SPEC "-m elf_i386 %{shared:-shared} \
++#define LINK_SPEC "-m %(link_emulation) %{shared:-shared} \
+   %{!shared: \
+     %{!ibcs: \
+       %{!static: \
+@@ -127,21 +135,19 @@
+ 	%{!dynamic-linker:-dynamic-linker /lib/elf/ld-linux.so.1} \
+ 	%{!rpath:-rpath /lib/elf/}} %{static:-static}}}"
+ #else
+-#define LINK_SPEC "-m elf_i386 %{shared:-shared} \
++# ifndef DYNAMIC_LINKER
++#  ifdef USE_GNULIBC_1
++#   define DYNAMIC_LINKER "/lib/ld-linux.so.1"
++#  else
++#   define DYNAMIC_LINKER "/lib/ld-linux.so.2"
++#  endif
++# endif
++#define LINK_SPEC "-m %(link_emulation) %{shared:-shared} \
+   %{!shared: \
+     %{!ibcs: \
+       %{!static: \
+ 	%{rdynamic:-export-dynamic} \
+-	%{!dynamic-linker:-dynamic-linker /lib/ld-linux.so.1}} \
+-	%{static:-static}}}"
+-#endif
+-#else
+-#define LINK_SPEC "-m elf_i386 %{shared:-shared} \
+-  %{!shared: \
+-    %{!ibcs: \
+-      %{!static: \
+-	%{rdynamic:-export-dynamic} \
+-	%{!dynamic-linker:-dynamic-linker /lib/ld-linux.so.2}} \
++	%{!dynamic-linker:-dynamic-linker %(dynamic_linker)}} \
+ 	%{static:-static}}}"
+ #endif
+ 
+@@ -239,6 +245,8 @@
+ #include <signal.h>
+ #include <sys/ucontext.h>
+ 
++#define REG_NAME(reg) reg
++
+ #define MD_FALLBACK_FRAME_STATE_FOR(CONTEXT, FS, SUCCESS)		\
+   do {									\
+     unsigned char *pc_ = (CONTEXT)->ra;					\
+@@ -267,28 +275,28 @@
+     else								\
+       break;								\
+ 									\
+-    new_cfa_ = sc_->esp;						\
++    new_cfa_ = sc_->REG_NAME(esp);						\
+     (FS)->cfa_how = CFA_REG_OFFSET;					\
+     (FS)->cfa_reg = 4;							\
+     (FS)->cfa_offset = new_cfa_ - (long) (CONTEXT)->cfa;		\
+ 									\
+     /* The SVR4 register numbering macros aren't usable in libgcc.  */	\
+     (FS)->regs.reg[0].how = REG_SAVED_OFFSET;				\
+-    (FS)->regs.reg[0].loc.offset = (long)&sc_->eax - new_cfa_;		\
++    (FS)->regs.reg[0].loc.offset = (long)&sc_->REG_NAME(eax) - new_cfa_;	\
+     (FS)->regs.reg[3].how = REG_SAVED_OFFSET;				\
+-    (FS)->regs.reg[3].loc.offset = (long)&sc_->ebx - new_cfa_;		\
++    (FS)->regs.reg[3].loc.offset = (long)&sc_->REG_NAME(ebx) - new_cfa_;	\
+     (FS)->regs.reg[1].how = REG_SAVED_OFFSET;				\
+-    (FS)->regs.reg[1].loc.offset = (long)&sc_->ecx - new_cfa_;		\
++    (FS)->regs.reg[1].loc.offset = (long)&sc_->REG_NAME(ecx) - new_cfa_;	\
+     (FS)->regs.reg[2].how = REG_SAVED_OFFSET;				\
+-    (FS)->regs.reg[2].loc.offset = (long)&sc_->edx - new_cfa_;		\
++    (FS)->regs.reg[2].loc.offset = (long)&sc_->REG_NAME(edx) - new_cfa_;	\
+     (FS)->regs.reg[6].how = REG_SAVED_OFFSET;				\
+-    (FS)->regs.reg[6].loc.offset = (long)&sc_->esi - new_cfa_;		\
++    (FS)->regs.reg[6].loc.offset = (long)&sc_->REG_NAME(esi) - new_cfa_;	\
+     (FS)->regs.reg[7].how = REG_SAVED_OFFSET;				\
+-    (FS)->regs.reg[7].loc.offset = (long)&sc_->edi - new_cfa_;		\
++    (FS)->regs.reg[7].loc.offset = (long)&sc_->REG_NAME(edi) - new_cfa_;	\
+     (FS)->regs.reg[5].how = REG_SAVED_OFFSET;				\
+-    (FS)->regs.reg[5].loc.offset = (long)&sc_->ebp - new_cfa_;		\
++    (FS)->regs.reg[5].loc.offset = (long)&sc_->REG_NAME(ebp) - new_cfa_;	\
+     (FS)->regs.reg[8].how = REG_SAVED_OFFSET;				\
+-    (FS)->regs.reg[8].loc.offset = (long)&sc_->eip - new_cfa_;		\
++    (FS)->regs.reg[8].loc.offset = (long)&sc_->REG_NAME(eip) - new_cfa_;	\
+     (FS)->retaddr_column = 8;						\
+     goto SUCCESS;							\
+   } while (0)
+diff -Nur gcc-3.3.6.orig/gcc/config/kfreebsd-gnu.h gcc-3.3.6/gcc/config/kfreebsd-gnu.h
+--- gcc-3.3.6.orig/gcc/config/kfreebsd-gnu.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-3.3.6/gcc/config/kfreebsd-gnu.h	2005-07-18 01:54:10.000000000 +0200
+@@ -0,0 +1,24 @@
++/* Definitions for kFreeBSD-based GNU systems with ELF format
++   Copyright (C) 2004
++   Free Software Foundation, Inc.
++   Contributed by Robert Millan.
++
++This file is part of GCC.
++
++GCC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++GCC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GCC; see the file COPYING.  If not, write to
++the Free Software Foundation, 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.  */
++
++#undef DYNAMIC_LINKER
++#define DYNAMIC_LINKER "/lib/ld.so.1"
+diff -Nur gcc-3.3.6.orig/gcc/config/knetbsd-gnu.h gcc-3.3.6/gcc/config/knetbsd-gnu.h
+--- gcc-3.3.6.orig/gcc/config/knetbsd-gnu.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-3.3.6/gcc/config/knetbsd-gnu.h	2005-07-18 01:54:24.000000000 +0200
+@@ -0,0 +1,37 @@
++/* Definitions for kNetBSD-based GNU systems with ELF format
++   Copyright (C) 2004
++   Free Software Foundation, Inc.
++   Contributed by Robert Millan.
++
++This file is part of GCC.
++
++GCC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++GCC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GCC; see the file COPYING.  If not, write to
++the Free Software Foundation, 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.  */
++
++#undef TARGET_OS_CPP_BUILTINS    
++#define TARGET_OS_CPP_BUILTINS()		\
++  do						\
++    {						\
++	builtin_define ("__NetBSD_kernel__");	\
++	builtin_define ("__GLIBC__");		\
++	builtin_define_std ("unix");		\
++	builtin_define ("__ELF__");		\
++	builtin_assert ("system=unix");		\
++	builtin_assert ("system=posix");	\
++    }						\
++  while (0)
++
++#undef DYNAMIC_LINKER
++#define DYNAMIC_LINKER "/lib/ld.so.1"
+diff -Nur gcc-3.3.6.orig/gcc/config.gcc gcc-3.3.6/gcc/config.gcc
+--- gcc-3.3.6.orig/gcc/config.gcc	2004-04-29 06:42:47.000000000 +0200
++++ gcc-3.3.6/gcc/config.gcc	2005-07-18 01:53:05.000000000 +0200
+@@ -362,7 +362,7 @@
+ 
+ # Common parts for GNU/Linux, GNU/Hurd, OpenBSD, NetBSD, and FreeBSD systems.
+ case $machine in
+-*-*-linux*)
++*-*-linux* | *-*-kfreebsd*-gnu | *-*-knetbsd*-gnu)
+ 	xm_defines=POSIX
+ 	case $machine in
+ 	*-*-linux*ecoff* | *-*-linux*libc1* | *-*-linux*oldld* | *-*-linux*aout*)
+@@ -1173,11 +1173,16 @@
+ 		thread_file='single'
+ 	fi
+ 	;;
+-i[34567]86-*-linux*)	# Intel 80386's running GNU/Linux
++i[34567]86-*-linux* | i[34567]86-*-kfreebsd*-gnu | i[34567]86-*-knetbsd*-gnu)	
++			# Intel 80386's running GNU/*
+ 			# with ELF format using glibc 2
+ 			# aka GNU/Linux C library 6
+ 	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h linux.h i386/linux.h"
+ 	tmake_file="t-slibgcc-elf-ver t-linux i386/t-crtstuff"
++	case ${target} in
++	i[34567]86-*-knetbsd*-gnu) tm_file="${tm_file} knetbsd-gnu.h i386/knetbsd-gnu.h" ;;
++	i[34567]86-*-kfreebsd*-gnu) tm_file="${tm_file} kfreebsd-gnu.h i386/kfreebsd-gnu.h" ;;
++	esac
+ 	;;
+ x86_64-*-linux*)
+ 	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h linux.h \
+diff -Nur gcc-3.3.6.orig/libf2c/configure gcc-3.3.6/libf2c/configure
+--- gcc-3.3.6.orig/libf2c/configure	2004-05-12 17:13:57.000000000 +0200
++++ gcc-3.3.6/libf2c/configure	2005-07-18 01:53:05.000000000 +0200
+@@ -1575,7 +1575,7 @@
+   esac
+   ;;
+ 
+-freebsd* )
++freebsd* | kfreebsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     case $host_cpu in
+     i*86 )
+@@ -1643,7 +1643,7 @@
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+-netbsd*)
++netbsd* | knetbsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     lt_cv_deplibs_check_method='match_pattern /lib[^/\.]+\.so\.[0-9]+\.[0-9]+$'
+   else
+diff -Nur gcc-3.3.6.orig/libffi/configure gcc-3.3.6/libffi/configure
+--- gcc-3.3.6.orig/libffi/configure	2004-05-12 17:13:57.000000000 +0200
++++ gcc-3.3.6/libffi/configure	2005-07-18 01:53:05.000000000 +0200
+@@ -1217,7 +1217,7 @@
+   esac
+   ;;
+ 
+-freebsd* )
++freebsd* | kfreebsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     case $host_cpu in
+     i*86 )
+@@ -1285,7 +1285,7 @@
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+-netbsd*)
++netbsd* | knetbsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     lt_cv_deplibs_check_method='match_pattern /lib[^/\.]+\.so\.[0-9]+\.[0-9]+$'
+   else
+@@ -2456,16 +2456,16 @@
+ i*86-*-sco3.2v5*) TARGET=X86; TARGETDIR=x86;;
+ i*86-*-solaris*) TARGET=X86; TARGETDIR=x86;;
+ i*86-*-beos*) TARGET=X86; TARGETDIR=x86;;
+-i*86-*-freebsd*) TARGET=X86; TARGETDIR=x86;;
+-i*86-*-netbsdelf*) TARGET=X86; TARGETDIR=x86;;
++i*86-*-freebsd* | i*86-*-kfreebsd*-gnu) TARGET=X86; TARGETDIR=x86;;
++i*86-*-netbsdelf* | i*86-*-knetbsd*-gnu) TARGET=X86; TARGETDIR=x86;;
+ i*86-*-win32*) TARGET=X86_WIN32; TARGETDIR=x86;;
+ i*86-*-cygwin*) TARGET=X86_WIN32; TARGETDIR=x86;;
+ i*86-*-mingw*) TARGET=X86_WIN32; TARGETDIR=x86;;
+ sparc-sun-4*) TARGET=SPARC; TARGETDIR=sparc;;
+ sparc*-sun-*) TARGET=SPARC; TARGETDIR=sparc;;
+-sparc-*-linux* | sparc-*-netbsdelf*) TARGET=SPARC; TARGETDIR=sparc;;
+-sparc64-*-linux* | sparc64-*-netbsd*) TARGET=SPARC; TARGETDIR=sparc;;
+-alpha*-*-linux* | alpha*-*-osf* | alpha*-*-freebsd* | alpha*-*-netbsd*) TARGET=ALPHA; TARGETDIR=alpha;;
++sparc-*-linux* | sparc-*-netbsdelf* | sparc-*-knetbsd*-gnu) TARGET=SPARC; TARGETDIR=sparc;;
++sparc64-*-linux* | sparc64-*-netbsd* | sparc64-*-knetbsd*-gnu) TARGET=SPARC; TARGETDIR=sparc;;
++alpha*-*-linux* | alpha*-*-osf* | alpha*-*-freebsd* | alpha*-*-kfreebsd*-gnu | alpha*-*-netbsd* | alpha*-*-knetbsd*-gnu) TARGET=ALPHA; TARGETDIR=alpha;;
+ ia64*-*-*) TARGET=IA64; TARGETDIR=ia64;;
+ m68k-*-linux*) TARGET=M68K; TARGETDIR=m68k;;
+ mips64*-*);;
+diff -Nur gcc-3.3.6.orig/libffi/configure.in gcc-3.3.6/libffi/configure.in
+--- gcc-3.3.6.orig/libffi/configure.in	2003-08-09 08:59:00.000000000 +0200
++++ gcc-3.3.6/libffi/configure.in	2005-07-18 01:53:05.000000000 +0200
+@@ -51,16 +51,16 @@
+ i*86-*-sco3.2v5*) TARGET=X86; TARGETDIR=x86;;
+ i*86-*-solaris*) TARGET=X86; TARGETDIR=x86;;
+ i*86-*-beos*) TARGET=X86; TARGETDIR=x86;;
+-i*86-*-freebsd*) TARGET=X86; TARGETDIR=x86;;
+-i*86-*-netbsdelf*) TARGET=X86; TARGETDIR=x86;;
++i*86-*-freebsd* | i*86-*-kfreebsd*-gnu) TARGET=X86; TARGETDIR=x86;;
++i*86-*-netbsdelf* | i*86-*-knetbsd*-gnu) TARGET=X86; TARGETDIR=x86;;
+ i*86-*-win32*) TARGET=X86_WIN32; TARGETDIR=x86;;
+ i*86-*-cygwin*) TARGET=X86_WIN32; TARGETDIR=x86;;
+ i*86-*-mingw*) TARGET=X86_WIN32; TARGETDIR=x86;;
+ sparc-sun-4*) TARGET=SPARC; TARGETDIR=sparc;;
+ sparc*-sun-*) TARGET=SPARC; TARGETDIR=sparc;;
+-sparc-*-linux* | sparc-*-netbsdelf*) TARGET=SPARC; TARGETDIR=sparc;;
+-sparc64-*-linux* | sparc64-*-netbsd*) TARGET=SPARC; TARGETDIR=sparc;;
+-alpha*-*-linux* | alpha*-*-osf* | alpha*-*-freebsd* | alpha*-*-netbsd*) TARGET=ALPHA; TARGETDIR=alpha;;
++sparc-*-linux* | sparc-*-netbsdelf* | sparc-*-knetbsd*-gnu) TARGET=SPARC; TARGETDIR=sparc;;
++sparc64-*-linux* | sparc64-*-netbsd* | sparc64-*-knetbsd*-gnu) TARGET=SPARC; TARGETDIR=sparc;;
++alpha*-*-linux* | alpha*-*-osf* | alpha*-*-freebsd* | alpha*-*-kfreebsd*-gnu | alpha*-*-netbsd* | alpha*-*-knetbsd*-gnu) TARGET=ALPHA; TARGETDIR=alpha;;
+ ia64*-*-*) TARGET=IA64; TARGETDIR=ia64;;
+ m68k-*-linux*) TARGET=M68K; TARGETDIR=m68k;;
+ mips64*-*);;
+diff -Nur gcc-3.3.6.orig/libjava/configure gcc-3.3.6/libjava/configure
+--- gcc-3.3.6.orig/libjava/configure	2005-05-03 14:37:08.000000000 +0200
++++ gcc-3.3.6/libjava/configure	2005-07-18 01:53:05.000000000 +0200
+@@ -1977,7 +1977,7 @@
+   esac
+   ;;
+ 
+-freebsd* )
++freebsd* | kfreebsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     case $host_cpu in
+     i*86 )
+@@ -2045,7 +2045,7 @@
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+-netbsd*)
++netbsd* | knetbsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     lt_cv_deplibs_check_method='match_pattern /lib[^/\.]+\.so\.[0-9]+\.[0-9]+$'
+   else
+diff -Nur gcc-3.3.6.orig/libjava/libltdl/configure gcc-3.3.6/libjava/libltdl/configure
+--- gcc-3.3.6.orig/libjava/libltdl/configure	2005-05-03 14:37:08.000000000 +0200
++++ gcc-3.3.6/libjava/libltdl/configure	2005-07-18 01:53:06.000000000 +0200
+@@ -1590,7 +1590,7 @@
+   lt_cv_file_magic_cmd='${OBJDUMP} -f'
+   ;;
+ 
+-freebsd* )
++freebsd* | kfreebsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     case "$host_cpu" in
+     i*86 )
+@@ -1650,7 +1650,7 @@
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+-netbsd*)
++netbsd* | knetbsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then :
+   else
+         lt_cv_deplibs_check_method='file_magic ELF [0-9][0-9]*-bit [LM]SB shared object'
+diff -Nur gcc-3.3.6.orig/libobjc/configure gcc-3.3.6/libobjc/configure
+--- gcc-3.3.6.orig/libobjc/configure	2004-05-12 17:13:59.000000000 +0200
++++ gcc-3.3.6/libobjc/configure	2005-07-18 01:53:06.000000000 +0200
+@@ -1583,7 +1583,7 @@
+   esac
+   ;;
+ 
+-freebsd* )
++freebsd* | kfreebsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     case $host_cpu in
+     i*86 )
+@@ -1651,7 +1651,7 @@
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+-netbsd*)
++netbsd* | knetbsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     lt_cv_deplibs_check_method='match_pattern /lib[^/\.]+\.so\.[0-9]+\.[0-9]+$'
+   else
+diff -Nur gcc-3.3.6.orig/libstdc++-v3/acinclude.m4 gcc-3.3.6/libstdc++-v3/acinclude.m4
+--- gcc-3.3.6.orig/libstdc++-v3/acinclude.m4	2005-05-03 11:49:42.000000000 +0200
++++ gcc-3.3.6/libstdc++-v3/acinclude.m4	2005-07-18 01:53:06.000000000 +0200
+@@ -1206,7 +1206,7 @@
+   dnl Default to "generic"
+   if test x$enable_clocale_flag = xno; then
+     case x${target_os} in
+-      xlinux* | xgnu*)
++      xlinux* | xgnu* | xkfreebsd*-gnu | xknetbsd*-gnu)
+ 	AC_EGREP_CPP([_GLIBCPP_ok], [
+         #include <features.h>
+         #if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 2) 
+@@ -1394,7 +1394,7 @@
+       # compile most of libio for linux systems.
+       if test x$has_libio = x"yes"; then
+         case "$target" in
+-          *-*-linux*)
++          *-*-linux*  | *-*-gnu* | *-*-k*bsd*-gnu)
+               AC_MSG_CHECKING([for glibc version >= 2.2])
+               AC_EGREP_CPP([ok], [
+             #include <features.h>
+diff -Nur gcc-3.3.6.orig/libstdc++-v3/aclocal.m4 gcc-3.3.6/libstdc++-v3/aclocal.m4
+--- gcc-3.3.6.orig/libstdc++-v3/aclocal.m4	2004-05-25 08:03:52.000000000 +0200
++++ gcc-3.3.6/libstdc++-v3/aclocal.m4	2005-07-18 01:53:06.000000000 +0200
+@@ -1218,7 +1218,7 @@
+   dnl Default to "generic"
+   if test x$enable_clocale_flag = xno; then
+     case x${target_os} in
+-      xlinux* | xgnu*)
++      xlinux* | xgnu* | xkfreebsd*-gnu | xknetbsd*-gnu)
+ 	AC_EGREP_CPP([_GLIBCPP_ok], [
+         #include <features.h>
+         #if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 2) 
+@@ -1406,7 +1406,7 @@
+       # compile most of libio for linux systems.
+       if test x$has_libio = x"yes"; then
+         case "$target" in
+-          *-*-linux*)
++          *-*-linux* | *-*-gnu* | *-*-k*bsd*-gnu)
+               AC_MSG_CHECKING([for glibc version >= 2.2])
+               AC_EGREP_CPP([ok], [
+             #include <features.h>
+diff -Nur gcc-3.3.6.orig/libstdc++-v3/configure gcc-3.3.6/libstdc++-v3/configure
+--- gcc-3.3.6.orig/libstdc++-v3/configure	2004-07-28 06:16:07.000000000 +0200
++++ gcc-3.3.6/libstdc++-v3/configure	2005-07-18 01:53:06.000000000 +0200
+@@ -1950,7 +1950,7 @@
+   esac
+   ;;
+ 
+-freebsd* )
++freebsd* | kfreebsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     case $host_cpu in
+     i*86 )
+@@ -2018,7 +2018,7 @@
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+-netbsd*)
++netbsd* | knetbsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     lt_cv_deplibs_check_method='match_pattern /lib[^/\.]+\.so\.[0-9]+\.[0-9]+$'
+   else
+@@ -2870,7 +2870,7 @@
+       # compile most of libio for linux systems.
+       if test x$has_libio = x"yes"; then
+         case "$target" in
+-          *-*-linux*)
++          *-*-linux* | *-*-gnu* | *-*-k*bsd*-gnu)
+               echo $ac_n "checking for glibc version >= 2.2""... $ac_c" 1>&6
+ echo "configure:2876: checking for glibc version >= 2.2" >&5
+               cat > conftest.$ac_ext <<EOF
+@@ -3004,7 +3004,7 @@
+ 
+       if test x$enable_clocale_flag = xno; then
+     case x${target_os} in
+-      xlinux* | xgnu*)
++      xlinux* | xgnu* | xkfreebsd*-gnu | xknetbsd*-gnu)
+ 	cat > conftest.$ac_ext <<EOF
+ #line 3010 "configure"
+ #include "confdefs.h"
+@@ -4220,7 +4220,7 @@
+   # GLIBCPP_CHECK_MATH_SUPPORT
+ 
+   case "$target" in
+-    *-linux*)
++    *-linux* | *-gnu* | *-kfreebsd*-gnu | *-knetbsd*-gnu)
+       os_include_dir="os/gnu-linux"
+       for ac_hdr in nan.h ieeefp.h endian.h sys/isa_defs.h \
+         machine/endian.h machine/param.h sys/machine.h sys/types.h \
+diff -Nur gcc-3.3.6.orig/libstdc++-v3/configure.in gcc-3.3.6/libstdc++-v3/configure.in
+--- gcc-3.3.6.orig/libstdc++-v3/configure.in	2004-07-28 06:18:59.000000000 +0200
++++ gcc-3.3.6/libstdc++-v3/configure.in	2005-07-18 01:53:06.000000000 +0200
+@@ -117,7 +117,7 @@
+   # GLIBCPP_CHECK_MATH_SUPPORT
+ 
+   case "$target" in
+-    *-linux*)
++    *-linux* | *-k*bsd*-gnu | *-gnu*)
+       os_include_dir="os/gnu-linux"
+       AC_CHECK_HEADERS([nan.h ieeefp.h endian.h sys/isa_defs.h \
+         machine/endian.h machine/param.h sys/machine.h sys/types.h \
+diff -Nur gcc-3.3.6.orig/libstdc++-v3/configure.target gcc-3.3.6/libstdc++-v3/configure.target
+--- gcc-3.3.6.orig/libstdc++-v3/configure.target	2003-10-01 21:07:07.000000000 +0200
++++ gcc-3.3.6/libstdc++-v3/configure.target	2005-07-18 01:53:06.000000000 +0200
+@@ -133,7 +133,7 @@
+   freebsd*)
+     os_include_dir="os/bsd/freebsd"
+     ;;
+-  gnu* | linux*)
++  gnu* | linux* | kfreebsd*-gnu | knetbsd*-gnu)
+     os_include_dir="os/gnu-linux"
+     ;;
+   hpux*)
+diff -Nur gcc-3.3.6.orig/libtool.m4 gcc-3.3.6/libtool.m4
+--- gcc-3.3.6.orig/libtool.m4	2004-05-12 17:13:56.000000000 +0200
++++ gcc-3.3.6/libtool.m4	2005-07-18 01:53:06.000000000 +0200
+@@ -619,7 +619,7 @@
+   esac
+   ;;
+ 
+-freebsd* )
++freebsd* | kfreebsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     case $host_cpu in
+     i*86 )
+@@ -687,7 +687,7 @@
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+-netbsd*)
++netbsd* | knetbsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     [lt_cv_deplibs_check_method='match_pattern /lib[^/\.]+\.so\.[0-9]+\.[0-9]+$']
+   else
+diff -Nur gcc-3.3.6.orig/ltcf-c.sh gcc-3.3.6/ltcf-c.sh
+--- gcc-3.3.6.orig/ltcf-c.sh	2002-08-14 04:39:52.000000000 +0200
++++ gcc-3.3.6/ltcf-c.sh	2005-07-18 01:53:06.000000000 +0200
+@@ -185,7 +185,7 @@
+     whole_archive_flag_spec='-all_load $convenience'
+     ;;
+ 
+-  netbsd*)
++  netbsd* | knetbsd*-gnu)
+     if echo __ELF__ | $CC -E - | grep __ELF__ >/dev/null; then
+       archive_cmds='$LD -Bshareable $libobjs $deplibs $linker_flags -o $lib'
+       wlarc=
+@@ -409,7 +409,7 @@
+     ;;
+ 
+   # FreeBSD 3 and greater uses gcc -shared to do shared libraries.
+-  freebsd*)
++  freebsd* | kfreebsd*-gnu)
+     archive_cmds='$CC -shared -o $lib $libobjs $deplibs $compiler_flags'
+     hardcode_libdir_flag_spec='-R$libdir'
+     hardcode_direct=yes
+@@ -456,7 +456,7 @@
+     link_all_deplibs=yes
+     ;;
+ 
+-  netbsd*)
++  netbsd* | knetbsd*-gnu)
+     if echo __ELF__ | $CC -E - | grep __ELF__ >/dev/null; then
+       archive_cmds='$LD -Bshareable -o $lib $libobjs $deplibs $linker_flags'  # a.out
+     else
+diff -Nur gcc-3.3.6.orig/ltcf-cxx.sh gcc-3.3.6/ltcf-cxx.sh
+--- gcc-3.3.6.orig/ltcf-cxx.sh	2003-02-20 02:12:47.000000000 +0100
++++ gcc-3.3.6/ltcf-cxx.sh	2005-07-18 01:53:06.000000000 +0200
+@@ -244,7 +244,7 @@
+     # C++ shared libraries reported to be fairly broken before switch to ELF
+     ld_shlibs=no
+     ;;
+-  freebsd*)
++  freebsd* | kfreebsd*-gnu)
+     # FreeBSD 3 and later use GNU C++ and GNU ld with standard ELF
+     # conventions
+     ld_shlibs=yes
+@@ -404,7 +404,7 @@
+         ;;
+     esac
+     ;;
+-  netbsd*)
++  netbsd* | knetbsd*-gnu)
+     # NetBSD uses g++ - do we need to do anything?
+     ;;
+   osf3*)
+@@ -759,7 +759,7 @@
+           ;;
+       esac
+       ;;
+-    freebsd*)
++    freebsd* | kfreebsd*-gnu)
+       # FreeBSD uses GNU C++
+       ;;
+     gnu*)
+diff -Nur gcc-3.3.6.orig/ltcf-gcj.sh gcc-3.3.6/ltcf-gcj.sh
+--- gcc-3.3.6.orig/ltcf-gcj.sh	2003-02-20 01:36:49.000000000 +0100
++++ gcc-3.3.6/ltcf-gcj.sh	2005-07-18 01:53:06.000000000 +0200
+@@ -178,7 +178,7 @@
+       $CC $output_objdir/$soname-exp '$lt_cv_cc_dll_switch' -Wl,-e,'$dll_entry' -o $output_objdir/$soname '$ltdll_obj'$libobjs $deplibs $compiler_flags'
+     ;;
+ 
+-  netbsd*)
++  netbsd* | knetbsd*-gnu)
+     if echo __ELF__ | $CC -E - | grep __ELF__ >/dev/null; then
+       archive_cmds='$LD -Bshareable $libobjs $deplibs $linker_flags -o $lib'
+       wlarc=
+@@ -402,7 +402,7 @@
+     ;;
+ 
+   # FreeBSD 3 and greater uses gcc -shared to do shared libraries.
+-  freebsd*)
++  freebsd* | kfreebsd*-gnu)
+     archive_cmds='$CC -shared -o $lib $libobjs $deplibs $compiler_flags'
+     hardcode_libdir_flag_spec='-R$libdir'
+     hardcode_direct=yes
+@@ -433,7 +433,7 @@
+     link_all_deplibs=yes
+     ;;
+ 
+-  netbsd*)
++  netbsd* | knetbsd*-gnu)
+     if echo __ELF__ | $CC -E - | grep __ELF__ >/dev/null; then
+       archive_cmds='$LD -Bshareable -o $lib $libobjs $deplibs $linker_flags'  # a.out
+     else
+diff -Nur gcc-3.3.6.orig/ltconfig gcc-3.3.6/ltconfig
+--- gcc-3.3.6.orig/ltconfig	2004-03-05 22:07:41.000000000 +0100
++++ gcc-3.3.6/ltconfig	2005-07-18 01:53:06.000000000 +0200
+@@ -1152,6 +1152,17 @@
+   hardcode_into_libs=yes
+   ;;
+ 
++kfreebsd*-gnu | knetbsd*-gnu)
++  version_type=linux
++  need_lib_prefix=no
++  need_version=no
++  library_names_spec='${libname}${release}.so$versuffix ${libname}${release}.so${major} ${libname}.so'
++  soname_spec='${libname}${release}.so$major'
++  shlibpath_var=LD_LIBRARY_PATH
++  shlibpath_overrides_runpath=yes
++  hardcode_into_libs=yes
++  ;;
++
+ hpux9* | hpux10* | hpux11*)
+   # Give a soname corresponding to the major version so that dld.sl refuses to
+   # link against other versions.
+diff -Nur gcc-3.3.6.orig/zlib/configure gcc-3.3.6/zlib/configure
+--- gcc-3.3.6.orig/zlib/configure	2004-05-12 17:14:34.000000000 +0200
++++ gcc-3.3.6/zlib/configure	2005-07-18 01:53:06.000000000 +0200
+@@ -1521,7 +1521,7 @@
+   esac
+   ;;
+ 
+-freebsd* )
++freebsd* | kfreebsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     case $host_cpu in
+     i*86 )
+@@ -1589,7 +1589,7 @@
+   lt_cv_file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+   ;;
+ 
+-netbsd*)
++netbsd* | knetbsd*-gnu)
+   if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
+     lt_cv_deplibs_check_method='match_pattern /lib[^/\.]+\.so\.[0-9]+\.[0-9]+$'
+   else

@@ -1,0 +1,50 @@
+#! /bin/sh -e
+
+# DP: http://gcc.gnu.org/ml/gcc-patches/2004-06/msg01187.html
+# DP: Backport from 3.4: Don't use empic relocs for mips-linux eh
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p0 < $0
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+2004-06-15  Chris Demetriou  <cgd@broadcom.com>
+
+	* config/mips/linux.h (ASM_PREFERRED_EH_DATA_FORMAT): Remove
+	definition.
+
+Index: config/mips/linux.h
+===================================================================
+RCS file: /cvs/gcc/gcc/gcc/config/mips/linux.h,v
+retrieving revision 1.77
+diff -u -p -r1.77 linux.h
+--- gcc/config/mips/linux.h	19 Feb 2004 22:07:51 -0000	1.77
++++ gcc/config/mips/linux.h	15 Jun 2004 17:07:04 -0000
+@@ -170,11 +170,6 @@ Boston, MA 02111-1307, USA.  */
+ #undef FUNCTION_NAME_ALREADY_DECLARED
+ #define FUNCTION_NAME_ALREADY_DECLARED 1
+ 
+-#define ASM_PREFERRED_EH_DATA_FORMAT(CODE, GLOBAL)       		\
+-  (flag_pic								\
+-    ? ((GLOBAL) ? DW_EH_PE_indirect : 0) | DW_EH_PE_pcrel | DW_EH_PE_sdata4\
+-   : DW_EH_PE_absptr)
+-
+ /* The glibc _mcount stub will save $v0 for us.  Don't mess with saving
+    it, since ASM_OUTPUT_REG_PUSH/ASM_OUTPUT_REG_POP do not work in the
+    presence of $gp-relative calls.  */

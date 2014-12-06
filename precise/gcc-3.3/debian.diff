@@ -1,0 +1,463 @@
+diff -urN debian/changelog gcc-3.3-3.3.6ds1.orig/debian/changelog
+--- debian/changelog	2014-12-06 15:43:29.502467685 +0900
++++ gcc-3.3-3.3.6ds1.orig/debian/changelog	2014-12-06 21:26:37.982245360 +0900
+@@ -1,3 +1,9 @@
++gcc-3.3 (1:3.3.6ds1-25ubuntu1precise1) precise; urgency=low
++
++  * ppa for precise
++
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Sat, 06 Dec 2014 15:45:00 +0900
++
+ gcc-3.3 (1:3.3.6ds1-25ubuntu1) precise; urgency=low
+ 
+   * Include /usr/share/dpkg/buildflags.mk and disable all hardening options
+diff -urN debian/control gcc-3.3-3.3.6ds1.orig/debian/control
+--- debian/control	2014-12-06 15:43:29.514467686 +0900
++++ gcc-3.3-3.3.6ds1.orig/debian/control	2014-12-06 21:26:49.102245308 +0900
+@@ -1,12 +1,104 @@
+ Source: gcc-3.3
+ Section: devel
+ Priority: optional
+-Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-XSBC-Original-Maintainer: Philipp Kern <pkern@debian.org>
+-Uploaders: Marc 'HE' Brockschmidt <he@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.6.2
+-Build-Depends: dpkg-dev (>= 1.16.0), libc6.1-dev (>= 2.3.2.ds1-16) [alpha ia64] | libc0.3-dev [hurd-i386] | libc0.1-dev [kfreebsd-i386] | libc12-dev (>= 2.0.ds1-1) [netbsd-i386] | libc6-dev (>= 2.3.2.ds1-16), libc6-dev-sparc64 [sparc], libc6-dev-s390x [s390], libunwind7-dev (>= 0.98.5-1) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.13, automake1.4, libtool, autotools-dev, gawk, dejagnu (>= 1.4.3) [!hurd-i386], bzip2, binutils (>= 2.15-7) | binutils-multiarch (>= 2.15-7), binutils-hppa64 (>= 2.15-7) [hppa], debhelper (>= 8.1.3), gperf (>= 2.7-3), bison (>= 1:1.875), flex, gettext, texinfo (>= 4.3), zlib1g-dev, libgc-dev [!avr], locales [!netbsd-i386 !hurd-i386 !hurd-i386], procps [!hurd-i386], sharutils, realpath (>= 1.9.12), lsb-release
++Build-Depends: dpkg-dev (>= 1.16.0), libc6.1-dev (>= 2.3.5-1ubuntu4) [alpha ia64] | libc0.3-dev [hurd-i386] | libc0.1-dev [kfreebsd-i386] | libc12-dev (>= 2.0.ds1-1) [netbsd-i386] | libc6-dev (>= 2.3.5-1ubuntu4), libc6-dev-sparc64 [sparc], libc6-dev-s390x [s390], libunwind7-dev (>= 0.98.5-1) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.13, automake1.4, libtool, autotools-dev, gawk, dejagnu (>= 1.4.3) [!hurd-i386], bzip2, binutils (>= 2.15-7) | binutils-multiarch (>= 2.15-7), binutils-hppa64 (>= 2.15-7) [hppa], debhelper (>= 8.1.3), gperf (>= 2.7-3), bison (>= 1:1.875), flex, gettext, texinfo (>= 4.3), zlib1g-dev, libgc-dev [!avr], locales [!netbsd-i386 !hurd-i386 !hurd-i386], procps [!hurd-i386], sharutils, realpath (>= 1.9.12), lsb-release
+ Build-Depends-Indep: doxygen (>= 1.4.2-3), graphviz (>= 2.2), gsfonts-x11
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-lower
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
++
++Package: gcc-3.3-base
++Architecture: amd64 i386
++Section: devel
++Priority: optional
++Description: The GNU Compiler Collection (base package)
++ This package contains files common to all languages and libraries
++ contained in the GNU Compiler Collection (GCC).
++
++Package: gcc-3.3
++Architecture: any
++Section: devel
++Priority: optional
++Depends: gcc-3.3-base (= 1:3.3.6-25ubuntu1precise1), cpp-3.3 (= 1:3.3.6-25ubuntu1precise1), libgcc1 (>= 1:3.3.4-3), ${shlibs:Depends}, binutils (>= 2.15-7)
++Recommends: libc6-dev (>= 2.3.5-1ubuntu4)
++Conflicts: gcc-3.2 (<= 1:3.2.3-0pre8)
++Suggests: gcc-3.3-doc (>= 1:3.3.6-25ubuntu1precise1)
++Provides: c-compiler
++Description: The GNU C compiler
++ This is the GNU C compiler, a fairly portable optimizing compiler for C.
++
++Package: cpp-3.3
++Architecture: any
++Section: interpreters
++Priority: optional
++Depends: gcc-3.3-base (= 1:3.3.6-25ubuntu1precise1), ${shlibs:Depends}
++Description: The GNU C preprocessor
++ A macro processor that is used automatically by the GNU C compiler
++ to transform programs before actual compilation.
++ .
++ This package has been separated from gcc for the benefit of those who
++ require the preprocessor but not the compiler.
++
++Package: g++-3.3
++Architecture: any
++Section: devel
++Priority: optional
++Depends: gcc-3.3-base (= 1:3.3.6-25ubuntu1precise1), gcc-3.3 (= 1:3.3.6-25ubuntu1precise1), libstdc++5-3.3-dev (= 1:3.3.6-25ubuntu1precise1), ${shlibs:Depends}
++Replaces: gcc (<= 2.7.2.3-3)
++Provides: c++-compiler, c++abi1-dev
++Suggests: gcc-3.3-doc (>= 1:3.3.6-25ubuntu1precise1)
++Description: The GNU C++ compiler
++ This is the GNU C++ compiler, a fairly portable optimizing compiler for C++.
++
++Package: gobjc-3.3
++Architecture: any
++Priority: optional
++Depends: gcc-3.3-base (= 1:3.3.6-25ubuntu1precise1), gcc-3.3 (= 1:3.3.6-25ubuntu1precise1), ${shlibs:Depends}, libobjc1 (>= 1:3.3.6-25ubuntu1precise1)
++Suggests: gcc-3.3-doc (>= 1:3.3.6-25ubuntu1precise1)
++Provides: objc-compiler
++Recommends: libgc-dev
++Description: The GNU Objective-C compiler
++ This is the GNU Objective-C compiler, which compiles
++ Objective-C on platforms supported by the gcc compiler. It uses the
++ gcc backend to generate optimized code.
++
++Package: libobjc1
++Section: libs
++Architecture: any
++Priority: optional
++Depends: gcc-3.3-base (>= 1:3.3.6-25ubuntu1precise1), ${shlibs:Depends}
++Description: Runtime library for GNU Objective-C applications
++ Library needed for GNU ObjC applications linked against the shared library.
++
++Package: g77-3.3
++Architecture: any
++Priority: optional
++Depends: gcc-3.3-base (= 1:3.3.6-25ubuntu1precise1), gcc-3.3 (= 1:3.3.6-25ubuntu1precise1), libg2c0-dev (>= 1:3.3.6-25ubuntu1precise1), ${shlibs:Depends}
++Provides: fortran77-compiler
++Suggests: g77-3.3-doc
++Description: The GNU Fortran 77 compiler
++ This is the GNU g77 Fortran compiler, which compiles
++ Fortran 77 on platforms supported by the gcc compiler. It uses the
++ gcc backend to generate optimized code.
++
++Package: libg2c0
++Section: libs
++Architecture: any
++Priority: optional
++Depends: gcc-3.3-base (>= 1:3.3.6-25ubuntu1precise1), ${shlibs:Depends}
++Description: Runtime library for GNU Fortran 77 applications
++ Library needed for GNU Fortran 77 applications linked against the
++ shared library.
++
++Package: libg2c0-dev
++Section: libdevel
++Architecture: any
++Priority: optional
++Depends: gcc-3.3-base (>= 1:3.3.6-25ubuntu1precise1), libg2c0 (>= 1:3.3.6-25ubuntu1precise1), ${shlibs:Depends}
++Conflicts: g77-2.95 (<= 1:2.95.4-19), g77-3.0 (<= 1:3.0.4-16), g77-3.2 (<= 1:3.2.3-9), g77-3.3 (<= 1:3.3.4-3)
++Description: GNU Fortran 77 library development
++ Headers and static libraries for g2c.
+ 
+ Package: libstdc++5
+ Architecture: amd64 i386 powerpc
+@@ -23,3 +115,55 @@
+  was included up to g++-2.95. The first version of libstdc++-v3 appeared
+  in g++-3.0.
+ 
++Package: libstdc++5-3.3-dev
++Architecture: any
++Section: libdevel
++Priority: optional
++Depends: gcc-3.3-base (>= 1:3.3.6-25ubuntu1precise1), libstdc++5 (>= 1:3.3.6-25ubuntu1precise1), libc6-dev (>= 2.3.5-1ubuntu4), g++-3.3 (>= 1:3.3.6-25ubuntu1precise1)
++Conflicts: libg++27-dev, libg++272-dev (<< 2.7.2.8-1), libstdc++2.8-dev, libg++2.8-dev, libstdc++2.9-dev, libstdc++2.9-glibc2.1-dev, libstdc++2.10-dev (<< 1:2.95.3-2), libstdc++3.0-dev, libstdc++5-dev (<= 1:3.2.3-0pre3)
++Suggests: libstdc++5-3.3-doc
++Provides: libstdc++-dev
++Description: The GNU Standard C++ Library v3 (development files)
++ This package contains the headers and static library files necessary for
++ building C++ programs which use libstdc++. Be advised that this only works
++ with the GNU C++ compiler (version 3.0), and no earlier library will work it.
++ .
++ libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
++ was included up to g++-2.95. The first version of libstdc++-v3 appeared
++ in g++-3.0.
++
++Package: libstdc++5-3.3-pic
++Architecture: any
++Section: libdevel
++Priority: extra
++Depends: gcc-3.3-base (>= 1:3.3.6-25ubuntu1precise1), libstdc++5, libstdc++5-3.3-dev
++Description: The GNU Standard C++ Library v3 (shared library subset kit)
++ This is used to develop subsets of the libstdc++ shared libraries for
++ use on custom installation floppies and in embedded systems.
++ .
++ Unless you are making one of those, you will not need this package.
++
++Package: libstdc++5-3.3-dbg
++Architecture: any
++Section: libdevel
++Priority: extra
++Depends: gcc-3.3-base (>= 1:3.3.6-25ubuntu1precise1), libstdc++5, libstdc++5-3.3-dev
++Conflicts: libstdc++5-dbg
++Description: The GNU Standard C++ Library v3 (debugging files)
++ This package contains the shared library of libstdc++ compiled with
++ debugging symbols.
++
++Package: libstdc++5-3.3-doc
++Architecture: all
++Section: doc
++Priority: optional
++Depends: gcc-3.3-base (>= 1:3.3.6-25ubuntu1precise1)
++Replaces: libstdc++3.0-doc
++Description: The GNU Standard C++ Library v3 (documentation files)
++ This package contains documentation files for the GNU stdc++ library.
++ .
++ One set is the distribution documentation, the other set is the
++ source documentation including a namespace list, class hierarchy,
++ alphabetical list, compound list, file list, namespace members,
++ compound members and file members.
++
+diff -urN debian/control.m4 gcc-3.3-3.3.6ds1.orig/debian/control.m4
+--- debian/control.m4	2014-12-06 15:43:29.538467686 +0900
++++ gcc-3.3-3.3.6ds1.orig/debian/control.m4	2014-12-06 17:43:38.137572028 +0900
+@@ -27,8 +27,7 @@
+ Source: SRCNAME
+ Section: devel
+ Priority: PRI(standard)
+-Maintainer: MAINTAINER
+-Uploaders: Marc 'HE' Brockschmidt <he@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.6.2
+ ifdef(`TARGET',`dnl cross
+ Build-Depends: dpkg-dev (>= 1.16.0), LIBC_BUILD_DEP, m4, autoconf2.13, automake1.4, libtool, autotools-dev, gawk, bzip2, dpkg-cross (>= 1.18.1), BINUTILS_BUILD_DEP, debhelper (>= 8.1.3), bison (>= 1:1.875), flex, realpath (>= 1.9.12), lsb-release`'TARGETBD
+@@ -36,9 +35,11 @@
+ Build-Depends: dpkg-dev (>= 1.16.0), LIBC_BUILD_DEP, LIBC_BIARCH_BUILD_DEP libunwind7-dev (>= 0.98.5-1) [ia64], libatomic-ops-dev [ia64], m4, autoconf2.13, automake1.4, libtool, autotools-dev, gawk, dejagnu (>= 1.4.3) [check_no_archs], bzip2, BINUTILS_BUILD_DEP, binutils-hppa64 (>= BINUTILSV) [hppa], debhelper (>= 8.1.3), gperf (>= 2.7-3), bison (>= 1:1.875), flex, gettext, texinfo (>= 4.3), zlib1g-dev, libgc-dev [libgc_no_archs], locales [locale_no_archs !hurd-i386], procps [check_no_archs], sharutils, realpath (>= 1.9.12), lsb-release
+ Build-Depends-Indep: doxygen (>= 1.4.2-3), graphviz (>= 2.2), gsfonts-x11
+ ')dnl
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-lower
++XS-Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ ifdef(`TARGET', `', `
+-ifenabled(`disabled',`
++ifenabled(`gccbase',`
+ Package: gcc`'PV-base
+ Architecture: amd64 i386
+ Section: devel
+@@ -51,7 +52,7 @@
+  This version of GCC is not yet available for this architecture.
+  Please use the compilers from the gcc-snapshot package for testing.
+ ')`'dnl
+-')`'dnl disabled
++')`'dnl gccbase
+ ')`'dnl native
+ 
+ ifenabled(`libgcc',`
+diff -urN debian/patches/treelang-Make-lang.dpatch gcc-3.3-3.3.6ds1.orig/debian/patches/treelang-Make-lang.dpatch
+--- debian/patches/treelang-Make-lang.dpatch	1970-01-01 09:00:00.000000000 +0900
++++ gcc-3.3-3.3.6ds1.orig/debian/patches/treelang-Make-lang.dpatch	2014-12-04 09:43:42.005642196 +0900
+@@ -0,0 +1,56 @@
++#! /bin/sh -e
++
++dir=
++if [ $# -eq 3 -a "$2" = '-d' ]; then
++    pdir="-d $3"
++    dir="$3/"
++elif [ $# -ne 1 ]; then
++    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
++    exit 1
++fi
++case "$1" in
++    -patch)
++        patch $pdir -f --no-backup-if-mismatch -p0 < $0
++        ;;
++    -unpatch)
++        patch $pdir -f --no-backup-if-mismatch -R -p0 < $0
++        ;;
++    *)
++        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
++        exit 1
++esac
++exit 0
++
++--- gcc/treelang/Make-lang.in.orig	2003-07-08 22:28:41.000000000 +0900
+++++ gcc/treelang/Make-lang.in	2014-12-04 09:42:09.818348270 +0900
++@@ -56,7 +56,7 @@
++ 
++ # GCC_FOR_TREELANG = ./xgcc $(GCC_EXTRAS)
++ 
++-TREE_GENERATED = $(srcdir)/treelang/lex.c $(srcdir)/treelang/parse.c\
+++TREE_GENERATED = $(srcdir)/treelang/lex.c $(srcdir)/treelang/parse.c \
++ 	$(srcdir)/treelang/parse.h $(srcdir)/treelang/parse.output $(srcdir)/treelang/TAGS
++ 
++ TREE_SOURCE = ${srcdir}/treelang/parse.y ${srcdir}/treelang/lex.l ${srcdir}/treelang/tree1.c ${srcdir}/treelang/treelang.h ${srcdir}/treelang/treetree.c $(srcdir)/treelang/treetree.h
++@@ -79,10 +79,10 @@
++ # no preprocessor
++ 
++ # core compiler 
++-tree1$(exeext): treelang/tree1.o treelang/treetree.o treelang/lex.o treelang/parse.o\
+++tree1$(exeext): treelang/tree1.o treelang/treetree.o treelang/lex.o treelang/parse.o \
++ 	$(TREE_BE_LIBS) c-convert.o c-typeck.o c-common.o c-decl.o attribs.o
++ 	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ \
++-	treelang/tree1.o treelang/treetree.o treelang/lex.o treelang/parse.o c-convert.o\
+++	treelang/tree1.o treelang/treetree.o treelang/lex.o treelang/parse.o c-convert.o \
++ 	c-typeck.o c-common.o c-decl.o attribs.o $(TREE_BE_LIBS)
++ 
++ #
++@@ -115,7 +115,7 @@
++ 	$(LEX) $(LEXFLAGS) -o$(srcdir)/treelang/lex.c $(srcdir)/treelang/lex.l
++ 
++ $(srcdir)/treelang/parse.c $(srcdir)/treelang/parse.h: $(srcdir)/treelang/parse.y
++-	$(BISON) $(BISONFLAGS) -v $(srcdir)/treelang/parse.y\
+++	$(BISON) $(BISONFLAGS) -v $(srcdir)/treelang/parse.y \
++ 	--output=$(srcdir)/treelang/parse.c --defines
++ # -v
++ 
+diff -urN debian/rules.conf gcc-3.3-3.3.6ds1.orig/debian/rules.conf
+--- debian/rules.conf	2014-12-06 15:43:29.494467685 +0900
++++ gcc-3.3-3.3.6ds1.orig/debian/rules.conf	2014-12-06 16:31:33.998468919 +0900
+@@ -169,6 +169,8 @@
+ else
+   languages = c c++
+   addons = libcxx #libgcc cdev c++dev libnof libs lib64cxx libnof 
++  languages += f77 objc
++  addons += gccbase cdev c++dev fdev objcdev libg2c libobjc
+   #languages += ada f77 java objc pascal treelang
+   #addons += fastjar fdev fixincl javadev libg2c libffi libgcj libobjc \
+   #	   lib64ffi lib64gcj lib64objc lib64g2c objcdev proto libgnat \
+diff -urN debian/rules.d/binary-base.mk gcc-3.3-3.3.6ds1.orig/debian/rules.d/binary-base.mk
+--- debian/rules.d/binary-base.mk	2014-12-06 15:43:29.570467686 +0900
++++ gcc-3.3-3.3.6ds1.orig/debian/rules.d/binary-base.mk	2014-12-06 16:13:25.042468445 +0900
+@@ -1,4 +1,5 @@
+ #arch_binaries := base $(arch_binaries)
++arch_binaries := base $(arch_binaries)
+ 
+ # ---------------------------------------------------------------------------
+ # gcc-base
+diff -urN debian/rules.d/binary-fortran.mk gcc-3.3-3.3.6ds1.orig/debian/rules.d/binary-fortran.mk
+--- debian/rules.d/binary-fortran.mk	2014-12-06 15:43:29.570467686 +0900
++++ gcc-3.3-3.3.6ds1.orig/debian/rules.d/binary-fortran.mk	2014-12-06 16:44:32.122469245 +0900
+@@ -4,6 +4,7 @@
+ 
+ ifeq ($(with_fdev),yes)
+   arch_binaries  := $(arch_binaries) fdev
++  arch_binaries  := $(arch_binaries) libg2c-dev
+   ifneq ($(GFDL_INVARIANT_FREE),yes)
+     indep_binaries := $(indep_binaries) fortran-doc
+   endif
+diff -urN debian/rules.defs gcc-3.3-3.3.6ds1.orig/debian/rules.defs
+--- debian/rules.defs	2014-12-06 15:43:29.534467686 +0900
++++ gcc-3.3-3.3.6ds1.orig/debian/rules.defs	2014-12-06 16:37:54.938469069 +0900
+@@ -133,13 +133,12 @@
+ # common things --------------------
+ # build common packages, where package names don't differ in different
+ # gcc versions (fastjar, fixincludes, libgcj-common, protoize) ...
+-with_common_pkgs := yes
+ 
+ # ... and some libraries, which do not change (libgcc1, libffi2, libg2c,
+ # libobjc1).
+-with_common_libs := yes
+ 
+-with_dev := no
++with_gccbase := yes
++with_dev := yes
+ 
+ # multiarch --------------------
+ with_multiarch := no
+@@ -285,8 +284,6 @@
+   with_fortran := disabled by environment
+ endif
+ 
+-with_fortran := disabled for the gcc-3.3 build
+-
+ # Build all packages needed for Fortran development
+ ifeq ($(with_fortran)-$(with_dev),yes-yes)
+   with_fdev := yes
+@@ -294,7 +291,7 @@
+   with_fdev := no
+ endif
+ 
+-ifeq ($(with_common_libs)-$(with_fortran),yes-yes)
++ifeq ($(with_fortran),yes)
+   with_libg2c := yes
+ else
+   with_libg2c := no
+@@ -303,7 +300,6 @@
+   #  with_libg2c := yes
+   #endif
+ endif
+-with_libg2c := built from the gcc-3.4 sources
+ 
+ ifeq ($(with_fortran),yes)
+   enabled_languages += f77
+@@ -387,8 +383,6 @@
+   with_objc := disabled by environment
+ endif
+ 
+-with_objc := disabled for the gcc-3.3 build
+-
+ ifneq ($(with_objc),yes)
+   with_objc_gc := $(with_objc)
+ endif
+@@ -399,12 +393,11 @@
+ else
+   with_objcdev := no
+ endif
+-ifeq ($(with_common_libs)-$(with_objc),yes-yes)
++ifeq ($(with_objc),yes)
+   with_libobjc := yes
+ else
+   with_libobjc := no
+ endif
+-with_libobjc := built from the gcc-4.0 sources
+ 
+ ifeq ($(with_objc),yes)
+   enabled_languages += objc
+@@ -517,6 +510,7 @@
+ ifneq ($(WITHOUT_CHECK),)
+   with_check := disabled by environment
+ endif
++with_check := disabled for this build
+ 
+ # powerpc nof libraries --------------------
+ with_libnof := no
+@@ -546,7 +540,6 @@
+     with_hppa64 := yes
+   endif
+ endif
+-with_hppa64 := not built anymore from the gcc-3.3 source
+ 
+ # sparc64 build --------------------
+ ifeq ($(DEB_TARGET_ARCH),sparc)
+diff -urN debian/rules.parameters gcc-3.3-3.3.6ds1.orig/debian/rules.parameters
+--- debian/rules.parameters	2014-12-06 15:43:29.498467684 +0900
++++ gcc-3.3-3.3.6ds1.orig/debian/rules.parameters	2014-12-06 21:26:49.110245308 +0900
+@@ -1,10 +1,10 @@
+ # configuration parameters taken from upstream source files
+ VER		:= 3.3.6
+ BASE_VERSION	:= 3.3
+-SOURCE_VERSION	:= 1:3.3.6ds1-24
+-DEB_VERSION	:= 1:3.3.6-24
++SOURCE_VERSION	:= 1:3.3.6ds1-25ubuntu1precise1
++DEB_VERSION	:= 1:3.3.6-25ubuntu1precise1
+ GPC_BASE_VERSION	:= 2.1
+-DEB_GPC_VERSION	:= 2:3.3.6.-24
++DEB_GPC_VERSION	:= 2:3.3.6.-25ubuntu1precise1
+ DEB_SOVERSION	:= 1:3.3.4-1
+ DEB_FFI_SOVERSION	:= 1:3.3.4-1
+ DEB_GCC_SOVERSION	:= 1:3.3.4-3
+@@ -18,4 +18,4 @@
+ GNAT_VERSION	:= 3.3
+ GNAT_SONAME	:= 3.15
+ FFI_SONAME	:= 
+-LIBC_DEP		:= libc6-dev (>= 2.3.2.ds1-16)
++LIBC_DEP		:= libc6-dev (>= 2.3.5-1ubuntu4)
+diff -urN debian/rules.patch gcc-3.3-3.3.6ds1.orig/debian/rules.patch
+--- debian/rules.patch	2014-12-06 15:43:29.482467695 +0900
++++ gcc-3.3-3.3.6ds1.orig/debian/rules.patch	2014-12-06 15:54:18.246467880 +0900
+@@ -39,6 +39,7 @@
+ 	link-libs \
+ 	gcc-mips-update \
+ 	collect2-open \
++	treelang-Make-lang \
+ 
+ ifeq ($(GFDL_INVARIANT_FREE),yes)
+   debian_patches += \
+diff -urN debian/rules2 gcc-3.3-3.3.6ds1.orig/debian/rules2
+--- debian/rules2	2014-12-06 15:43:29.522467686 +0900
++++ gcc-3.3-3.3.6ds1.orig/debian/rules2	2014-12-06 19:18:57.849903545 +0900
+@@ -18,10 +18,29 @@
+ IS	= $(INSTALL) -m 755	# Install script
+ 
+ #number of jobs to run for build
+-ifneq ($(USE_NJOBS),)
+-  NJOBS   = -j$(shell if [ -f /proc/cpuinfo ]; \
+-		    then echo `cat /proc/cpuinfo | grep 'processor' | wc -l`; \
+-		    else echo 1; fi)
++ifeq ($(USE_NJOBS),no)
++  NJOBS :=
++  USE_CPUS := 1
++else
++  ifeq ($(with_java),yes)
++    MEM_PER_CPU = 192
++  else
++    MEM_PER_CPU = 128
++  endif
++  NUM_CPUS := $(shell if echo $(USE_NJOBS) | grep -q -E '^[0-9]+$$'; \
++			then echo $(USE_NJOBS); \
++			else getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1; fi)
++  USE_CPUS := $(shell mt=`awk '/^MemTotal/ { print $$2 }' /proc/meminfo`; \
++			awk -vn=$(NUM_CPUS) -vmt=$$mt -vm=$(MEM_PER_CPU) \
++				'END { mt/=1024; n2 = int(mt/m); print n==1 ? 1 : n2<n+1 ? n2 : n+1}' < /dev/null)
++  ifneq (,$(strip $(USE_CPUS)))
++    NJOBS := -j $(USE_CPUS)
++  endif
++endif
++
++# Support parallel=<n> in DEB_BUILD_OPTIONS (see #209008)
++ifneq (,$(filter parallel=%,$(subst $(COMMA), ,$(DEB_BUILD_OPTIONS))))
++  NJOBS := -j $(subst parallel=,,$(filter parallel=%,$(subst $(COMMA), ,$(DEB_BUILD_OPTIONS))))
+ endif
+ 
+ 

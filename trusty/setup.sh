@@ -12,6 +12,7 @@ apt-get -y install libtool
 apt-get -y install autoconf2.64
 apt-get -y install automake
 apt-get -y install zlib1g-dev
+apt-get -y install libgc-dev
 apt-get -y install gawk
 apt-get -y install gperf
 apt-get -y install bison

@@ -1,0 +1,179 @@
+# -*- makefile -*-
+# rules to unpack the source tarballs in $(srcdir); if the source dir already
+# exists, the rule exits with an error to prevent deletion of modified
+# source files. It has to be deleted manually.
+
+tarballs = $(gcc_tarball)
+ifeq ($(with_check),yes)
+  tarballs += $(testsuite_tarball)
+endif
+ifeq ($(with_pascal),yes)
+  tarballs += $(gpc_tarball)
+endif
+
+unpack_stamps = $(foreach i,$(tarballs),$(unpack_stamp)-$(i))
+
+unpack: stamp-dir $(unpack_stamp) debian-chmod
+$(unpack_stamp): $(unpack_stamps)
+$(unpack_stamp): $(foreach p,$(debian_tarballs),unpacked-$(p))
+	echo -e "\nBuilt from Debian source package $(PKGSOURCE)-$(SOURCE_VERSION)" \
+		> pxxx
+	echo -e "Integrated upstream packages in this version:\n" >> pxxx
+	for i in $(tarballs); do echo "  $$i" >> pxxx; done
+	mv -f pxxx $@
+
+debian-chmod:
+	@chmod 755 debian/dh_*
+
+# ---------------------------------------------------------------------------
+gfdl_texinfo_files = \
+	gcc/doc/bugreport.texi \
+	gcc/doc/c-tree.texi \
+	gcc/doc/collect2.texi \
+	gcc/doc/compat.texi \
+	gcc/doc/configfiles.texi \
+	gcc/doc/configterms.texi \
+	gcc/doc/contrib.texi \
+	gcc/doc/contribute.texi \
+	gcc/doc/cpp.texi \
+	gcc/doc/cppenv.texi \
+	gcc/doc/cppinternals.texi \
+	gcc/doc/cppopts.texi \
+	gcc/doc/extend.texi \
+	gcc/doc/fragments.texi \
+	gcc/doc/frontends.texi \
+	gcc/doc/gcc.texi \
+	gcc/doc/gccint.texi \
+	gcc/doc/gcov.texi \
+	gcc/doc/gnu.texi \
+	gcc/doc/gty.texi \
+	gcc/doc/headerdirs.texi \
+	gcc/doc/hostconfig.texi \
+	gcc/doc/install-old.texi \
+	gcc/doc/install.texi \
+	gcc/doc/interface.texi \
+	gcc/doc/invoke.texi \
+	gcc/doc/languages.texi \
+	gcc/doc/libgcc.texi \
+	gcc/doc/makefile.texi \
+	gcc/doc/md.texi \
+	gcc/doc/objc.texi \
+	gcc/doc/passes.texi \
+	gcc/doc/portability.texi \
+	gcc/doc/rtl.texi \
+	gcc/doc/service.texi \
+	gcc/doc/sourcebuild.texi \
+	gcc/doc/standards.texi \
+	gcc/doc/tm.texi \
+	gcc/doc/trouble.texi \
+	gcc/doc/include/gcc-common.texi \
+	gcc/doc/include/funding.texi \
+	gcc/f/bugs.texi \
+	gcc/f/bugs0.texi \
+	gcc/f/ffe.texi \
+	gcc/f/intdoc.texi \
+	gcc/f/invoke.texi \
+	gcc/f/news.texi \
+	gcc/f/news0.texi \
+	gcc/f/root.texi \
+	libstdc++-v3/docs/html/17_intro/porting.texi \
+
+gfdl_toplevel_texinfo_files = \
+	gcc/doc/gcc.texi \
+	gcc/java/gcj.texi \
+	gcc/ada/gnat-style.texi \
+	gcc/ada/gnat_rm.texi \
+	gcc/ada/gnat_ugn.texi \
+	gcc/f/g77.texi \
+	gcc/treelang/treelang.texi \
+
+gfdl_manpages = \
+	gcc/doc/cpp.1 \
+	gcc/doc/g++.1 \
+	gcc/doc/gcc.1 \
+	gcc/doc/gcj.1 \
+	gcc/doc/gcj-dbtool.1 \
+	gcc/doc/gcjh.1 \
+	gcc/doc/gcov.1 \
+	gcc/doc/gij.1 \
+	gcc/doc/gjnih.1 \
+	gcc/doc/grmic.1 \
+	gcc/doc/grmiregistry.1 \
+	gcc/doc/jcf-dump.1 \
+	gcc/doc/jv-convert.1 \
+	gcc/doc/jv-scan.1
+
+$(unpack_stamp)-$(gcc_tarball): $(gcc_tarball)
+	: # unpack gcc tarball
+	-mkdir $(stampdir)
+	if [ -d $(srcdir) ]; then \
+	  echo >&2 "Source directory $(srcdir) exists. Delete by hand"; \
+	  false; \
+	fi
+	rm -rf $(gcc_srcdir)
+	case $(gcc_tarball) in \
+	  *.bz2) tar -x --bzip2 -f $(gcc_tarball);; \
+	  *.gz)  tar -x --gzip  -f $(gcc_tarball);; \
+	  *)     false; \
+	esac
+	mv $(gcc_srcdir) $(srcdir)
+ifeq (0,1)
+	cd $(srcdir) && tar cfj ../gcc-4.1.1-doc.tar.bz2 \
+		$(gfdl_texinfo_files) \
+		$(gfdl_toplevel_texinfo_files) \
+		$(gfdl_manpages) \
+		libstdc++-v3/docs/html/17_intro/porting.html
+endif
+ifeq ($(GFDL_INVARIANT_FREE),yes)
+	rm -f $(srcdir)/gcc/doc/*.1
+	rm -f $(srcdir)/gcc/doc/*.info
+	for i in $(gfdl_texinfo_files); do \
+	  cp debian/dummy.texi $(srcdir)/$$i; \
+	done
+	for i in $(gfdl_toplevel_texinfo_files); do \
+	  n=$$(basename $$i .texi); \
+	  sed "s/@name@/$$n/g" debian/gcc-dummy.texi > $(srcdir)/$$i; \
+	done
+	cp debian/porting.* $(srcdir)/libstdc++-v3/docs/html/17_intro/
+endif
+	echo "$(gcc_tarball) unpacked." > $@
+
+# ---------------------------------------------------------------------------
+$(unpack_stamp)-$(gpc_tarball): $(gpc_tarball)
+	: # unpack gpc tarball
+	-mkdir $(stampdir)
+	if [ -d $(srcdir)/gcc/p ]; then \
+	  echo >&2 "Source directory $(srcdir)/gcc/p exists. Delete by hand";\
+	  false; \
+	fi
+	#rm -rf $(gpc_srcdir)
+	rm -rf p
+	case $(gpc_tarball) in \
+	  *.bz2) tar -x --bzip2 -f $(gpc_tarball);; \
+	  *.gz)  tar -x --gzip  -f $(gpc_tarball);; \
+	  *)     false; \
+	esac
+	if [ -d p ]; then \
+	  mv p $(srcdir)/gcc/. ; \
+	else \
+	  mv $(gpc_srcdir)/p $(srcdir)/gcc/. ; \
+	  rmdir $(gpc_srcdir); \
+	fi
+	echo "$(gpc_tarball) unpacked." > $@
+
+# ---------------------------------------------------------------------------
+$(unpack_stamp)-$(testsuite_tarball): $(testsuite_tarball)
+	: # unpack testsuite tarball
+	-mkdir $(stampdir)
+	rm -rf $(testsuite_srcdir)
+	case $(testsuite_tarball) in \
+	  *.bz2) tar -x -p --bzip2 -f $(testsuite_tarball);; \
+	  *.gz)  tar -x -p --gzip  -f $(testsuite_tarball);; \
+	  *)     false; \
+	esac
+	for t in gcc libjava libstdc++-v3; do \
+	  rm -rf $(srcdir)/$$t/testsuite; \
+	  mv $(testsuite_srcdir)/$$t/testsuite $(srcdir)/$$t/.; \
+	done
+	rm -rf $(testsuite_srcdir)
+	echo "$(testsuite_tarball) unpacked." > $@

@@ -1,0 +1,72 @@
+#! /bin/sh -e
+
+# multiarch.dpatch
+#
+# Add multiarch support to GCC.
+
+dir=
+if [ $# -eq 3 -a "$2" = '-d' ]; then
+    pdir="-d $3"
+    dir="$3/"
+elif [ $# -ne 1 ]; then
+    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+    exit 1
+fi
+case "$1" in
+    -patch)
+        patch $pdir -f --no-backup-if-mismatch -p1 < $0
+        cd ${dir}gcc && autoconf2.13
+        ;;
+    -unpatch)
+        patch $pdir -f --no-backup-if-mismatch -R -p1 < $0
+        rm -f ${dir}gcc/configure
+        ;;
+    *)
+        echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+        exit 1
+esac
+exit 0
+
+diff -Nur gcc-3.3.6ds1.orig/gcc/config.gcc gcc-3.3.6ds1/gcc/config.gcc
+--- gcc-3.3.6ds1.orig/gcc/config.gcc	2004-04-29 06:42:47.000000000 +0200
++++ gcc-3.3.6ds1/gcc/config.gcc	2011-03-30 19:47:22.279859357 +0200
+@@ -3040,6 +3040,13 @@
+ 	fi
+ fi
+ 
++multiarch_defaults=`echo ${target_noncanonical} | sed -e 's/unknown-//'`
++if test x${with_multiarch_defaults} != x; then
++	multiarch_defaults=${with_multiarch_defaults}
++fi
++multiarch_define="__`echo ${multiarch_defaults} | tr '-' '_'`__"
++tm_defines="${tm_defines} ${multiarch_define}=1 MULTIARCH_DEFAULTS=\\\"${multiarch_defaults}\\\""
++
+ # Save data on machine being used to compile GCC in build_xm_file.
+ # Save data on host machine in vars host_xm_file and host_xmake_file.
+ if test x$pass1done = x
+diff -Nur gcc-3.3.6ds1.orig/gcc/configure.in gcc-3.3.6ds1/gcc/configure.in
+--- gcc-3.3.6ds1.orig/gcc/configure.in	2004-04-01 18:55:22.000000000 +0200
++++ gcc-3.3.6ds1/gcc/configure.in	2011-03-30 19:12:27.615379339 +0200
+@@ -301,6 +301,9 @@
+ [], [enable_multilib=yes])
+ AC_SUBST(enable_multilib)
+ 
++AC_ARG_WITH(multiarch-defaults,
++[  --with-multiarch-defaults  set the default multiarch directory.],)
++
+ # Enable expensive internal checks
+ AC_ARG_ENABLE(checking,
+ [  --enable-checking[=LIST]
+diff -Nur gcc-3.3.6ds1.orig/gcc/cppdefault.c gcc-3.3.6ds1/gcc/cppdefault.c
+--- gcc-3.3.6ds1.orig/gcc/cppdefault.c	2004-05-24 11:40:58.000000000 -0400
++++ gcc-3.3.6ds1/gcc/cppdefault.c	2004-05-24 11:58:39.000000000 -0400
+@@ -66,6 +70,9 @@
+     /* Some systems have an extra dir of include files.  */
+     { SYSTEM_INCLUDE_DIR, 0, 0, 0, 1 },
+ #endif
++#ifdef STANDARD_INCLUDE_DIR
++    { STANDARD_INCLUDE_DIR "/" MULTIARCH_DEFAULTS, STANDARD_INCLUDE_COMPONENT, 0, 0, 1 },
++#endif
+ #ifdef STANDARD_INCLUDE_DIR
+     /* /usr/include comes dead last.  */
+     { STANDARD_INCLUDE_DIR, STANDARD_INCLUDE_COMPONENT, 0, 0, 1 },
