@@ -127,7 +127,6 @@ GFDL_INVARIANT_FREE := yes
 # common things --------------------
 # build common packages, where package names don't differ in different
 # gcc versions (fastjar, fixincludes, libgcj-common, protoize) ...
-with_common_pkgs := yes
 
 # ... and some libraries, which do not change (libgcc1, libffi2, libg2c,
 # libobjc1).
