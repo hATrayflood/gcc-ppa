@@ -6,10 +6,10 @@ apt-get -y install gnupg-agent
 apt-get -y install devscripts
 apt-get -y install debhelper
 apt-get -y install quilt
+apt-get -y install sharutils
 apt-get -y install autoconf2.13
 apt-get -y install autoconf2.59
 apt-get -y install autoconf2.64
-apt-get -y install sharutils
 
 apt-get -y install g++-multilib
 apt-get -y install libc6-dbg
