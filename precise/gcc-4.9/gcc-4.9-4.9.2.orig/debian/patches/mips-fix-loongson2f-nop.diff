@@ -1,0 +1,15 @@
+# DP: On mips, pass -mfix-loongson2f-nop to as, if -mno-fix-loongson2f-nop
+# DP: is not passed.
+
+Index: b/src/gcc/config/mips/mips.h
+===================================================================
+--- a/src/gcc/config/mips/mips.h
++++ b/src/gcc/config/mips/mips.h
+@@ -1254,6 +1254,7 @@ struct mips_cpu_info {
+ %{msym32} %{mno-sym32} \
+ %{mtune=*}" \
+ FP_ASM_SPEC "\
++%{!mno-fix-loongson2f-nop:-mfix-loongson2f-nop} \
+ %(subtarget_asm_spec)"
+ 
+ /* Extra switches sometimes passed to the linker.  */
