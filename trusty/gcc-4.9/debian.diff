@@ -1,20 +1,20 @@
-diff -urN debian/changelog gcc-4.9-4.9.1.orig/debian/changelog
---- debian/changelog	2014-10-19 06:23:27.344682365 +0900
-+++ gcc-4.9-4.9.1.orig/debian/changelog	2014-10-22 04:41:00.630121263 +0900
+diff -urN debian/changelog gcc-4.9-4.9.2.orig/debian/changelog
+--- debian/changelog	2015-04-13 08:49:25.841299608 +0900
++++ gcc-4.9-4.9.2.orig/debian/changelog	2015-04-13 15:59:54.903336467 +0900
 @@ -1,3 +1,9 @@
-+gcc-4.9 (4.9.1-16ubuntu6trusty1) trusty; urgency=medium
++gcc-4.9 (4.9.2-10ubuntu12trusty1) trusty; urgency=medium
 +
 +  * ppa for trusty
 +
-+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Wed, 22 Oct 2014 04:30:00 +0900
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Sun, 12 Apr 2015 10:25:00 +0900
 +
- gcc-4.9 (4.9.1-16ubuntu6) utopic; urgency=medium
+ gcc-4.9 (4.9.2-10ubuntu12) vivid; urgency=medium
  
-   * Update to SVN 20141011 (r216116) from the gcc-4_9-branch.
-diff -urN debian/control gcc-4.9-4.9.1.orig/debian/control
---- debian/control	2014-10-19 06:23:27.348684386 +0900
-+++ gcc-4.9-4.9.1.orig/debian/control	2014-10-22 08:05:19.641601524 +0900
-@@ -1,9 +1,7 @@
+   * Update to SVN 20150327 (r221736) from the gcc-4_9-branch.
+diff -urN debian/control gcc-4.9-4.9.2.orig/debian/control
+--- debian/control	2015-04-13 08:49:25.841299608 +0900
++++ gcc-4.9-4.9.2.orig/debian/control	2015-04-13 16:00:17.811876512 +0900
+@@ -1,19 +1,17 @@
  Source: gcc-4.9
  Section: devel
  Priority: optional
@@ -22,19 +22,23 @@ diff -urN debian/control gcc-4.9-4.9.1.orig/debian/control
 -XSBC-Original-Maintainer: Debian GCC Maintainers <debian-gcc@lists.debian.org>
 -Uploaders: Matthias Klose <doko@debian.org>
 +Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
- Standards-Version: 3.9.5
- Build-Depends: debhelper (>= 5.0.62), dpkg-dev (>= 1.16.0~ubuntu4), g++-multilib [amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32], 
+ Standards-Version: 3.9.6
+-Build-Depends: debhelper (>= 5.0.62), dpkg-dev (>= 1.17.11), 
++Build-Depends: debhelper (>= 5.0.62), dpkg-dev (>= 1.16.0~ubuntu4), 
+   g++-multilib [amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32], 
    libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6), libc6-dev (>= 2.13-31) [armel armhf], libc6-dev-amd64 [i386 x32], libc6-dev-sparc64 [sparc], libc6-dev-sparc [sparc64], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64 x32], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 mipsn32 mipsn32el mips64 mips64el s390x sparc64 x32], libn32gcc1 [mips mipsel mips64 mips64el], lib64gcc1 [i386 mips mipsel mipsn32 mipsn32el powerpc sparc s390 x32], libc6-dev-mips64 [mips mipsel mipsn32 mipsn32el], libc6-dev-mipsn32 [mips mipsel mips64 mips64el], libc6-dev-mips32 [mipsn32 mipsn32el mips64 mips64el], libc6-dev-x32 [amd64 i386], libx32gcc1 [amd64 i386], libc6-dev-armhf [armel], libhfgcc1 [armel], libc6-dev-armel [armhf], libsfgcc1 [armhf], libc6.1-dbg [alpha ia64] | libc0.3-dbg [hurd-i386] | libc0.1-dbg [kfreebsd-i386 kfreebsd-amd64] | libc6-dbg, 
-@@ -11,7 +9,7 @@
+   kfreebsd-kernel-headers (>= 0.84) [kfreebsd-any], 
    m4, libtool, autoconf2.64, 
    libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], 
    autogen, gawk, lzma, xz-utils, patchutils, 
 -  zlib1g-dev, systemtap-sdt-dev [linux-any kfreebsd-any hurd-any], 
+-  binutils (>= 2.25-3~) | binutils-multiarch (>= 2.25-3~), binutils-hppa64 (>= 2.25-3~) [hppa], 
 +  zlib1g-dev, 
-   binutils (>= 2.22) | binutils-multiarch (>= 2.22), binutils-hppa64 (>= 2.22) [hppa], 
++  binutils (>= 2.22) | binutils-multiarch (>= 2.22), binutils-hppa64 (>= 2.22) [hppa], 
    gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, 
    gdb, 
-@@ -20,9 +18,8 @@
+   texinfo (>= 4.3), locales, sharutils, 
+@@ -21,9 +19,8 @@
    libcloog-isl-dev (>= 0.18), libmpc-dev (>= 1.0), libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), 
    dejagnu [!m68k], realpath (>= 1.9.12), chrpath, lsb-release, quilt
  Build-Depends-Indep: doxygen (>= 1.7.2), graphviz (>= 2.2), ghostscript, texlive-latex-base, xsltproc, libxml2-utils, docbook-xsl-ns, 
@@ -46,9 +50,241 @@ diff -urN debian/control gcc-4.9-4.9.1.orig/debian/control
  
  Package: gcc-4.9-base
  Architecture: any
-diff -urN debian/control.m4 gcc-4.9-4.9.1.orig/debian/control.m4
---- debian/control.m4	2014-10-19 06:23:27.348684386 +0900
-+++ gcc-4.9-4.9.1.orig/debian/control.m4	2014-10-19 10:22:37.418621553 +0900
+@@ -37,6 +34,52 @@
+  This package contains files common to all languages and libraries
+  contained in the GNU Compiler Collection (GCC).
+ 
++Package: libgcc1
++Architecture: any
++Section: libs
++Priority: required
++Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
++Provides: libgcc1-armel [armel], libgcc1-armhf [armhf]
++Multi-Arch: same
++Pre-Depends: multiarch-support
++Breaks: ${multiarch:breaks}
++Description: GCC support library
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libgcc1-dbg
++Architecture: any
++Section: debug
++Priority: extra
++Depends: gcc-4.9-base (= ${gcc:Version}), libgcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Provides: libgcc1-dbg-armel [armel], libgcc1-dbg-armhf [armhf]
++Multi-Arch: same
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
++Package: libgcc2
++Architecture: m68k
++Section: libs
++Priority: required
++Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
++Multi-Arch: same
++Pre-Depends: multiarch-support
++Breaks: ${multiarch:breaks}
++Description: GCC support library
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libgcc2-dbg
++Architecture: m68k
++Section: debug
++Priority: extra
++Depends: gcc-4.9-base (= ${gcc:Version}), libgcc2 (= ${gcc:Version}), ${misc:Depends}
++Multi-Arch: same
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: libgcc-4.9-dev
+ Architecture: any
+ Section: libdevel
+@@ -52,6 +95,47 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
++Package: libgcc4
++Architecture: hppa
++Multi-Arch: same
++Pre-Depends: multiarch-support
++Breaks: ${multiarch:breaks}
++Section: libs
++Priority: required
++Depends: gcc-4.9-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
++Description: GCC support library
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libgcc4-dbg
++Architecture: hppa
++Multi-Arch: same
++Section: debug
++Priority: extra
++Depends: gcc-4.9-base (= ${gcc:Version}), libgcc4 (= ${gcc:Version}), ${misc:Depends}
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
++Package: lib64gcc1
++Architecture: i386 powerpc sparc s390 mips mipsel mipsn32 mipsn32el x32
++Section: libs
++Priority: optional
++Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: libgcc1 (<= 1:3.3-0pre9)
++Description: GCC support library (64bit)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: lib64gcc1-dbg
++Architecture: i386 powerpc sparc s390 mips mipsel mipsn32 mipsn32el x32
++Section: debug
++Priority: extra
++Depends: gcc-4.9-base (= ${gcc:Version}), lib64gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: lib64gcc-4.9-dev
+ Architecture: i386 powerpc sparc s390 mips mipsel mipsn32 mipsn32el x32
+ Section: libdevel
+@@ -67,6 +151,25 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
++Package: lib32gcc1
++Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32 mipsn32 mipsn32el mips64 mips64el
++Section: libs
++Priority: optional
++Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: ${confl:lib32}
++Description: GCC support library (32 bit Version)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: lib32gcc1-dbg
++Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32 mipsn32 mipsn32el mips64 mips64el
++Section: debug
++Priority: extra
++Depends: gcc-4.9-base (= ${gcc:Version}), lib32gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: lib32gcc-4.9-dev
+ Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32 mipsn32 mipsn32el mips64 mips64el
+ Section: libdevel
+@@ -82,6 +185,26 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
++Package: libhfgcc1
++Architecture: armel
++Section: libs
++Priority: optional
++Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: libgcc1-armhf [armel]
++Description: GCC support library (hard float ABI)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libhfgcc1-dbg
++Architecture: armel
++Section: debug
++Priority: extra
++Depends: gcc-4.9-base (= ${gcc:Version}), libhfgcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Conflicts: libgcc1-dbg-armhf [armel]
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: libhfgcc-4.9-dev
+ Architecture: armel
+ Section: libdevel
+@@ -97,6 +220,26 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
++Package: libsfgcc1
++Architecture: armhf
++Section: libs
++Priority: optional
++Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: libgcc1-armel [armhf]
++Description: GCC support library (soft float ABI)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libsfgcc1-dbg
++Architecture: armhf
++Section: debug
++Priority: extra
++Depends: gcc-4.9-base (= ${gcc:Version}), libsfgcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Conflicts: libgcc1-dbg-armel [armhf]
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: libsfgcc-4.9-dev
+ Architecture: armhf
+ Section: libdevel
+@@ -112,6 +255,25 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
++Package: libn32gcc1
++Architecture: mips mipsel mips64 mips64el
++Section: libs
++Priority: optional
++Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: libgcc1 (<= 1:3.3-0pre9)
++Description: GCC support library (n32)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libn32gcc1-dbg
++Architecture: mips mipsel mips64 mips64el
++Section: debug
++Priority: extra
++Depends: gcc-4.9-base (= ${gcc:Version}), libn32gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: libn32gcc-4.9-dev
+ Architecture: mips mipsel mips64 mips64el
+ Section: libdevel
+@@ -127,6 +289,24 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
++Package: libx32gcc1
++Architecture: amd64 i386
++Section: libs
++Priority: optional
++Depends: gcc-4.9-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Description: GCC support library (x32)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libx32gcc1-dbg
++Architecture: amd64 i386
++Section: debug
++Priority: extra
++Depends: gcc-4.9-base (= ${gcc:Version}), libx32gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: libx32gcc-4.9-dev
+ Architecture: amd64 i386
+ Section: libdevel
+diff -urN debian/control.m4 gcc-4.9-4.9.2.orig/debian/control.m4
+--- debian/control.m4	2015-04-13 08:49:25.845299608 +0900
++++ gcc-4.9-4.9.2.orig/debian/control.m4	2015-04-13 08:52:10.213299998 +0900
 @@ -35,23 +35,7 @@
  Source: SRCNAME
  Section: devel
@@ -71,10 +307,10 @@ diff -urN debian/control.m4 gcc-4.9-4.9.1.orig/debian/control.m4
 -Uploaders: Matthias Klose <doko@debian.org>
 -')dnl SRCNAME
 +Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
- Standards-Version: 3.9.5
+ Standards-Version: 3.9.6
  ifdef(`TARGET',`dnl cross
  Build-Depends: debhelper (>= 5.0.62), DPKG_BUILD_DEP
-@@ -80,15 +64,8 @@
+@@ -81,15 +65,8 @@
    CHECK_BUILD_DEP realpath (>= 1.9.12), chrpath, lsb-release, quilt
  Build-Depends-Indep: LIBSTDCXX_BUILD_INDEP JAVA_BUILD_INDEP
  ')dnl
@@ -92,10 +328,10 @@ diff -urN debian/control.m4 gcc-4.9-4.9.1.orig/debian/control.m4
  
  ifelse(regexp(SRCNAME, `gcc-snapshot'),0,`dnl
  Package: gcc-snapshot`'TS
-diff -urN debian/rules.defs gcc-4.9-4.9.1.orig/debian/rules.defs
---- debian/rules.defs	2014-10-19 06:23:27.492757098 +0900
-+++ gcc-4.9-4.9.1.orig/debian/rules.defs	2014-10-19 10:25:15.235404069 +0900
-@@ -1276,6 +1276,7 @@
+diff -urN debian/rules.defs gcc-4.9-4.9.2.orig/debian/rules.defs
+--- debian/rules.defs	2015-04-13 08:49:25.985299608 +0900
++++ gcc-4.9-4.9.2.orig/debian/rules.defs	2015-04-13 08:52:46.565300085 +0900
+@@ -1284,6 +1284,7 @@
      with_check := disabled for $(DEB_HOST_ARCH), testsuite timeouts with expect
    endif
  endif
@@ -103,26 +339,26 @@ diff -urN debian/rules.defs gcc-4.9-4.9.1.orig/debian/rules.defs
  
  # not a dependency on all archs, but if available, use it for the testsuite
  ifneq (,$(wildcard /usr/bin/localedef))
-diff -urN debian/rules.parameters gcc-4.9-4.9.1.orig/debian/rules.parameters
---- debian/rules.parameters	2014-10-19 06:23:27.492757098 +0900
-+++ gcc-4.9-4.9.1.orig/debian/rules.parameters	2014-10-22 08:05:19.657593614 +0900
+diff -urN debian/rules.parameters gcc-4.9-4.9.2.orig/debian/rules.parameters
+--- debian/rules.parameters	2015-04-13 08:49:25.985299608 +0900
++++ gcc-4.9-4.9.2.orig/debian/rules.parameters	2015-04-13 16:00:17.823870512 +0900
 @@ -2,14 +2,14 @@
- GCC_VERSION	:= 4.9.1
- NEXT_GCC_VERSION	:= 4.9.2
+ GCC_VERSION	:= 4.9.2
+ NEXT_GCC_VERSION	:= 4.9.3
  BASE_VERSION	:= 4.9
--SOURCE_VERSION	:= 4.9.1-16ubuntu6
--DEB_VERSION	:= 4.9.1-16ubuntu6
--DEB_EVERSION	:= 1:4.9.1-16ubuntu6
--DEB_GDC_VERSION	:= 4.9.1-16ubuntu6
-+SOURCE_VERSION	:= 4.9.1-16ubuntu6trusty1
-+DEB_VERSION	:= 4.9.1-16ubuntu6trusty1
-+DEB_EVERSION	:= 1:4.9.1-16ubuntu6trusty1
-+DEB_GDC_VERSION	:= 4.9.1-16ubuntu6trusty1
+-SOURCE_VERSION	:= 4.9.2-10ubuntu12
+-DEB_VERSION	:= 4.9.2-10ubuntu12
+-DEB_EVERSION	:= 1:4.9.2-10ubuntu12
+-DEB_GDC_VERSION	:= 4.9.2-10ubuntu12
++SOURCE_VERSION	:= 4.9.2-10ubuntu12trusty1
++DEB_VERSION	:= 4.9.2-10ubuntu12trusty1
++DEB_EVERSION	:= 1:4.9.2-10ubuntu12trusty1
++DEB_GDC_VERSION	:= 4.9.2-10ubuntu12trusty1
  DEB_SOVERSION	:= 4.9
  DEB_SOEVERSION	:= 1:4.9
  DEB_LIBGCC_SOVERSION	:= 
--DEB_LIBGCC_VERSION	:= 1:4.9.1-16ubuntu6
-+DEB_LIBGCC_VERSION	:= 1:4.9.1-16ubuntu6trusty1
+-DEB_LIBGCC_VERSION	:= 1:4.9.2-10ubuntu12
++DEB_LIBGCC_VERSION	:= 1:4.9.2-10ubuntu12trusty1
  DEB_STDCXX_SOVERSION	:= 4.9
  DEB_GCJ_SOVERSION	:= 4.9
  PKG_GCJ_EXT	:= 15
