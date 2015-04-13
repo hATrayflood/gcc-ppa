@@ -70,7 +70,7 @@ https://launchpad.net/ubuntu/precise/+source/gcc-4.5
 https://launchpad.net/ubuntu/precise/+source/gcc-4.6  
 https://launchpad.net/ubuntu/trusty/+source/gcc-4.7  
 https://launchpad.net/ubuntu/trusty/+source/gcc-4.8  
-https://launchpad.net/ubuntu/utopic/+source/gcc-4.9  
+https://launchpad.net/ubuntu/vivid/+source/gcc-4.9  
 
 launchpad
 ---------
