@@ -1,19 +1,19 @@
 diff -urN debian/changelog gcc-4.9-4.9.2.orig/debian/changelog
---- debian/changelog	2015-04-12 10:16:57.147666361 +0900
-+++ gcc-4.9-4.9.2.orig/debian/changelog	2015-04-12 15:43:54.621715204 +0900
+--- debian/changelog	2015-04-17 14:24:37.202778813 +0900
++++ gcc-4.9-4.9.2.orig/debian/changelog	2015-04-17 14:28:00.308652637 +0900
 @@ -1,3 +1,9 @@
-+gcc-4.9 (4.9.2-10ubuntu12lucid1) lucid; urgency=medium
++gcc-4.9 (4.9.2-10ubuntu13lucid1) lucid; urgency=medium
 +
 +  * ppa for lucid
 +
-+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Sun, 12 Apr 2015 10:25:00 +0900
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Fri, 17 Apr 2015 14:30:00 +0900
 +
- gcc-4.9 (4.9.2-10ubuntu12) vivid; urgency=medium
+ gcc-4.9 (4.9.2-10ubuntu13) vivid; urgency=medium
  
-   * Update to SVN 20150327 (r221736) from the gcc-4_9-branch.
+   * Fix PR target/64231 (AArch64), building the arm64 cross compiler
 diff -urN debian/control gcc-4.9-4.9.2.orig/debian/control
---- debian/control	2015-04-12 10:16:57.156422351 +0900
-+++ gcc-4.9-4.9.2.orig/debian/control	2015-04-12 15:44:17.551040839 +0900
+--- debian/control	2015-04-17 14:24:37.204374545 +0900
++++ gcc-4.9-4.9.2.orig/debian/control	2015-04-17 17:53:53.067889747 +0900
 @@ -1,42 +1,76 @@
  Source: gcc-4.9
  Section: devel
@@ -1369,7 +1369,7 @@ diff -urN debian/control gcc-4.9-4.9.2.orig/debian/control
  Architecture: all
  Section: doc
 diff -urN debian/control.m4 gcc-4.9-4.9.2.orig/debian/control.m4
---- debian/control.m4	2015-04-12 10:16:57.156422351 +0900
+--- debian/control.m4	2015-04-17 14:24:37.208365513 +0900
 +++ gcc-4.9-4.9.2.orig/debian/control.m4	2015-04-12 10:29:24.110151904 +0900
 @@ -35,23 +35,7 @@
  Source: SRCNAME
@@ -1424,7 +1424,7 @@ diff -urN debian/control.m4 gcc-4.9-4.9.2.orig/debian/control.m4
  Description: GCC, the GNU Compiler Collection (base package)
   This package contains files common to all languages and libraries
 diff -urN debian/patches/ada-libgnatprj.diff gcc-4.9-4.9.2.orig/debian/patches/ada-libgnatprj.diff
---- debian/patches/ada-libgnatprj.diff	2015-04-12 10:16:57.426700624 +0900
+--- debian/patches/ada-libgnatprj.diff	2015-04-17 14:24:37.308607671 +0900
 +++ gcc-4.9-4.9.2.orig/debian/patches/ada-libgnatprj.diff	2015-04-12 10:32:12.686980992 +0900
 @@ -1497,7 +1497,7 @@
   # these libraries are used by various programs built for the host environment
@@ -1436,7 +1436,7 @@ diff -urN debian/patches/ada-libgnatprj.diff gcc-4.9-4.9.2.orig/debian/patches/a
   # these tools are built for the host environment
   # Note, the powerpc-eabi build depends on sim occurring before gdb in order to
 diff -urN debian/patches/ada-libgnatvsn.diff gcc-4.9-4.9.2.orig/debian/patches/ada-libgnatvsn.diff
---- debian/patches/ada-libgnatvsn.diff	2015-04-12 10:16:57.446726669 +0900
+--- debian/patches/ada-libgnatvsn.diff	2015-04-17 14:24:37.308607671 +0900
 +++ gcc-4.9-4.9.2.orig/debian/patches/ada-libgnatvsn.diff	2015-04-12 10:32:31.937465017 +0900
 @@ -1578,7 +1578,7 @@
   # these libraries are used by various programs built for the host environment
@@ -1448,7 +1448,7 @@ diff -urN debian/patches/ada-libgnatvsn.diff gcc-4.9-4.9.2.orig/debian/patches/a
   # these tools are built for the host environment
   # Note, the powerpc-eabi build depends on sim occurring before gdb in order to
 diff -urN debian/patches/ada-link-lib.diff gcc-4.9-4.9.2.orig/debian/patches/ada-link-lib.diff
---- debian/patches/ada-link-lib.diff	2015-04-12 10:16:57.456545643 +0900
+--- debian/patches/ada-link-lib.diff	2015-04-17 14:24:37.308607671 +0900
 +++ gcc-4.9-4.9.2.orig/debian/patches/ada-link-lib.diff	2015-04-12 10:32:52.736276675 +0900
 @@ -1913,7 +1913,7 @@
   # these libraries are used by various programs built for the host environment
@@ -1460,7 +1460,7 @@ diff -urN debian/patches/ada-link-lib.diff gcc-4.9-4.9.2.orig/debian/patches/ada
   # these tools are built for the host environment
   # Note, the powerpc-eabi build depends on sim occurring before gdb in order to
 diff -urN debian/patches/gcc-cloog-dl.diff gcc-4.9-4.9.2.orig/debian/patches/gcc-cloog-dl.diff
---- debian/patches/gcc-cloog-dl.diff	2015-04-12 10:16:57.486663421 +0900
+--- debian/patches/gcc-cloog-dl.diff	2015-04-17 14:24:37.324340889 +0900
 +++ gcc-4.9-4.9.2.orig/debian/patches/gcc-cloog-dl.diff	2015-04-12 10:35:51.366529156 +0900
 @@ -1,7 +1,7 @@
  # DP: Link against -ldl instead of -lcloog -lppl. Exit with an error when using
@@ -1545,7 +1545,7 @@ diff -urN debian/patches/gcc-cloog-dl.diff gcc-4.9-4.9.2.orig/debian/patches/gcc
  +    }
  +
 diff -urN debian/rules.conf gcc-4.9-4.9.2.orig/debian/rules.conf
---- debian/rules.conf	2015-04-12 10:16:57.656810283 +0900
+--- debian/rules.conf	2015-04-17 14:24:37.428336299 +0900
 +++ gcc-4.9-4.9.2.orig/debian/rules.conf	2015-04-12 10:37:56.788020125 +0900
 @@ -195,7 +195,7 @@
  ifeq ($(trunk_build),yes)
@@ -1586,7 +1586,7 @@ diff -urN debian/rules.conf gcc-4.9-4.9.2.orig/debian/rules.conf
      LIBSTDCXX_BUILD_INDEP +=, xsltproc, libxml2-utils, docbook-xsl-ns
    endif
 diff -urN debian/rules.defs gcc-4.9-4.9.2.orig/debian/rules.defs
---- debian/rules.defs	2015-04-12 10:16:57.676385865 +0900
+--- debian/rules.defs	2015-04-17 14:24:37.440387673 +0900
 +++ gcc-4.9-4.9.2.orig/debian/rules.defs	2015-04-12 10:39:09.738772687 +0900
 @@ -136,10 +136,6 @@
  DEB_TARGET_GNU_SYSTEM	:= $(call vafilt,$(TARGET_VARS),DEB_HOST_GNU_SYSTEM)
@@ -1608,30 +1608,30 @@ diff -urN debian/rules.defs gcc-4.9-4.9.2.orig/debian/rules.defs
  # not a dependency on all archs, but if available, use it for the testsuite
  ifneq (,$(wildcard /usr/bin/localedef))
 diff -urN debian/rules.parameters gcc-4.9-4.9.2.orig/debian/rules.parameters
---- debian/rules.parameters	2015-04-12 10:16:57.676385865 +0900
-+++ gcc-4.9-4.9.2.orig/debian/rules.parameters	2015-04-12 15:44:17.562225204 +0900
+--- debian/rules.parameters	2015-04-17 14:24:37.440387673 +0900
++++ gcc-4.9-4.9.2.orig/debian/rules.parameters	2015-04-17 14:30:31.648523922 +0900
 @@ -2,14 +2,14 @@
  GCC_VERSION	:= 4.9.2
  NEXT_GCC_VERSION	:= 4.9.3
  BASE_VERSION	:= 4.9
--SOURCE_VERSION	:= 4.9.2-10ubuntu12
--DEB_VERSION	:= 4.9.2-10ubuntu12
--DEB_EVERSION	:= 1:4.9.2-10ubuntu12
--DEB_GDC_VERSION	:= 4.9.2-10ubuntu12
-+SOURCE_VERSION	:= 4.9.2-10ubuntu12lucid1
-+DEB_VERSION	:= 4.9.2-10ubuntu12lucid1
-+DEB_EVERSION	:= 1:4.9.2-10ubuntu12lucid1
-+DEB_GDC_VERSION	:= 4.9.2-10ubuntu12lucid1
+-SOURCE_VERSION	:= 4.9.2-10ubuntu13
+-DEB_VERSION	:= 4.9.2-10ubuntu13
+-DEB_EVERSION	:= 1:4.9.2-10ubuntu13
+-DEB_GDC_VERSION	:= 4.9.2-10ubuntu13
++SOURCE_VERSION	:= 4.9.2-10ubuntu13lucid1
++DEB_VERSION	:= 4.9.2-10ubuntu13lucid1
++DEB_EVERSION	:= 1:4.9.2-10ubuntu13lucid1
++DEB_GDC_VERSION	:= 4.9.2-10ubuntu13lucid1
  DEB_SOVERSION	:= 4.9
  DEB_SOEVERSION	:= 1:4.9
  DEB_LIBGCC_SOVERSION	:= 
--DEB_LIBGCC_VERSION	:= 1:4.9.2-10ubuntu12
-+DEB_LIBGCC_VERSION	:= 1:4.9.2-10ubuntu12lucid1
+-DEB_LIBGCC_VERSION	:= 1:4.9.2-10ubuntu13
++DEB_LIBGCC_VERSION	:= 1:4.9.2-10ubuntu13lucid1
  DEB_STDCXX_SOVERSION	:= 4.9
  DEB_GCJ_SOVERSION	:= 4.9
  PKG_GCJ_EXT	:= 15
 diff -urN debian/rules2 gcc-4.9-4.9.2.orig/debian/rules2
---- debian/rules2	2015-04-12 10:16:57.676385865 +0900
+--- debian/rules2	2015-04-17 14:24:37.444301523 +0900
 +++ gcc-4.9-4.9.2.orig/debian/rules2	2015-04-12 10:40:13.556313186 +0900
 @@ -1562,7 +1562,7 @@
  	    fi; \

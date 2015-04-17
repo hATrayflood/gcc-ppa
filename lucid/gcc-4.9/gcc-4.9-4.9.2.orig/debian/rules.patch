@@ -16,6 +16,7 @@ debian_patches = \
 	svn-updates \
 	$(if $(with_linaro_branch),gcc-linaro) \
 	$(if $(with_linaro_branch),gcc-linaro-no-macros) \
+	$(if $(with_linaro_branch),pr64231) \
 
 #	svn-updates \
 
