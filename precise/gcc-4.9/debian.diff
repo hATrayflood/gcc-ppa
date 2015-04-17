@@ -1,19 +1,19 @@
 diff -urN debian/changelog gcc-4.9-4.9.2.orig/debian/changelog
---- debian/changelog	2015-04-12 16:25:06.383004434 +0900
-+++ gcc-4.9-4.9.2.orig/debian/changelog	2015-04-12 21:51:44.488223315 +0900
+--- debian/changelog	2015-04-17 18:47:16.681950495 +0900
++++ gcc-4.9-4.9.2.orig/debian/changelog	2015-04-17 18:49:13.197953659 +0900
 @@ -1,3 +1,9 @@
-+gcc-4.9 (4.9.2-10ubuntu12precise1) precise; urgency=medium
++gcc-4.9 (4.9.2-10ubuntu13precise1) precise; urgency=medium
 +
 +  * ppa for precise
 +
-+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Sun, 12 Apr 2015 10:25:00 +0900
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Fri, 17 Apr 2015 14:30:00 +0900
 +
- gcc-4.9 (4.9.2-10ubuntu12) vivid; urgency=medium
+ gcc-4.9 (4.9.2-10ubuntu13) vivid; urgency=medium
  
-   * Update to SVN 20150327 (r221736) from the gcc-4_9-branch.
+   * Fix PR target/64231 (AArch64), building the arm64 cross compiler
 diff -urN debian/control gcc-4.9-4.9.2.orig/debian/control
---- debian/control	2015-04-12 16:25:06.383004434 +0900
-+++ gcc-4.9-4.9.2.orig/debian/control	2015-04-12 21:52:18.912224250 +0900
+--- debian/control	2015-04-17 18:47:16.681950495 +0900
++++ gcc-4.9-4.9.2.orig/debian/control	2015-04-17 20:07:02.480850811 +0900
 @@ -1,29 +1,26 @@
  Source: gcc-4.9
  Section: devel
@@ -649,7 +649,7 @@ diff -urN debian/control gcc-4.9-4.9.2.orig/debian/control
  Package: libhfstdc++-4.9-dev
  Architecture: armel
 diff -urN debian/control.m4 gcc-4.9-4.9.2.orig/debian/control.m4
---- debian/control.m4	2015-04-12 16:25:06.383004434 +0900
+--- debian/control.m4	2015-04-17 18:47:16.689950496 +0900
 +++ gcc-4.9-4.9.2.orig/debian/control.m4	2015-04-12 16:38:40.499026521 +0900
 @@ -35,23 +35,7 @@
  Source: SRCNAME
@@ -695,7 +695,7 @@ diff -urN debian/control.m4 gcc-4.9-4.9.2.orig/debian/control.m4
  ifelse(regexp(SRCNAME, `gcc-snapshot'),0,`dnl
  Package: gcc-snapshot`'TS
 diff -urN debian/rules.conf gcc-4.9-4.9.2.orig/debian/rules.conf
---- debian/rules.conf	2015-04-12 16:25:06.631004443 +0900
+--- debian/rules.conf	2015-04-17 18:47:16.905950502 +0900
 +++ gcc-4.9-4.9.2.orig/debian/rules.conf	2015-04-12 16:39:21.099027624 +0900
 @@ -364,8 +364,8 @@
    MPFR_BUILD_DEP = libmpfr-dev (>= 3.0.0-9~),
@@ -709,7 +709,7 @@ diff -urN debian/rules.conf gcc-4.9-4.9.2.orig/debian/rules.conf
  #CLOOG_RUNTIME_DEP = libisl10, libcloog-isl4
  
 diff -urN debian/rules.defs gcc-4.9-4.9.2.orig/debian/rules.defs
---- debian/rules.defs	2015-04-12 16:25:06.647004443 +0900
+--- debian/rules.defs	2015-04-17 18:47:16.917950502 +0900
 +++ gcc-4.9-4.9.2.orig/debian/rules.defs	2015-04-12 16:39:46.475028300 +0900
 @@ -1284,6 +1284,7 @@
      with_check := disabled for $(DEB_HOST_ARCH), testsuite timeouts with expect
@@ -720,30 +720,30 @@ diff -urN debian/rules.defs gcc-4.9-4.9.2.orig/debian/rules.defs
  # not a dependency on all archs, but if available, use it for the testsuite
  ifneq (,$(wildcard /usr/bin/localedef))
 diff -urN debian/rules.parameters gcc-4.9-4.9.2.orig/debian/rules.parameters
---- debian/rules.parameters	2015-04-12 16:25:06.647004443 +0900
-+++ gcc-4.9-4.9.2.orig/debian/rules.parameters	2015-04-12 21:52:18.944224251 +0900
+--- debian/rules.parameters	2015-04-17 18:47:16.917950502 +0900
++++ gcc-4.9-4.9.2.orig/debian/rules.parameters	2015-04-17 18:51:05.405956701 +0900
 @@ -2,14 +2,14 @@
  GCC_VERSION	:= 4.9.2
  NEXT_GCC_VERSION	:= 4.9.3
  BASE_VERSION	:= 4.9
--SOURCE_VERSION	:= 4.9.2-10ubuntu12
--DEB_VERSION	:= 4.9.2-10ubuntu12
--DEB_EVERSION	:= 1:4.9.2-10ubuntu12
--DEB_GDC_VERSION	:= 4.9.2-10ubuntu12
-+SOURCE_VERSION	:= 4.9.2-10ubuntu12precise1
-+DEB_VERSION	:= 4.9.2-10ubuntu12precise1
-+DEB_EVERSION	:= 1:4.9.2-10ubuntu12precise1
-+DEB_GDC_VERSION	:= 4.9.2-10ubuntu12precise1
+-SOURCE_VERSION	:= 4.9.2-10ubuntu13
+-DEB_VERSION	:= 4.9.2-10ubuntu13
+-DEB_EVERSION	:= 1:4.9.2-10ubuntu13
+-DEB_GDC_VERSION	:= 4.9.2-10ubuntu13
++SOURCE_VERSION	:= 4.9.2-10ubuntu13precise1
++DEB_VERSION	:= 4.9.2-10ubuntu13precise1
++DEB_EVERSION	:= 1:4.9.2-10ubuntu13precise1
++DEB_GDC_VERSION	:= 4.9.2-10ubuntu13precise1
  DEB_SOVERSION	:= 4.9
  DEB_SOEVERSION	:= 1:4.9
  DEB_LIBGCC_SOVERSION	:= 
--DEB_LIBGCC_VERSION	:= 1:4.9.2-10ubuntu12
-+DEB_LIBGCC_VERSION	:= 1:4.9.2-10ubuntu12precise1
+-DEB_LIBGCC_VERSION	:= 1:4.9.2-10ubuntu13
++DEB_LIBGCC_VERSION	:= 1:4.9.2-10ubuntu13precise1
  DEB_STDCXX_SOVERSION	:= 4.9
  DEB_GCJ_SOVERSION	:= 4.9
  PKG_GCJ_EXT	:= 15
 diff -urN debian/rules2 gcc-4.9-4.9.2.orig/debian/rules2
---- debian/rules2	2015-04-12 16:25:06.651004443 +0900
+--- debian/rules2	2015-04-17 18:47:16.921950502 +0900
 +++ gcc-4.9-4.9.2.orig/debian/rules2	2015-04-12 16:40:27.503029425 +0900
 @@ -1562,7 +1562,7 @@
  	    fi; \

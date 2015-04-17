@@ -1,8 +1,15 @@
-gcc-4.9 (4.9.2-10ubuntu12precise1) precise; urgency=medium
+gcc-4.9 (4.9.2-10ubuntu13precise1) precise; urgency=medium
 
   * ppa for precise
 
- -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Sun, 12 Apr 2015 10:25:00 +0900
+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Fri, 17 Apr 2015 14:30:00 +0900
+
+gcc-4.9 (4.9.2-10ubuntu13) vivid; urgency=medium
+
+  * Fix PR target/64231 (AArch64), building the arm64 cross compiler
+    on i386.
+
+ -- Matthias Klose <doko@ubuntu.com>  Tue, 14 Apr 2015 18:17:46 +0200
 
 gcc-4.9 (4.9.2-10ubuntu12) vivid; urgency=medium
 
