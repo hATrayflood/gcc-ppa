@@ -1,0 +1,32 @@
+# DP: For ICEs, dump the preprocessed source file to stderr
+# DP: when in a distro build environment.
+
+Index: b/src/gcc/gcc.c
+===================================================================
+--- a/src/gcc/gcc.c
++++ b/src/gcc/gcc.c
+@@ -6323,9 +6323,24 @@ retry_ice (const char *prog, const char
+ 	  if (WIFEXITED (status)
+ 	      && WEXITSTATUS (status) == SUCCESS_EXIT_CODE)
+ 	    {
++	      char *deb_build_options = getenv("DEB_BUILD_OPTIONS");
++
+ 	      fnotice (stderr, "Preprocessed source stored into %s file,"
+ 			       " please attach this to your bugreport.\n",
+ 		       temp_filenames[attempt * 2]);
++	      if (deb_build_options)
++		{
++		  char *cmd = XNEWVEC (char, 50 + strlen (temp_filenames[attempt * 2]));
++
++		  sprintf (cmd, "/bin/cat %s >&2", temp_filenames[attempt * 2]);
++		  fprintf (stderr, "=== BEGIN GCC DUMP ===\n");
++		  fflush (stderr);
++		  system (cmd);
++		  fflush (stderr);
++		  fprintf (stderr, "=== END GCC DUMP ===\n");
++		  fflush (stderr);
++		  free (cmd);
++		}
+ 	      /* Make sure it is not deleted.  */
+ 	      free (temp_filenames[attempt * 2]);
+ 	      temp_filenames[attempt * 2] = NULL;

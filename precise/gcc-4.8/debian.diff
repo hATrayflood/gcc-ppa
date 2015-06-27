@@ -1,19 +1,19 @@
-diff -urN debian/changelog gcc-4.8-4.8.2.orig/debian/changelog
---- debian/changelog	2014-05-16 12:33:53.884309432 +0900
-+++ gcc-4.8-4.8.2.orig/debian/changelog	2014-10-22 04:39:21.837292838 +0900
+diff -urN debian/changelog gcc-4.8-4.8.4.orig/debian/changelog
+--- debian/changelog	2015-06-27 13:23:03.759122646 +0900
++++ gcc-4.8-4.8.4.orig/debian/changelog	2015-06-27 21:05:15.353217893 +0900
 @@ -1,3 +1,9 @@
-+gcc-4.8 (4.8.2-19ubuntu1precise2) precise; urgency=medium
++gcc-4.8 (4.8.4-2ubuntu1~14.04precise1) precise; urgency=medium
 +
 +  * ppa for precise
 +
-+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Wed, 22 Oct 2014 04:30:00 +0900
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Sat, 27 Jun 2015 13:40:00 +0900
 +
- gcc-4.8 (4.8.2-19ubuntu1) trusty; urgency=medium
+ gcc-4.8 (4.8.4-2ubuntu1~14.04) trusty-proposed; urgency=medium
  
-   * Merge with Debian; remaining changes:
-diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
---- debian/control	2014-05-16 12:33:53.888309454 +0900
-+++ gcc-4.8-4.8.2.orig/debian/control	2014-10-22 08:00:04.047486436 +0900
+   * SRU LP: #1311866.
+diff -urN debian/control gcc-4.8-4.8.4.orig/debian/control
+--- debian/control	2015-06-27 13:23:03.763122646 +0900
++++ gcc-4.8-4.8.4.orig/debian/control	2015-06-27 21:06:27.497218507 +0900
 @@ -1,12 +1,10 @@
  Source: gcc-4.8
  Section: devel
@@ -22,20 +22,20 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 -XSBC-Original-Maintainer: Debian GCC Maintainers <debian-gcc@lists.debian.org>
 -Uploaders: Matthias Klose <doko@debian.org>
 +Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
- Standards-Version: 3.9.5
- Build-Depends: debhelper (>= 5.0.62), g++-multilib [amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32], 
+ Standards-Version: 3.9.6
+ Build-Depends: debhelper (>= 5.0.62), dpkg-dev (>= 1.16.0~ubuntu4), g++-multilib [amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32], 
 -  libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6), libc6-dev (>= 2.13-31) [armel armhf], libc6-dev-amd64 [i386 x32], libc6-dev-sparc64 [sparc], libc6-dev-sparc [sparc64], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64 x32], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 mipsn32 mipsn32el mips64 mips64el s390x sparc64 x32], libn32gcc1 [mips mipsel mips64 mips64el], lib64gcc1 [i386 mips mipsel mipsn32 mipsn32el powerpc sparc s390 x32], libc6-dev-mips64 [mips mipsel mipsn32 mipsn32el], libc6-dev-mipsn32 [mips mipsel mips64 mips64el], libc6-dev-mips32 [mipsn32 mipsn32el mips64 mips64el], libc6-dev-x32 [amd64 i386], libx32gcc1 [amd64 i386], libc6-dev-armhf [armel], libhfgcc1 [armel], libc6-dev-armel [armhf], libsfgcc1 [armhf], libc6.1-dbg [alpha ia64] | libc0.3-dbg [hurd-i386] | libc0.1-dbg [kfreebsd-i386 kfreebsd-amd64] | libc6-dbg, 
 +  libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6), libc6-dev (>= 2.13-31) [armel armhf], libc6-dev-amd64 [i386 x32], libc6-dev-sparc64 [sparc], libc6-dev-sparc [sparc64], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64 x32], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 mipsn32 mipsn32el mips64 mips64el s390x sparc64 x32], libn32gcc1 [mips mipsel mips64 mips64el], lib64gcc1 [i386 mips mipsel mipsn32 mipsn32el powerpc sparc s390 x32], libc6-dev-mips64 [mips mipsel mipsn32 mipsn32el], libc6-dev-mipsn32 [mips mipsel mips64 mips64el], libc6-dev-mips32 [mipsn32 mipsn32el mips64 mips64el], libc6-dev-armhf [armel], libhfgcc1 [armel], libc6-dev-armel [armhf], libsfgcc1 [armhf], libc6.1-dbg [alpha ia64] | libc0.3-dbg [hurd-i386] | libc0.1-dbg [kfreebsd-i386 kfreebsd-amd64] | libc6-dbg, 
    kfreebsd-kernel-headers (>= 0.84) [kfreebsd-any], 
    m4, libtool, autoconf2.64, 
    libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], 
-@@ -15,12 +13,11 @@
+@@ -16,12 +14,11 @@
    gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, 
    texinfo (>= 4.3), locales, sharutils, 
    procps, zlib1g-dev, libantlr-java, python, libffi-dev, fastjar, libmagic-dev, libecj-java (>= 3.3.0-2), zip, libasound2-dev [ !hurd-any !kfreebsd-any], libxtst-dev, libxt-dev, libgtk2.0-dev (>= 2.4.4-2), libart-2.0-dev, libcairo2-dev, g++-4.8 [armel armhf], netbase, 
 -  libcloog-isl-dev (>= 0.18), libmpc-dev (>= 1.0), libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), 
 +  libcloog-isl-dev-lts (>= 0.18), libmpc-dev, libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), 
-   dejagnu [!m68k !hurd-amd64 !hurd-i386 !hurd-alpha], autogen, realpath (>= 1.9.12), chrpath, lsb-release, quilt
+   dejagnu [!m68k !hurd-amd64 !hurd-i386 !hurd-alpha !kfreebsd-amd64 !kfreebsd-i386 !kfreebsd-alpha], autogen, realpath (>= 1.9.12), chrpath, lsb-release, quilt
  Build-Depends-Indep: doxygen (>= 1.7.2), graphviz (>= 2.2), ghostscript, texlive-latex-base, xsltproc, libxml2-utils, docbook-xsl-ns, 
 -Homepage: http://gcc.gnu.org/
 -XS-Vcs-Browser: http://svn.debian.org/viewsvn/gcccvs/branches/sid/gcc-4.8/
@@ -45,7 +45,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  
  Package: gcc-4.8-base
  Architecture: any
-@@ -95,16 +92,6 @@
+@@ -96,16 +93,6 @@
   This package contains the headers and static library files necessary for
   building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
  
@@ -62,17 +62,17 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: gcc-4.8
  Architecture: any
  Section: devel
-@@ -205,421 +192,6 @@
+@@ -206,421 +193,6 @@
   On architectures with multilib support, the package contains files
   and dependencies for the non-default multilib architecture(s).
  
 -Package: libgomp1
 -Section: libs
 -Architecture: any
+-Provides: libgomp1-armel [armel], libgomp1-armhf [armhf]
 -Multi-Arch: same
 -Pre-Depends: multiarch-support
 -Breaks: ${multiarch:breaks}
--Provides: libgomp1-armel [armel], libgomp1-armhf [armhf]
 -Priority: optional
 -Depends: gcc-4.8-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
 -Description: GCC OpenMP (GOMP) support library
@@ -84,8 +84,8 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 -Section: debug
 -Priority: extra
 -Depends: gcc-4.8-base (= ${gcc:Version}), libgomp1 (= ${gcc:Version}), ${misc:Depends}
--Multi-Arch: same
 -Provides: libgomp1-dbg-armel [armel], libgomp1-dbg-armhf [armhf]
+-Multi-Arch: same
 -Description: GCC OpenMP (GOMP) support library (debug symbols)
 - GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
 - in the GNU Compiler Collection.
@@ -202,9 +202,9 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 -Package: libitm1
 -Section: libs
 -Architecture: any
+-Provides: libitm1-armel [armel], libitm1-armhf [armhf]
 -Multi-Arch: same
 -Pre-Depends: multiarch-support
--Provides: libitm1-armel [armel], libitm1-armhf [armhf]
 -Priority: optional
 -Depends: gcc-4.8-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
 -Description: GNU Transactional Memory Library
@@ -217,8 +217,8 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 -Section: debug
 -Priority: extra
 -Depends: gcc-4.8-base (= ${gcc:Version}), libitm1 (= ${gcc:Version}), ${misc:Depends}
--Multi-Arch: same
 -Provides: libitm1-dbg-armel [armel], libitm1-dbg-armhf [armhf]
+-Multi-Arch: same
 -Description: GNU Transactional Memory Library (debug symbols)
 - GNU Transactional Memory Library (libitm) provides transaction support for
 - accesses to the memory of a process, enabling easy-to-use synchronization of
@@ -350,9 +350,9 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 -Package: libatomic1
 -Section: libs
 -Architecture: any
+-Provides: libatomic1-armel [armel], libatomic1-armhf [armhf]
 -Multi-Arch: same
 -Pre-Depends: multiarch-support
--Provides: libatomic1-armel [armel], libatomic1-armhf [armhf]
 -Priority: optional
 -Depends: gcc-4.8-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
 -Description: support library providing __atomic built-in functions
@@ -364,8 +364,8 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 -Section: debug
 -Priority: extra
 -Depends: gcc-4.8-base (= ${gcc:Version}), libatomic1 (= ${gcc:Version}), ${misc:Depends}
--Multi-Arch: same
 -Provides: libatomic1-dbg-armel [armel], libatomic1-dbg-armhf [armhf]
+-Multi-Arch: same
 -Description: support library providing __atomic built-in functions (debug symbols)
 - library providing __atomic built-in functions. When an atomic call cannot
 - be turned into lock-free instructions, GCC will make calls into this library.
@@ -484,9 +484,9 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libasan0
  Section: libs
  Architecture: any
-@@ -698,24 +270,6 @@
-  AddressSanitizer (ASan) is a fast memory error detector.  It finds
-  use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+@@ -701,24 +273,6 @@
+ # AddressSanitizer (ASan) is a fast memory error detector.  It finds
+ # use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
  
 -Package: libx32asan0
 -Section: libs
@@ -509,14 +509,14 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfasan0
  Section: libs
  Architecture: armel
-@@ -756,163 +310,26 @@
+@@ -759,163 +313,26 @@
  
  Package: libtsan0
  Section: libs
 -Architecture: any
+-Provides: libtsan0-armel [armel], libtsan0-armhf [armhf]
 -Multi-Arch: same
 -Pre-Depends: multiarch-support
--Provides: libtsan0-armel [armel], libtsan0-armhf [armhf]
 -Priority: optional
 -Depends: gcc-4.8-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
 -Description: ThreadSanitizer -- a Valgrind-based detector of data races (runtime)
@@ -528,8 +528,8 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 -Section: debug
 -Priority: extra
 -Depends: gcc-4.8-base (= ${gcc:Version}), libtsan0 (= ${gcc:Version}), ${misc:Depends}
--Multi-Arch: same
 -Provides: libtsan0-dbg-armel [armel], libtsan0-dbg-armhf [armhf]
+-Multi-Arch: same
 -Description: ThreadSanitizer -- a Valgrind-based detector of data races (debug symbols)
 - ThreadSanitizer (Tsan) is a data race detector for C/C++ programs. 
 - The Linux and Mac versions are based on Valgrind. 
@@ -656,9 +656,9 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 -Section: libs
 -Architecture: armhf
 +Architecture: any
++Provides: libtsan0-armel [armel], libtsan0-armhf [armhf]
 +Multi-Arch: same
 +Pre-Depends: multiarch-support
-+Provides: libtsan0-armel [armel], libtsan0-armhf [armhf]
  Priority: optional
 -Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
 -Description: GCC Quad-Precision Math Library (soft float ABI)
@@ -681,15 +681,15 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 - A library, which provides quad-precision mathematical functions on targets
 - supporting the __float128 datatype.
 +Depends: gcc-4.8-base (= ${gcc:Version}), libtsan0 (= ${gcc:Version}), ${misc:Depends}
-+Multi-Arch: same
 +Provides: libtsan0-dbg-armel [armel], libtsan0-dbg-armhf [armhf]
++Multi-Arch: same
 +Description: ThreadSanitizer -- a Valgrind-based detector of data races (debug symbols)
 + ThreadSanitizer (Tsan) is a data race detector for C/C++ programs. 
 + The Linux and Mac versions are based on Valgrind. 
  
  Package: gobjc++-4.8
  Architecture: any
-@@ -997,15 +414,6 @@
+@@ -1000,15 +417,6 @@
   This package contains the headers and static library files needed to build
   GNU ObjC applications.
  
@@ -705,16 +705,16 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfobjc-4.8-dev
  Architecture: armel
  Section: libdevel
-@@ -1024,128 +432,6 @@
+@@ -1027,128 +435,6 @@
   This package contains the headers and static library files needed to build
   GNU ObjC applications.
  
 -Package: libobjc4
 -Section: libs
 -Architecture: any
+-Provides: libobjc4-armel [armel], libobjc4-armhf [armhf]
 -Multi-Arch: same
 -Pre-Depends: multiarch-support
--Provides: libobjc4-armel [armel], libobjc4-armhf [armhf]
 -Priority: optional
 -Depends: gcc-4.8-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
 -Description: Runtime library for GNU Objective-C applications
@@ -723,8 +723,8 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 -Package: libobjc4-dbg
 -Section: debug
 -Architecture: any
--Multi-Arch: same
 -Provides: libobjc4-dbg-armel [armel], libobjc4-dbg-armhf [armhf]
+-Multi-Arch: same
 -Priority: extra
 -Depends: gcc-4.8-base (= ${gcc:Version}), libobjc4 (= ${gcc:Version}), libgcc1-dbg (>= ${libgcc:Version}), ${misc:Depends}
 -Description: Runtime library for GNU Objective-C applications (debug symbols)
@@ -834,7 +834,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: gfortran-4.8
  Architecture: any
  Priority: optional
-@@ -1214,15 +500,6 @@
+@@ -1217,15 +503,6 @@
   This package contains the headers and static library files needed to build
   GNU Fortran applications.
  
@@ -850,17 +850,17 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfgfortran-4.8-dev
  Architecture: armel
  Section: libdevel
-@@ -1241,143 +518,6 @@
+@@ -1244,143 +521,6 @@
   This package contains the headers and static library files needed to build
   GNU Fortran applications.
  
 -Package: libgfortran3
 -Section: libs
 -Architecture: any
+-Provides: libgfortran3-armel [armel], libgfortran3-armhf [armhf]
 -Multi-Arch: same
 -Pre-Depends: multiarch-support
 -Breaks: ${multiarch:breaks}
--Provides: libgfortran3-armel [armel], libgfortran3-armhf [armhf]
 -Priority: optional
 -Depends: gcc-4.8-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
 -Description: Runtime library for GNU Fortran applications
@@ -870,8 +870,8 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 -Package: libgfortran3-dbg
 -Section: debug
 -Architecture: any
--Multi-Arch: same
 -Provides: libgfortran3-dbg-armel [armel], libgfortran3-dbg-armhf [armhf]
+-Multi-Arch: same
 -Priority: extra
 -Depends: gcc-4.8-base (= ${gcc:Version}), libgfortran3 (= ${gcc:Version}), libgcc1-dbg (>= ${libgcc:Version}), ${misc:Depends}
 -Description: Runtime library for GNU Fortran applications (debug symbols)
@@ -994,7 +994,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: gccgo-4.8
  Architecture: any
  Priority: optional
-@@ -1491,25 +631,6 @@
+@@ -1494,25 +634,6 @@
   Library needed for GNU Go applications linked against the
   shared library.
  
@@ -1020,7 +1020,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: gcj-4.8
  Section: java
  Architecture: any
-@@ -1662,101 +783,6 @@
+@@ -1665,102 +786,6 @@
   Autogenerated documentation describing the API of the libgcj library.
   Sources and precompiled example programs from the Classpath library.
  
@@ -1029,11 +1029,12 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
 -Section: libs
 -Priority: important
 -Depends: gcc-4.8-base (= ${gcc:Version}), ${dep:libc}, ${shlibs:Depends}, ${misc:Depends}
+-Provides: libstdc++6-armel [armel], libstdc++6-armhf [armhf]
 -Multi-Arch: same
 -Pre-Depends: multiarch-support
 -Breaks: ${multiarch:breaks}
--Provides: libstdc++6-armel [armel], libstdc++6-armhf [armhf]
 -Conflicts: scim (<< 1.4.2-1)
+-Replaces: libstdc++6-4.8-dbg (<< 4.8.2-22)
 -Description: GNU Standard C++ Library v3
 - This package contains an additional runtime library for C++ programs
 - built with the GNU compiler.
@@ -1122,7 +1123,7 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libstdc++-4.8-dev
  Architecture: any
  Multi-Arch: same
-@@ -1868,29 +894,6 @@
+@@ -1872,29 +897,6 @@
   This package contains the shared library of libstdc++ compiled with
   debugging symbols.
  
@@ -1152,9 +1153,9 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: libhfstdc++-4.8-dev
  Architecture: armel
  Section: libdevel
-@@ -1995,20 +998,6 @@
-  These are versions of basic static libraries such as libgcc.a compiled
-  with the -msoft-float option, for CPUs without a floating-point unit.
+@@ -2001,20 +1003,6 @@
+ # These are versions of basic static libraries such as libgcc.a compiled
+ # with the -msoft-float option, for CPUs without a floating-point unit.
  
 -Package: fixincludes
 -Architecture: any
@@ -1173,10 +1174,10 @@ diff -urN debian/control gcc-4.8-4.8.2.orig/debian/control
  Package: gcc-4.8-doc
  Architecture: all
  Section: doc
-diff -urN debian/control.m4 gcc-4.8-4.8.2.orig/debian/control.m4
---- debian/control.m4	2014-05-16 12:33:53.892309481 +0900
-+++ gcc-4.8-4.8.2.orig/debian/control.m4	2014-05-16 12:40:32.766287388 +0900
-@@ -34,23 +34,7 @@
+diff -urN debian/control.m4 gcc-4.8-4.8.4.orig/debian/control.m4
+--- debian/control.m4	2015-06-27 13:23:03.763122646 +0900
++++ gcc-4.8-4.8.4.orig/debian/control.m4	2015-06-27 13:44:29.307133312 +0900
+@@ -35,23 +35,7 @@
  Source: SRCNAME
  Section: devel
  Priority: PRI(optional)
@@ -1198,10 +1199,10 @@ diff -urN debian/control.m4 gcc-4.8-4.8.2.orig/debian/control.m4
 -Uploaders: Matthias Klose <doko@debian.org>
 -')dnl SRCNAME
 +Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
- Standards-Version: 3.9.5
+ Standards-Version: 3.9.6
  ifdef(`TARGET',`dnl cross
- Build-Depends: debhelper (>= 5.0.62),
-@@ -75,15 +59,8 @@
+ Build-Depends: debhelper (>= 5.0.62), DPKG_BUILD_DEP
+@@ -78,15 +62,8 @@
    CHECK_BUILD_DEP realpath (>= 1.9.12), chrpath, lsb-release, quilt
  Build-Depends-Indep: LIBSTDCXX_BUILD_INDEP JAVA_BUILD_INDEP
  ')dnl
@@ -1219,9 +1220,9 @@ diff -urN debian/control.m4 gcc-4.8-4.8.2.orig/debian/control.m4
  
  ifelse(regexp(SRCNAME, `gcc-snapshot'),0,`dnl
  Package: gcc-snapshot`'TS
-diff -urN debian/patches/libquadmath-fenv.diff gcc-4.8-4.8.2.orig/debian/patches/libquadmath-fenv.diff
+diff -urN debian/patches/libquadmath-fenv.diff gcc-4.8-4.8.4.orig/debian/patches/libquadmath-fenv.diff
 --- debian/patches/libquadmath-fenv.diff	1970-01-01 09:00:00.000000000 +0900
-+++ gcc-4.8-4.8.2.orig/debian/patches/libquadmath-fenv.diff	2014-05-09 17:45:51.572091814 +0900
++++ gcc-4.8-4.8.4.orig/debian/patches/libquadmath-fenv.diff	2014-05-09 17:45:51.572091000 +0900
 @@ -0,0 +1,57 @@
 +diff -urN a/src/libquadmath/Makefile.in b/src/libquadmath/Makefile.in
 +--- a/src/libquadmath/Makefile.in	2013-10-16 16:27:58.000000000 +0900
@@ -1280,10 +1281,10 @@ diff -urN debian/patches/libquadmath-fenv.diff gcc-4.8-4.8.2.orig/debian/patches
 ++ 	  (void) &__f;
 ++ 	}
 ++ 
-diff -urN debian/rules.conf gcc-4.8-4.8.2.orig/debian/rules.conf
---- debian/rules.conf	2014-05-16 12:33:55.024315090 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules.conf	2014-05-09 17:45:51.579114334 +0900
-@@ -354,8 +354,8 @@
+diff -urN debian/rules.conf gcc-4.8-4.8.4.orig/debian/rules.conf
+--- debian/rules.conf	2015-06-27 13:23:04.023122648 +0900
++++ gcc-4.8-4.8.4.orig/debian/rules.conf	2015-06-27 18:19:02.409136562 +0900
+@@ -365,8 +365,8 @@
    MPFR_BUILD_DEP = libmpfr-dev (>= 3.0.0-9~),
  endif
  
@@ -1291,13 +1292,27 @@ diff -urN debian/rules.conf gcc-4.8-4.8.2.orig/debian/rules.conf
 -CLOOG_BUILD_DEP = libcloog-isl-dev (>= 0.18),
 +PPL_BUILD_DEP = libisl-dev-lts,
 +CLOOG_BUILD_DEP = libcloog-isl-dev-lts (>= 0.18),
- # FIXME: currently not dl'opened.
- #CLOOG_RUNTIME_DEP = libisl10, libcloog-isl4
+ ifneq (,$(filter $(distrelease),jessie sid experimental))
+   PPL_BUILD_DEP = libisl-dev (>= 0.14),
+   CLOOG_BUILD_DEP = libcloog-isl-dev (>= 0.18.3),
+@@ -397,13 +397,6 @@
+   SDT_BUILD_DEP = systemtap-sdt-dev [linux-any kfreebsd-any hurd-any],
+ endif
  
-diff -urN debian/rules.defs gcc-4.8-4.8.2.orig/debian/rules.defs
---- debian/rules.defs	2014-05-16 12:33:55.032315130 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules.defs	2014-10-20 18:10:08.406269000 +0900
-@@ -343,6 +343,10 @@
+-# ensure that the common libs, built from the next GCC version are available
+-ifeq ($(PKGSOURCE),gcc-$(BASE_VERSION))
+-  ifneq ($(with_common_libs),yes)
+-    BASE_BUILD_DEP = gcc-4.9-base,
+-  endif
+-endif
+-
+ ifneq ($(DEB_CROSS),yes)
+ JAVA_BUILD_DEP := zlib1g-dev, libantlr-java, python, libffi-dev,
+ 
+diff -urN debian/rules.defs gcc-4.8-4.8.4.orig/debian/rules.defs
+--- debian/rules.defs	2015-06-27 13:23:04.035122648 +0900
++++ gcc-4.8-4.8.4.orig/debian/rules.defs	2015-06-27 20:00:58.773186439 +0900
+@@ -362,6 +362,10 @@
  # XXX: should with_common_libs be "yes" only if this is the default compiler
  # version on the targeted arch?
  
@@ -1305,39 +1320,10 @@ diff -urN debian/rules.defs gcc-4.8-4.8.2.orig/debian/rules.defs
 +with_common_pkgs :=
 +with_common_libs :=
 +
- # is this a multiarch-enabled build?
- ifeq (,$(filter $(distrelease),lenny etch squeeze dapper hardy jaunty karmic lucid maverick))
-   with_multiarch_lib := yes
-@@ -738,9 +742,7 @@
- # Build all packages needed for Go development
- ifneq (,$(findstring gcc, $(PKGSOURCE)))
-   ifeq ($(with_go),yes)
--    ifeq ($(with_common_libs),yes)
-       with_libgo := yes
--    endif
-     enabled_languages += go
-   endif
- endif
-@@ -890,7 +892,9 @@
-   endif
-   # libobjc soname change in 4.7
-   #ifeq ($(with_common_libs),yes)
-+  ifeq ($(with_common_libs),yes)
-     with_libobjc := yes
-+  endif
-   #endif
- 
-   enabled_languages += objc
-@@ -1081,7 +1085,7 @@
-   endif
- 
-   # libasan -----------------
--  ifeq ($(with_asan)-$(with_common_libs),yes-yes)
-+  ifeq ($(with_asan),yes)
-     #ifneq ($(DEB_CROSS),yes)
-       with_libasan := yes
-     #endif
-@@ -1199,6 +1203,7 @@
+ ifeq (,$(filter $(distrelease),lenny etch squeeze wheezy dapper hardy jaunty karmic lucid maverick oneiric precise quantal raring saucy trusty))
+   with_common_pkgs :=
+   with_common_libs :=
+@@ -1231,6 +1235,7 @@
    endif
  endif
  #with_check := disabled for this upload
@@ -1345,47 +1331,47 @@ diff -urN debian/rules.defs gcc-4.8-4.8.2.orig/debian/rules.defs
  
  # not a dependency on all archs, but if available, use it for the testsuite
  ifneq (,$(wildcard /usr/bin/localedef))
-diff -urN debian/rules.parameters gcc-4.8-4.8.2.orig/debian/rules.parameters
---- debian/rules.parameters	2014-05-16 12:33:55.032315130 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules.parameters	2014-10-22 08:00:04.103458708 +0900
+diff -urN debian/rules.parameters gcc-4.8-4.8.4.orig/debian/rules.parameters
+--- debian/rules.parameters	2015-06-27 13:23:04.035122648 +0900
++++ gcc-4.8-4.8.4.orig/debian/rules.parameters	2015-06-27 21:06:27.509218509 +0900
 @@ -2,14 +2,14 @@
- GCC_VERSION	:= 4.8.2
- NEXT_GCC_VERSION	:= 4.8.3
+ GCC_VERSION	:= 4.8.4
+ NEXT_GCC_VERSION	:= 4.8.5
  BASE_VERSION	:= 4.8
--SOURCE_VERSION	:= 4.8.2-17ubuntu3~ppa2
--DEB_VERSION	:= 4.8.2-17ubuntu3~ppa2
--DEB_EVERSION	:= 1:4.8.2-17ubuntu3~ppa2
--DEB_GDC_VERSION	:= 4.8.2-17ubuntu3~ppa2
-+SOURCE_VERSION	:= 4.8.2-19ubuntu1precise2
-+DEB_VERSION	:= 4.8.2-19ubuntu1precise2
-+DEB_EVERSION	:= 1:4.8.2-19ubuntu1precise2
-+DEB_GDC_VERSION	:= 4.8.2-19ubuntu1precise2
+-SOURCE_VERSION	:= 4.8.4-2ubuntu1~14.04
+-DEB_VERSION	:= 4.8.4-2ubuntu1~14.04
+-DEB_EVERSION	:= 1:4.8.4-2ubuntu1~14.04
+-DEB_GDC_VERSION	:= 4.8.4-2ubuntu1~14.04
++SOURCE_VERSION	:= 4.8.4-2ubuntu1~14.04precise1
++DEB_VERSION	:= 4.8.4-2ubuntu1~14.04precise1
++DEB_EVERSION	:= 1:4.8.4-2ubuntu1~14.04precise1
++DEB_GDC_VERSION	:= 4.8.4-2ubuntu1~14.04precise1
  DEB_SOVERSION	:= 4.8
  DEB_SOEVERSION	:= 1:4.8
  DEB_LIBGCC_SOVERSION	:= 
--DEB_LIBGCC_VERSION	:= 1:4.8.2-17ubuntu3~ppa2
-+DEB_LIBGCC_VERSION	:= 1:4.8.2-19ubuntu1precise2
+-DEB_LIBGCC_VERSION	:= 1:4.8.4-2ubuntu1~14.04
++DEB_LIBGCC_VERSION	:= 1:4.8.4-2ubuntu1~14.04precise1
  DEB_STDCXX_SOVERSION	:= 4.8
  DEB_GCJ_SOVERSION	:= 4.8
  PKG_GCJ_EXT	:= 14
-diff -urN debian/rules.patch gcc-4.8-4.8.2.orig/debian/rules.patch
---- debian/rules.patch	2014-05-16 12:33:55.032315130 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules.patch	2014-05-16 16:53:54.947963540 +0900
-@@ -321,6 +321,10 @@
+diff -urN debian/rules.patch gcc-4.8-4.8.4.orig/debian/rules.patch
+--- debian/rules.patch	2015-06-27 13:23:04.035122648 +0900
++++ gcc-4.8-4.8.4.orig/debian/rules.patch	2015-06-27 13:51:04.175136441 +0900
+@@ -334,6 +334,10 @@
  endif
  debian_patches += libgomp-kfreebsd-testsuite
  
-+ifeq ($(DEB_TARGET_ARCH),amd64)
-+  debian_patches += libquadmath-fenv
-+endif
++#ifeq ($(DEB_TARGET_ARCH),amd64)
++#  debian_patches += libquadmath-fenv
++#endif
 +
  series_stamp = $(stampdir)/02-series-stamp
  series: $(series_stamp)
  $(series_stamp):
-diff -urN debian/rules2 gcc-4.8-4.8.2.orig/debian/rules2
---- debian/rules2	2014-05-16 12:33:55.036315155 +0900
-+++ gcc-4.8-4.8.2.orig/debian/rules2	2014-05-16 12:52:30.925848546 +0900
-@@ -1551,7 +1551,7 @@
+diff -urN debian/rules2 gcc-4.8-4.8.4.orig/debian/rules2
+--- debian/rules2	2015-06-27 13:23:04.039122647 +0900
++++ gcc-4.8-4.8.4.orig/debian/rules2	2015-06-27 13:52:09.303137022 +0900
+@@ -1570,7 +1570,7 @@
  	    fi; \
  	    echo "Build Dependencies:" >> ts-include; \
  	    dpkg -l g++-* binutils* `echo '$(LIBC_DEP)' | awk '{print $$1}'` \
@@ -1394,7 +1380,7 @@ diff -urN debian/rules2 gcc-4.8-4.8.2.orig/debian/rules2
  	        | fgrep -v '<none>' >> ts-include; \
  	    echo '' >> ts-include; \
  	    cat ../$(patch_stamp) >> ts-include; \
-@@ -1627,7 +1627,7 @@
+@@ -1646,7 +1646,7 @@
  	    echo '' >> ts-include; \
  	    echo "Build Dependencies:" >> ts-include; \
  	    dpkg -l g++-* binutils* `echo '$(LIBC_DEP)' | awk '{print $$1}'` \

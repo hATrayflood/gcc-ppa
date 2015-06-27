@@ -1,0 +1,94 @@
+# DP: Introduce the arm64 goarch.
+
+Index: b/src/gcc/testsuite/go.test/go-test.exp
+===================================================================
+--- a/src/gcc/testsuite/go.test/go-test.exp
++++ b/src/gcc/testsuite/go.test/go-test.exp
+@@ -172,6 +172,9 @@ proc go-set-goarch { } {
+     global target_triplet
+ 
+     switch -glob $target_triplet {
++	"aarch64*-*-*" {
++	    set goarch "arm64"
++	}
+ 	"alpha*-*-*" {
+ 	    set goarch "alpha"
+ 	}
+Index: b/src/libgo/configure.ac
+===================================================================
+--- a/src/libgo/configure.ac
++++ b/src/libgo/configure.ac
+@@ -171,6 +171,7 @@ dnl N.B. Keep in sync with gcc/testsuite
+ is_386=no
+ is_alpha=no
+ is_arm=no
++is_arm64=no
+ is_m68k=no
+ mips_abi=unknown
+ is_ppc=no
+@@ -184,6 +185,10 @@ case ${host} in
+     is_alpha=yes
+     GOARCH=alpha
+     ;;
++  aarch64-*-*)
++    is_arm64=yes
++    GOARCH=arm64
++    ;;
+   arm*-*-* | strongarm*-*-* | ep9312*-*-* | xscale-*-*)
+     is_arm=yes
+     GOARCH=arm
+@@ -264,6 +269,7 @@ esac
+ AM_CONDITIONAL(LIBGO_IS_386, test $is_386 = yes)
+ AM_CONDITIONAL(LIBGO_IS_ALPHA, test $is_alpha = yes)
+ AM_CONDITIONAL(LIBGO_IS_ARM, test $is_arm = yes)
++AM_CONDITIONAL(LIBGO_IS_ARM64, test $is_arm64 = yes)
+ AM_CONDITIONAL(LIBGO_IS_M68K, test $is_m68k = yes)
+ AM_CONDITIONAL(LIBGO_IS_MIPS, test $mips_abi != unknown)
+ AM_CONDITIONAL(LIBGO_IS_MIPSO32, test $mips_abi = o32)
+Index: b/src/libgo/go/go/build/build.go
+===================================================================
+--- a/src/libgo/go/go/build/build.go
++++ b/src/libgo/go/go/build/build.go
+@@ -1118,6 +1118,8 @@ func ArchChar(goarch string) (string, er
+ 		return "6", nil
+ 	case "arm":
+ 		return "5", nil
++	case "arm64":
++		return "7", nil
+ 	}
+ 	return "", errors.New("unsupported GOARCH " + goarch)
+ }
+Index: b/src/libgo/go/go/build/deps_test.go
+===================================================================
+--- a/src/libgo/go/go/build/deps_test.go
++++ b/src/libgo/go/go/build/deps_test.go
+@@ -360,7 +360,7 @@ func allowed(pkg string) map[string]bool
+ 
+ var bools = []bool{false, true}
+ var geese = []string{"darwin", "freebsd", "linux", "netbsd", "openbsd", "plan9", "windows"}
+-var goarches = []string{"386", "amd64", "arm"}
++var goarches = []string{"386", "amd64", "arm", "arm64"}
+ 
+ type osPkg struct {
+ 	goos, pkg string
+Index: b/src/libgo/go/go/build/syslist.go
+===================================================================
+--- a/src/libgo/go/go/build/syslist.go
++++ b/src/libgo/go/go/build/syslist.go
+@@ -5,4 +5,4 @@
+ package build
+ 
+ const goosList = "darwin dragonfly freebsd linux netbsd openbsd plan9 windows solaris "
+-const goarchList = "386 amd64 arm alpha m68k mipso32 mipsn32 mipsn64 mipso64 ppc ppc64 sparc sparc64 "
++const goarchList = "386 amd64 arm arm64 alpha m68k mipso32 mipsn32 mipsn64 mipso64 ppc ppc64 sparc sparc64 "
+Index: b/src/libgo/go/runtime/extern.go
+===================================================================
+--- a/src/libgo/go/runtime/extern.go
++++ b/src/libgo/go/runtime/extern.go
+@@ -170,5 +170,5 @@ func Version() string {
+ const GOOS string = theGoos
+ 
+ // GOARCH is the running program's architecture target:
+-// 386, amd64, or arm.
++// 386, amd64, arm or arm64.
+ const GOARCH string = theGoarch
