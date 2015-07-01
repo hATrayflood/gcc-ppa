@@ -1,5 +1,9 @@
 PPA = buildtest
 BASE_URL = https://launchpad.net/ubuntu/+archive/primary/+files/
+DISTRIBUTION = $(shell lsb_release -c | awk '{print $$2}')
+ARCHITECTURE = $(shell dpkg --print-architecture)
+RESULT_DIR   = ../../../pbuilder/$(DISTRIBUTION)-$(ARCHITECTURE)/result
+REPREPRO_DIR = ../../../reprepro/$(DISTRIBUTION)-$(PPA)
 
 all: debclean
 	cd $(DIR) && debuild -uc -us
@@ -48,5 +52,21 @@ control:
 	rm -f $(DIR)/debian/control
 	$(MAKE) -C $(DIR) -f debian/rules control
 
-.PHONY: all dput install extract debian clean debclean distclean control
+resultclean:
+	sudo rm -f $(RESULT_DIR)/*
+
+pbuilder: resultclean debclean dput
+	sudo pbuilder --build *.dsc
+
+repolist:
+	reprepro -b $(REPREPRO_DIR) list $(DISTRIBUTION)
+
+reprepro:
+ifeq ($(ARCHITECTURE),i386)
+	reprepro -b $(REPREPRO_DIR) includedsc $(DISTRIBUTION) $(RESULT_DIR)/*.dsc
+	reprepro -b $(REPREPRO_DIR) includedeb $(DISTRIBUTION) $(RESULT_DIR)/*_all.deb
+endif
+	reprepro -b $(REPREPRO_DIR) includedeb $(DISTRIBUTION) $(RESULT_DIR)/*_$(ARCHITECTURE).deb
+
+.PHONY: all dput install extract debian clean debclean distclean control resultclean pbuilder repolist reprepro
 .FORCE:
