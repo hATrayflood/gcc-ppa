@@ -1,8 +1,29 @@
-gcc-4.8 (4.8.4-2ubuntu1~14.04precise1) precise; urgency=medium
+gcc-4.8 (4.8.4-2ubuntu1~14.04.3precise1) precise; urgency=medium
 
   * ppa for precise
 
- -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Sat, 27 Jun 2015 13:40:00 +0900
+ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Wed, 12 Apr 2017 14:40:00 +0900
+
+gcc-4.8 (4.8.4-2ubuntu1~14.04.3) trusty-security; urgency=medium
+
+  * Rebuild in the trusty-security pocket to address issues building
+    linux kernel and openjdk-7 security updates (LP: #1577553)
+
+  [Matthias Klose]
+  * Fix PR rtl-optimization/68955, PR rtl-optimization/64557, taken from 4.9.
+
+ -- Steve Beattie <sbeattie@ubuntu.com>  Fri, 06 May 2016 19:05:08 -0700
+
+gcc-4.8 (4.8.4-2ubuntu1~14.04.1) trusty-proposed; urgency=medium
+
+  * SRU:
+  * Fix auto-loading of gdb pretty printers. LP: #1446828.
+  * Fix PR libstdc++/56158, taken from the trunk.
+    Addresses: #804521. LP: #1514309.
+  * Backport PR target/64579 and PR target/67281 from the trunk (HTM fixes).
+    LP: #1517093.
+
+ -- Matthias Klose <doko@ubuntu.com>  Wed, 18 Nov 2015 17:48:36 +0100
 
 gcc-4.8 (4.8.4-2ubuntu1~14.04) trusty-proposed; urgency=medium
 

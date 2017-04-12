@@ -1,0 +1,321 @@
+# DP: Backport PR target/67281 from the trunk (HTM fixes)
+
+Backport from mainline
+
+2015-10-14  Peter Bergner  <bergner@vnet.ibm.com>
+	    Torvald Riegel  <triegel@redhat.com>
+
+	PR target/67281
+	* config/rs6000/htm.md (UNSPEC_HTM_FENCE): New.
+	(tabort, tabort<wd>c, tabort<wd>ci, tbegin, tcheck, tend,
+	trechkpt, treclaim, tsr, ttest): Rename define_insns from this...
+	(*tabort, *tabort<wd>c, *tabort<wd>ci, *tbegin, *tcheck, *tend,
+	*trechkpt, *treclaim, *tsr, *ttest): ...to this.  Add memory barrier.
+	(tabort, tabort<wd>c, tabort<wd>ci, tbegin, tcheck, tend,
+	trechkpt, treclaim, tsr, ttest): New define_expands.
+	* config/rs6000/rs6000-c.c (rs6000_target_modify_macros): Define
+	__TM_FENCE__ for htm.
+	* doc/extend.texi: Update documentation for htm builtins.
+
+	Backport from mainline:
+	2015-08-03  Peter Bergner  <bergner@vnet.ibm.com>
+
+	* config/rs6000/htm.md (tabort.): Restrict the source operand to
+	using a base register.
+
+
+--- a/src/gcc/config/rs6000/htm.md
++++ b/src/gcc/config/rs6000/htm.md
+@@ -27,6 +27,14 @@
+   ])
+ 
+ ;;
++;; UNSPEC usage
++;;
++
++(define_c_enum "unspec"
++  [UNSPEC_HTM_FENCE
++  ])
++
++;;
+ ;; UNSPEC_VOLATILE usage
+ ;;
+ 
+@@ -45,96 +53,223 @@
+    UNSPECV_HTM_MTSPR
+   ])
+ 
++(define_expand "tabort"
++  [(parallel
++     [(set (match_operand:CC 1 "cc_reg_operand" "=x")
++	   (unspec_volatile:CC [(match_operand:SI 0 "base_reg_operand" "b")]
++			       UNSPECV_HTM_TABORT))
++      (set (match_dup 2) (unspec:BLK [(match_dup 2)] UNSPEC_HTM_FENCE))])]
++  "TARGET_HTM"
++{
++  operands[2] = gen_rtx_MEM (BLKmode, gen_rtx_SCRATCH (Pmode));
++  MEM_VOLATILE_P (operands[2]) = 1;
++})
+ 
+-(define_insn "tabort"
++(define_insn "*tabort"
+   [(set (match_operand:CC 1 "cc_reg_operand" "=x")
+-	(unspec_volatile:CC [(match_operand:SI 0 "gpc_reg_operand" "r")]
+-			    UNSPECV_HTM_TABORT))]
++	(unspec_volatile:CC [(match_operand:SI 0 "base_reg_operand" "b")]
++			    UNSPECV_HTM_TABORT))
++   (set (match_operand:BLK 2) (unspec:BLK [(match_dup 2)] UNSPEC_HTM_FENCE))]
+   "TARGET_HTM"
+   "tabort. %0"
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_insn "tabort<wd>c"
++(define_expand "tabort<wd>c"
++  [(parallel
++     [(set (match_operand:CC 3 "cc_reg_operand" "=x")
++	   (unspec_volatile:CC [(match_operand 0 "u5bit_cint_operand" "n")
++				(match_operand:GPR 1 "gpc_reg_operand" "r")
++				(match_operand:GPR 2 "gpc_reg_operand" "r")]
++			       UNSPECV_HTM_TABORTXC))
++      (set (match_dup 4) (unspec:BLK [(match_dup 4)] UNSPEC_HTM_FENCE))])]
++  "TARGET_HTM"
++{
++  operands[4] = gen_rtx_MEM (BLKmode, gen_rtx_SCRATCH (Pmode));
++  MEM_VOLATILE_P (operands[4]) = 1;
++})
++
++(define_insn "*tabort<wd>c"
+   [(set (match_operand:CC 3 "cc_reg_operand" "=x")
+ 	(unspec_volatile:CC [(match_operand 0 "u5bit_cint_operand" "n")
+ 			     (match_operand:GPR 1 "gpc_reg_operand" "r")
+ 			     (match_operand:GPR 2 "gpc_reg_operand" "r")]
+-			    UNSPECV_HTM_TABORTXC))]
++			    UNSPECV_HTM_TABORTXC))
++   (set (match_operand:BLK 4) (unspec:BLK [(match_dup 4)] UNSPEC_HTM_FENCE))]
+   "TARGET_HTM"
+   "tabort<wd>c. %0,%1,%2"
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_insn "tabort<wd>ci"
++(define_expand "tabort<wd>ci"
++  [(parallel
++     [(set (match_operand:CC 3 "cc_reg_operand" "=x")
++	   (unspec_volatile:CC [(match_operand 0 "u5bit_cint_operand" "n")
++				(match_operand:GPR 1 "gpc_reg_operand" "r")
++				(match_operand 2 "s5bit_cint_operand" "n")]
++			       UNSPECV_HTM_TABORTXCI))
++      (set (match_dup 4) (unspec:BLK [(match_dup 4)] UNSPEC_HTM_FENCE))])]
++  "TARGET_HTM"
++{
++  operands[4] = gen_rtx_MEM (BLKmode, gen_rtx_SCRATCH (Pmode));
++  MEM_VOLATILE_P (operands[4]) = 1;
++})
++
++(define_insn "*tabort<wd>ci"
+   [(set (match_operand:CC 3 "cc_reg_operand" "=x")
+ 	(unspec_volatile:CC [(match_operand 0 "u5bit_cint_operand" "n")
+ 			     (match_operand:GPR 1 "gpc_reg_operand" "r")
+ 			     (match_operand 2 "s5bit_cint_operand" "n")]
+-			    UNSPECV_HTM_TABORTXCI))]
++			    UNSPECV_HTM_TABORTXCI))
++   (set (match_operand:BLK 4) (unspec:BLK [(match_dup 4)] UNSPEC_HTM_FENCE))]
+   "TARGET_HTM"
+   "tabort<wd>ci. %0,%1,%2"
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_insn "tbegin"
++(define_expand "tbegin"
++  [(parallel
++     [(set (match_operand:CC 1 "cc_reg_operand" "=x")
++	   (unspec_volatile:CC [(match_operand 0 "const_0_to_1_operand" "n")]
++			       UNSPECV_HTM_TBEGIN))
++      (set (match_dup 2) (unspec:BLK [(match_dup 2)] UNSPEC_HTM_FENCE))])]
++  "TARGET_HTM"
++{
++  operands[2] = gen_rtx_MEM (BLKmode, gen_rtx_SCRATCH (Pmode));
++  MEM_VOLATILE_P (operands[2]) = 1;
++})
++
++(define_insn "*tbegin"
+   [(set (match_operand:CC 1 "cc_reg_operand" "=x")
+ 	(unspec_volatile:CC [(match_operand 0 "const_0_to_1_operand" "n")]
+-			    UNSPECV_HTM_TBEGIN))]
++			    UNSPECV_HTM_TBEGIN))
++   (set (match_operand:BLK 2) (unspec:BLK [(match_dup 2)] UNSPEC_HTM_FENCE))]
+   "TARGET_HTM"
+   "tbegin. %0"
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_insn "tcheck"
++(define_expand "tcheck"
++  [(parallel
++     [(set (match_operand:CC 0 "cc_reg_operand" "=y")
++	   (unspec_volatile:CC [(const_int 0)] UNSPECV_HTM_TCHECK))
++      (set (match_dup 1) (unspec:BLK [(match_dup 1)] UNSPEC_HTM_FENCE))])]
++  "TARGET_HTM"
++{
++  operands[1] = gen_rtx_MEM (BLKmode, gen_rtx_SCRATCH (Pmode));
++  MEM_VOLATILE_P (operands[1]) = 1;
++})
++
++(define_insn "*tcheck"
+   [(set (match_operand:CC 0 "cc_reg_operand" "=y")
+-	(unspec_volatile:CC [(const_int 0)]
+-			    UNSPECV_HTM_TCHECK))]
++	(unspec_volatile:CC [(const_int 0)] UNSPECV_HTM_TCHECK))
++   (set (match_operand:BLK 1) (unspec:BLK [(match_dup 1)] UNSPEC_HTM_FENCE))]
+   "TARGET_HTM"
+   "tcheck %0"
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_insn "tend"
++(define_expand "tend"
++  [(parallel
++     [(set (match_operand:CC 1 "cc_reg_operand" "=x")
++	   (unspec_volatile:CC [(match_operand 0 "const_0_to_1_operand" "n")]
++			       UNSPECV_HTM_TEND))
++      (set (match_dup 2) (unspec:BLK [(match_dup 2)] UNSPEC_HTM_FENCE))])]
++  "TARGET_HTM"
++{
++  operands[2] = gen_rtx_MEM (BLKmode, gen_rtx_SCRATCH (Pmode));
++  MEM_VOLATILE_P (operands[2]) = 1;
++})
++
++(define_insn "*tend"
+   [(set (match_operand:CC 1 "cc_reg_operand" "=x")
+ 	(unspec_volatile:CC [(match_operand 0 "const_0_to_1_operand" "n")]
+-			    UNSPECV_HTM_TEND))]
++			    UNSPECV_HTM_TEND))
++   (set (match_operand:BLK 2) (unspec:BLK [(match_dup 2)] UNSPEC_HTM_FENCE))]
+   "TARGET_HTM"
+   "tend. %0"
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_insn "trechkpt"
++(define_expand "trechkpt"
++  [(parallel
++     [(set (match_operand:CC 0 "cc_reg_operand" "=x")
++	   (unspec_volatile:CC [(const_int 0)] UNSPECV_HTM_TRECHKPT))
++      (set (match_dup 1) (unspec:BLK [(match_dup 1)] UNSPEC_HTM_FENCE))])]
++  "TARGET_HTM"
++{
++  operands[1] = gen_rtx_MEM (BLKmode, gen_rtx_SCRATCH (Pmode));
++  MEM_VOLATILE_P (operands[1]) = 1;
++})
++
++(define_insn "*trechkpt"
+   [(set (match_operand:CC 0 "cc_reg_operand" "=x")
+-	(unspec_volatile:CC [(const_int 0)]
+-			    UNSPECV_HTM_TRECHKPT))]
++	(unspec_volatile:CC [(const_int 0)] UNSPECV_HTM_TRECHKPT))
++   (set (match_operand:BLK 1) (unspec:BLK [(match_dup 1)] UNSPEC_HTM_FENCE))]
+   "TARGET_HTM"
+   "trechkpt."
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_insn "treclaim"
++(define_expand "treclaim"
++  [(parallel
++     [(set (match_operand:CC 1 "cc_reg_operand" "=x")
++	   (unspec_volatile:CC [(match_operand:SI 0 "gpc_reg_operand" "r")]
++			       UNSPECV_HTM_TRECLAIM))
++      (set (match_dup 2) (unspec:BLK [(match_dup 2)] UNSPEC_HTM_FENCE))])]
++  "TARGET_HTM"
++{
++  operands[2] = gen_rtx_MEM (BLKmode, gen_rtx_SCRATCH (Pmode));
++  MEM_VOLATILE_P (operands[2]) = 1;
++})
++
++(define_insn "*treclaim"
+   [(set (match_operand:CC 1 "cc_reg_operand" "=x")
+ 	(unspec_volatile:CC [(match_operand:SI 0 "gpc_reg_operand" "r")]
+-			    UNSPECV_HTM_TRECLAIM))]
++			    UNSPECV_HTM_TRECLAIM))
++   (set (match_operand:BLK 2) (unspec:BLK [(match_dup 2)] UNSPEC_HTM_FENCE))]
+   "TARGET_HTM"
+   "treclaim. %0"
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_insn "tsr"
++(define_expand "tsr"
++  [(parallel
++     [(set (match_operand:CC 1 "cc_reg_operand" "=x")
++	   (unspec_volatile:CC [(match_operand 0 "const_0_to_1_operand" "n")]
++			       UNSPECV_HTM_TSR))
++      (set (match_dup 2) (unspec:BLK [(match_dup 2)] UNSPEC_HTM_FENCE))])]
++  "TARGET_HTM"
++{
++  operands[2] = gen_rtx_MEM (BLKmode, gen_rtx_SCRATCH (Pmode));
++  MEM_VOLATILE_P (operands[2]) = 1;
++})
++
++(define_insn "*tsr"
+   [(set (match_operand:CC 1 "cc_reg_operand" "=x")
+ 	(unspec_volatile:CC [(match_operand 0 "const_0_to_1_operand" "n")]
+-			    UNSPECV_HTM_TSR))]
++			    UNSPECV_HTM_TSR))
++   (set (match_operand:BLK 2) (unspec:BLK [(match_dup 2)] UNSPEC_HTM_FENCE))]
+   "TARGET_HTM"
+   "tsr. %0"
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_insn "ttest"
++(define_expand "ttest"
++  [(parallel
++     [(set (match_operand:CC 0 "cc_reg_operand" "=x")
++	   (unspec_volatile:CC [(const_int 0)] UNSPECV_HTM_TTEST))
++      (set (match_dup 1) (unspec:BLK [(match_dup 1)] UNSPEC_HTM_FENCE))])]
++  "TARGET_HTM"
++{
++  operands[1] = gen_rtx_MEM (BLKmode, gen_rtx_SCRATCH (Pmode));
++  MEM_VOLATILE_P (operands[1]) = 1;
++})
++
++(define_insn "*ttest"
+   [(set (match_operand:CC 0 "cc_reg_operand" "=x")
+-	(unspec_volatile:CC [(const_int 0)]
+-			    UNSPECV_HTM_TTEST))]
++	(unspec_volatile:CC [(const_int 0)] UNSPECV_HTM_TTEST))
++   (set (match_operand:BLK 1) (unspec:BLK [(match_dup 1)] UNSPEC_HTM_FENCE))]
+   "TARGET_HTM"
+   "tabortwci. 0,1,0"
+   [(set_attr "type" "htm")
+--- a/src/gcc/config/rs6000/rs6000-c.c
++++ b/src/gcc/config/rs6000/rs6000-c.c
+@@ -351,7 +351,11 @@
+   if ((flags & OPTION_MASK_VSX) != 0)
+     rs6000_define_or_undefine_macro (define_p, "__VSX__");
+   if ((flags & OPTION_MASK_HTM) != 0)
+-    rs6000_define_or_undefine_macro (define_p, "__HTM__");
++    {
++      rs6000_define_or_undefine_macro (define_p, "__HTM__");
++      /* Tell the user that our HTM insn patterns act as memory barriers.  */
++      rs6000_define_or_undefine_macro (define_p, "__TM_FENCE__");
++    }
+   if ((flags & OPTION_MASK_P8_VECTOR) != 0)
+     rs6000_define_or_undefine_macro (define_p, "__POWER8_VECTOR__");
+   if ((flags & OPTION_MASK_QUAD_MEMORY) != 0)
+--- a/src/gcc/testsuite/gcc.target/powerpc/htm-tabort-no-r0.c
++++ b/src/gcc/testsuite/gcc.target/powerpc/htm-tabort-no-r0.c
+@@ -0,0 +1,12 @@
++/* { dg-do compile { target { powerpc*-*-* } } } */
++/* { dg-skip-if "" { powerpc*-*-darwin* } { "*" } { "" } } */
++/* { dg-require-effective-target powerpc_htm_ok } */
++/* { dg-options "-O2 -mhtm -ffixed-r3 -ffixed-r4 -ffixed-r5 -ffixed-r6 -ffixed-r7 -ffixed-r8 -ffixed-r9 -ffixed-r10 -ffixed-r11 -ffixed-r12" } */
++
++/* { dg-final { scan-assembler-not "tabort\\.\[ \t\]0" } } */
++
++int
++foo (void)
++{
++  return __builtin_tabort (10);
++}

@@ -1,0 +1,865 @@
+# DP: Fix PR target/64579, taken from the gcc-4_8-branch.
+
+gcc/
+
+2015-05-05  Peter Bergner  <bergner@vnet.ibm.com>
+
+	Backport from mainline.
+	2015-04-27  Peter Bergner  <bergner@vnet.ibm.com>
+
+	PR target/64579
+	* config/rs6000/htm.md: Remove all define_expands.
+	(UNSPECV_HTM_TABORTDC, UNSPECV_HTM_TABORTDCI, UNSPECV_HTM_TABORTWC,
+	UNSPECV_HTM_TABORTWCI): Remove.
+	(UNSPECV_HTM_TABORTXC, UNSPECV_HTM_TABORTXCI, UNSPECV_HTM_TTEST): New.
+	(tabort_internal, tbegin_internal, tcheck_internal, tend_internal,
+	trechkpt_internal, treclaim_internal, tsr_internal): Rename from this...
+	(tabort, tbegin, tcheck, tend, trechkpt, treclaim, tsr): ...to this.
+	(tabortdc_internal, tabortdci_internal, tabortwc_internal,
+	tabortwci_internal): Remove define_insns.
+	(tabort<wd>c, tabort<wd>ci): New define_insns.
+	(tabort): Use gpc_reg_operand.
+	(tcheck): Remove operand.
+	(htm_mfspr_<mode>, htm_mtspr_<mode>): Use GPR mode macro.
+	* config/rs6000/htmxlintrin.h (__TM_end): Use _HTM_TRANSACTIONAL as
+	expected value.
+	* config/rs6000/rs6000-builtin.def (BU_HTM_SPR0): Remove.
+	(BU_HTM_SPR1): Rename to BU_HTM_V1.  Remove use of RS6000_BTC_SPR.
+	(tabort, tabortdc, tabortdci, tabortwc, tabortwci, tbegin,
+	tcheck, tend, tendall, trechkpt, treclaim, tresume, tsuspend,
+	tsr, ttest): Pass in the RS6000_BTC_CR attribute.
+	(get_tfhar, set_tfhar, get_tfiar, set_tfiar, get_texasr, set_texasr,
+	get_texasru, set_texasru): Pass in the RS6000_BTC_SPR attribute.
+	(tcheck): Remove builtin argument.
+	* config/rs6000/rs6000.c (rs6000_htm_spr_icode): Use TARGET_POWERPC64
+	not TARGET_64BIT.
+	(htm_expand_builtin): Fix usage of expandedp.  Disallow usage of the
+	tabortdc and tabortdci builtins when not in 64-bit mode.
+	Modify code to handle the loss of the HTM define_expands.
+	Emit code to copy the CR register to TARGET.
+	(htm_init_builtins): Modify code to handle the loss of the HTM
+	define_expands.
+	* config/rs6000/rs6000.h (RS6000_BTC_32BIT): Delete.
+	(RS6000_BTC_64BIT): Likewise.
+	(RS6000_BTC_CR): New macro.
+	* doc/extend.texi: Update documentation for htm builtins.
+
+gcc/testsuite/
+
+2015-05-05  Peter Bergner  <bergner@vnet.ibm.com>
+
+	Backport from mainline.
+	2015-04-27  Peter Bergner  <bergner@vnet.ibm.com>
+
+	PR target/64579
+	* gcc.target/powerpc/htm-1.c: New test.
+	* gcc.target/powerpc/htm-builtin-1.c (__builtin_tabortdc): Only test
+	on 64-bit compiles.
+	(__builtin_tabortdci): Likewise.
+	(__builtin_tcheck): Remove operand.
+	* lib/target-supports.exp (check_htm_hw_available): New function.
+
+--- a/src/gcc/testsuite/gcc.target/powerpc/htm-1.c
++++ b/src/gcc/testsuite/gcc.target/powerpc/htm-1.c
+@@ -0,0 +1,52 @@
++/* { dg-do run { target { powerpc*-*-* && htm_hw } } } */
++/* { dg-require-effective-target powerpc_htm_ok } */
++/* { dg-options "-mhtm" } */
++
++/* Program to test PowerPC HTM instructions.  */
++
++#include <stdlib.h>
++#include <htmintrin.h>
++
++int
++main (void)
++{
++  long i;
++  unsigned long mask = 0;
++
++repeat:
++  if (__builtin_tbegin (0))
++    {
++      mask++;
++    }
++  else
++    abort();
++
++  if (mask == 1)
++    {
++      __builtin_tsuspend ();
++
++      if (_HTM_STATE (__builtin_tcheck ()) != _HTM_SUSPENDED)
++	abort ();
++
++      __builtin_tresume ();
++
++      if (_HTM_STATE (__builtin_tcheck ()) != _HTM_TRANSACTIONAL)
++	abort ();
++    }
++  else
++    mask++;
++
++  if (_HTM_STATE (__builtin_tendall ()) != _HTM_TRANSACTIONAL)
++    abort ();
++
++  if (mask == 1)
++    goto repeat;
++
++  if (_HTM_STATE (__builtin_tendall ()) != _HTM_NONTRANSACTIONAL)
++    abort ();
++
++  if (mask != 3)
++    abort ();
++
++  return 0;
++}
+--- a/src/gcc/testsuite/gcc.target/powerpc/htm-builtin-1.c
++++ b/src/gcc/testsuite/gcc.target/powerpc/htm-builtin-1.c
+@@ -6,8 +6,8 @@
+ /* { dg-final { scan-assembler-times "tbegin\\." 1 } } */
+ /* { dg-final { scan-assembler-times "tend\\." 2 } } */
+ /* { dg-final { scan-assembler-times "tabort\\." 2 } } */
+-/* { dg-final { scan-assembler-times "tabortdc\\." 1 } } */
+-/* { dg-final { scan-assembler-times "tabortdci\\." 1 } } */
++/* { dg-final { scan-assembler-times "tabortdc\\." 1 { target lp64 } } } */
++/* { dg-final { scan-assembler-times "tabortdci\\." 1 { target lp64 } } } */
+ /* { dg-final { scan-assembler-times "tabortwc\\." 1 } } */
+ /* { dg-final { scan-assembler-times "tabortwci\\." 2 } } */
+ /* { dg-final { scan-assembler-times "tcheck" 1 } } */
+@@ -25,12 +25,14 @@
+   p[3] = __builtin_tabort (0);
+   p[4] = __builtin_tabort (code);
+ 
++#ifdef __powerpc64__
+   p[5] = __builtin_tabortdc (0xf, a[5], b[5]);
+   p[6] = __builtin_tabortdci (0xf, a[6], 13);
++#endif
+   p[7] = __builtin_tabortwc (0xf, a[7], b[7]);
+   p[8] = __builtin_tabortwci (0xf, a[8], 13);
+ 
+-  p[9] = __builtin_tcheck (5);
++  p[9] = __builtin_tcheck ();
+   p[10] = __builtin_trechkpt ();
+   p[11] = __builtin_treclaim (0);
+   p[12] = __builtin_tresume ();
+--- a/src/gcc/testsuite/lib/target-supports.exp
++++ b/src/gcc/testsuite/lib/target-supports.exp
+@@ -2808,6 +2808,25 @@
+     }
+ }
+ 
++# Return 1 if the target supports executing HTM hardware instructions,
++# 0 otherwise.  Cache the result.
++
++proc check_htm_hw_available { } {
++    return [check_cached_effective_target htm_hw_available {
++	# For now, disable on Darwin
++	if { [istarget powerpc-*-eabi] || [istarget powerpc*-*-eabispe] || [istarget *-*-darwin*]} {
++	    expr 0
++	} else {
++	    check_runtime_nocache htm_hw_available {
++		int main()
++		{
++		  __builtin_ttest ();
++		  return 0;
++		}
++	    } "-mhtm"
++	}
++    }]
++}
+ # Return 1 if this is a PowerPC target supporting -mcpu=cell.
+ 
+ proc check_effective_target_powerpc_ppu_ok { } {
+@@ -4629,6 +4648,7 @@
+ 	  "p8vector_hw"    { set selected [check_p8vector_hw_available] }
+ 	  "ppc_recip_hw"   { set selected [check_ppc_recip_hw_available] }
+ 	  "dfp_hw"         { set selected [check_dfp_hw_available] }
++	  "htm_hw"         { set selected [check_htm_hw_available] }
+ 	  "named_sections" { set selected [check_named_sections_available] }
+ 	  "gc_sections"    { set selected [check_gc_sections_available] }
+ 	  "cxa_atexit"     { set selected [check_cxa_atexit_available] }
+@@ -4652,6 +4672,7 @@
+ 	  "p8vector_hw"    { return 1 }
+ 	  "ppc_recip_hw"   { return 1 }
+ 	  "dfp_hw"         { return 1 }
++	  "htm_hw"         { return 1 }
+ 	  "named_sections" { return 1 }
+ 	  "gc_sections"    { return 1 }
+ 	  "cxa_atexit"     { return 1 }
+--- a/src/gcc/config/rs6000/htm.md
++++ b/src/gcc/config/rs6000/htm.md
+@@ -1,5 +1,5 @@
+ ;; Hardware Transactional Memory (HTM) patterns.
+-;; Copyright (C) 2013 Free Software Foundation, Inc.
++;; Copyright (C) 2013-2015 Free Software Foundation, Inc.
+ ;; Contributed by Peter Bergner <bergner@vnet.ibm.com>.
+ 
+ ;; This file is part of GCC.
+@@ -32,10 +32,8 @@
+ 
+ (define_c_enum "unspecv"
+   [UNSPECV_HTM_TABORT
+-   UNSPECV_HTM_TABORTDC
+-   UNSPECV_HTM_TABORTDCI
+-   UNSPECV_HTM_TABORTWC
+-   UNSPECV_HTM_TABORTWCI
++   UNSPECV_HTM_TABORTXC
++   UNSPECV_HTM_TABORTXCI
+    UNSPECV_HTM_TBEGIN
+    UNSPECV_HTM_TCHECK
+    UNSPECV_HTM_TEND
+@@ -42,29 +40,15 @@
+    UNSPECV_HTM_TRECHKPT
+    UNSPECV_HTM_TRECLAIM
+    UNSPECV_HTM_TSR
++   UNSPECV_HTM_TTEST
+    UNSPECV_HTM_MFSPR
+    UNSPECV_HTM_MTSPR
+   ])
+ 
+ 
+-(define_expand "tabort"
+-  [(set (match_dup 2)
+-	(unspec_volatile:CC [(match_operand:SI 1 "int_reg_operand" "")]
+-			    UNSPECV_HTM_TABORT))
+-   (set (match_dup 3)
+-	(eq:SI (match_dup 2)
+-	       (const_int 0)))
+-   (set (match_operand:SI 0 "int_reg_operand" "")
+-	(minus:SI (const_int 1) (match_dup 3)))]
+-  "TARGET_HTM"
+-{
+-  operands[2] = gen_rtx_REG (CCmode, CR0_REGNO);
+-  operands[3] = gen_reg_rtx (SImode);
+-})
+-
+-(define_insn "*tabort_internal"
++(define_insn "tabort"
+   [(set (match_operand:CC 1 "cc_reg_operand" "=x")
+-	(unspec_volatile:CC [(match_operand:SI 0 "int_reg_operand" "r")]
++	(unspec_volatile:CC [(match_operand:SI 0 "gpc_reg_operand" "r")]
+ 			    UNSPECV_HTM_TABORT))]
+   "TARGET_HTM"
+   "tabort. %0"
+@@ -71,152 +55,29 @@
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_expand "tabortdc"
+-  [(set (match_dup 4)
+-	(unspec_volatile:CC [(match_operand 1 "u5bit_cint_operand" "n")
+-			     (match_operand:SI 2 "gpc_reg_operand" "r")
+-			     (match_operand:SI 3 "gpc_reg_operand" "r")]
+-			    UNSPECV_HTM_TABORTDC))
+-   (set (match_dup 5)
+-	(eq:SI (match_dup 4)
+-	       (const_int 0)))
+-   (set (match_operand:SI 0 "int_reg_operand" "")
+-	(minus:SI (const_int 1) (match_dup 5)))]
+-  "TARGET_HTM"
+-{
+-  operands[4] = gen_rtx_REG (CCmode, CR0_REGNO);
+-  operands[5] = gen_reg_rtx (SImode);
+-})
+-
+-(define_insn "*tabortdc_internal"
++(define_insn "tabort<wd>c"
+   [(set (match_operand:CC 3 "cc_reg_operand" "=x")
+ 	(unspec_volatile:CC [(match_operand 0 "u5bit_cint_operand" "n")
+-			     (match_operand:SI 1 "gpc_reg_operand" "r")
+-			     (match_operand:SI 2 "gpc_reg_operand" "r")]
+-			    UNSPECV_HTM_TABORTDC))]
++			     (match_operand:GPR 1 "gpc_reg_operand" "r")
++			     (match_operand:GPR 2 "gpc_reg_operand" "r")]
++			    UNSPECV_HTM_TABORTXC))]
+   "TARGET_HTM"
+-  "tabortdc. %0,%1,%2"
++  "tabort<wd>c. %0,%1,%2"
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_expand "tabortdci"
+-  [(set (match_dup 4)
+-	(unspec_volatile:CC [(match_operand 1 "u5bit_cint_operand" "n")
+-			     (match_operand:SI 2 "gpc_reg_operand" "r")
+-			     (match_operand 3 "s5bit_cint_operand" "n")]
+-			    UNSPECV_HTM_TABORTDCI))
+-   (set (match_dup 5)
+-	(eq:SI (match_dup 4)
+-	       (const_int 0)))
+-   (set (match_operand:SI 0 "int_reg_operand" "")
+-	(minus:SI (const_int 1) (match_dup 5)))]
+-  "TARGET_HTM"
+-{
+-  operands[4] = gen_rtx_REG (CCmode, CR0_REGNO);
+-  operands[5] = gen_reg_rtx (SImode);
+-})
+-
+-(define_insn "*tabortdci_internal"
++(define_insn "tabort<wd>ci"
+   [(set (match_operand:CC 3 "cc_reg_operand" "=x")
+ 	(unspec_volatile:CC [(match_operand 0 "u5bit_cint_operand" "n")
+-			     (match_operand:SI 1 "gpc_reg_operand" "r")
++			     (match_operand:GPR 1 "gpc_reg_operand" "r")
+ 			     (match_operand 2 "s5bit_cint_operand" "n")]
+-			    UNSPECV_HTM_TABORTDCI))]
++			    UNSPECV_HTM_TABORTXCI))]
+   "TARGET_HTM"
+-  "tabortdci. %0,%1,%2"
++  "tabort<wd>ci. %0,%1,%2"
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_expand "tabortwc"
+-  [(set (match_dup 4)
+-	(unspec_volatile:CC [(match_operand 1 "u5bit_cint_operand" "n")
+-			     (match_operand:SI 2 "gpc_reg_operand" "r")
+-			     (match_operand:SI 3 "gpc_reg_operand" "r")]
+-			    UNSPECV_HTM_TABORTWC))
+-   (set (match_dup 5)
+-	(eq:SI (match_dup 4)
+-	       (const_int 0)))
+-   (set (match_operand:SI 0 "int_reg_operand" "")
+-	(minus:SI (const_int 1) (match_dup 5)))]
+-  "TARGET_HTM"
+-{
+-  operands[4] = gen_rtx_REG (CCmode, CR0_REGNO);
+-  operands[5] = gen_reg_rtx (SImode);
+-})
+-
+-(define_insn "*tabortwc_internal"
+-  [(set (match_operand:CC 3 "cc_reg_operand" "=x")
+-	(unspec_volatile:CC [(match_operand 0 "u5bit_cint_operand" "n")
+-			     (match_operand:SI 1 "gpc_reg_operand" "r")
+-			     (match_operand:SI 2 "gpc_reg_operand" "r")]
+-			    UNSPECV_HTM_TABORTWC))]
+-  "TARGET_HTM"
+-  "tabortwc. %0,%1,%2"
+-  [(set_attr "type" "htm")
+-   (set_attr "length" "4")])
+-
+-(define_expand "tabortwci"
+-  [(set (match_dup 4)
+-	(unspec_volatile:CC [(match_operand 1 "u5bit_cint_operand" "n")
+-			     (match_operand:SI 2 "gpc_reg_operand" "r")
+-			     (match_operand 3 "s5bit_cint_operand" "n")]
+-			    UNSPECV_HTM_TABORTWCI))
+-   (set (match_dup 5)
+-	(eq:SI (match_dup 4)
+-	       (const_int 0)))
+-   (set (match_operand:SI 0 "int_reg_operand" "")
+-	(minus:SI (const_int 1) (match_dup 5)))]
+-  "TARGET_HTM"
+-{
+-  operands[4] = gen_rtx_REG (CCmode, CR0_REGNO);
+-  operands[5] = gen_reg_rtx (SImode);
+-})
+-
+-(define_expand "ttest"
+-  [(set (match_dup 1)
+-	(unspec_volatile:CC [(const_int 0)
+-			     (reg:SI 0)
+-			     (const_int 0)]
+-			    UNSPECV_HTM_TABORTWCI))
+-   (set (subreg:CC (match_dup 2) 0) (match_dup 1))
+-   (set (match_dup 3) (lshiftrt:SI (match_dup 2) (const_int 28)))
+-   (parallel [(set (match_operand:SI 0 "int_reg_operand" "")
+-		   (and:SI (match_dup 3) (const_int 15)))
+-              (clobber (scratch:CC))])]
+-  "TARGET_HTM"
+-{
+-  operands[1] = gen_rtx_REG (CCmode, CR0_REGNO);
+-  operands[2] = gen_reg_rtx (SImode);
+-  operands[3] = gen_reg_rtx (SImode);
+-})
+-
+-(define_insn "*tabortwci_internal"
+-  [(set (match_operand:CC 3 "cc_reg_operand" "=x")
+-	(unspec_volatile:CC [(match_operand 0 "u5bit_cint_operand" "n")
+-			     (match_operand:SI 1 "gpc_reg_operand" "r")
+-			     (match_operand 2 "s5bit_cint_operand" "n")]
+-			    UNSPECV_HTM_TABORTWCI))]
+-  "TARGET_HTM"
+-  "tabortwci. %0,%1,%2"
+-  [(set_attr "type" "htm")
+-   (set_attr "length" "4")])
+-
+-(define_expand "tbegin"
+-  [(set (match_dup 2)
+-	(unspec_volatile:CC [(match_operand 1 "const_0_to_1_operand" "n")]
+-			    UNSPECV_HTM_TBEGIN))
+-   (set (match_dup 3)
+-	(eq:SI (match_dup 2)
+-	       (const_int 0)))
+-   (set (match_operand:SI 0 "int_reg_operand" "")
+-	(minus:SI (const_int 1) (match_dup 3)))]
+-  "TARGET_HTM"
+-{
+-  operands[2] = gen_rtx_REG (CCmode, CR0_REGNO);
+-  operands[3] = gen_reg_rtx (SImode);
+-})
+-
+-(define_insn "*tbegin_internal"
++(define_insn "tbegin"
+   [(set (match_operand:CC 1 "cc_reg_operand" "=x")
+ 	(unspec_volatile:CC [(match_operand 0 "const_0_to_1_operand" "n")]
+ 			    UNSPECV_HTM_TBEGIN))]
+@@ -225,24 +86,9 @@
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_expand "tcheck"
+-  [(set (match_dup 2)
+-	(unspec_volatile:CC [(match_operand 1 "u3bit_cint_operand" "n")]
+-			    UNSPECV_HTM_TCHECK))
+-   (set (match_dup 3)
+-	(eq:SI (match_dup 2)
+-	       (const_int 0)))
+-   (set (match_operand:SI 0 "int_reg_operand" "")
+-	(minus:SI (const_int 1) (match_dup 3)))]
+-  "TARGET_HTM"
+-{
+-  operands[2] = gen_rtx_REG (CCmode, CR0_REGNO);
+-  operands[3] = gen_reg_rtx (SImode);
+-})
+-
+-(define_insn "*tcheck_internal"
+-  [(set (match_operand:CC 1 "cc_reg_operand" "=x")
+-	(unspec_volatile:CC [(match_operand 0 "u3bit_cint_operand" "n")]
++(define_insn "tcheck"
++  [(set (match_operand:CC 0 "cc_reg_operand" "=y")
++	(unspec_volatile:CC [(const_int 0)]
+ 			    UNSPECV_HTM_TCHECK))]
+   "TARGET_HTM"
+   "tcheck %0"
+@@ -249,22 +95,7 @@
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_expand "tend"
+-  [(set (match_dup 2)
+-	(unspec_volatile:CC [(match_operand 1 "const_0_to_1_operand" "n")]
+-			    UNSPECV_HTM_TEND))
+-   (set (match_dup 3)
+-	(eq:SI (match_dup 2)
+-	       (const_int 0)))
+-   (set (match_operand:SI 0 "int_reg_operand" "")
+-	(minus:SI (const_int 1) (match_dup 3)))]
+-  "TARGET_HTM"
+-{
+-  operands[2] = gen_rtx_REG (CCmode, CR0_REGNO);
+-  operands[3] = gen_reg_rtx (SImode);
+-})
+-
+-(define_insn "*tend_internal"
++(define_insn "tend"
+   [(set (match_operand:CC 1 "cc_reg_operand" "=x")
+ 	(unspec_volatile:CC [(match_operand 0 "const_0_to_1_operand" "n")]
+ 			    UNSPECV_HTM_TEND))]
+@@ -273,22 +104,7 @@
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_expand "trechkpt"
+-  [(set (match_dup 1)
+-	(unspec_volatile:CC [(const_int 0)]
+-			    UNSPECV_HTM_TRECHKPT))
+-   (set (match_dup 2)
+-	(eq:SI (match_dup 1)
+-	       (const_int 0)))
+-   (set (match_operand:SI 0 "int_reg_operand" "")
+-	(minus:SI (const_int 1) (match_dup 2)))]
+-  "TARGET_HTM"
+-{
+-  operands[1] = gen_rtx_REG (CCmode, CR0_REGNO);
+-  operands[2] = gen_reg_rtx (SImode);
+-})
+-
+-(define_insn "*trechkpt_internal"
++(define_insn "trechkpt"
+   [(set (match_operand:CC 0 "cc_reg_operand" "=x")
+ 	(unspec_volatile:CC [(const_int 0)]
+ 			    UNSPECV_HTM_TRECHKPT))]
+@@ -297,22 +113,7 @@
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_expand "treclaim"
+-  [(set (match_dup 2)
+-	(unspec_volatile:CC [(match_operand:SI 1 "gpc_reg_operand" "r")]
+-			    UNSPECV_HTM_TRECLAIM))
+-   (set (match_dup 3)
+-	(eq:SI (match_dup 2)
+-	       (const_int 0)))
+-   (set (match_operand:SI 0 "int_reg_operand" "")
+-	(minus:SI (const_int 1) (match_dup 3)))]
+-  "TARGET_HTM"
+-{
+-  operands[2] = gen_rtx_REG (CCmode, CR0_REGNO);
+-  operands[3] = gen_reg_rtx (SImode);
+-})
+-
+-(define_insn "*treclaim_internal"
++(define_insn "treclaim"
+   [(set (match_operand:CC 1 "cc_reg_operand" "=x")
+ 	(unspec_volatile:CC [(match_operand:SI 0 "gpc_reg_operand" "r")]
+ 			    UNSPECV_HTM_TRECLAIM))]
+@@ -321,22 +122,7 @@
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
+-(define_expand "tsr"
+-  [(set (match_dup 2)
+-	(unspec_volatile:CC [(match_operand 1 "const_0_to_1_operand" "n")]
+-			    UNSPECV_HTM_TSR))
+-   (set (match_dup 3)
+-	(eq:SI (match_dup 2)
+-	       (const_int 0)))
+-   (set (match_operand:SI 0 "int_reg_operand" "")
+-	(minus:SI (const_int 1) (match_dup 3)))]
+-  "TARGET_HTM"
+-{
+-  operands[2] = gen_rtx_REG (CCmode, CR0_REGNO);
+-  operands[3] = gen_reg_rtx (SImode);
+-})
+-
+-(define_insn "*tsr_internal"
++(define_insn "tsr"
+   [(set (match_operand:CC 1 "cc_reg_operand" "=x")
+ 	(unspec_volatile:CC [(match_operand 0 "const_0_to_1_operand" "n")]
+ 			    UNSPECV_HTM_TSR))]
+@@ -345,11 +131,20 @@
+   [(set_attr "type" "htm")
+    (set_attr "length" "4")])
+ 
++(define_insn "ttest"
++  [(set (match_operand:CC 0 "cc_reg_operand" "=x")
++	(unspec_volatile:CC [(const_int 0)]
++			    UNSPECV_HTM_TTEST))]
++  "TARGET_HTM"
++  "tabortwci. 0,1,0"
++  [(set_attr "type" "htm")
++   (set_attr "length" "4")])
++
+ (define_insn "htm_mfspr_<mode>"
+-  [(set (match_operand:P 0 "gpc_reg_operand" "=r")
+-        (unspec_volatile:P [(match_operand 1 "u10bit_cint_operand" "n")
+-			    (match_operand:P 2 "htm_spr_reg_operand" "")]
+-			   UNSPECV_HTM_MFSPR))]
++  [(set (match_operand:GPR 0 "gpc_reg_operand" "=r")
++        (unspec_volatile:GPR [(match_operand 1 "u10bit_cint_operand" "n")
++			      (match_operand:GPR 2 "htm_spr_reg_operand" "")]
++			     UNSPECV_HTM_MFSPR))]
+   "TARGET_HTM"
+   "mfspr %0,%1";
+   [(set_attr "type" "htm")
+@@ -356,10 +151,10 @@
+    (set_attr "length" "4")])
+ 
+ (define_insn "htm_mtspr_<mode>"
+-  [(set (match_operand:P 2 "htm_spr_reg_operand" "")
+-        (unspec_volatile:P [(match_operand:P 0 "gpc_reg_operand" "r")
+-			    (match_operand 1 "u10bit_cint_operand" "n")]
+-                           UNSPECV_HTM_MTSPR))]
++  [(set (match_operand:GPR 2 "htm_spr_reg_operand" "")
++        (unspec_volatile:GPR [(match_operand:GPR 0 "gpc_reg_operand" "r")
++			      (match_operand 1 "u10bit_cint_operand" "n")]
++			     UNSPECV_HTM_MTSPR))]
+   "TARGET_HTM"
+   "mtspr %1,%0";
+   [(set_attr "type" "htm")
+--- a/src/gcc/config/rs6000/htmxlintrin.h
++++ b/src/gcc/config/rs6000/htmxlintrin.h
+@@ -81,7 +81,8 @@
+ __attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+ __TM_end (void)
+ {
+-  if (__builtin_expect (__builtin_tend (0), 1))
++  unsigned char status = _HTM_STATE (__builtin_tend (0));
++  if (__builtin_expect (status, _HTM_TRANSACTIONAL))
+     return 1;
+   return 0;
+ }
+--- a/src/gcc/config/rs6000/rs6000-builtin.def
++++ b/src/gcc/config/rs6000/rs6000-builtin.def
+@@ -480,21 +480,12 @@
+ 		     | RS6000_BTC_TERNARY),				\
+ 		    CODE_FOR_ ## ICODE)			/* ICODE */
+ 
+-#define BU_HTM_SPR0(ENUM, NAME, ATTR, ICODE)				\
++#define BU_HTM_V1(ENUM, NAME, ATTR, ICODE)				\
+   RS6000_BUILTIN_H (HTM_BUILTIN_ ## ENUM,		/* ENUM */	\
+ 		    "__builtin_" NAME,			/* NAME */	\
+ 		    RS6000_BTM_HTM,			/* MASK */	\
+ 		    (RS6000_BTC_ ## ATTR		/* ATTR */	\
+-		     | RS6000_BTC_SPR),					\
+-		    CODE_FOR_ ## ICODE)			/* ICODE */
+-
+-#define BU_HTM_SPR1(ENUM, NAME, ATTR, ICODE)				\
+-  RS6000_BUILTIN_H (HTM_BUILTIN_ ## ENUM,		/* ENUM */	\
+-		    "__builtin_" NAME,			/* NAME */	\
+-		    RS6000_BTM_HTM,			/* MASK */	\
+-		    (RS6000_BTC_ ## ATTR		/* ATTR */	\
+ 		     | RS6000_BTC_UNARY					\
+-		     | RS6000_BTC_SPR					\
+ 		     | RS6000_BTC_VOID),				\
+ 		    CODE_FOR_ ## ICODE)			/* ICODE */
+ 
+@@ -1657,30 +1648,30 @@
+ 
+ 
+ /* HTM functions.  */
+-BU_HTM_1  (TABORT,	"tabort",	MISC,	tabort)
+-BU_HTM_3  (TABORTDC,	"tabortdc",	MISC,	tabortdc)
+-BU_HTM_3  (TABORTDCI,	"tabortdci",	MISC,	tabortdci)
+-BU_HTM_3  (TABORTWC,	"tabortwc",	MISC,	tabortwc)
+-BU_HTM_3  (TABORTWCI,	"tabortwci",	MISC,	tabortwci)
+-BU_HTM_1  (TBEGIN,	"tbegin",	MISC,	tbegin)
+-BU_HTM_1  (TCHECK,	"tcheck",	MISC,	tcheck)
+-BU_HTM_1  (TEND,	"tend",		MISC,	tend)
+-BU_HTM_0  (TENDALL,	"tendall",	MISC,	tend)
+-BU_HTM_0  (TRECHKPT,	"trechkpt",	MISC,	trechkpt)
+-BU_HTM_1  (TRECLAIM,	"treclaim",	MISC,	treclaim)
+-BU_HTM_0  (TRESUME,	"tresume",	MISC,	tsr)
+-BU_HTM_0  (TSUSPEND,	"tsuspend",	MISC,	tsr)
+-BU_HTM_1  (TSR,		"tsr",		MISC,	tsr)
+-BU_HTM_0  (TTEST,	"ttest",	MISC,	ttest)
++BU_HTM_1  (TABORT,	"tabort",	CR,	tabort)
++BU_HTM_3  (TABORTDC,	"tabortdc",	CR,	tabortdc)
++BU_HTM_3  (TABORTDCI,	"tabortdci",	CR,	tabortdci)
++BU_HTM_3  (TABORTWC,	"tabortwc",	CR,	tabortwc)
++BU_HTM_3  (TABORTWCI,	"tabortwci",	CR,	tabortwci)
++BU_HTM_1  (TBEGIN,	"tbegin",	CR,	tbegin)
++BU_HTM_0  (TCHECK,	"tcheck",	CR,	tcheck)
++BU_HTM_1  (TEND,	"tend",		CR,	tend)
++BU_HTM_0  (TENDALL,	"tendall",	CR,	tend)
++BU_HTM_0  (TRECHKPT,	"trechkpt",	CR,	trechkpt)
++BU_HTM_1  (TRECLAIM,	"treclaim",	CR,	treclaim)
++BU_HTM_0  (TRESUME,	"tresume",	CR,	tsr)
++BU_HTM_0  (TSUSPEND,	"tsuspend",	CR,	tsr)
++BU_HTM_1  (TSR,		"tsr",		CR,	tsr)
++BU_HTM_0  (TTEST,	"ttest",	CR,	ttest)
+ 
+-BU_HTM_SPR0 (GET_TFHAR,		"get_tfhar",	MISC,	nothing)
+-BU_HTM_SPR1 (SET_TFHAR,		"set_tfhar",	MISC,	nothing)
+-BU_HTM_SPR0 (GET_TFIAR,		"get_tfiar",	MISC,	nothing)
+-BU_HTM_SPR1 (SET_TFIAR,		"set_tfiar",	MISC,	nothing)
+-BU_HTM_SPR0 (GET_TEXASR,	"get_texasr",	MISC,	nothing)
+-BU_HTM_SPR1 (SET_TEXASR,	"set_texasr",	MISC,	nothing)
+-BU_HTM_SPR0 (GET_TEXASRU,	"get_texasru",	MISC,	nothing)
+-BU_HTM_SPR1 (SET_TEXASRU,	"set_texasru",	MISC,	nothing)
++BU_HTM_0  (GET_TFHAR,	"get_tfhar",	SPR,	nothing)
++BU_HTM_V1 (SET_TFHAR,	"set_tfhar",	SPR,	nothing)
++BU_HTM_0  (GET_TFIAR,	"get_tfiar",	SPR,	nothing)
++BU_HTM_V1 (SET_TFIAR,	"set_tfiar",	SPR,	nothing)
++BU_HTM_0  (GET_TEXASR,	"get_texasr",	SPR,	nothing)
++BU_HTM_V1 (SET_TEXASR,	"set_texasr",	SPR,	nothing)
++BU_HTM_0  (GET_TEXASRU,	"get_texasru",	SPR,	nothing)
++BU_HTM_V1 (SET_TEXASRU,	"set_texasru",	SPR,	nothing)
+ 
+ 
+ /* 3 argument paired floating point builtins.  */
+--- a/src/gcc/config/rs6000/rs6000.c
++++ b/src/gcc/config/rs6000/rs6000.c
+@@ -12418,9 +12418,9 @@
+ rs6000_htm_spr_icode (bool nonvoid)
+ {
+   if (nonvoid)
+-    return (TARGET_64BIT) ? CODE_FOR_htm_mfspr_di : CODE_FOR_htm_mfspr_si;
++    return (TARGET_POWERPC64) ? CODE_FOR_htm_mfspr_di : CODE_FOR_htm_mfspr_si;
+   else
+-    return (TARGET_64BIT) ? CODE_FOR_htm_mtspr_di : CODE_FOR_htm_mtspr_si;
++    return (TARGET_POWERPC64) ? CODE_FOR_htm_mtspr_di : CODE_FOR_htm_mtspr_si;
+ }
+ 
+ /* Expand the HTM builtin in EXP and store the result in TARGET.
+@@ -12434,8 +12434,18 @@
+   const struct builtin_description *d;
+   size_t i;
+ 
+-  *expandedp = false;
++  *expandedp = true;
+ 
++  if (!TARGET_POWERPC64
++      && (fcode == HTM_BUILTIN_TABORTDC
++	  || fcode == HTM_BUILTIN_TABORTDCI))
++    {
++      size_t uns_fcode = (size_t)fcode;
++      const char *name = rs6000_builtin_info[uns_fcode].name;
++      error ("builtin %s is only valid in 64-bit mode", name);
++      return const0_rtx;
++    }
++
+   /* Expand the HTM builtins.  */
+   d = bdesc_htm;
+   for (i = 0; i < ARRAY_SIZE (bdesc_htm); i++, d++)
+@@ -12447,26 +12457,29 @@
+ 	call_expr_arg_iterator iter;
+ 	unsigned attr = rs6000_builtin_info[fcode].attr;
+ 	enum insn_code icode = d->icode;
++	const struct insn_operand_data *insn_op;
++	bool uses_spr = (attr & RS6000_BTC_SPR);
++	rtx cr = NULL_RTX;
+ 
+-	if (attr & RS6000_BTC_SPR)
++	if (uses_spr)
+ 	  icode = rs6000_htm_spr_icode (nonvoid);
++        insn_op = &insn_data[icode].operand[0];
+ 
+ 	if (nonvoid)
+ 	  {
+-	    enum machine_mode tmode = insn_data[icode].operand[0].mode;
++	    machine_mode tmode = (uses_spr) ? insn_op->mode : SImode;
+ 	    if (!target
+ 		|| GET_MODE (target) != tmode
+-		|| !(*insn_data[icode].operand[0].predicate) (target, tmode))
++		|| (uses_spr && !(*insn_op->predicate) (target, tmode)))
+ 	      target = gen_reg_rtx (tmode);
+-	    op[nopnds++] = target;
++	    if (uses_spr)
++	      op[nopnds++] = target;
+ 	  }
+ 
+ 	FOR_EACH_CALL_EXPR_ARG (arg, iter, exp)
+ 	{
+-	  const struct insn_operand_data *insn_op;
+-
+ 	  if (arg == error_mark_node || nopnds >= MAX_HTM_OPERANDS)
+-	    return NULL_RTX;
++	    return const0_rtx;
+ 
+ 	  insn_op = &insn_data[icode].operand[nopnds];
+ 
+@@ -12513,11 +12526,18 @@
+ 
+ 	/* If this builtin accesses SPRs, then pass in the appropriate
+ 	   SPR number and SPR regno as the last two operands.  */
+-	if (attr & RS6000_BTC_SPR)
++	if (uses_spr)
+ 	  {
+-	    op[nopnds++] = gen_rtx_CONST_INT (Pmode, htm_spr_num (fcode));
+-	    op[nopnds++] = gen_rtx_REG (Pmode, htm_spr_regno (fcode));
++	    machine_mode mode = (TARGET_POWERPC64) ? DImode : SImode;
++	    op[nopnds++] = gen_rtx_CONST_INT (mode, htm_spr_num (fcode));
++	    op[nopnds++] = gen_rtx_REG (mode, htm_spr_regno (fcode));
+ 	  }
++	/* If this builtin accesses a CR, then pass in a scratch
++	   CR as the last operand.  */
++	else if (attr & RS6000_BTC_CR)
++	  { cr = gen_reg_rtx (CCmode);
++	    op[nopnds++] = cr;
++	  }
+ 
+ #ifdef ENABLE_CHECKING
+ 	int expected_nopnds = 0;
+@@ -12529,7 +12549,7 @@
+ 	  expected_nopnds = 3;
+ 	if (!(attr & RS6000_BTC_VOID))
+ 	  expected_nopnds += 1;
+-	if (attr & RS6000_BTC_SPR)
++	if (uses_spr)
+ 	  expected_nopnds += 2;
+ 
+ 	gcc_assert (nopnds == expected_nopnds && nopnds <= MAX_HTM_OPERANDS);
+@@ -12559,12 +12579,41 @@
+ 	  return NULL_RTX;
+ 	emit_insn (pat);
+ 
+-	*expandedp = true;
++	if (attr & RS6000_BTC_CR)
++	  {
++	    if (fcode == HTM_BUILTIN_TBEGIN)
++	      {
++		/* Emit code to set TARGET to true or false depending on
++		   whether the tbegin. instruction successfully or failed
++		   to start a transaction.  We do this by placing the 1's
++		   complement of CR's EQ bit into TARGET.  */
++		rtx scratch = gen_reg_rtx (SImode);
++		emit_insn (gen_rtx_SET (VOIDmode, scratch,
++					gen_rtx_EQ (SImode, cr,
++						     const0_rtx)));
++		emit_insn (gen_rtx_SET (VOIDmode, target,
++					gen_rtx_XOR (SImode, scratch,
++						     GEN_INT (1))));
++	      }
++	    else
++	      {
++		/* Emit code to copy the 4-bit condition register field
++		   CR into the least significant end of register TARGET.  */
++		rtx scratch1 = gen_reg_rtx (SImode);
++		rtx scratch2 = gen_reg_rtx (SImode);
++		rtx subreg = simplify_gen_subreg (CCmode, scratch1, SImode, 0);
++		emit_insn (gen_movcc (subreg, cr));
++		emit_insn (gen_lshrsi3 (scratch2, scratch1, GEN_INT (28)));
++		emit_insn (gen_andsi3 (target, scratch2, GEN_INT (0xf)));
++	      }
++	  }
++
+ 	if (nonvoid)
+ 	  return target;
+ 	return const0_rtx;
+       }
+ 
++  *expandedp = false;
+   return NULL_RTX;
+ }
+ 
+@@ -15041,9 +15090,32 @@
+       bool void_func = (attr & RS6000_BTC_VOID);
+       int attr_args = (attr & RS6000_BTC_TYPE_MASK);
+       int nopnds = 0;
+-      tree argtype = (attr & RS6000_BTC_SPR) ? long_unsigned_type_node
+-					     : unsigned_type_node;
++      tree gpr_type_node;
++      tree rettype;
++      tree argtype;
+ 
++      if (TARGET_32BIT && TARGET_POWERPC64)
++	gpr_type_node = long_long_unsigned_type_node;
++      else
++	gpr_type_node = long_unsigned_type_node;
++
++      if (attr & RS6000_BTC_SPR)
++	{
++	  rettype = gpr_type_node;
++	  argtype = gpr_type_node;
++	}
++      else if (d->code == HTM_BUILTIN_TABORTDC
++	       || d->code == HTM_BUILTIN_TABORTDCI)
++	{
++	  rettype = unsigned_type_node;
++	  argtype = gpr_type_node;
++	}
++      else
++	{
++	  rettype = unsigned_type_node;
++	  argtype = unsigned_type_node;
++	}
++
+       if ((mask & builtin_mask) != mask)
+ 	{
+ 	  if (TARGET_DEBUG_BUILTIN)
+@@ -15059,7 +15131,7 @@
+ 	  continue;
+ 	}
+ 
+-      op[nopnds++] = (void_func) ? void_type_node : argtype;
++      op[nopnds++] = (void_func) ? void_type_node : rettype;
+ 
+       if (attr_args == RS6000_BTC_UNARY)
+ 	op[nopnds++] = argtype;
+--- a/src/gcc/config/rs6000/rs6000.h
++++ b/src/gcc/config/rs6000/rs6000.h
+@@ -2488,9 +2488,8 @@
+ /* Miscellaneous information.  */
+ #define RS6000_BTC_SPR		0x01000000	/* function references SPRs.  */
+ #define RS6000_BTC_VOID		0x02000000	/* function has no return value.  */
+-#define RS6000_BTC_OVERLOADED	0x04000000	/* function is overloaded.  */
+-#define RS6000_BTC_32BIT	0x08000000	/* function references SPRs.  */
+-#define RS6000_BTC_64BIT	0x10000000	/* function references SPRs.  */
++#define RS6000_BTC_CR		0x04000000	/* function references a CR.  */
++#define RS6000_BTC_OVERLOADED	0x08000000	/* function is overloaded.  */
+ #define RS6000_BTC_MISC_MASK	0x1f000000	/* Mask of the misc info.  */
+ 
+ /* Convenience macros to document the instruction type.  */

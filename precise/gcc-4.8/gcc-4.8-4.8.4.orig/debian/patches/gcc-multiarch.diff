@@ -17,14 +17,12 @@ Index: b/src/libstdc++-v3/python/hook.in
 ===================================================================
 --- a/src/libstdc++-v3/python/hook.in
 +++ b/src/libstdc++-v3/python/hook.in
-@@ -47,14 +47,18 @@ if gdb.current_objfile () is not None:
+@@ -47,14 +47,16 @@
      libdir = libdir[len (prefix):]
  
      # Compute the ".."s needed to get from libdir to the prefix.
 -    dotdots = ('..' + os.sep) * len (libdir.split (os.sep))
 +    backdirs = len (libdir.split (os.sep))
-+    if not os.path.basename(os.path.dirname(__file__)).startswith('lib'):
-+        backdirs += 1 # multiarch subdir
 +    dotdots = ('..' + os.sep) * backdirs
  
      objfile = gdb.current_objfile ().filename
@@ -53,7 +51,7 @@ Index: b/src/gcc/config/sparc/t-linux64
 ===================================================================
 --- a/src/gcc/config/sparc/t-linux64
 +++ b/src/gcc/config/sparc/t-linux64
-@@ -27,3 +27,5 @@ MULTILIB_OPTIONS = m64/m32
+@@ -27,3 +27,5 @@
  MULTILIB_DIRNAMES = 64 32
  MULTILIB_OSDIRNAMES = ../lib64$(call if_multiarch,:sparc64-linux-gnu)
  MULTILIB_OSDIRNAMES += $(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:sparc-linux-gnu)
@@ -63,7 +61,7 @@ Index: b/src/gcc/config/s390/t-linux64
 ===================================================================
 --- a/src/gcc/config/s390/t-linux64
 +++ b/src/gcc/config/s390/t-linux64
-@@ -9,3 +9,5 @@ MULTILIB_OPTIONS = m64/m31
+@@ -9,3 +9,5 @@
  MULTILIB_DIRNAMES = 64 32
  MULTILIB_OSDIRNAMES = ../lib64$(call if_multiarch,:s390x-linux-gnu)
  MULTILIB_OSDIRNAMES += $(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:s390-linux-gnu)
@@ -73,7 +71,7 @@ Index: b/src/gcc/config/rs6000/t-linux
 ===================================================================
 --- a/src/gcc/config/rs6000/t-linux
 +++ b/src/gcc/config/rs6000/t-linux
-@@ -5,7 +5,7 @@ ifneq (,$(findstring powerpc64,$(target)
+@@ -5,7 +5,7 @@
  MULTILIB_OSDIRNAMES := .=../lib64$(call if_multiarch,:powerpc64-linux-gnu)
  else
  ifneq (,$(findstring spe,$(target)))
@@ -86,7 +84,7 @@ Index: b/src/gcc/config/rs6000/t-linux64
 ===================================================================
 --- a/src/gcc/config/rs6000/t-linux64
 +++ b/src/gcc/config/rs6000/t-linux64
-@@ -30,3 +30,5 @@ MULTILIB_DIRNAMES   := 64 32
+@@ -30,3 +30,5 @@
  MULTILIB_EXTRA_OPTS := 
  MULTILIB_OSDIRNAMES := m64=../lib64$(call if_multiarch,:powerpc64-linux-gnu)
  MULTILIB_OSDIRNAMES += m32=$(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:powerpc-linux-gnu)
@@ -96,7 +94,7 @@ Index: b/src/gcc/config/i386/t-linux64
 ===================================================================
 --- a/src/gcc/config/i386/t-linux64
 +++ b/src/gcc/config/i386/t-linux64
-@@ -36,3 +36,13 @@ MULTILIB_DIRNAMES   = $(patsubst m%, %,
+@@ -36,3 +36,13 @@
  MULTILIB_OSDIRNAMES = m64=../lib64$(call if_multiarch,:x86_64-linux-gnu)
  MULTILIB_OSDIRNAMES+= m32=$(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:i386-linux-gnu)
  MULTILIB_OSDIRNAMES+= mx32=../libx32$(call if_multiarch,:x86_64-linux-gnux32)
@@ -129,7 +127,7 @@ Index: b/src/gcc/config.gcc
 ===================================================================
 --- a/src/gcc/config.gcc
 +++ b/src/gcc/config.gcc
-@@ -1806,8 +1806,11 @@ mips*-mti-linux*)
+@@ -1806,8 +1806,11 @@
  mips64*-*-linux* | mipsisa64*-*-linux*)
  	tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} mips/gnu-user.h mips/gnu-user64.h mips/linux64.h mips/linux-common.h"
  	tmake_file="${tmake_file} mips/t-linux64"
@@ -142,7 +140,7 @@ Index: b/src/gcc/config.gcc
  		mips64el-st-linux-gnu)
  			tm_file="${tm_file} mips/st.h"
  			tmake_file="${tmake_file} mips/t-st"
-@@ -3761,7 +3764,7 @@ case ${target} in
+@@ -3761,7 +3764,7 @@
  	i[34567]86-*-darwin* | x86_64-*-darwin*)
  		;;
  	i[34567]86-*-linux* | x86_64-*-linux*)
@@ -155,7 +153,7 @@ Index: b/src/gcc/java/jvspec.c
 ===================================================================
 --- a/src/gcc/java/jvspec.c
 +++ b/src/gcc/java/jvspec.c
-@@ -59,7 +59,7 @@ static const char jvgenmain_spec[] =
+@@ -59,7 +59,7 @@
    "jvgenmain %{findirect-dispatch} %{D*} %b %m.i |\n\
     cc1 %m.i %1 \
  		   %{!Q:-quiet} -dumpbase %b.c %{d*} %{m*}\
@@ -168,7 +166,7 @@ Index: b/src/gcc/config/aarch64/t-aarch64-linux
 ===================================================================
 --- a/src/gcc/config/aarch64/t-aarch64-linux
 +++ b/src/gcc/config/aarch64/t-aarch64-linux
-@@ -22,4 +22,4 @@ LIB1ASMSRC   = aarch64/lib1funcs.asm
+@@ -22,4 +22,4 @@
  LIB1ASMFUNCS = _aarch64_sync_cache_range
  
  AARCH_BE = $(if $(findstring TARGET_BIG_ENDIAN_DEFAULT=1, $(tm_defines)),_be)

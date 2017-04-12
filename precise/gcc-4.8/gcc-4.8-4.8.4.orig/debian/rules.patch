@@ -33,6 +33,8 @@ ifneq ($(GFDL_INVARIANT_FREE),yes)
   debian_patches += \
 	rename-info-files \
 	$(if $(with_linaro_branch),gcc-linaro-doc) \
+	pr64579-doc \
+	pr67281-doc \
 
 #	svn-doc-updates \
 #	$(if $(with_linaro_branch),,svn-doc-updates) \
@@ -104,6 +106,10 @@ debian_patches += \
 	pr62032 \
 	pr59586 \
 	pr62255 \
+	pr56158 \
+	pr64579 \
+	pr67281 \
+	pr64557 \
 
 # FIXME: still necessary for cross building the native compiler?
 #	gcc-auto-build \

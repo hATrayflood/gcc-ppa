@@ -1,0 +1,143 @@
+# DP: Fix PR rtl-optimization/68955, PR rtl-optimization/64557, taken from 4.9.
+
+gcc/
+
+2016-02-11  Jakub Jelinek  <jakub@redhat.com>
+
+	Backported from mainline
+	2016-01-19  Jakub Jelinek  <jakub@redhat.com>
+
+	PR rtl-optimization/68955
+	PR rtl-optimization/64557
+	* dse.c (record_store, check_mem_read_rtx): Don't call get_addr
+	here.  Fix up formatting.
+	* alias.c (get_addr): Handle VALUE +/- CONST_SCALAR_INT_P.
+
+ 
+gcc/testsuite/
+
+2016-02-11  Jakub Jelinek  <jakub@redhat.com>
+
+	Backported from mainline
+	2016-01-19  Jakub Jelinek  <jakub@redhat.com>
+
+	PR rtl-optimization/68955
+	PR rtl-optimization/64557
+	* gcc.dg/torture/pr68955.c: New test.
+
+--- a/src/gcc/testsuite/gcc.dg/torture/pr68955.c	(nonexistent)
++++ a/src/gcc/testsuite/gcc.dg/torture/pr68955.c	(revision 233331)
+@@ -0,0 +1,41 @@
++/* PR rtl-optimization/68955 */
++/* { dg-do run } */
++/* { dg-output "ONE1ONE" } */
++
++int a, b, c, d, g, m;
++int i[7][7][5] = { { { 5 } }, { { 5 } },
++		   { { 5 }, { 5 }, { 5 }, { 5 }, { 5 }, { -1 } } };
++static int j = 11;
++short e, f, h, k, l;
++
++static void
++foo ()
++{
++  for (; e < 5; e++)
++    for (h = 3; h; h--)
++      {
++	for (g = 1; g < 6; g++)
++	  {
++	    m = c == 0 ? b : b / c;
++	    i[e][1][e] = i[1][1][1] | (m & l) && f;
++	  }
++	for (k = 0; k < 6; k++)
++	  {
++	    for (d = 0; d < 6; d++)
++	      i[1][e][h] = i[h][k][e] >= l;
++	    i[e + 2][h + 3][e] = 6 & l;
++	    i[2][1][2] = a;
++	    for (; j < 5;)
++	      for (;;)
++		;
++	  }
++      }
++}
++
++int
++main ()
++{
++  foo ();
++  __builtin_printf ("ONE%dONE\n", i[1][0][2]);
++  return 0;
++}
+--- a/src/gcc/dse.c
++++ a/src/gcc/dse.c
+@@ -1545,14 +1545,9 @@
+ 	mem_addr = base->val_rtx;
+       else
+ 	{
+-	  group_info_t group
+-	    = rtx_group_vec[group_id];
++	  group_info_t group = rtx_group_vec[group_id];
+ 	  mem_addr = group->canon_base_addr;
+ 	}
+-      /* get_addr can only handle VALUE but cannot handle expr like:
+-	 VALUE + OFFSET, so call get_addr to get original addr for
+-	 mem_addr before plus_constant.  */
+-      mem_addr = get_addr (mem_addr);
+       if (offset)
+ 	mem_addr = plus_constant (get_address_mode (mem), mem_addr, offset);
+     }
+@@ -2166,14 +2161,9 @@
+ 	mem_addr = base->val_rtx;
+       else
+ 	{
+-	  group_info_t group
+-	    = rtx_group_vec[group_id];
++	  group_info_t group = rtx_group_vec[group_id];
+ 	  mem_addr = group->canon_base_addr;
+ 	}
+-      /* get_addr can only handle VALUE but cannot handle expr like:
+-	 VALUE + OFFSET, so call get_addr to get original addr for
+-	 mem_addr before plus_constant.  */
+-      mem_addr = get_addr (mem_addr);
+       if (offset)
+ 	mem_addr = plus_constant (get_address_mode (mem), mem_addr, offset);
+     }
+--- a/src/gcc/alias.c
++++ a/src/gcc/alias.c
+@@ -1882,8 +1882,8 @@
+ }
+ 
+ /* Convert the address X into something we can use.  This is done by returning
+-   it unchanged unless it is a value; in the latter case we call cselib to get
+-   a more useful rtx.  */
++   it unchanged unless it is a VALUE or VALUE +/- constant; for VALUE
++   we call cselib to get a more useful rtx.  */
+ 
+ rtx
+ get_addr (rtx x)
+@@ -1892,7 +1892,23 @@
+   struct elt_loc_list *l;
+ 
+   if (GET_CODE (x) != VALUE)
+-    return x;
++    {
++      if ((GET_CODE (x) == PLUS || GET_CODE (x) == MINUS)
++	  && GET_CODE (XEXP (x, 0)) == VALUE
++	  && CONST_SCALAR_INT_P (XEXP (x, 1)))
++	{
++	  rtx op0 = get_addr (XEXP (x, 0));
++	  if (op0 != XEXP (x, 0))
++	    {
++	      if (GET_CODE (x) == PLUS
++		  && GET_CODE (XEXP (x, 1)) == CONST_INT)
++		return plus_constant (GET_MODE (x), op0, INTVAL (XEXP (x, 1)));
++	      return simplify_gen_binary (GET_CODE (x), GET_MODE (x),
++					  op0, XEXP (x, 1));
++	    }
++	}
++      return x;
++    }
+   v = CSELIB_VAL_PTR (x);
+   if (v)
+     {
