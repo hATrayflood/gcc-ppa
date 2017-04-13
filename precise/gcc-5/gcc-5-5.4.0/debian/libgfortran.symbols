@@ -1,0 +1,11 @@
+libgfortran.so.3 #PACKAGE# #MINVER#
+ (symver)F2C_1.0 4.3
+ (symver)GFORTRAN_C99_1.0 4.3
+ (symver)GFORTRAN_C99_1.1 4.5
+ (symver)GFORTRAN_1.0 4.3
+ (symver)GFORTRAN_1.1 4.4
+ (symver)GFORTRAN_1.2 4.5
+ (symver)GFORTRAN_1.3 4.6
+ (symver)GFORTRAN_1.4 4.6
+ (symver)GFORTRAN_1.5 4.8
+ (symver)GFORTRAN_1.6 5

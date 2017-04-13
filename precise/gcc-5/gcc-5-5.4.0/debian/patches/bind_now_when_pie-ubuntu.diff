@@ -1,0 +1,20 @@
+Author: Steve Beattie <steve.beattie@canonical.com>
+Description: enable bind now by default when linking with pie by default
+
+---
+ src/gcc/gcc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: b/src/gcc/gcc.c
+===================================================================
+--- a/src/gcc/gcc.c
++++ b/src/gcc/gcc.c
+@@ -795,7 +795,7 @@ proper position among the other output f
+ 
+ #ifndef LINK_PIE_SPEC
+ #ifdef HAVE_LD_PIE
+-#define LD_PIE_SPEC "-pie"
++#define LD_PIE_SPEC "-pie -z now"
+ #else
+ #define LD_PIE_SPEC ""
+ #endif

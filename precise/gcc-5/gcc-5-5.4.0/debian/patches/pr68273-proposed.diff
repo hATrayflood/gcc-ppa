@@ -1,0 +1,50 @@
+Richard Biener 2016-02-15 10:05:13 UTC
+
+eipa_sra introduces the remaining SSA name with non-default alignment via
+
+#0  make_ssa_name_fn (fn=0x7ffff68bb5e8, 
+    var=<parm_decl 0x7ffff69bc700 ISRA.81>, stmt=<gimple_nop 0x7ffff68bcf50>)
+    at /space/rguenther/src/svn/trunk3/gcc/tree-ssanames.c:311
+#1  0x0000000000e203d1 in get_or_create_ssa_default_def (fn=0x7ffff68bb5e8, 
+    var=<parm_decl 0x7ffff69bc700 ISRA.81>)
+    at /space/rguenther/src/svn/trunk3/gcc/tree-dfa.c:360
+#2  0x0000000000e6638e in get_reaching_def (
+    var=<parm_decl 0x7ffff69bc700 ISRA.81>)
+    at /space/rguenther/src/svn/trunk3/gcc/tree-into-ssa.c:1168
+#3  0x0000000000e67855 in maybe_replace_use (use_p=0x7ffff6a17810)
+    at /space/rguenther/src/svn/trunk3/gcc/tree-into-ssa.c:1753
+#4  0x0000000000e67eb9 in rewrite_update_stmt (
+    stmt=<gimple_assign 0x7ffff6966f50>, gsi=...)
+    at /space/rguenther/src/svn/trunk3/gcc/tree-into-ssa.c:1950
+#5  0x0000000000e685f4 in rewrite_update_dom_walker::before_dom_children (
+    this=0x7fffffffd580, bb=<basic_block 0x7ffff6491f08 (2)>)
+    at /space/rguenther/src/svn/trunk3/gcc/tree-into-ssa.c:2130
+#6  0x00000000013e0993 in dom_walker::walk (this=0x7fffffffd580, 
+    bb=<basic_block 0x7ffff6491f08 (2)>)
+    at /space/rguenther/src/svn/trunk3/gcc/domwalk.c:265
+
+thus SSA rewrite.  ISRA.81 is a PARM_DECL built in ipa_modify_formal_parameters
+from an access present in the IL created by early SRA.
+
+Index: gcc-5-5.3.1/src/gcc/tree-sra.c
+===================================================================
+--- gcc-5-5.3.1.orig/src/gcc/tree-sra.c
++++ gcc-5-5.3.1/src/gcc/tree-sra.c
+@@ -936,7 +936,7 @@ create_access (tree expr, gimple stmt, b
+
+   access = create_access_1 (base, offset, size);
+   access->expr = expr;
+-  access->type = TREE_TYPE (expr);
++  access->type = TYPE_MAIN_VARIANT (TREE_TYPE (expr));
+   access->write = write;
+   access->grp_unscalarizable_region = unscalarizable_region;
+   access->stmt = stmt;
+@@ -1026,7 +1026,7 @@ completely_scalarize_var (tree var)
+
+   access = create_access_1 (var, 0, size);
+   access->expr = var;
+-  access->type = TREE_TYPE (var);
++  access->type = TYPE_MAIN_VARIANT (TREE_TYPE (var));
+   access->grp_total_scalarization = 1;
+
+   completely_scalarize_record (var, var, 0, var);

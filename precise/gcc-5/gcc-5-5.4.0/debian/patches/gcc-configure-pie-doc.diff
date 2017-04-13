@@ -1,0 +1,31 @@
+# DP: Add --enable-default-pie option to GCC configure (documentation)
+
+Index: b/src/gcc/doc/invoke.texi
+===================================================================
+--- a/src/gcc/doc/invoke.texi
++++ b/src/gcc/doc/invoke.texi
+@@ -11207,6 +11207,10 @@ For predictable results, you must also s
+ used for compilation (@option{-fpie}, @option{-fPIE},
+ or model suboptions) when you specify this linker option.
+ 
++@item -no-pie
++@opindex no-pie
++Don't produce a position independent executable.
++
+ @item -rdynamic
+ @opindex rdynamic
+ Pass the flag @option{-export-dynamic} to the ELF linker, on targets
+Index: b/src/gcc/doc/install.texi
+===================================================================
+--- a/src/gcc/doc/install.texi
++++ b/src/gcc/doc/install.texi
+@@ -1619,6 +1619,9 @@ defaulted to o32.
+ Currently, this option only affects sparc-linux, powerpc-linux, x86-linux,
+ mips-linux and s390-linux.
+ 
++@item --enable-default-pie
++Turn on @option{-fPIE} and @option{-pie} by default.
++
+ @item --enable-secureplt
+ This option enables @option{-msecure-plt} by default for powerpc-linux.
+ @ifnothtml

@@ -1,0 +1,6 @@
+*.deb
+debian
+gcc-5_5.4.0-*
+gcc-5_5.4.0.orig.*
+gcc-5-5.4.0/*
+!gcc-5-5.4.0/debian

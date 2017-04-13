@@ -1,0 +1,5 @@
+libgccjit.so.0 #PACKAGE# #MINVER#
+ (symver)LIBGCCJIT_ABI_0 5.1
+ (symver)LIBGCCJIT_ABI_1 5.1
+ (symver)LIBGCCJIT_ABI_2 5.1
+ (symver)LIBGCCJIT_ABI_3 5.1

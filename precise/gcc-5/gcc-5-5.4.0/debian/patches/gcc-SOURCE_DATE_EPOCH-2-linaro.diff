@@ -1,0 +1,378 @@
+gcc/c-family/ChangeLog:
+
+2016-05-13  Eduard Sanou  <dhole@openmailbox.org>
+
+	* c-common.c (get_source_date_epoch): Rename to
+	cb_get_source_date_epoch.
+	* c-common.c (cb_get_source_date_epoch): Use a single generic erorr
+	message when the parsing fails.  Use error_at instead of fatal_error.
+	* c-common.h (get_source_date_epoch): Rename to
+	cb_get_source_date_epoch.
+	* c-common.h (cb_get_source_date_epoch): Prototype.
+	* c-common.h (MAX_SOURCE_DATE_EPOCH): Define.
+	* c-common.h (c_omp_region_type): Remove trailing comma.
+	* c-lex.c (init_c_lex): Set cb->get_source_date_epoch callback.
+	* c-lex.c (c_lex_with_flags): Remove initialization of
+	pfile->source_date_epoch.
+
+gcc/ChangeLog:
+
+2016-05-13  Eduard Sanou  <dhole@openmailbox.org>
+
+	* doc/cppenv.texi: Note that the `%s` in `date` is a non-standard
+	extension.
+	* gcc.c (driver_handle_option): Call set_source_date_epoch_envvar.
+	* gcc.c (set_source_date_epoch_envvar): New function, sets
+	the SOURCE_DATE_EPOCH environment variable to the current time.
+
+gcc/testsuite/ChangeLog:
+
+2016-05-13  Eduard Sanou  <dhole@openmailbox.org>
+
+	* gcc.dg/cpp/source_date_epoch-1.c: New file, test the proper
+	behaviour of the macros __DATE__ and __TIME__ when SOURCE_DATE_EPOCH
+	env var is set.
+	* gcc.dg/cpp/source_date_epoch-2.c: New file, test the error output
+	when parsing the SOURCE_DATE_EPOCH env var, and make sure it is only
+	shown once.
+	* lib/gcc-dg.exp (dg-set-compiler-env-var): New function, set env vars
+	during compilation.
+	* lib/gcc-dg.exp (restore-compiler-env-var): New function, restore env
+	vars set by dg-set-compiler-env-var.
+
+libcpp/ChangeLog:
+
+2016-05-13  Eduard Sanou  <dhole@openmailbox.org>
+
+	* include/cpplib.h (cpp_callbacks): Add get_source_date_epoch
+	callback.
+	* include/cpplib.h (cpp_init_source_date_epoch): Remove prototype.
+	* init.c (cpp_init_source_date_epoch): Remove function.
+	* init.c (cpp_create_reader): Initialize pfile->source_date_epoch.
+	* internal.h (cpp_reader): Extend comment about source_date_epoch.
+	* macro.c (_cpp_builtin_macro_text): Use get_source_date_epoch
+	callback only once, read pfile->source_date_epoch on future passes.
+	Check that get_source_date_epoch callback is not NULL.
+
+Index: b/src/gcc/c-family/c-common.c
+===================================================================
+--- a/src/gcc/c-family/c-common.c
++++ b/src/gcc/c-family/c-common.c
+@@ -12343,8 +12343,9 @@ pointer_to_zero_sized_aggr_p (tree t)
+ /* Read SOURCE_DATE_EPOCH from environment to have a deterministic
+    timestamp to replace embedded current dates to get reproducible
+    results.  Returns -1 if SOURCE_DATE_EPOCH is not defined.  */
++
+ time_t
+-get_source_date_epoch ()
++cb_get_source_date_epoch (cpp_reader *pfile ATTRIBUTE_UNUSED)
+ {
+   char *source_date_epoch;
+   long long epoch;
+@@ -12356,19 +12357,14 @@ get_source_date_epoch ()
+ 
+   errno = 0;
+   epoch = strtoll (source_date_epoch, &endptr, 10);
+-  if ((errno == ERANGE && (epoch == LLONG_MAX || epoch == LLONG_MIN))
+-      || (errno != 0 && epoch == 0))
+-    fatal_error (UNKNOWN_LOCATION, "environment variable $SOURCE_DATE_EPOCH: "
+-		 "strtoll: %s\n", xstrerror(errno));
+-  if (endptr == source_date_epoch)
+-    fatal_error (UNKNOWN_LOCATION, "environment variable $SOURCE_DATE_EPOCH: "
+-		 "no digits were found: %s\n", endptr);
+-  if (*endptr != '\0')
+-    fatal_error (UNKNOWN_LOCATION, "environment variable $SOURCE_DATE_EPOCH: "
+-		 "trailing garbage: %s\n", endptr);
+-  if (epoch < 0)
+-    fatal_error (UNKNOWN_LOCATION, "environment variable $SOURCE_DATE_EPOCH: "
+-		 "value must be nonnegative: %lld \n", epoch);
++  if (errno != 0 || endptr == source_date_epoch || *endptr != '\0'
++      || epoch < 0 || epoch > MAX_SOURCE_DATE_EPOCH)
++    {
++      error_at (input_location, "environment variable SOURCE_DATE_EPOCH must "
++	        "expand to a non-negative integer less than or equal to %wd",
++		MAX_SOURCE_DATE_EPOCH);
++      return (time_t) -1;
++    }
+ 
+   return (time_t) epoch;
+ }
+Index: b/src/gcc/c-family/c-common.h
+===================================================================
+--- a/src/gcc/c-family/c-common.h
++++ b/src/gcc/c-family/c-common.h
+@@ -1063,6 +1063,16 @@ extern vec<tree, va_gc> *make_tree_vecto
+    c_register_builtin_type.  */
+ extern GTY(()) tree registered_builtin_types;
+ 
++/* Read SOURCE_DATE_EPOCH from environment to have a deterministic
++   timestamp to replace embedded current dates to get reproducible
++   results.  Returns -1 if SOURCE_DATE_EPOCH is not defined.  */
++extern time_t cb_get_source_date_epoch (cpp_reader *pfile);
++
++/* The value (as a unix timestamp) corresponds to date
++   "Dec 31 9999 23:59:59 UTC", which is the latest date that __DATE__ and
++   __TIME__ can store.  */
++#define MAX_SOURCE_DATE_EPOCH HOST_WIDE_INT_C (253402300799)
++
+ /* In c-gimplify.c  */
+ extern void c_genericize (tree);
+ extern int c_gimplify_expr (tree *, gimple_seq *, gimple_seq *);
+@@ -1440,9 +1450,4 @@ extern tree cilk_for_number_of_iteration
+ extern bool check_no_cilk (tree, const char *, const char *,
+ 		           location_t loc = UNKNOWN_LOCATION);
+ 
+-/* Read SOURCE_DATE_EPOCH from environment to have a deterministic
+-   timestamp to replace embedded current dates to get reproducible
+-   results.  Returns -1 if SOURCE_DATE_EPOCH is not defined.  */
+-extern time_t get_source_date_epoch (void);
+-
+ #endif /* ! GCC_C_COMMON_H */
+Index: b/src/gcc/c-family/c-lex.c
+===================================================================
+--- a/src/gcc/c-family/c-lex.c
++++ b/src/gcc/c-family/c-lex.c
+@@ -97,6 +97,7 @@ init_c_lex (void)
+   cb->valid_pch = c_common_valid_pch;
+   cb->read_pch = c_common_read_pch;
+   cb->has_attribute = c_common_has_attribute;
++  cb->get_source_date_epoch = cb_get_source_date_epoch;
+ 
+   /* Set the debug callbacks if we can use them.  */
+   if ((debug_info_level == DINFO_LEVEL_VERBOSE
+@@ -402,9 +403,6 @@ c_lex_with_flags (tree *value, location_
+   enum cpp_ttype type;
+   unsigned char add_flags = 0;
+   enum overflow_type overflow = OT_NONE;
+-  time_t source_date_epoch = get_source_date_epoch ();
+-
+-  cpp_init_source_date_epoch (parse_in, source_date_epoch);
+ 
+   timevar_push (TV_CPP);
+  retry:
+Index: b/src/gcc/gcc.c
+===================================================================
+--- a/src/gcc/gcc.c
++++ b/src/gcc/gcc.c
+@@ -3374,6 +3374,29 @@ save_switch (const char *opt, size_t n_a
+   n_switches++;
+ }
+ 
++/* Set the SOURCE_DATE_EPOCH environment variable to the current time if it is
++   not set already.  */
++
++static void
++set_source_date_epoch_envvar ()
++{
++  /* Array size is 21 = ceil(log_10(2^64)) + 1 to hold string representations
++     of 64 bit integers.  */
++  char source_date_epoch[21];
++  time_t tt;
++
++  errno = 0;
++  tt = time (NULL);
++  if (tt < (time_t) 0 || errno != 0)
++    tt = (time_t) 0;
++
++  snprintf (source_date_epoch, 21, "%llu", (unsigned long long) tt);
++  /* Using setenv instead of xputenv because we want the variable to remain
++     after finalizing so that it's still set in the second run when using
++     -fcompare-debug.  */
++  setenv ("SOURCE_DATE_EPOCH", source_date_epoch, 0);
++}
++
+ /* Handle an option DECODED that is unknown to the option-processing
+    machinery.  */
+ 
+@@ -3674,6 +3697,7 @@ driver_handle_option (struct gcc_options
+       else
+ 	compare_debug_opt = arg;
+       save_switch (compare_debug_replacement_opt, 0, NULL, validated, true);
++      set_source_date_epoch_envvar ();
+       return true;
+ 
+     case OPT_fdiagnostics_color_:
+Index: b/src/gcc/testsuite/gcc.dg/cpp/source_date_epoch-1.c
+===================================================================
+--- /dev/null
++++ b/src/gcc/testsuite/gcc.dg/cpp/source_date_epoch-1.c
+@@ -0,0 +1,11 @@
++/* { dg-do run } */
++/* { dg-set-compiler-env-var SOURCE_DATE_EPOCH "630333296" } */
++
++int
++main()
++{
++  if (__builtin_strcmp (__DATE__, "Dec 22 1989") != 0
++      || __builtin_strcmp (__TIME__, "12:34:56") != 0)
++    __builtin_abort ();
++  return 0;
++}
+Index: b/src/gcc/testsuite/gcc.dg/cpp/source_date_epoch-2.c
+===================================================================
+--- /dev/null
++++ b/src/gcc/testsuite/gcc.dg/cpp/source_date_epoch-2.c
+@@ -0,0 +1,12 @@
++/* { dg-do compile } */
++/* { dg-set-compiler-env-var SOURCE_DATE_EPOCH "AAA" } */
++
++/* Make sure that SOURCE_DATE_EPOCH is only parsed once */
++
++int
++main(void)
++{
++  __builtin_printf ("%s %s\n", __DATE__, __TIME__); /* { dg-error "SOURCE_DATE_EPOCH must expand" } */
++  __builtin_printf ("%s %s\n", __DATE__, __TIME__);
++  return 0;
++}
+Index: b/src/gcc/testsuite/lib/gcc-dg.exp
+===================================================================
+--- a/src/gcc/testsuite/lib/gcc-dg.exp
++++ b/src/gcc/testsuite/lib/gcc-dg.exp
+@@ -427,6 +427,38 @@ proc restore-target-env-var { } {
+     }
+ }
+ 
++proc dg-set-compiler-env-var { args } {
++    global set_compiler_env_var
++    global saved_compiler_env_var
++    if { [llength $args] != 3 } {
++	error "dg-set-compiler-env-var: need two arguments"
++	return
++    }
++    set var [lindex $args 1]
++    set value [lindex $args 2]
++    if [info exists ::env($var)] {
++      lappend saved_compiler_env_var [list $var 1 $::env($var)]
++    } else {
++      lappend saved_compiler_env_var [list $var 0]
++    }
++    setenv $var $value
++    lappend set_compiler_env_var [list $var $value]
++}
++
++proc restore-compiler-env-var { } {
++    global saved_compiler_env_var
++    for { set env_vari [llength $saved_compiler_env_var] } {
++          [incr env_vari -1] >= 0 } {} {
++	set env_var [lindex $saved_compiler_env_var $env_vari]
++	set var [lindex $env_var 0]
++	if [lindex $env_var 1] {
++	    setenv $var [lindex $env_var 2]
++	} else {
++	    unsetenv $var
++	}
++    }
++}
++
+ # Utility routines.
+ 
+ #
+@@ -836,6 +868,8 @@ if { [info procs saved-dg-test] == [list
+ 	global shouldfail
+ 	global testname_with_flags
+ 	global set_target_env_var
++	global set_compiler_env_var
++	global saved_compiler_env_var
+ 	global keep_saved_temps_suffixes
+ 
+ 	if { [ catch { eval saved-dg-test $args } errmsg ] } {
+@@ -865,6 +899,11 @@ if { [info procs saved-dg-test] == [list
+ 	if [info exists keep_saved_temps_suffixes] {
+ 	    unset keep_saved_temps_suffixes
+ 	}
++	if [info exists set_compiler_env_var] {
++	    restore-compiler-env-var
++	    unset set_compiler_env_var
++	    unset saved_compiler_env_var
++	}
+ 	unset_timeout_vars
+ 	if [info exists compiler_conditional_xfail_data] {
+ 	    unset compiler_conditional_xfail_data
+Index: b/src/libcpp/include/cpplib.h
+===================================================================
+--- a/src/libcpp/include/cpplib.h
++++ b/src/libcpp/include/cpplib.h
+@@ -585,6 +585,9 @@ struct cpp_callbacks
+ 
+   /* Callback that can change a user builtin into normal macro.  */
+   bool (*user_builtin_macro) (cpp_reader *, cpp_hashnode *);
++
++  /* Callback to parse SOURCE_DATE_EPOCH from environment.  */
++  time_t (*get_source_date_epoch) (cpp_reader *);
+ };
+ 
+ #ifdef VMS
+@@ -775,9 +778,6 @@ extern void cpp_init_special_builtins (c
+ /* Set up built-ins like __FILE__.  */
+ extern void cpp_init_builtins (cpp_reader *, int);
+ 
+-/* Initialize the source_date_epoch value.  */
+-extern void cpp_init_source_date_epoch (cpp_reader *, time_t);
+-
+ /* This is called after options have been parsed, and partially
+    processed.  */
+ extern void cpp_post_options (cpp_reader *);
+Index: b/src/libcpp/init.c
+===================================================================
+--- a/src/libcpp/init.c
++++ b/src/libcpp/init.c
+@@ -254,6 +254,9 @@ cpp_create_reader (enum c_lang lang, cpp
+   /* Do not force token locations by default.  */
+   pfile->forced_token_location_p = NULL;
+ 
++  /* Initialize source_date_epoch to -2 (not yet set).  */
++  pfile->source_date_epoch = (time_t) -2;
++
+   /* The expression parser stack.  */
+   _cpp_expand_op_stack (pfile);
+ 
+@@ -530,13 +533,6 @@ cpp_init_builtins (cpp_reader *pfile, in
+     _cpp_define_builtin (pfile, "__OBJC__ 1");
+ }
+ 
+-/* Initialize the source_date_epoch value.  */
+-void
+-cpp_init_source_date_epoch (cpp_reader *pfile, time_t source_date_epoch)
+-{
+-  pfile->source_date_epoch = source_date_epoch; 
+-}
+-
+ /* Sanity-checks are dependent on command-line options, so it is
+    called as a subroutine of cpp_read_main_file ().  */
+ #if ENABLE_CHECKING
+Index: b/src/libcpp/internal.h
+===================================================================
+--- a/src/libcpp/internal.h
++++ b/src/libcpp/internal.h
+@@ -503,7 +503,8 @@ struct cpp_reader
+   const unsigned char *time;
+ 
+   /* Externally set timestamp to replace current date and time useful for
+-     reproducibility.  */
++     reproducibility.  It should be initialized to -2 (not yet set) and
++     set to -1 to disable it or to a non-negative value to enable it.  */
+   time_t source_date_epoch;
+ 
+   /* EOF token, and a token forcing paste avoidance.  */
+Index: b/src/libcpp/macro.c
+===================================================================
+--- a/src/libcpp/macro.c
++++ b/src/libcpp/macro.c
+@@ -351,9 +351,13 @@ _cpp_builtin_macro_text (cpp_reader *pfi
+ 	  struct tm *tb = NULL;
+ 
+ 	  /* Set a reproducible timestamp for __DATE__ and __TIME__ macro
+-	     usage if SOURCE_DATE_EPOCH is defined.  */
+-	  if (pfile->source_date_epoch != (time_t) -1)
+-	     tb = gmtime (&pfile->source_date_epoch);
++	     if SOURCE_DATE_EPOCH is defined.  */
++	  if (pfile->source_date_epoch == (time_t) -2
++	      && pfile->cb.get_source_date_epoch != NULL)
++	    pfile->source_date_epoch = pfile->cb.get_source_date_epoch (pfile);
++
++	  if (pfile->source_date_epoch >= (time_t) 0)
++	    tb = gmtime (&pfile->source_date_epoch);
+ 	  else
+ 	    {
+ 	      /* (time_t) -1 is a legitimate value for "number of seconds

@@ -1,0 +1,880 @@
+# DP: Add --enable-default-pie option to GCC configure
+
+gcc/
+2015-05-27  Magnus Granberg  <zorry@gentoo.org>
+	    H.J. Lu  <hongjiu.lu@intel.com>
+
+	* Makefile.in (COMPILER): Add @NO_PIE_CFLAGS@.
+	(BUILD_CFLAGS): Likewise.
+	(BUILD_CXXFLAGS): Likewise.
+	(LINKER): Add @NO_PIE_FLAG@.
+	(BUILD_LDFLAGS): Likewise.
+	(libgcc.mvars): Set NO_PIE_CFLAGS to -fno-PIE for
+	--enable-default-pie.
+	* common.opt (fPIE): Initialize to -1.
+	(fpie): Likewise.
+	(no-pie): New option.
+	(pie): Replace "Negative(shared)" with "Negative(no-pie)".
+	* configure.ac: Add --enable-default-pie.
+	(NO_PIE_CFLAGS): New.  Check if -fno-PIE works.  AC_SUBST.
+	(NO_PIE_FLAG): New.  Check if -no-pie works.  AC_SUBST.
+	* defaults.h (DEFAULT_FLAG_PIE): New.  Default PIE to -fPIE.
+	* gcc.c (NO_PIE_SPEC): New.
+	(PIE_SPEC): Likewise.
+	(NO_FPIE1_SPEC): Likewise.
+	(FPIE1_SPEC): Likewise.
+	(NO_FPIE2_SPEC): Likewise.
+	(FPIE2_SPEC): Likewise.
+	(NO_FPIE2_SPEC): Likewise.
+	(FPIE_SPEC): Likewise.
+	(NO_FPIE_SPEC): Likewise.
+	(NO_FPIC1_SPEC): Likewise.
+	(FPIC1_SPEC): Likewise.
+	(NO_FPIC2_SPEC): Likewise.
+	(FPIC2_SPEC): Likewise.
+	(NO_FPIC2_SPEC): Likewise.
+	(FPIC_SPEC): Likewise.
+	(NO_FPIC_SPEC): Likewise.
+	(NO_FPIE1_AND_FPIC1_SPEC): Likewise.
+	(FPIE1_OR_FPIC1_SPEC): Likewise.
+	(NO_FPIE2_AND_FPIC2_SPEC): Likewise.
+	(FPIE2_OR_FPIC2_SPEC): Likewise.
+	(NO_FPIE_AND_FPIC_SPEC): Likewise.
+	(FPIE_OR_FPIC_SPEC): Likewise.
+	(LD_PIE_SPEC): Likewise.
+	(LINK_PIE_SPEC): Handle -no-pie.  Use PIE_SPEC and LD_PIE_SPEC.
+	* opts.c (finish_options): Update opts->x_flag_pie if it is -1.
+	* config/darwin.h (PIE_SPEC): Renamed to ...
+	(DARWIN_PIE_SPEC): This.
+	(LINK_SPEC): Replace PIE_SPEC with DARWIN_PIE_SPEC.
+	* config/darwin9.h (PIE_SPEC): Renamed to ...
+	(DARWIN_PIE_SPEC): This.
+	* config/gnu-user.h (GNU_USER_TARGET_STARTFILE_SPEC): Use
+	PIE_SPEC and NO_PIE_SPEC if HAVE_LD_PIE is defined.
+	* config/openbsd.h (ASM_SPEC): Use FPIE1_OR_FPIC1_SPEC and
+	FPIE2_OR_FPIC2_SPEC.
+	* config/m68k/netbsd-elf.h (ASM_SPEC): Likewise.
+	* config/m68k/openbsd.h (ASM_SPEC): Likewise.
+	* gcc/config/sol2.h (ASM_PIC_SPEC): Likewise.
+	* config/arm/freebsd.h (SUBTARGET_EXTRA_ASM_SPEC): Likewise.
+	* config/arm/netbsd-elf.h (SUBTARGET_EXTRA_ASM_SPEC): Likewise.
+	* config/arm/semi.h (SUBTARGET_EXTRA_ASM_SPEC): Likewise.
+	* config/cris/linux.h (CRIS_ASM_SUBTARGET_SPEC): Likewise.
+	* config/m32r/m32r.h (ASM_SPEC): Likewise.
+	* config/m68k/uclinux.h (DRIVER_SELF_SPECS): Likewise.
+	* config/rs6000/linux64.h (ASM_SPEC32): Likewise.
+	* config/rs6000/sysv4.h (ASM_SPEC): Likewise.
+	* config/sparc/freebsd.h (ASM_SPEC): Likewise.
+	* config/sparc/linux.h (ASM_SPEC): Likewise.
+	* config/sparc/linux64.h (ASM_SPEC): Likewise.
+	* config/sparc/netbsd-elf.h (ASM_SPEC): Likewise.
+	* config/sparc/openbsd64.h (ASM_SPEC): Likewise.
+	* config/sparc/sp-elf.h (ASM_SPEC): Likewise.
+	* config/sparc/sp64-elf.h (ASM_SPEC): Likewise.
+	* config/sparc/sparc.h (ASM_SPEC): Likewise.
+	* config/sparc/sysv4.h (ASM_SPEC): Likewise.
+	* config/sparc/vxworks.h (ASM_SPEC): Likewise.
+	* config/c6x/elf-common.h (ASM_SPEC): Use NO_FPIC2_SPEC,
+	FPIC2_SPEC, FPIC1_SPEC and FPIC2_SPEC.
+	* config/c6x/uclinux-elf.h (LINK_SPEC): Use FPIE_SPEC.
+	* config/frv/frv.h (DRIVER_SELF_SPECS): Use FPIC_SPEC,
+	NO_FPIC_SPEC and NO_FPIE1_AND_FPIC1_SPEC.
+	(ASM_SPEC): Use FPIE1_OR_FPIC1_SPEC and FPIE2_OR_FPIC2_SPEC.
+	* config/m68k/m68k.h (ASM_PCREL_SPEC): Use FPIC_SPEC and
+	NO_FPIC_SPEC.
+	* config/mips/gnu-user.h (NO_SHARED_SPECS): Use
+	NO_FPIE_AND_FPIC_SPEC.
+	* config/mips/vxworks.h (SUBTARGET_ASM_SPEC): Use FPIC_SPEC.
+	* config/rs6000/freebsd64.h (ASM_SPEC32): Likewise.
+	* config/rs6000/vxworks.h (ASM_SPEC): Likewise.
+	* config/vax/linux.h (ASM_SPEC): Likewise.
+	* doc/install.texi: Document --enable-default-pie.
+	* doc/invoke.texi: Document -no-pie.
+	* config.in: Regenerated.
+	* configure: Likewise.
+
+gcc/ada/
+2015-05-27  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* gcc-interface/Makefile.in (TOOLS_LIBS): Add @NO_PIE_FLAG@.
+
+libgcc/
+
+2015-05-27  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* Makefile.in (CRTSTUFF_CFLAGS): Add $(NO_PIE_CFLAGS).
+
+Index: b/src/libgcc/Makefile.in
+===================================================================
+--- a/src/libgcc/Makefile.in
++++ b/src/libgcc/Makefile.in
+@@ -284,7 +284,7 @@ INTERNAL_CFLAGS = $(CFLAGS) $(LIBGCC2_CF
+ 
+ # Options to use when compiling crtbegin/end.
+ CRTSTUFF_CFLAGS = -O2 $(GCC_CFLAGS) $(INCLUDES) $(MULTILIB_CFLAGS) -g0 \
+-  -finhibit-size-directive -fno-inline -fno-exceptions \
++  $(NO_PIE_CFLAGS) -finhibit-size-directive -fno-inline -fno-exceptions \
+   -fno-zero-initialized-in-bss -fno-toplevel-reorder -fno-tree-vectorize \
+   -fbuilding-libgcc -fno-stack-protector $(FORCE_EXPLICIT_EH_REGISTRY) \
+   $(INHIBIT_LIBC_CFLAGS)
+Index: b/src/gcc/defaults.h
+===================================================================
+--- a/src/gcc/defaults.h
++++ b/src/gcc/defaults.h
+@@ -1186,6 +1186,18 @@ see the files COPYING3 and COPYING.RUNTI
+ #define DEFAULT_PCC_STRUCT_RETURN 1
+ #endif
+ 
++/* Default value for flag_pie when flag_pie is initialized to -1:
++   --enable-default-pie: Default flag_pie to -fPIE.
++   --disable-default-pie: Default flag_pie to 0.
++ */
++#ifdef ENABLE_DEFAULT_PIE
++# ifndef DEFAULT_FLAG_PIE
++#  define DEFAULT_FLAG_PIE 2
++# endif
++#else
++# define DEFAULT_FLAG_PIE 0
++#endif
++
+ #ifdef GCC_INSN_FLAGS_H
+ /* Dependent default target macro definitions
+ 
+Index: b/src/gcc/gcc.c
+===================================================================
+--- a/src/gcc/gcc.c
++++ b/src/gcc/gcc.c
+@@ -738,12 +738,57 @@ proper position among the other output f
+ #endif
+ #endif
+ 
++#ifdef ENABLE_DEFAULT_PIE
++#define NO_PIE_SPEC		"no-pie|static"
++#define PIE_SPEC		NO_PIE_SPEC "|r|shared:;"
++#define NO_FPIE1_SPEC		"fno-pie"
++#define FPIE1_SPEC		NO_FPIE1_SPEC ":;"
++#define NO_FPIE2_SPEC		"fno-PIE"
++#define FPIE2_SPEC		NO_FPIE2_SPEC ":;"
++#define NO_FPIE_SPEC		NO_FPIE1_SPEC "|" NO_FPIE2_SPEC
++#define FPIE_SPEC		NO_FPIE_SPEC ":;"
++#define NO_FPIC1_SPEC		"fno-pic"
++#define FPIC1_SPEC		NO_FPIC1_SPEC ":;"
++#define NO_FPIC2_SPEC		"fno-PIC"
++#define FPIC2_SPEC		NO_FPIC2_SPEC ":;"
++#define NO_FPIC_SPEC		NO_FPIC1_SPEC "|" NO_FPIC2_SPEC
++#define FPIC_SPEC		NO_FPIC_SPEC ":;"
++#define NO_FPIE1_AND_FPIC1_SPEC	NO_FPIE1_SPEC "|" NO_FPIC1_SPEC
++#define FPIE1_OR_FPIC1_SPEC	NO_FPIE1_AND_FPIC1_SPEC ":;"
++#define NO_FPIE2_AND_FPIC2_SPEC	NO_FPIE2_SPEC "|" NO_FPIC2_SPEC
++#define FPIE2_OR_FPIC2_SPEC	NO_FPIE2_AND_FPIC2_SPEC ":;"
++#define NO_FPIE_AND_FPIC_SPEC	NO_FPIE_SPEC "|" NO_FPIC_SPEC
++#define FPIE_OR_FPIC_SPEC	NO_FPIE_AND_FPIC_SPEC ":;"
++#else
++#define PIE_SPEC		"pie"
++#define NO_PIE_SPEC		PIE_SPEC "|r|shared:;"
++#define FPIE1_SPEC		"fpie"
++#define NO_FPIE1_SPEC		FPIE1_SPEC ":;"
++#define FPIE2_SPEC		"fPIE"
++#define NO_FPIE2_SPEC		FPIE2_SPEC ":;"
++#define FPIE_SPEC		FPIE1_SPEC "|" FPIE2_SPEC
++#define NO_FPIE_SPEC		FPIE_SPEC ":;"
++#define FPIC1_SPEC		"fpic"
++#define NO_FPIC1_SPEC		FPIC1_SPEC ":;"
++#define FPIC2_SPEC		"fPIC"
++#define NO_FPIC2_SPEC		FPIC2_SPEC ":;"
++#define FPIC_SPEC		FPIC1_SPEC "|" FPIC2_SPEC
++#define NO_FPIC_SPEC		FPIC_SPEC ":;"
++#define FPIE1_OR_FPIC1_SPEC	FPIE1_SPEC "|" FPIC1_SPEC
++#define NO_FPIE1_AND_FPIC1_SPEC	FPIE1_OR_FPIC1_SPEC ":;"
++#define FPIE2_OR_FPIC2_SPEC	FPIE2_SPEC "|" FPIC2_SPEC
++#define NO_FPIE2_AND_FPIC2_SPEC	FPIE1_OR_FPIC2_SPEC ":;"
++#define FPIE_OR_FPIC_SPEC	FPIE_SPEC "|" FPIC_SPEC
++#define NO_FPIE_AND_FPIC_SPEC	FPIE_OR_FPIC_SPEC ":;"
++#endif
++
+ #ifndef LINK_PIE_SPEC
+ #ifdef HAVE_LD_PIE
+-#define LINK_PIE_SPEC "%{pie:-pie} "
++#define LD_PIE_SPEC "-pie"
+ #else
+-#define LINK_PIE_SPEC "%{pie:} "
++#define LD_PIE_SPEC ""
+ #endif
++#define LINK_PIE_SPEC "%{no-pie:} " "%{" PIE_SPEC ":" LD_PIE_SPEC "} "
+ #endif
+ 
+ #ifndef LINK_BUILDID_SPEC
+Index: b/src/gcc/config.in
+===================================================================
+--- a/src/gcc/config.in
++++ b/src/gcc/config.in
+@@ -89,6 +89,12 @@
+ #endif
+ 
+ 
++/* Define if your target supports default PIE and it is enabled. */
++#ifndef USED_FOR_TARGET
++#undef ENABLE_DEFAULT_PIE
++#endif
++
++
+ /* Define if you want more run-time sanity checks for dataflow. */
+ #ifndef USED_FOR_TARGET
+ #undef ENABLE_DF_CHECKING
+Index: b/src/gcc/opts.c
+===================================================================
+--- a/src/gcc/opts.c
++++ b/src/gcc/opts.c
+@@ -741,6 +741,15 @@ finish_options (struct gcc_options *opts
+ 
+   if (!opts->x_flag_opts_finished)
+     {
++      /* We initialize opts->x_flag_pie to -1 so that targets can set a
++	 default value.  */
++      if (opts->x_flag_pie == -1)
++	{
++	  if (opts->x_flag_pic == 0)
++	    opts->x_flag_pie = DEFAULT_FLAG_PIE;
++	  else
++	    opts->x_flag_pie = 0;
++	}
+       if (opts->x_flag_pie)
+ 	opts->x_flag_pic = opts->x_flag_pie;
+       if (opts->x_flag_pic && !opts->x_flag_pie)
+Index: b/src/gcc/ada/gcc-interface/Makefile.in
+===================================================================
+--- a/src/gcc/ada/gcc-interface/Makefile.in
++++ b/src/gcc/ada/gcc-interface/Makefile.in
+@@ -267,6 +267,9 @@ TOOLS_LIBS = ../link.o ../targext.o ../.
+   ../../libcommon.a ../../../libcpp/libcpp.a $(LIBGNAT) $(LIBINTL) $(LIBICONV) \
+   ../$(LIBBACKTRACE) ../$(LIBIBERTY) $(SYSLIBS) $(TGT_LIB)
+ 
++# Add -no-pie to TOOLS_LIBS since some of them are compiled with -fno-PIE.
++TOOLS_LIBS += @NO_PIE_FLAG@
++
+ # Specify the directories to be searched for header files.
+ # Both . and srcdir are used, in that order,
+ # so that tm.h and config.h will be found in the compilation
+Index: b/src/gcc/configure.ac
+===================================================================
+--- a/src/gcc/configure.ac
++++ b/src/gcc/configure.ac
+@@ -5869,6 +5869,46 @@ cat > gcc-driver-name.h <<EOF
+ #define GCC_DRIVER_NAME "${target_noncanonical}-gcc-${gcc_BASEVER}${exeext}"
+ EOF
+ 
++# Check whether --enable-default-pie was given.
++AC_ARG_ENABLE(default-pie,
++[AS_HELP_STRING([--enable-default-pie],
++  [enable Position Independent Executable as default])],
++enable_default_pie=$enableval,
++enable_default_pie=no)
++if test x$enable_default_pie == xyes ; then
++  AC_DEFINE(ENABLE_DEFAULT_PIE, 1,
++      [Define if your target supports default PIE and it is enabled.])
++fi
++AC_SUBST([enable_default_pie])
++
++# Check if -fno-PIE works.
++AC_CACHE_CHECK([for -fno-PIE option],
++  [gcc_cv_c_no_fpie],
++  [saved_CFLAGS="$CFLAGS"
++   CFLAGS="$CFLAGS -fno-PIE"
++   AC_COMPILE_IFELSE([int main(void) {return 0;}],
++     [gcc_cv_c_no_fpie=yes],
++     [gcc_cv_c_no_fpie=no])
++   CFLAGS="$saved_CFLAGS"])
++if test "$gcc_cv_c_no_fpie" = "yes"; then
++  NO_PIE_CFLAGS="-fno-PIE"
++fi
++AC_SUBST([NO_PIE_CFLAGS])
++
++# Check if -no-pie works.
++AC_CACHE_CHECK([for -no-pie option],
++  [gcc_cv_no_pie],
++  [saved_LDFLAGS="$LDFLAGS"
++   LDFLAGS="$LDFLAGS -no-pie"
++   AC_LINK_IFELSE([int main(void) {return 0;}],
++     [gcc_cv_no_pie=yes],
++     [gcc_cv_no_pie=no])
++   LDFLAGS="$saved_LDFLAGS"])
++if test "$gcc_cv_no_pie" = "yes"; then
++  NO_PIE_FLAG="-no-pie"
++fi
++AC_SUBST([NO_PIE_FLAG])
++
+ # Configure the subdirectories
+ # AC_CONFIG_SUBDIRS($subdirs)
+ 
+Index: b/src/gcc/common.opt
+===================================================================
+--- a/src/gcc/common.opt
++++ b/src/gcc/common.opt
+@@ -1768,7 +1768,7 @@ Common Report Var(flag_pic,2) Negative(f
+ Generate position-independent code if possible (large mode)
+ 
+ fPIE
+-Common Report Var(flag_pie,2) Negative(fpic)
++Common Report Var(flag_pie,2) Negative(fpic) Init(-1)
+ Generate position-independent code for executables if possible (large mode)
+ 
+ fpic
+@@ -1776,7 +1776,7 @@ Common Report Var(flag_pic,1) Negative(f
+ Generate position-independent code if possible (small mode)
+ 
+ fpie
+-Common Report Var(flag_pie,1) Negative(fPIC)
++Common Report Var(flag_pie,1) Negative(fPIC) Init(-1)
+ Generate position-independent code for executables if possible (small mode)
+ 
+ fplugin=
+@@ -2849,8 +2849,12 @@ Driver
+ symbolic
+ Driver
+ 
+-pie
++no-pie
+ Driver RejectNegative Negative(shared)
++Don't create a position independent executable
++
++pie
++Driver RejectNegative Negative(no-pie)
+ Create a position independent executable
+ 
+ z
+Index: b/src/gcc/Makefile.in
+===================================================================
+--- a/src/gcc/Makefile.in
++++ b/src/gcc/Makefile.in
+@@ -252,6 +252,12 @@ LINKER = $(CC)
+ LINKER_FLAGS = $(CFLAGS)
+ endif
+ 
++# We don't want to compile the compilers with -fPIE, it make PCH fail.
++COMPILER += @NO_PIE_CFLAGS@
++
++# Link with -no-pie since we compile the compiler with -fno-PIE.
++LINKER += @NO_PIE_FLAG@
++
+ # Like LINKER, but use a mutex for serializing front end links.
+ ifeq (@DO_LINK_MUTEX@,true)
+ LLINKER = $(SHELL) $(srcdir)/lock-and-run.sh linkfe.lck $(LINKER)
+@@ -749,6 +755,8 @@ CC_FOR_BUILD = @CC_FOR_BUILD@
+ CXX_FOR_BUILD = @CXX_FOR_BUILD@
+ BUILD_CFLAGS= @BUILD_CFLAGS@ -DGENERATOR_FILE
+ BUILD_CXXFLAGS = @BUILD_CXXFLAGS@ -DGENERATOR_FILE
++BUILD_CFLAGS += @NO_PIE_CFLAGS@
++BUILD_CXXFLAGS += @NO_PIE_CFLAGS@
+ 
+ # Native compiler that we use.  This may be C++ some day.
+ COMPILER_FOR_BUILD = $(CXX_FOR_BUILD)
+@@ -760,6 +768,7 @@ BUILD_LINKERFLAGS = $(BUILD_CXXFLAGS)
+ 
+ # Native linker and preprocessor flags.  For x-fragment overrides.
+ BUILD_LDFLAGS=@BUILD_LDFLAGS@
++BUILD_LDFLAGS += @NO_PIE_FLAG@
+ BUILD_CPPFLAGS= -I. -I$(@D) -I$(srcdir) -I$(srcdir)/$(@D) \
+ 		-I$(srcdir)/../include @INCINTL@ $(CPPINC) $(CPPFLAGS)
+ 
+@@ -1865,6 +1874,12 @@ libgcc.mvars: config.status Makefile spe
+ 	echo GCC_CFLAGS = '$(GCC_CFLAGS)' >> tmp-libgcc.mvars
+ 	echo INHIBIT_LIBC_CFLAGS = '$(INHIBIT_LIBC_CFLAGS)' >> tmp-libgcc.mvars
+ 	echo TARGET_SYSTEM_ROOT = '$(TARGET_SYSTEM_ROOT)' >> tmp-libgcc.mvars
++	if test @enable_default_pie@ = yes; then \
++	  NO_PIE_CFLAGS="-fno-PIE"; \
++	else \
++	  NO_PIE_CFLAGS=; \
++	fi; \
++	echo NO_PIE_CFLAGS = "$$NO_PIE_CFLAGS" >> tmp-libgcc.mvars
+ 
+ 	mv tmp-libgcc.mvars libgcc.mvars
+ 
+Index: b/src/gcc/config/frv/frv.h
+===================================================================
+--- a/src/gcc/config/frv/frv.h
++++ b/src/gcc/config/frv/frv.h
+@@ -42,12 +42,12 @@
+ "%{mno-pack:\
+    %{!mhard-float:-msoft-float}\
+    %{!mmedia:-mno-media}}\
+- %{!mfdpic:%{fpic|fPIC: -multilib-library-pic}}\
++ %{!mfdpic:%{" FPIC_SPEC ": -multilib-library-pic}}\
+  %{mfdpic:%{!fpic:%{!fpie:%{!fPIC:%{!fPIE:\
+    	    %{!fno-pic:%{!fno-pie:%{!fno-PIC:%{!fno-PIE:-fPIE}}}}}}}} \
+-	  %{!mno-inline-plt:%{O*:%{!O0:%{!Os:%{fpic|fPIC:-minline-plt} \
+-                    %{!fpic:%{!fPIC:%{!O:%{!O1:%{!O2:-minline-plt}}}}}}}}} \
+-	  %{!mno-gprel-ro:%{!fpic:%{!fpie:-mgprel-ro}}}} \
++	  %{!mno-inline-plt:%{O*:%{!O0:%{!Os:%{" FPIC_SPEC ":-minline-plt} \
++                    %{" NO_FPIC_SPEC ":%{!O:%{!O1:%{!O2:-minline-plt}}}}}}}} \
++	  %{!mno-gprel-ro:%{" NO_FPIE1_AND_FPIC1_SPEC ":-mgprel-ro}}} \
+ "
+ #ifndef SUBTARGET_DRIVER_SELF_SPECS
+ # define SUBTARGET_DRIVER_SELF_SPECS
+@@ -67,7 +67,7 @@
+     %{mmuladd} %{mno-muladd} \
+     %{mpack} %{mno-pack} \
+     %{mno-fdpic:-mnopic} %{mfdpic} \
+-    %{fpic|fpie: -mpic} %{fPIC|fPIE: -mPIC} %{mlibrary-pic}}"
++    %{" FPIE1_OR_FPIC1_SPEC ":-mpic} %{" FPIE2_OR_FPIC2_SPEC ":-mPIC} %{mlibrary-pic}}"
+ 
+ #undef  STARTFILE_SPEC
+ #define STARTFILE_SPEC "crt0%O%s frvbegin%O%s"
+Index: b/src/gcc/config/sparc/linux.h
+===================================================================
+--- a/src/gcc/config/sparc/linux.h
++++ b/src/gcc/config/sparc/linux.h
+@@ -98,7 +98,7 @@ extern const char *host_detect_local_cpu
+ #undef ASM_SPEC
+ #define ASM_SPEC "\
+ -s \
+-%{fpic|fPIC|fpie|fPIE:-K PIC} \
++%{" FPIE_OR_FPIC_SPEC ":-K PIC} \
+ %{!.c:%{findirect-dispatch:-K PIC}} \
+ %(asm_cpu) %(asm_relax)"
+ 
+Index: b/src/gcc/config/sparc/sp64-elf.h
+===================================================================
+--- a/src/gcc/config/sparc/sp64-elf.h
++++ b/src/gcc/config/sparc/sp64-elf.h
+@@ -32,7 +32,7 @@ along with GCC; see the file COPYING3.
+ 
+ #undef ASM_SPEC
+ #define ASM_SPEC "\
+--s %{fpic|fPIC|fpie|fPIE:-K PIC} \
++-s %{" FPIE_OR_FPIC_SPEC ":-K PIC} \
+ %(asm_cpu) %(asm_arch) \
+ "
+ 
+Index: b/src/gcc/config/sparc/openbsd64.h
+===================================================================
+--- a/src/gcc/config/sparc/openbsd64.h
++++ b/src/gcc/config/sparc/openbsd64.h
+@@ -46,7 +46,7 @@ along with GCC; see the file COPYING3.
+ 
+ #undef ASM_SPEC
+ #define ASM_SPEC "\
+--s %{fpic|fPIC|fpie|fPIE:-K PIC} \
++-s %{" FPIE_OR_FPIC_SPEC ":-K PIC} \
+ %(asm_cpu) %(asm_arch) \
+ "
+ 
+Index: b/src/gcc/config/sparc/sp-elf.h
+===================================================================
+--- a/src/gcc/config/sparc/sp-elf.h
++++ b/src/gcc/config/sparc/sp-elf.h
+@@ -25,7 +25,7 @@ along with GCC; see the file COPYING3.
+ #undef ASM_SPEC
+ #define ASM_SPEC \
+   "-s \
+-   %{fpic|fpie|fPIC|fPIE:-K PIC} %(asm_cpu)"
++   %{" FPIE_OR_FPIC_SPEC ":-K PIC} %(asm_cpu)"
+ 
+ /* Use the default.  */
+ #undef LINK_SPEC
+Index: b/src/gcc/config/sparc/sparc.h
+===================================================================
+--- a/src/gcc/config/sparc/sparc.h
++++ b/src/gcc/config/sparc/sparc.h
+@@ -380,7 +380,7 @@ extern enum cmodel sparc_cmodel;
+ /* Special flags to the Sun-4 assembler when using pipe for input.  */
+ 
+ #define ASM_SPEC "\
+-%{!pg:%{!p:%{fpic|fPIC|fpie|fPIE:-k}}} %{keep-local-as-symbols:-L} \
++%{!pg:%{!p:%{" FPIE_OR_FPIC_SPEC ":-k}}} %{keep-local-as-symbols:-L} \
+ %(asm_cpu) %(asm_relax)"
+ 
+ /* This macro defines names of additional specifications to put in the specs
+Index: b/src/gcc/config/sparc/linux64.h
+===================================================================
+--- a/src/gcc/config/sparc/linux64.h
++++ b/src/gcc/config/sparc/linux64.h
+@@ -208,7 +208,7 @@ extern const char *host_detect_local_cpu
+ #undef ASM_SPEC
+ #define ASM_SPEC "\
+ -s \
+-%{fpic|fPIC|fpie|fPIE:-K PIC} \
++%{" FPIE_OR_FPIC_SPEC ":-K PIC} \
+ %{!.c:%{findirect-dispatch:-K PIC}} \
+ %(asm_cpu) %(asm_arch) %(asm_relax)"
+ 
+Index: b/src/gcc/config/sparc/freebsd.h
+===================================================================
+--- a/src/gcc/config/sparc/freebsd.h
++++ b/src/gcc/config/sparc/freebsd.h
+@@ -38,7 +38,7 @@ along with GCC; see the file COPYING3.
+   while (0)
+ 
+ #undef ASM_SPEC
+-#define ASM_SPEC "%{fpic|fPIC|fpie|fPIE:-K PIC} %(asm_cpu)"
++#define ASM_SPEC "%{" FPIE_OR_FPIC_SPEC ":-K PIC} %(asm_cpu)"
+ 
+ #define LINK_SPEC "%(link_arch)						\
+   %{!mno-relax:%{!r:-relax}}						\
+Index: b/src/gcc/config/sparc/netbsd-elf.h
+===================================================================
+--- a/src/gcc/config/sparc/netbsd-elf.h
++++ b/src/gcc/config/sparc/netbsd-elf.h
+@@ -67,7 +67,7 @@ along with GCC; see the file COPYING3.
+ #define USER_LABEL_PREFIX ""
+ 
+ #undef ASM_SPEC
+-#define ASM_SPEC "%{fpic|fPIC|fpie|fPIE:-K PIC} \
++#define ASM_SPEC "%{" FPIE_OR_FPIC_SPEC ":-K PIC} \
+ %(asm_cpu) %(asm_arch) %(asm_relax)"
+ 
+ #undef STDC_0_IN_SYSTEM_HEADERS
+Index: b/src/gcc/config/sparc/vxworks.h
+===================================================================
+--- a/src/gcc/config/sparc/vxworks.h
++++ b/src/gcc/config/sparc/vxworks.h
+@@ -34,7 +34,7 @@ along with GCC; see the file COPYING3.
+ #define CPP_SUBTARGET_SPEC VXWORKS_ADDITIONAL_CPP_SPEC
+ 
+ #undef ASM_SPEC
+-#define ASM_SPEC "%{fpic|fPIC|fpie|fPIE:-K PIC} %(asm_cpu)"
++#define ASM_SPEC "%{" FPIE_OR_FPIC_SPEC ":-K PIC} %(asm_cpu)"
+ 
+ #undef LIB_SPEC
+ #define LIB_SPEC VXWORKS_LIB_SPEC
+Index: b/src/gcc/config/sparc/sysv4.h
+===================================================================
+--- a/src/gcc/config/sparc/sysv4.h
++++ b/src/gcc/config/sparc/sysv4.h
+@@ -41,7 +41,7 @@ along with GCC; see the file COPYING3.
+ #undef ASM_SPEC
+ #define ASM_SPEC \
+   "%{v:-V} %{Qy:} %{!Qn:-Qy} %{Ym,*} \
+-   %{fpic|fPIC|fpie|fPIE:-K PIC} %(asm_cpu)"
++   %{" FPIE_OR_FPIC_SPEC ":-K PIC} %(asm_cpu)"
+ 
+ /* Define the names of various pseudo-op used by the SPARC/svr4 assembler.
+    Note that many of these are different from the typical pseudo-ops used
+Index: b/src/gcc/config/m32r/m32r.h
+===================================================================
+--- a/src/gcc/config/m32r/m32r.h
++++ b/src/gcc/config/m32r/m32r.h
+@@ -159,7 +159,7 @@
+ 
+ /* Options to pass on to the assembler.  */
+ #undef  ASM_SPEC
+-#define ASM_SPEC "%(asm_cpu) %(relax) %{fpic|fpie:-K PIC} %{fPIC|fPIE:-K PIC}"
++#define ASM_SPEC "%(asm_cpu) %(relax) %{" FPIE_OR_FPIC_SPEC ":-K PIC}"
+ 
+ #define LINK_SPEC "%{v} %(link_cpu) %(relax)"
+ 
+Index: b/src/gcc/config/sol2.h
+===================================================================
+--- a/src/gcc/config/sol2.h
++++ b/src/gcc/config/sol2.h
+@@ -127,7 +127,7 @@ along with GCC; see the file COPYING3.
+ #define ASM_SPEC_BASE \
+ "%{v:-V} %{Qy:} %{!Qn:-Qy} %{Ym,*} -s %(asm_cpu)"
+ 
+-#define ASM_PIC_SPEC " %{fpic|fpie|fPIC|fPIE:-K PIC}"
++#define ASM_PIC_SPEC " %{" FPIE_OR_FPIC_SPEC ":-K PIC}"
+ 
+ #undef ASM_CPU_DEFAULT_SPEC
+ #define ASM_CPU_DEFAULT_SPEC \
+Index: b/src/gcc/config/cris/linux.h
+===================================================================
+--- a/src/gcc/config/cris/linux.h
++++ b/src/gcc/config/cris/linux.h
+@@ -79,13 +79,13 @@ along with GCC; see the file COPYING3.
+  "--em=criself \
+   %{!march=*:%{!mcpu=*:--march=v32}} \
+   %{!fleading-underscore:--no-underscore}\
+-  %{fPIC|fpic|fPIE|fpie: --pic}"
++  %{" FPIE_OR_FPIC_SPEC ": --pic}"
+ #else
+ # define CRIS_ASM_SUBTARGET_SPEC \
+  "--em=criself \
+   %{!march=*:%{!mcpu=*:--march=v10}} \
+   %{!fleading-underscore:--no-underscore}\
+-  %{fPIC|fpic|fPIE|fpie: --pic}"
++  %{" FPIE_OR_FPIC_SPEC ": --pic}"
+ #endif
+ 
+ /* Previously controlled by target_flags.  */
+Index: b/src/gcc/config/gnu-user.h
+===================================================================
+--- a/src/gcc/config/gnu-user.h
++++ b/src/gcc/config/gnu-user.h
+@@ -42,8 +42,11 @@ see the files COPYING3 and COPYING.RUNTI
+ 
+ #if defined HAVE_LD_PIE
+ #define GNU_USER_TARGET_STARTFILE_SPEC \
+-  "%{!shared: %{pg|p|profile:gcrt1.o%s;pie:Scrt1.o%s;:crt1.o%s}} \
+-   crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s} \
++  "%{!shared: %{pg|p|profile:gcrt1.o%s;: \
++    %{" PIE_SPEC ":Scrt1.o%s} %{" NO_PIE_SPEC ":crt1.o%s}}} \
++   crti.o%s %{static:crtbeginT.o%s;: %{shared:crtbeginS.o%s} \
++	      %{" PIE_SPEC ":crtbeginS.o%s} \
++	      %{" NO_PIE_SPEC ":crtbegin.o%s}} \
+    %{fvtable-verify=none:%s; \
+      fvtable-verify=preinit:vtv_start_preinit.o%s; \
+      fvtable-verify=std:vtv_start.o%s}"
+Index: b/src/gcc/config/c6x/uclinux-elf.h
+===================================================================
+--- a/src/gcc/config/c6x/uclinux-elf.h
++++ b/src/gcc/config/c6x/uclinux-elf.h
+@@ -40,7 +40,7 @@
+ 
+ #undef LINK_SPEC
+ #define LINK_SPEC ENDIAN_LINK_SPEC \
+-  "%{shared} %{fpie|fPIE:-pie} \
++  "%{shared} %{" FPIE_SPEC ":-pie} \
+   %{!shared: %{!static: \
+    %{rdynamic:-export-dynamic} \
+    %{!dynamic-linker:-dynamic-linker " UCLIBC_DYNAMIC_LINKER "}} \
+Index: b/src/gcc/config/c6x/elf-common.h
+===================================================================
+--- a/src/gcc/config/c6x/elf-common.h
++++ b/src/gcc/config/c6x/elf-common.h
+@@ -24,8 +24,10 @@
+ 
+ #undef ASM_SPEC
+ #define ASM_SPEC "%{march=*:-march=%*} %{mbig-endian:-mbig-endian} \
+- %{mdsbt:-mdsbt %{!fPIC:-mpid=near} %{fPIC:-mpid=far -mpic} %{fpic:-mpic}} \
+- %{!mdsbt:%{fpic:-mpic -mpid=near} %{fPIC:-mpic -mpid=far}}"
++ %{mdsbt:-mdsbt %{" NO_FPIC2_SPEC ":-mpid=near} \
++   %{" FPIC2_SPEC ":-mpid=far -mpic} %{" FPIC1_SPEC ":-mpic}} \
++ %{!mdsbt:%{" FPIC1_SPEC ":-mpic -mpid=near} \
++   %{" FPIC2_SPEC ":-mpic -mpid=far}}"
+ 
+ #undef DATA_SECTION_ASM_OP
+ #define DATA_SECTION_ASM_OP "\t.section\t\".fardata\",\"aw\""
+Index: b/src/gcc/config/m68k/openbsd.h
+===================================================================
+--- a/src/gcc/config/m68k/openbsd.h
++++ b/src/gcc/config/m68k/openbsd.h
+@@ -34,7 +34,8 @@ along with GCC; see the file COPYING3.
+ #define CPP_SPEC "%{!msoft-float:-D__HAVE_68881__ -D__HAVE_FPU__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_POSIX_THREADS}"
+ 
+ #undef ASM_SPEC
+-#define ASM_SPEC "%(asm_cpu_spec) %{fpic|fpie:-k} %{fPIC|fPIE:-k -K}"
++#define ASM_SPEC \
++  "%(asm_cpu_spec) %{" FPIE1_OR_FPIC1_SPEC ":-k} %{" FPIE2_OR_FPIC2_SPEC ":-k -K}"
+ 
+ /* Layout of source language data types.  */
+ 
+Index: b/src/gcc/config/m68k/netbsd-elf.h
+===================================================================
+--- a/src/gcc/config/m68k/netbsd-elf.h
++++ b/src/gcc/config/m68k/netbsd-elf.h
+@@ -56,7 +56,8 @@ along with GCC; see the file COPYING3.
+    to pass PIC code generation options.  */
+ 
+ #undef ASM_SPEC
+-#define ASM_SPEC "%(asm_cpu_spec) %{fpic|fpie:-k} %{fPIC|fPIE:-k -K}"
++#define ASM_SPEC \
++  "%(asm_cpu_spec) %{" FPIE1_OR_FPIC1_SPEC ":-k} %{" FPIE2_OR_FPIC2_SPEC ":-k -K}"
+ 
+ /* Provide a LINK_SPEC appropriate for a NetBSD/m68k ELF target.  */
+ 
+Index: b/src/gcc/config/m68k/m68k.h
+===================================================================
+--- a/src/gcc/config/m68k/m68k.h
++++ b/src/gcc/config/m68k/m68k.h
+@@ -40,7 +40,8 @@ along with GCC; see the file COPYING3.
+ %{m68020-40:-m68040}%{m68020-60:-m68040}\
+ %{mcpu=*:-mcpu=%*}%{march=*:-march=%*}\
+ "
+-#define ASM_PCREL_SPEC "%{fPIC|fpic|mpcrel:--pcrel} \
++#define ASM_PCREL_SPEC "%{" FPIC_SPEC ":--pcrel} \
++ %{mpcrel:%{" NO_FPIC_SPEC ":--pcrel}} \
+  %{msep-data|mid-shared-library:--pcrel} \
+ "
+ 
+Index: b/src/gcc/config/m68k/uclinux.h
+===================================================================
+--- a/src/gcc/config/m68k/uclinux.h
++++ b/src/gcc/config/m68k/uclinux.h
+@@ -60,7 +60,7 @@ along with GCC; see the file COPYING3.
+ 
+ /* -msep-data is the default PIC mode on this target.  */
+ #define DRIVER_SELF_SPECS \
+-  "%{fpie|fPIE|fpic|fPIC:%{!msep-data:%{!mid-shared-library: -msep-data}}}"
++  "%{" FPIE_OR_FPIC_SPEC ":%{!msep-data:%{!mid-shared-library: -msep-data}}}"
+ 
+ /* The uclinux binary format relies on relocations against a segment being
+    within that segment.  Conservatively apply this rule to individual
+Index: b/src/gcc/config/rs6000/freebsd64.h
+===================================================================
+--- a/src/gcc/config/rs6000/freebsd64.h
++++ b/src/gcc/config/rs6000/freebsd64.h
+@@ -143,7 +143,7 @@ extern int dot_symbols;
+ #define	LINK_OS_FREEBSD_SPEC "%{m32:%(link_os_freebsd_spec32)}%{!m32:%(link_os_freebsd_spec64)}"
+ 
+ #define ASM_SPEC32 "-a32 \
+-%{mrelocatable} %{mrelocatable-lib} %{fpic|fpie|fPIC|fPIE:-K PIC} \
++%{mrelocatable} %{mrelocatable-lib} %{" FPIC_SPEC ":-K PIC} \
+ %{memb} %{!memb: %{msdata=eabi: -memb}} \
+ %{!mlittle: %{!mlittle-endian: %{!mbig: %{!mbig-endian: \
+     %{mcall-freebsd: -mbig} \
+Index: b/src/gcc/config/rs6000/linux64.h
+===================================================================
+--- a/src/gcc/config/rs6000/linux64.h
++++ b/src/gcc/config/rs6000/linux64.h
+@@ -192,7 +192,7 @@ extern int dot_symbols;
+ #endif
+ 
+ #define ASM_SPEC32 "-a32 \
+-%{mrelocatable} %{mrelocatable-lib} %{fpic|fpie|fPIC|fPIE:-K PIC} \
++%{mrelocatable} %{mrelocatable-lib} %{" FPIE_OR_FPIC_SPEC ":-K PIC} \
+ %{memb|msdata=eabi: -memb}"
+ 
+ #define ASM_SPEC64 "-a64"
+Index: b/src/gcc/config/rs6000/vxworks.h
+===================================================================
+--- a/src/gcc/config/rs6000/vxworks.h
++++ b/src/gcc/config/rs6000/vxworks.h
+@@ -90,7 +90,7 @@ VXWORKS_ADDITIONAL_CPP_SPEC
+ #define ASM_SPEC \
+ "%(asm_cpu) \
+  %{,assembler|,assembler-with-cpp: %{mregnames} %{mno-regnames}} \
+- %{mrelocatable} %{mrelocatable-lib} %{fpic:-K PIC} %{fPIC:-K PIC} -mbig"
++ %{mrelocatable} %{mrelocatable-lib} %{" FPIC_SPEC ":-K PIC} -mbig"
+ 
+ #undef  LIB_SPEC
+ #define LIB_SPEC VXWORKS_LIB_SPEC
+Index: b/src/gcc/config/rs6000/sysv4.h
+===================================================================
+--- a/src/gcc/config/rs6000/sysv4.h
++++ b/src/gcc/config/rs6000/sysv4.h
+@@ -530,7 +530,7 @@ extern int fixuplabelno;
+ #undef	ASM_SPEC
+ #define	ASM_SPEC "%(asm_cpu) \
+ %{,assembler|,assembler-with-cpp: %{mregnames} %{mno-regnames}} \
+-%{mrelocatable} %{mrelocatable-lib} %{fpic|fpie|fPIC|fPIE:-K PIC} \
++%{mrelocatable} %{mrelocatable-lib} %{" FPIE_OR_FPIC_SPEC ":-K PIC} \
+ %{memb|msdata=eabi: -memb}" \
+ ENDIAN_SELECT(" -mbig", " -mlittle", DEFAULT_ASM_ENDIAN)
+ 
+Index: b/src/gcc/config/darwin.h
+===================================================================
+--- a/src/gcc/config/darwin.h
++++ b/src/gcc/config/darwin.h
+@@ -214,7 +214,7 @@ extern GTY(()) int darwin_ms_struct;
+ #define LINK_SYSROOT_SPEC "%{isysroot*:-syslibroot %*}"
+ #endif
+ 
+-#define PIE_SPEC "%{fpie|pie|fPIE:}"
++#define DARWIN_PIE_SPEC "%{fpie|pie|fPIE:}"
+ 
+ /* Please keep the random linker options in alphabetical order (modulo
+    'Z' and 'no' prefixes). Note that options taking arguments may appear
+@@ -280,7 +280,7 @@ extern GTY(()) int darwin_ms_struct;
+      %:version-compare(< 10.5 mmacosx-version-min= -multiply_defined) \
+      %:version-compare(< 10.5 mmacosx-version-min= suppress)}} \
+    %{Zmultiplydefinedunused*:-multiply_defined_unused %*} \
+-   " PIE_SPEC " \
++   " DARWIN_PIE_SPEC " \
+    %{prebind} %{noprebind} %{nofixprebinding} %{prebind_all_twolevel_modules} \
+    %{read_only_relocs} \
+    %{sectcreate*} %{sectorder*} %{seg1addr*} %{segprot*} \
+Index: b/src/gcc/config/arm/semi.h
+===================================================================
+--- a/src/gcc/config/arm/semi.h
++++ b/src/gcc/config/arm/semi.h
+@@ -58,7 +58,7 @@
+    binutils can't.  */
+ #ifndef ASM_SPEC
+ #define ASM_SPEC "\
+-%{fpic|fpie: -k} %{fPIC|fPIE: -k} \
++%{" FPIE_OR_FPIC_SPEC ": -k} \
+ %{mbig-endian:-EB} \
+ %(arm_cpu_spec) \
+ %{mapcs-float:-mfloat} \
+Index: b/src/gcc/config/arm/freebsd.h
+===================================================================
+--- a/src/gcc/config/arm/freebsd.h
++++ b/src/gcc/config/arm/freebsd.h
+@@ -34,7 +34,7 @@
+ #undef SUBTARGET_EXTRA_ASM_SPEC
+ #define SUBTARGET_EXTRA_ASM_SPEC \
+   "%{mabi=apcs-gnu|mabi=atpcs:-meabi=gnu;:-meabi=5} " TARGET_FIX_V4BX_SPEC " \
+-  %{fpic|fpie:-k} %{fPIC|fPIE:-k}"
++  %{" FPIE_OR_FPIC_SPEC ":-k}"
+ 
+ #undef SUBTARGET_ASM_FLOAT_SPEC
+ #ifdef TARGET_FREEBSD_ARM_HARD_FLOAT
+Index: b/src/gcc/config/arm/netbsd-elf.h
+===================================================================
+--- a/src/gcc/config/arm/netbsd-elf.h
++++ b/src/gcc/config/arm/netbsd-elf.h
+@@ -55,7 +55,7 @@
+ 
+ #undef SUBTARGET_EXTRA_ASM_SPEC
+ #define SUBTARGET_EXTRA_ASM_SPEC	\
+-  "-matpcs %{fpic|fpie:-k} %{fPIC|fPIE:-k}"
++  "-matpcs %{" FPIE_OR_FPIC_SPEC ":-k}"
+ 
+ /* Default to full VFP if -mfloat-abi=hard is specified.  */
+ #undef SUBTARGET_ASM_FLOAT_SPEC
+Index: b/src/gcc/config/darwin9.h
+===================================================================
+--- a/src/gcc/config/darwin9.h
++++ b/src/gcc/config/darwin9.h
+@@ -35,8 +35,8 @@ along with GCC; see the file COPYING3.
+ /* Tell collect2 to run dsymutil for us as necessary.  */
+ #define COLLECT_RUN_DSYMUTIL 1
+ 
+-#undef PIE_SPEC
+-#define PIE_SPEC \
++#undef DARWIN_PIE_SPEC
++#define DARWIN_PIE_SPEC \
+   "%{fpie|pie|fPIE: \
+      %{mdynamic-no-pic: %n'-mdynamic-no-pic' overrides '-pie', '-fpie' or '-fPIE'; \
+       :-pie}}"
+Index: b/src/gcc/config/mips/gnu-user.h
+===================================================================
+--- a/src/gcc/config/mips/gnu-user.h
++++ b/src/gcc/config/mips/gnu-user.h
+@@ -100,7 +100,7 @@ along with GCC; see the file COPYING3.
+ #ifdef HAVE_AS_NO_SHARED
+ /* Default to -mno-shared for non-PIC.  */
+ # define NO_SHARED_SPECS \
+-  " %{mshared|mno-shared|fpic|fPIC|fpie|fPIE:;:-mno-shared}"
++  " %{mshared|mno-shared:;:%{" NO_FPIE_AND_FPIC_SPEC ":-mno-shared}}"
+ #else
+ # define NO_SHARED_SPECS ""
+ #endif
+Index: b/src/gcc/config/mips/vxworks.h
+===================================================================
+--- a/src/gcc/config/mips/vxworks.h
++++ b/src/gcc/config/mips/vxworks.h
+@@ -70,7 +70,7 @@ VXWORKS_LINK_SPEC
+ #define FUNCTION_PROFILER VXWORKS_FUNCTION_PROFILER
+ 
+ #undef SUBTARGET_ASM_SPEC
+-#define SUBTARGET_ASM_SPEC "%{mrtp:%{fPIC|fpic:-mvxworks-pic}}"
++#define SUBTARGET_ASM_SPEC "%{mrtp:%{" FPIC_SPEC ":-mvxworks-pic}}"
+ 
+ #undef SUBTARGET_OVERRIDE_OPTIONS
+ #define SUBTARGET_OVERRIDE_OPTIONS VXWORKS_OVERRIDE_OPTIONS
+Index: b/src/gcc/config/openbsd.h
+===================================================================
+--- a/src/gcc/config/openbsd.h
++++ b/src/gcc/config/openbsd.h
+@@ -126,7 +126,7 @@ while (0)
+    still uses a special flavor of gas that needs to be told when generating 
+    pic code.  */
+ #undef ASM_SPEC
+-#define ASM_SPEC "%{fpic|fpie:-k} %{fPIC|fPIE:-k -K}"
++#define ASM_SPEC "%{" FPIE1_OR_FPIC1_SPEC ":-k} %{" FPIE2_OR_FPIC2_SPEC ":-k -K}"
+ #endif
+ 
+ /* Since we use gas, stdin -> - is a good idea.  */
+Index: b/src/gcc/config/vax/linux.h
+===================================================================
+--- a/src/gcc/config/vax/linux.h
++++ b/src/gcc/config/vax/linux.h
+@@ -32,7 +32,7 @@ along with GCC; see the file COPYING3.
+ #define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT}"
+ 
+ #undef ASM_SPEC
+-#define ASM_SPEC "%{fpic|fPIC:-k}"
++#define ASM_SPEC "%{" FPIC_SPEC ":-k}"
+ 
+ #undef LINK_SPEC
+ #define LINK_SPEC \

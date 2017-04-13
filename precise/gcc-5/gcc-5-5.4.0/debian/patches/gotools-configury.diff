@@ -1,0 +1,45 @@
+# DP: Fix gotools cross build.
+
+	* Makefile.am: Use GOC configured in configure.ac for cross builds.
+	* configure.ac: Fix NATIVE conditional.
+	* Makefile.in, configure: Regenerate.
+
+Index: b/src/gotools/Makefile.am
+===================================================================
+--- a/src/gotools/Makefile.am
++++ b/src/gotools/Makefile.am
+@@ -33,7 +33,7 @@ if NATIVE
+ # Use the compiler we just built.
+ GOCOMPILER = $(GOC_FOR_TARGET)
+ else
+-GOCOMPILER = $(GOC)
++GOCOMPILER = @GOC@
+ endif
+ 
+ GOCFLAGS = $(CFLAGS_FOR_TARGET)
+Index: b/src/gotools/Makefile.in
+===================================================================
+--- a/src/gotools/Makefile.in
++++ b/src/gotools/Makefile.in
+@@ -226,7 +226,7 @@ PWD_COMMAND = $${PWDCMD-pwd}
+ STAMP = echo timestamp >
+ libgodir = ../$(target_noncanonical)/libgo
+ LIBGODEP = $(libgodir)/libgo.la
+-@NATIVE_FALSE@GOCOMPILER = $(GOC)
++@NATIVE_FALSE@GOCOMPILER = @GOC@
+ 
+ # Use the compiler we just built.
+ @NATIVE_TRUE@GOCOMPILER = $(GOC_FOR_TARGET)
+Index: b/src/gotools/configure.ac
+===================================================================
+--- a/src/gotools/configure.ac
++++ b/src/gotools/configure.ac
+@@ -46,7 +46,7 @@ AC_PROG_INSTALL
+ AC_PROG_CC
+ AC_PROG_GO
+ 
+-AM_CONDITIONAL(NATIVE, test "$cross_compiling" = no)
++AM_CONDITIONAL(NATIVE, test "$host" = "$target")
+ 
+ dnl Test for -lsocket and -lnsl.  Copied from libjava/configure.ac.
+ AC_CACHE_CHECK([for socket libraries], gotools_cv_lib_sockets,

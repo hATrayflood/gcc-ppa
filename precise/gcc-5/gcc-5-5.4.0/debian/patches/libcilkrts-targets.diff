@@ -1,0 +1,21 @@
+# DP: Disable libcilkrts on KFreeBSD and the Hurd. See #734973.
+
+Index: b/src/libcilkrts/configure.tgt
+===================================================================
+--- a/src/libcilkrts/configure.tgt
++++ b/src/libcilkrts/configure.tgt
+@@ -44,3 +44,14 @@ esac
+ 
+ # Disable libcilkrts on non POSIX hosted systems.
+ . ${srcdir}/../config/target-posix
++
++# Disable libcilkrts on KFreeBSD and the Hurd.
++if test x$enable_libcilkrts = x ; then
++    case "${target}" in
++    *-*-linux*)
++        ;;
++    *-*-gnu* | *-*-k*bsd*-gnu)
++        UNSUPPORTED=1
++        ;;
++    esac
++fi

@@ -1,0 +1,26 @@
+# DP: Fix PR rtl-optimization/71709, taken from the gcc-5 branch.
+
+gcc/
+
+2016-09-28  Bill Schmidt  <wschmidt@linux.vnet.ibm.com>
+	    Alan Modra  <amodra@gmail.com>
+
+	Backport from mainline
+	2016-07-01  Alan Modra  <amodra@gmail.com>
+
+	PR rtl-optimization/71709
+	* ira-lives.c (find_call_crossed_cheap_reg): Exit loop on arg reg
+	being set, not referenced.
+
+ 
+--- a/src/gcc/ira-lives.c
++++ b/src/gcc/ira-lives.c
+@@ -1042,7 +1042,7 @@
+ 		  break;
+ 		}
+ 
+-	      if (reg_overlap_mentioned_p (reg, PATTERN (prev)))
++	      if (reg_set_p (reg, prev))
+ 		break;
+ 	    }
+ 	  prev = PREV_INSN (prev);

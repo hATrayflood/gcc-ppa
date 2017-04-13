@@ -1,0 +1,47 @@
+From svn trunk r234535
+
+2016-03-29  Thomas Schwinge  <thomas@codesourcery.com>
+
+[Hurd] Specs maintenance
+
+	* config/gnu.h (CPP_SPEC, LIB_SPEC): Don't override.
+	* config/i386/gnu.h (STARTFILE_SPEC): Use gcrt1.o instead of
+	gcrt0.o if linking dynamically.
+
+Index: a/src/gcc/config/i386/gnu.h
+===================================================================
+--- a/src/gcc/config/i386/gnu.h	(révision 234534)
++++ b/src/gcc/config/i386/gnu.h	(révision 234535)
+@@ -27,11 +27,11 @@
+ #undef	STARTFILE_SPEC
+ #if defined HAVE_LD_PIE
+ #define STARTFILE_SPEC \
+-  "%{!shared: %{pg|p|profile:gcrt0.o%s;pie:Scrt1.o%s;static:crt0.o%s;:crt1.o%s}} \
++  "%{!shared: %{pg|p|profile:%{static:gcrt0.o%s;:gcrt1.o%s};pie:Scrt1.o%s;static:crt0.o%s;:crt1.o%s}} \
+    crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
+ #else
+ #define STARTFILE_SPEC \
+-  "%{!shared: %{pg|p|profile:gcrt0.o%s;static:crt0.o%s;:crt1.o%s}} \
++  "%{!shared: %{pg|p|profile:%{static:gcrt0.o%s;:gcrt1.o%s};static:crt0.o%s;:crt1.o%s}} \
+    crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
+ #endif
+ 
+Index: a/src/gcc/config/gnu.h
+===================================================================
+--- a/src/gcc/config/gnu.h	(révision 234534)
++++ b/src/gcc/config/gnu.h	(révision 234535)
+@@ -19,14 +19,6 @@
+ along with GCC.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
+-/* Provide GCC options for standard feature-test macros.  */
+-#undef CPP_SPEC
+-#define CPP_SPEC "%{posix:-D_POSIX_SOURCE}"
+-
+-/* Default C library spec.  */
+-#undef LIB_SPEC
+-#define LIB_SPEC "%{pthread:-lpthread} %{pg|p|profile:-lc_p;:-lc}"
+-
+ #undef GNU_USER_TARGET_OS_CPP_BUILTINS
+ #define GNU_USER_TARGET_OS_CPP_BUILTINS()		\
+     do {					\

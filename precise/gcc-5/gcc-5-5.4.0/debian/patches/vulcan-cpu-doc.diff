@@ -1,0 +1,27 @@
+# DP: Add AArch64 Vulcan cpu support, taken from the trunk (documentation).
+
+From: jgreenhalgh <jgreenhalgh@138bc75d-0d04-0410-961f-82ee72b054a4>
+Date: Tue, 21 Jun 2016 13:43:29 +0000 (+0000)
+Subject: [PATCH/AARCH64] Accept vulcan as a cpu name for the AArch64 port of GCC
+X-Git-Url: https://gcc.gnu.org/git/?p=gcc.git;a=commitdiff_plain;h=2c6ac78145ac8ff2fd83271d093e23ab80a15e4f
+
+[PATCH/AARCH64] Accept vulcan as a cpu name for the AArch64 port of GCC
+
+gcc/ChangeLog
+
+	* config/aarch64/aarch64-cores.def (vulcan): New core.
+	* config/aarch64/aarch64-tune.md: Regenerate.
+	* doc/invoke.texi: Document vulcan as an available option.
+
+diff -urpN a/src/gcc/doc/invoke.texi b/src/gcc/doc/invoke.texi
+--- a/src/gcc/doc/invoke.texi	2016-06-21 10:31:29.994143994 -0600
++++ b/src/gcc/doc/invoke.texi	2016-06-21 10:35:51.136081208 -0600
+@@ -12988,7 +12988,7 @@ Specify the name of the target processor
+ performance of the code.  Permissible values for this option are:
+ @samp{generic}, @samp{cortex-a35}, @samp{cortex-a53}, @samp{cortex-a57},
+ @samp{cortex-a72}, @samp{exynos-m1}, @samp{qdf24xx}, @samp{thunderx},
+-@samp{xgene1}.
++@samp{vulcan}, @samp{xgene1}.
+ 
+ Additionally, this option can specify that GCC should tune the performance
+ of the code for a big.LITTLE system.  Permissible values for this

@@ -1,0 +1,39 @@
+# DP: Add AArch64 Vulcan cpu support, taken from the trunk.
+
+From: jgreenhalgh <jgreenhalgh@138bc75d-0d04-0410-961f-82ee72b054a4>
+Date: Tue, 21 Jun 2016 13:43:29 +0000 (+0000)
+Subject: [PATCH/AARCH64] Accept vulcan as a cpu name for the AArch64 port of GCC
+X-Git-Url: https://gcc.gnu.org/git/?p=gcc.git;a=commitdiff_plain;h=2c6ac78145ac8ff2fd83271d093e23ab80a15e4f
+
+[PATCH/AARCH64] Accept vulcan as a cpu name for the AArch64 port of GCC
+
+gcc/ChangeLog
+
+	* config/aarch64/aarch64-cores.def (vulcan): New core.
+	* config/aarch64/aarch64-tune.md: Regenerate.
+	* doc/invoke.texi: Document vulcan as an available option.
+
+diff -urpN a/src/gcc/config/aarch64/aarch64-cores.def b/src/gcc/config/aarch64/aarch64-cores.def
+--- a/src/gcc/config/aarch64/aarch64-cores.def	2016-01-04 07:30:50.000000000 -0700
++++ b/src/gcc/config/aarch64/aarch64-cores.def	2016-06-21 10:32:59.191974071 -0600
+@@ -49,6 +49,10 @@ AARCH64_CORE("qdf24xx",     qdf24xx,   c
+ AARCH64_CORE("thunderx",    thunderx,  thunderx,  8A,  AARCH64_FL_FOR_ARCH8 | AARCH64_FL_CRC | AARCH64_FL_CRYPTO, thunderx,  "0x43", "0x0a1")
+ AARCH64_CORE("xgene1",      xgene1,    xgene1,    8A,  AARCH64_FL_FOR_ARCH8, xgene1, "0x50", "0x000")
+ 
++/* V8.1 Architecture Processors.  */
++
++AARCH64_CORE("vulcan",  vulcan, cortexa57, 8_1A,  AARCH64_FL_FOR_ARCH8_1 | AARCH64_FL_CRYPTO, cortexa57, "0x42", "0x516")
++
+ /* V8 big.LITTLE implementations.  */
+ 
+ AARCH64_CORE("cortex-a57.cortex-a53",  cortexa57cortexa53, cortexa53, 8A,  AARCH64_FL_FOR_ARCH8 | AARCH64_FL_CRC, cortexa57, "0x41", "0xd07.0xd03")
+diff -urpN a/src/gcc/config/aarch64/aarch64-tune.md b/src/gcc/config/aarch64/aarch64-tune.md
+--- a/src/gcc/config/aarch64/aarch64-tune.md	2016-04-27 02:22:11.000000000 -0600
++++ b/src/gcc/config/aarch64/aarch64-tune.md	2016-06-21 10:32:59.191974071 -0600
+@@ -1,5 +1,5 @@
+ ;; -*- buffer-read-only: t -*-
+ ;; Generated automatically by gentune.sh from aarch64-cores.def
+ (define_attr "tune"
+-	"cortexa35,cortexa53,cortexa57,cortexa72,exynosm1,qdf24xx,thunderx,xgene1,cortexa57cortexa53,cortexa72cortexa53"
++	"cortexa35,cortexa53,cortexa57,cortexa72,exynosm1,qdf24xx,thunderx,xgene1,vulcan,cortexa57cortexa53,cortexa72cortexa53"
+ 	(const (symbol_ref "((enum attr_tune) aarch64_tune)")))

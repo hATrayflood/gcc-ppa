@@ -1,0 +1,4 @@
+libcilkrts.so.5 #PACKAGE# #MINVER#
+ (symver)CILKABI0 4.9
+ (symver)CILKABI1 4.9
+ (symver)CILKLIB1.02 4.9

@@ -1,0 +1,17 @@
+# DP: PR libstdc++/66145, std::ios_base::failure objects thrown from libstdc++.so use old ABI
+# DP: Just build src/c++11/functexcept.cc using the new ABI. It will break
+# DP: code, which will be handled in the archive by adding Breaks for the
+# DP: affected packages.  Third party code using such code will need a rebuild.
+
+--- a/src/libstdc++-v3/src/c++11/functexcept.cc
++++ b/src/libstdc++-v3/src/c++11/functexcept.cc
+@@ -20,9 +20,6 @@
+ // see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+ // <http://www.gnu.org/licenses/>.
+ 
+-// We don't want to change the type thrown by __throw_ios_failure (yet?)
+-#define _GLIBCXX_USE_CXX11_ABI 0
+-
+ #include <bits/functexcept.h>
+ #include <cstdlib>
+ #include <exception>

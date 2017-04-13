@@ -1,0 +1,141 @@
+# DP: PR go/66904, pass linker flags from "#cgo pkg-config:" directives.
+
+commit 6209b6e6b849b6d913be74253e0e972de01d4785
+Author: Michael Hudson-Doyle <michael.hudson@canonical.com>
+Date:   Thu Jan 21 14:53:55 2016 +1300
+
+    cmd/go: fix "#cgo pkg-config:" comments with gccgo
+    
+    DO NOT SUBMIT
+    
+    This is too late for Go 1.6 but we'd like to get a fix into Ubuntu (as a distro
+    patch) so a review would be appreciated.
+    
+    The unique difficulty of #cgo pkg-config is that the linker flags are recorded
+    when the package is compiled but (obviously) must be used when the package is
+    linked into an executable -- so the flags need to be stored on disk somewhere.
+    As it happens cgo already writes out a _cgo_flags file: nothing uses it
+    currently, but this change adds it to the lib$pkg.a file when compiling a
+    package, reads it out when linking (and passes a version of the .a file with
+    _cgo_flags stripped out of it to the linker). It's all fairly ugly but it works
+    and I can't really think of any way of reducing the essential level of
+    ugliness.
+    
+    Fixes #11739
+    
+    Change-Id: I35621878014e1e107eda77a5b0b23d0240ec5750
+
+--- a/src/libgo/go/cmd/go/build.go
++++ a/src/libgo/go/cmd/go/build.go
+@@ -887,6 +887,9 @@ func (b *builder) build(a *action) (err error) {
+ 		if err != nil {
+ 			return err
+ 		}
++		if _, ok := buildToolchain.(gccgoToolchain); ok {
++			cgoObjects = append(cgoObjects, filepath.Join(a.objdir, "_cgo_flags"))
++		}
+ 		cgoObjects = append(cgoObjects, outObj...)
+ 		gofiles = append(gofiles, outGo...)
+ 	}
+@@ -1928,6 +1931,57 @@ func (tools gccgoToolchain) ld(b *builder, p *Package, out string, allactions []
+ 	cxx := len(p.CXXFiles) > 0
+ 	objc := len(p.MFiles) > 0
+ 
++	readCgoFlags := func(flagsFile string) error {
++		flags, err := ioutil.ReadFile(flagsFile)
++		if err != nil {
++			return err
++		}
++		for _, line := range strings.Split(string(flags), "\n") {
++			if strings.HasPrefix(line, "_CGO_LDFLAGS=") {
++				cgoldflags = append(cgoldflags, strings.Fields(line[13:])...)
++			}
++		}
++		return nil
++	}
++
++	readAndRemoveCgoFlags := func(archive string) (string, error) {
++		newa, err := ioutil.TempFile(b.work, filepath.Base(archive))
++		if err != nil {
++			return "", err
++		}
++		olda, err := os.Open(archive)
++		if err != nil {
++			return "", err
++		}
++		_, err = io.Copy(newa, olda)
++		if err != nil {
++			return "", err
++		}
++		err = olda.Close()
++		if err != nil {
++			return "", err
++		}
++		err = newa.Close()
++		if err != nil {
++			return "", err
++		}
++
++		newarchive := newa.Name()
++		err = b.run(b.work, p.ImportPath, nil, "ar", "x", newarchive, "_cgo_flags")
++		if err != nil {
++			return "", err
++		}
++		err = b.run(".", p.ImportPath, nil, "ar", "d", newarchive, "_cgo_flags")
++		if err != nil {
++			return "", err
++		}
++		err = readCgoFlags(filepath.Join(b.work, "_cgo_flags"))
++		if err != nil {
++			return "", err
++		}
++		return newarchive, nil
++	}
++
+ 	// Prefer the output of an install action to the output of a build action,
+ 	// because the install action will delete the output of the build action.
+ 	// Iterate over the list backward (reverse dependency order) so that we
+@@ -1937,16 +1991,24 @@ func (tools gccgoToolchain) ld(b *builder, p *Package, out string, allactions []
+ 		if !a.p.Standard {
+ 			if a.p != nil && !apackagesSeen[a.p] {
+ 				apackagesSeen[a.p] = true
++				target := a.target
++				if len(a.p.CgoFiles) > 0 {
++					var err error
++					target, err = readAndRemoveCgoFlags(target)
++					if err != nil {
++						return err
++					}
++				}
+ 				if a.p.fake && a.p.external {
+ 					// external _tests, if present must come before
+ 					// internal _tests. Store these on a seperate list
+ 					// and place them at the head after this loop.
+-					xfiles = append(xfiles, a.target)
++					xfiles = append(xfiles, target)
+ 				} else if a.p.fake {
+ 					// move _test files to the top of the link order
+-					afiles = append([]string{a.target}, afiles...)
++					afiles = append([]string{target}, afiles...)
+ 				} else {
+-					afiles = append(afiles, a.target)
++					afiles = append(afiles, target)
+ 				}
+ 			}
+ 		}
+@@ -1970,6 +2032,15 @@ func (tools gccgoToolchain) ld(b *builder, p *Package, out string, allactions []
+ 			}
+ 		}
+ 	}
++
++	for i, o := range ofiles {
++		if filepath.Base(o) == "_cgo_flags" {
++			readCgoFlags(o)
++			ofiles = append(ofiles[:i], ofiles[i+1:]...)
++			break
++		}
++	}
++
+ 	ldflags = append(ldflags, afiles...)
+ 	ldflags = append(ldflags, cgoldflags...)
+ 	ldflags = append(ldflags, envList("CGO_LDFLAGS", "")...)

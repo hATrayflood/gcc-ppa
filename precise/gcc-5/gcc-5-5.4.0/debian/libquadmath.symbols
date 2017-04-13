@@ -1,0 +1,2 @@
+libquadmath.so.0 #PACKAGE# #MINVER#
+ (symver)QUADMATH_1.0 4.6

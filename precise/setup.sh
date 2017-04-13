@@ -47,4 +47,5 @@ apt-get -y install texlive-latex-base
 apt-get -y install xsltproc
 apt-get -y install libxml2-utils
 apt-get -y install docbook-xsl-ns
+apt-get -y install libgraphite2-dev
 EOC

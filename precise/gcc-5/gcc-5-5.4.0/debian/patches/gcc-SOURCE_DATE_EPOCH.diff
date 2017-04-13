@@ -1,0 +1,184 @@
+# DP: Allow embedded timestamps by C/C++ macros to be set externally
+
+gcc/c-family/ChangeLog:
+
+2016-04-27  Eduard Sanou  <dhole@openmailbox.org>
+	    Matthias Klose  <doko@debian.org>
+
+	* c-common.c (get_source_date_epoch): New function, gets the environment
+	variable SOURCE_DATE_EPOCH and parses it as long long with error 
+	handling.
+	* c-common.h (get_source_date_epoch): Prototype.
+	* c-lex.c (c_lex_with_flags): set parse_in->source_date_epoch.
+
+gcc/ChangeLog:
+
+2016-04-27  Eduard Sanou  <dhole@openmailbox.org>
+	    Matthias Klose  <doko@debian.org>
+
+	* doc/cppenv.texi: Document SOURCE_DATE_EPOCH environment variable.
+
+libcpp/ChangeLog:
+
+2016-04-27  Eduard Sanou  <dhole@openmailbox.org>
+	    Matthias Klose  <doko@debian.org>
+
+	* include/cpplib.h (cpp_init_source_date_epoch): Prototype.
+	* init.c (cpp_init_source_date_epoch): New function.
+	* internal.h: Added source_date_epoch variable to struct
+	cpp_reader to store a reproducible date.
+	* macro.c (_cpp_builtin_macro_text): Set pfile->date timestamp from 
+	pfile->source_date_epoch instead of localtime if source_date_epoch is 
+	set, to be used for __DATE__ and __TIME__ macros to help reproducible 
+	builds.
+
+Index: b/src/gcc/c-family/c-common.c
+===================================================================
+--- a/src/gcc/c-family/c-common.c
++++ b/src/gcc/c-family/c-common.c
+@@ -12318,4 +12318,37 @@ pointer_to_zero_sized_aggr_p (tree t)
+   return (TYPE_SIZE (t) && integer_zerop (TYPE_SIZE (t)));
+ }
+ 
++/* Read SOURCE_DATE_EPOCH from environment to have a deterministic
++   timestamp to replace embedded current dates to get reproducible
++   results.  Returns -1 if SOURCE_DATE_EPOCH is not defined.  */
++time_t
++get_source_date_epoch ()
++{
++  char *source_date_epoch;
++  long long epoch;
++  char *endptr;
++
++  source_date_epoch = getenv ("SOURCE_DATE_EPOCH");
++  if (!source_date_epoch)
++    return (time_t) -1;
++
++  errno = 0;
++  epoch = strtoll (source_date_epoch, &endptr, 10);
++  if ((errno == ERANGE && (epoch == LLONG_MAX || epoch == LLONG_MIN))
++      || (errno != 0 && epoch == 0))
++    fatal_error (UNKNOWN_LOCATION, "environment variable $SOURCE_DATE_EPOCH: "
++		 "strtoll: %s\n", xstrerror(errno));
++  if (endptr == source_date_epoch)
++    fatal_error (UNKNOWN_LOCATION, "environment variable $SOURCE_DATE_EPOCH: "
++		 "no digits were found: %s\n", endptr);
++  if (*endptr != '\0')
++    fatal_error (UNKNOWN_LOCATION, "environment variable $SOURCE_DATE_EPOCH: "
++		 "trailing garbage: %s\n", endptr);
++  if (epoch < 0)
++    fatal_error (UNKNOWN_LOCATION, "environment variable $SOURCE_DATE_EPOCH: "
++		 "value must be nonnegative: %lld \n", epoch);
++
++  return (time_t) epoch;
++}
++
+ #include "gt-c-family-c-common.h"
+Index: b/src/gcc/c-family/c-common.h
+===================================================================
+--- a/src/gcc/c-family/c-common.h
++++ b/src/gcc/c-family/c-common.h
+@@ -1437,4 +1437,10 @@ extern bool contains_cilk_spawn_stmt (tr
+ extern tree cilk_for_number_of_iterations (tree);
+ extern bool check_no_cilk (tree, const char *, const char *,
+ 		           location_t loc = UNKNOWN_LOCATION);
++
++/* Read SOURCE_DATE_EPOCH from environment to have a deterministic
++   timestamp to replace embedded current dates to get reproducible
++   results.  Returns -1 if SOURCE_DATE_EPOCH is not defined.  */
++extern time_t get_source_date_epoch (void);
++
+ #endif /* ! GCC_C_COMMON_H */
+Index: b/src/gcc/c-family/c-lex.c
+===================================================================
+--- a/src/gcc/c-family/c-lex.c
++++ b/src/gcc/c-family/c-lex.c
+@@ -402,6 +402,9 @@ c_lex_with_flags (tree *value, location_
+   enum cpp_ttype type;
+   unsigned char add_flags = 0;
+   enum overflow_type overflow = OT_NONE;
++  time_t source_date_epoch = get_source_date_epoch ();
++
++  cpp_init_source_date_epoch (parse_in, source_date_epoch);
+ 
+   timevar_push (TV_CPP);
+  retry:
+Index: b/src/libcpp/include/cpplib.h
+===================================================================
+--- a/src/libcpp/include/cpplib.h
++++ b/src/libcpp/include/cpplib.h
+@@ -775,6 +775,9 @@ extern void cpp_init_special_builtins (c
+ /* Set up built-ins like __FILE__.  */
+ extern void cpp_init_builtins (cpp_reader *, int);
+ 
++/* Initialize the source_date_epoch value.  */
++extern void cpp_init_source_date_epoch (cpp_reader *, time_t);
++
+ /* This is called after options have been parsed, and partially
+    processed.  */
+ extern void cpp_post_options (cpp_reader *);
+Index: b/src/libcpp/init.c
+===================================================================
+--- a/src/libcpp/init.c
++++ b/src/libcpp/init.c
+@@ -530,6 +530,13 @@ cpp_init_builtins (cpp_reader *pfile, in
+     _cpp_define_builtin (pfile, "__OBJC__ 1");
+ }
+ 
++/* Initialize the source_date_epoch value.  */
++void
++cpp_init_source_date_epoch (cpp_reader *pfile, time_t source_date_epoch)
++{
++  pfile->source_date_epoch = source_date_epoch; 
++}
++
+ /* Sanity-checks are dependent on command-line options, so it is
+    called as a subroutine of cpp_read_main_file ().  */
+ #if ENABLE_CHECKING
+Index: b/src/libcpp/internal.h
+===================================================================
+--- a/src/libcpp/internal.h
++++ b/src/libcpp/internal.h
+@@ -502,6 +502,10 @@ struct cpp_reader
+   const unsigned char *date;
+   const unsigned char *time;
+ 
++  /* Externally set timestamp to replace current date and time useful for
++     reproducibility.  */
++  time_t source_date_epoch;
++
+   /* EOF token, and a token forcing paste avoidance.  */
+   cpp_token avoid_paste;
+   cpp_token eof;
+Index: b/src/libcpp/macro.c
+===================================================================
+--- a/src/libcpp/macro.c
++++ b/src/libcpp/macro.c
+@@ -350,13 +350,20 @@ _cpp_builtin_macro_text (cpp_reader *pfi
+ 	  time_t tt;
+ 	  struct tm *tb = NULL;
+ 
+-	  /* (time_t) -1 is a legitimate value for "number of seconds
+-	     since the Epoch", so we have to do a little dance to
+-	     distinguish that from a genuine error.  */
+-	  errno = 0;
+-	  tt = time(NULL);
+-	  if (tt != (time_t)-1 || errno == 0)
+-	    tb = localtime (&tt);
++	  /* Set a reproducible timestamp for __DATE__ and __TIME__ macro
++	     usage if SOURCE_DATE_EPOCH is defined.  */
++	  if (pfile->source_date_epoch != (time_t) -1)
++	     tb = gmtime (&pfile->source_date_epoch);
++	  else
++	    {
++	      /* (time_t) -1 is a legitimate value for "number of seconds
++		 since the Epoch", so we have to do a little dance to
++		 distinguish that from a genuine error.  */
++	      errno = 0;
++	      tt = time (NULL);
++	      if (tt != (time_t)-1 || errno == 0)
++		tb = localtime (&tt);
++	    }
+ 
+ 	  if (tb)
+ 	    {

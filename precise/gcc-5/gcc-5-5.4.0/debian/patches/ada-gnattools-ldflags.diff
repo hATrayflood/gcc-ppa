@@ -1,0 +1,96 @@
+# DP: Link gnat tools with the defaults LDFLAGS
+
+Index: b/src/gcc/ada/gcc-interface/Makefile.in
+===================================================================
+--- a/src/gcc/ada/gcc-interface/Makefile.in
++++ b/src/gcc/ada/gcc-interface/Makefile.in
+@@ -111,6 +111,7 @@ NO_SIBLING_ADAFLAGS = -fno-optimize-sibl
+ NO_REORDER_ADAFLAGS = -fno-toplevel-reorder
+ GNATLIBFLAGS = -W -Wall -gnatpg -nostdinc
+ GNATLIBCFLAGS = -g -O2
++GNATLIBLDFLAGS = $(LDFLAGS)
+ PICFLAG_FOR_TARGET = @PICFLAG_FOR_TARGET@
+ 
+ # Pretend that _Unwind_GetIPInfo is available for the target by default.  This
+@@ -2487,23 +2488,23 @@ common-tools: ../stamp-tools
+ 	  gnatchop gnatcmd gnatkr gnatls gnatprep gnatxref gnatfind gnatname \
+ 	  gnatclean -bargs $(ADA_INCLUDES) $(GNATBIND_FLAGS)
+ 	$(GNATLINK) -v gnatcmd -o ../../gnat$(exeext) \
+-		--GCC="$(GCC_LINK)" $(TOOLS_LIBS)
++		--GCC="$(GCC_LINK)" $(TOOLS_LIBS) $(LDFLAGS)
+ 	$(GNATLINK) -v gnatchop -o ../../gnatchop$(exeext) \
+-		--GCC="$(GCC_LINK)" $(TOOLS_LIBS)
++		--GCC="$(GCC_LINK)" $(TOOLS_LIBS) $(LDFLAGS)
+ 	$(GNATLINK) -v gnatkr -o ../../gnatkr$(exeext) \
+-		--GCC="$(GCC_LINK)" $(TOOLS_LIBS)
++		--GCC="$(GCC_LINK)" $(TOOLS_LIBS) $(LDFLAGS)
+ 	$(GNATLINK) -v gnatls -o ../../gnatls$(exeext) \
+-		--GCC="$(GCC_LINK)" $(TOOLS_LIBS)
++		--GCC="$(GCC_LINK)" $(TOOLS_LIBS) $(LDFLAGS)
+ 	$(GNATLINK) -v gnatprep -o ../../gnatprep$(exeext) \
+-		--GCC="$(GCC_LINK)" $(TOOLS_LIBS)
++		--GCC="$(GCC_LINK)" $(TOOLS_LIBS) $(LDFLAGS)
+ 	$(GNATLINK) -v gnatxref -o ../../gnatxref$(exeext) \
+-		--GCC="$(GCC_LINK)" $(TOOLS_LIBS)
++		--GCC="$(GCC_LINK)" $(TOOLS_LIBS) $(LDFLAGS)
+ 	$(GNATLINK) -v gnatfind -o ../../gnatfind$(exeext) \
+-		--GCC="$(GCC_LINK)" $(TOOLS_LIBS)
++		--GCC="$(GCC_LINK)" $(TOOLS_LIBS) $(LDFLAGS)
+ 	$(GNATLINK) -v gnatname -o ../../gnatname$(exeext) \
+-		--GCC="$(GCC_LINK)" $(TOOLS_LIBS)
++		--GCC="$(GCC_LINK)" $(TOOLS_LIBS) $(LDFLAGS)
+ 	$(GNATLINK) -v gnatclean -o ../../gnatclean$(exeext) \
+-		--GCC="$(GCC_LINK)" $(TOOLS_LIBS)
++		--GCC="$(GCC_LINK)" $(TOOLS_LIBS) $(LDFLAGS)
+ 
+ ../../gnatdll$(exeext): ../stamp-tools
+ 	$(GNATMAKE) -c $(ADA_INCLUDES) gnatdll --GCC="$(CC) $(ALL_ADAFLAGS)"
+@@ -2736,14 +2737,14 @@ gnatlib-shared-default:
+ 		-o libgnat$(hyphen)$(LIBRARY_VERSION)$(soext) \
+ 		$(GNATRTL_NONTASKING_OBJS) $(LIBGNAT_OBJS) \
+ 		$(SO_OPTS)libgnat$(hyphen)$(LIBRARY_VERSION)$(soext) \
+-		$(MISCLIB) -lm
++		$(MISCLIB) -lm $(GNATLIBLDFLAGS)
+ 	cd $(RTSDIR); `echo "$(GCC_FOR_TARGET)" \
+                 | sed -e 's,\./xgcc,../../xgcc,' -e 's,-B\./,-B../../,'` -shared $(GNATLIBCFLAGS) \
+ 		$(PICFLAG_FOR_TARGET) \
+ 		-o libgnarl$(hyphen)$(LIBRARY_VERSION)$(soext) \
+ 		$(GNATRTL_TASKING_OBJS) \
+ 		$(SO_OPTS)libgnarl$(hyphen)$(LIBRARY_VERSION)$(soext) \
+-		$(THREADSLIB)
++		$(THREADSLIB) $(GNATLIBLDFLAGS)
+ 	cd $(RTSDIR); $(LN_S) libgnat$(hyphen)$(LIBRARY_VERSION)$(soext) \
+ 		libgnat$(soext)
+ 	cd $(RTSDIR); $(LN_S) libgnarl$(hyphen)$(LIBRARY_VERSION)$(soext) \
+@@ -2754,6 +2755,7 @@ gnatlib-shared-dual:
+              GNATLIBFLAGS="$(GNATLIBFLAGS)" \
+ 	     GNATLIBCFLAGS="$(GNATLIBCFLAGS)" \
+ 	     GNATLIBCFLAGS_FOR_C="$(GNATLIBCFLAGS_FOR_C)" \
++             GNATLIBLDFLAGS="$(GNATLIBLDFLAGS)" \
+ 	     MULTISUBDIR="$(MULTISUBDIR)" \
+ 	     THREAD_KIND="$(THREAD_KIND)" \
+              gnatlib-shared-default
+@@ -2763,6 +2765,7 @@ gnatlib-shared-dual:
+              GNATLIBFLAGS="$(GNATLIBFLAGS)" \
+ 	     GNATLIBCFLAGS="$(GNATLIBCFLAGS)" \
+ 	     GNATLIBCFLAGS_FOR_C="$(GNATLIBCFLAGS_FOR_C)" \
++             GNATLIBLDFLAGS="$(GNATLIBLDFLAGS)" \
+ 	     MULTISUBDIR="$(MULTISUBDIR)" \
+ 	     THREAD_KIND="$(THREAD_KIND)" \
+              gnatlib
+@@ -2850,6 +2853,7 @@ gnatlib-shared:
+              GNATLIBFLAGS="$(GNATLIBFLAGS)" \
+ 	     GNATLIBCFLAGS="$(GNATLIBCFLAGS)" \
+ 	     GNATLIBCFLAGS_FOR_C="$(GNATLIBCFLAGS_FOR_C)" \
++             GNATLIBLDFLAGS="$(GNATLIBLDFLAGS)" \
+ 	     MULTISUBDIR="$(MULTISUBDIR)" \
+ 	     THREAD_KIND="$(THREAD_KIND)" \
+ 	     PICFLAG_FOR_TARGET="$(PICFLAG_FOR_TARGET)" \
+@@ -2890,6 +2894,7 @@ gnatlib-zcx:
+ 	     GNATLIBFLAGS="$(GNATLIBFLAGS)" \
+ 	     GNATLIBCFLAGS="$(GNATLIBCFLAGS)" \
+ 	     GNATLIBCFLAGS_FOR_C="$(GNATLIBCFLAGS_FOR_C)" \
++             GNATLIBLDFLAGS="$(GNATLIBLDFLAGS)" \
+ 	     FORCE_DEBUG_ADAFLAGS="$(FORCE_DEBUG_ADAFLAGS)" \
+ 	     MULTISUBDIR="$(MULTISUBDIR)" \
+ 	     THREAD_KIND="$(THREAD_KIND)" \

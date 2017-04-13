@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "upgrade" ] || [ "$1" = "configure" ]; then
+    update-alternatives --quiet --remove i586-linux-gnu-g++ /usr/bin/i586-linux-gnu-g++-5
+fi
+
+#DEBHELPER#
+
+exit 0

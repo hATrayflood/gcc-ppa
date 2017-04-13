@@ -1,0 +1,55 @@
+# DP: config-ml.in: Add D support.
+
+2015-04-30  Matthias Klose  <doko@ubuntu.com>
+
+        * config-ml.in: Add D support: treat GDC and GDCFLAGS like other
+        compiler/flag environment variables.
+
+Index: b/src/config-ml.in
+===================================================================
+--- a/src/config-ml.in
++++ b/src/config-ml.in
+@@ -525,6 +525,7 @@ multi-do:
+ 				GCJFLAGS="$(GCJFLAGS) $${flags}" \
+ 				GOCFLAGS="$(GOCFLAGS) $${flags}" \
+ 				CXXFLAGS="$(CXXFLAGS) $${flags}" \
++				DFLAGS="$(DFLAGS) $${flags}" \
+ 				LIBCFLAGS="$(LIBCFLAGS) $${flags}" \
+ 				LIBCXXFLAGS="$(LIBCXXFLAGS) $${flags}" \
+ 				LDFLAGS="$(LDFLAGS) $${flags}" \
+@@ -757,7 +758,7 @@ if [ -n "${multidirs}" ] && [ -z "${ml_n
+         break
+       fi
+     done
+-    ml_config_env='CC="${CC_}$flags" CXX="${CXX_}$flags" F77="${F77_}$flags" GCJ="${GCJ_}$flags" GFORTRAN="${GFORTRAN_}$flags" GOC="${GOC_}$flags"'
++    ml_config_env='CC="${CC_}$flags" CXX="${CXX_}$flags" F77="${F77_}$flags" GCJ="${GCJ_}$flags" GFORTRAN="${GFORTRAN_}$flags" GOC="${GOC_}$flags" GDC="${GDC_}$flags"'
+ 
+     if [ "${with_target_subdir}" = "." ]; then
+ 	CC_=$CC' '
+@@ -766,6 +767,7 @@ if [ -n "${multidirs}" ] && [ -z "${ml_n
+ 	GCJ_=$GCJ' '
+ 	GFORTRAN_=$GFORTRAN' '
+ 	GOC_=$GOC' '
++	GDC_=$GDC' '
+     else
+ 	# Create a regular expression that matches any string as long
+ 	# as ML_POPDIR.
+@@ -842,6 +844,18 @@ if [ -n "${multidirs}" ] && [ -z "${ml_n
+ 	  esac
+ 	done
+ 
++	GDC_=
++	for arg in ${GDC}; do
++	  case $arg in
++	  -[BIL]"${ML_POPDIR}"/*)
++	    GDC_="${GDC_}"`echo "X${arg}" | sed -n "s/X\\(-[BIL]${popdir_rx}\\).*/\\1/p"`/${ml_dir}`echo "X${arg}" | sed -n "s/X-[BIL]${popdir_rx}\\(.*\\)/\\1/p"`' ' ;;
++	  "${ML_POPDIR}"/*)
++	    GDC_="${GDC_}"`echo "X${arg}" | sed -n "s/X\\(${popdir_rx}\\).*/\\1/p"`/${ml_dir}`echo "X${arg}" | sed -n "s/X${popdir_rx}\\(.*\\)/\\1/p"`' ' ;;
++	  *)
++	    GDC_="${GDC_}${arg} " ;;
++	  esac
++	done
++
+ 	if test "x${LD_LIBRARY_PATH+set}" = xset; then
+ 	  LD_LIBRARY_PATH_=
+ 	  for arg in `echo "$LD_LIBRARY_PATH" | tr ':' ' '`; do

@@ -1,0 +1,1176 @@
+diff -urN debian/changelog gcc-5-5.4.0/debian/changelog
+--- debian/changelog	2017-04-13 09:59:53.963366656 +0900
++++ gcc-5-5.4.0/debian/changelog	2017-04-13 10:09:44.851348748 +0900
+@@ -1,3 +1,9 @@
++gcc-5 (5.4.0-6ubuntu1~16.04.4precise0) precise; urgency=medium
++
++  * ppa for precise
++
++ -- ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>  Thu, 13 Apr 2017 10:10:00 +0900
++
+ gcc-5 (5.4.0-6ubuntu1~16.04.4) xenial-security; urgency=medium
+ 
+   * SRU
+diff -urN debian/control gcc-5-5.4.0/debian/control
+--- debian/control	2017-04-13 09:59:53.975366655 +0900
++++ gcc-5-5.4.0/debian/control	2017-04-13 20:45:17.747249747 +0900
+@@ -1,30 +1,27 @@
+ Source: gcc-5
+ Section: devel
+ Priority: optional
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-XSBC-Original-Maintainer: Debian GCC Maintainers <debian-gcc@lists.debian.org>
+-Uploaders: Matthias Klose <doko@debian.org>
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.9.8
+-Build-Depends: debhelper (>= 9.20141010), dpkg-dev (>= 1.17.14), 
+-  g++-multilib [amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32] <!cross>, g++-5 [arm64] <!cross>, 
+-  libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6), libc6-dev (>= 2.13-31) [armel armhf], libc6-dev-amd64 [i386 x32], libc6-dev-sparc64 [sparc], libc6-dev-sparc [sparc64], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64 x32], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 mipsn32 mipsn32el mips64 mips64el s390x sparc64 x32], libn32gcc1 [mips mipsel mips64 mips64el], lib64gcc1 [i386 mips mipsel mipsn32 mipsn32el powerpc sparc s390 x32], libc6-dev-mips64 [mips mipsel mipsn32 mipsn32el], libc6-dev-mipsn32 [mips mipsel mips64 mips64el], libc6-dev-mips32 [mipsn32 mipsn32el mips64 mips64el], libc6-dev-x32 [amd64 i386], libx32gcc1 [amd64 i386], libc6-dev-armhf [armel], libhfgcc1 [armel], libc6-dev-armel [armhf], libsfgcc1 [armhf], libc6.1-dbg [alpha ia64] | libc0.3-dbg [hurd-i386] | libc0.1-dbg [kfreebsd-i386 kfreebsd-amd64] | libc6-dbg, 
++Build-Depends: debhelper (>= 9), dpkg-dev (>= 1.16.0~ubuntu4), 
++  g++-multilib [amd64 armel armhf i386 kfreebsd-amd64 mips mips64 mips64el mipsel mipsn32 mipsn32el powerpc ppc64 s390 s390x sparc sparc64 x32], g++-5 [arm64], 
++  libc6.1-dev (>= 2.13-0ubuntu6) [alpha ia64] | libc0.3-dev (>= 2.13-0ubuntu6) [hurd-i386] | libc0.1-dev (>= 2.13-0ubuntu6) [kfreebsd-i386 kfreebsd-amd64] | libc6-dev (>= 2.13-0ubuntu6), libc6-dev (>= 2.13-31) [armel armhf], libc6-dev-amd64 [i386 x32], libc6-dev-sparc64 [sparc], libc6-dev-sparc [sparc64], libc6-dev-s390 [s390x], libc6-dev-s390x [s390], libc6-dev-i386 [amd64 x32], libc6-dev-powerpc [ppc64], libc6-dev-ppc64 [powerpc], libc0.1-dev-i386 [kfreebsd-amd64], lib32gcc1 [amd64 ppc64 kfreebsd-amd64 mipsn32 mipsn32el mips64 mips64el s390x sparc64 x32], libn32gcc1 [mips mipsel mips64 mips64el], lib64gcc1 [i386 mips mipsel mipsn32 mipsn32el powerpc sparc s390 x32], libc6-dev-mips64 [mips mipsel mipsn32 mipsn32el], libc6-dev-mipsn32 [mips mipsel mips64 mips64el], libc6-dev-mips32 [mipsn32 mipsn32el mips64 mips64el], libc6-dev-armhf [armel], libhfgcc1 [armel], libc6-dev-armel [armhf], libsfgcc1 [armhf], libc6.1-dbg [alpha ia64] | libc0.3-dbg [hurd-i386] | libc0.1-dbg [kfreebsd-i386 kfreebsd-amd64] | libc6-dbg, 
+   kfreebsd-kernel-headers (>= 0.84) [kfreebsd-any], linux-libc-dev [m68k], 
+   m4, libtool, autoconf2.64, 
+   libunwind7-dev (>= 0.98.5-6) [ia64], libatomic-ops-dev [ia64], 
+   autogen, gawk, lzma, xz-utils, patchutils, 
+-  zlib1g-dev, systemtap-sdt-dev [linux-any kfreebsd-any hurd-any], 
+-  binutils:native (>= 2.26.1) | binutils-multiarch:native (>= 2.26.1), binutils-hppa64-linux-gnu:native (>= 2.26.1) [hppa amd64 i386 x32], 
++  zlib1g-dev, 
++  binutils (>= 2.22) | binutils-multiarch (>= 2.22), binutils-hppa64 (>= 2.22) [hppa], 
+   gperf (>= 3.0.1), bison (>= 1:2.3), flex, gettext, 
+-  gdb:native, 
++  gdb, 
+   texinfo (>= 4.3), locales, sharutils, 
+-  procps, zlib1g-dev, libantlr-java, python:native, libffi-dev, fastjar, libmagic-dev, libecj-java (>= 3.3.0-2), zip, libasound2-dev [ !hurd-any !kfreebsd-any], libxtst-dev, libxt-dev, libgtk2.0-dev (>= 2.4.4-2), libart-2.0-dev, libcairo2-dev, libgraphite2-dev, gnat-5:native [!m32r !sh3 !sh3eb !sh4eb !powerpcspe !mips64 !x32], g++-5:native, netbase, 
+-  libisl-dev, libmpc-dev (>= 1.0), libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), 
++  procps, zlib1g-dev, libantlr-java, python, libffi-dev, fastjar, libmagic-dev, libecj-java (>= 3.3.0-2), zip, libasound2-dev [ !hurd-any !kfreebsd-any], libxtst-dev, libxt-dev, libgtk2.0-dev (>= 2.4.4-2), libart-2.0-dev, libcairo2-dev, libgraphite2-dev, , netbase, 
++  libisl-dev-lts, libmpc-dev, libmpfr-dev (>= 3.0.0-9~), libgmp-dev (>= 2:5.0.1~), 
+   dejagnu [!m68k], realpath (>= 1.9.12), chrpath, lsb-release, quilt, 
+-   g++-5-alpha-linux-gnu [alpha] <cross>, gobjc-5-alpha-linux-gnu [alpha] <cross>, gfortran-5-alpha-linux-gnu [alpha] <cross>, gcj-5-alpha-linux-gnu [alpha] <cross>, gdc-5-alpha-linux-gnu [alpha] <cross>, gccgo-5-alpha-linux-gnu [alpha] <cross>, gnat-5-alpha-linux-gnu [alpha] <cross>, g++-5-x86-64-linux-gnu [amd64] <cross>, gobjc-5-x86-64-linux-gnu [amd64] <cross>, gfortran-5-x86-64-linux-gnu [amd64] <cross>, gcj-5-x86-64-linux-gnu [amd64] <cross>, gdc-5-x86-64-linux-gnu [amd64] <cross>, gccgo-5-x86-64-linux-gnu [amd64] <cross>, gnat-5-x86-64-linux-gnu [amd64] <cross>, g++-5-arm-linux-gnueabi [armel] <cross>, gobjc-5-arm-linux-gnueabi [armel] <cross>, gfortran-5-arm-linux-gnueabi [armel] <cross>, gcj-5-arm-linux-gnueabi [armel] <cross>, gdc-5-arm-linux-gnueabi [armel] <cross>, gccgo-5-arm-linux-gnueabi [armel] <cross>, gnat-5-arm-linux-gnueabi [armel] <cross>, g++-5-arm-linux-gnueabihf [armhf] <cross>, gobjc-5-arm-linux-gnueabihf [armhf] <cross>, gfortran-5-arm-linux-gnueabihf [armhf] <cross>, gcj-5-arm-linux-gnueabihf [armhf] <cross>, gdc-5-arm-linux-gnueabihf [armhf] <cross>, gccgo-5-arm-linux-gnueabihf [armhf] <cross>, gnat-5-arm-linux-gnueabihf [armhf] <cross>, g++-5-aarch64-linux-gnu [arm64] <cross>, gobjc-5-aarch64-linux-gnu [arm64] <cross>, gfortran-5-aarch64-linux-gnu [arm64] <cross>, gcj-5-aarch64-linux-gnu [arm64] <cross>, gdc-5-aarch64-linux-gnu [arm64] <cross>, gccgo-5-aarch64-linux-gnu [arm64] <cross>, gnat-5-aarch64-linux-gnu [arm64] <cross>, g++-5-i686-linux-gnu [i386] <cross>, gobjc-5-i686-linux-gnu [i386] <cross>, gfortran-5-i686-linux-gnu [i386] <cross>, gcj-5-i686-linux-gnu [i386] <cross>, gdc-5-i686-linux-gnu [i386] <cross>, gccgo-5-i686-linux-gnu [i386] <cross>, gnat-5-i686-linux-gnu [i386] <cross>, g++-5-mips-linux-gnu [mips] <cross>, gobjc-5-mips-linux-gnu [mips] <cross>, gfortran-5-mips-linux-gnu [mips] <cross>, gcj-5-mips-linux-gnu [mips] <cross>, gdc-5-mips-linux-gnu [mips] <cross>, gccgo-5-mips-linux-gnu [mips] <cross>, gnat-5-mips-linux-gnu [mips] <cross>, g++-5-mipsel-linux-gnu [mipsel] <cross>, gobjc-5-mipsel-linux-gnu [mipsel] <cross>, gfortran-5-mipsel-linux-gnu [mipsel] <cross>, gcj-5-mipsel-linux-gnu [mipsel] <cross>, gdc-5-mipsel-linux-gnu [mipsel] <cross>, gccgo-5-mipsel-linux-gnu [mipsel] <cross>, gnat-5-mipsel-linux-gnu [mipsel] <cross>, g++-5-mips64-linux-gnuabi64 [mips64] <cross>, gobjc-5-mips64-linux-gnuabi64 [mips64] <cross>, gfortran-5-mips64-linux-gnuabi64 [mips64] <cross>, gcj-5-mips64-linux-gnuabi64 [mips64] <cross>, gdc-5-mips64-linux-gnuabi64 [mips64] <cross>, gccgo-5-mips64-linux-gnuabi64 [mips64] <cross>, g++-5-mips64el-linux-gnuabi64 [mips64el] <cross>, gobjc-5-mips64el-linux-gnuabi64 [mips64el] <cross>, gfortran-5-mips64el-linux-gnuabi64 [mips64el] <cross>, gcj-5-mips64el-linux-gnuabi64 [mips64el] <cross>, gdc-5-mips64el-linux-gnuabi64 [mips64el] <cross>, gccgo-5-mips64el-linux-gnuabi64 [mips64el] <cross>, gnat-5-mips64el-linux-gnuabi64 [mips64el] <cross>, g++-5-powerpc-linux-gnu [powerpc] <cross>, gobjc-5-powerpc-linux-gnu [powerpc] <cross>, gfortran-5-powerpc-linux-gnu [powerpc] <cross>, gcj-5-powerpc-linux-gnu [powerpc] <cross>, gdc-5-powerpc-linux-gnu [powerpc] <cross>, gccgo-5-powerpc-linux-gnu [powerpc] <cross>, gnat-5-powerpc-linux-gnu [powerpc] <cross>, g++-5-powerpc64-linux-gnu [ppc64] <cross>, gobjc-5-powerpc64-linux-gnu [ppc64] <cross>, gfortran-5-powerpc64-linux-gnu [ppc64] <cross>, gcj-5-powerpc64-linux-gnu [ppc64] <cross>, gdc-5-powerpc64-linux-gnu [ppc64] <cross>, gccgo-5-powerpc64-linux-gnu [ppc64] <cross>, gnat-5-powerpc64-linux-gnu [ppc64] <cross>, g++-5-powerpc64le-linux-gnu [ppc64el] <cross>, gobjc-5-powerpc64le-linux-gnu [ppc64el] <cross>, gfortran-5-powerpc64le-linux-gnu [ppc64el] <cross>, gcj-5-powerpc64le-linux-gnu [ppc64el] <cross>, gdc-5-powerpc64le-linux-gnu [ppc64el] <cross>, gccgo-5-powerpc64le-linux-gnu [ppc64el] <cross>, gnat-5-powerpc64le-linux-gnu [ppc64el] <cross>, g++-5-m68k-linux-gnu [m68k] <cross>, gobjc-5-m68k-linux-gnu [m68k] <cross>, gfortran-5-m68k-linux-gnu [m68k] <cross>, gcj-5-m68k-linux-gnu [m68k] <cross>, gdc-5-m68k-linux-gnu [m68k] <cross>, g++-5-sh4-linux-gnu [sh4] <cross>, gobjc-5-sh4-linux-gnu [sh4] <cross>, gfortran-5-sh4-linux-gnu [sh4] <cross>, gcj-5-sh4-linux-gnu [sh4] <cross>, g++-5-sparc64-linux-gnu [sparc64] <cross>, gobjc-5-sparc64-linux-gnu [sparc64] <cross>, gfortran-5-sparc64-linux-gnu [sparc64] <cross>, gcj-5-sparc64-linux-gnu [sparc64] <cross>, gdc-5-sparc64-linux-gnu [sparc64] <cross>, gccgo-5-sparc64-linux-gnu [sparc64] <cross>, g++-5-s390x-linux-gnu [s390x] <cross>, gobjc-5-s390x-linux-gnu [s390x] <cross>, gfortran-5-s390x-linux-gnu [s390x] <cross>, gcj-5-s390x-linux-gnu [s390x] <cross>, gdc-5-s390x-linux-gnu [s390x] <cross>, gccgo-5-s390x-linux-gnu [s390x] <cross>, gnat-5-s390x-linux-gnu [s390x] <cross>, g++-5-x86-64-linux-gnux32 [x32] <cross>, gobjc-5-x86-64-linux-gnux32 [x32] <cross>, gfortran-5-x86-64-linux-gnux32 [x32] <cross>, gcj-5-x86-64-linux-gnux32 [x32] <cross>, gdc-5-x86-64-linux-gnux32 [x32] <cross>, gccgo-5-x86-64-linux-gnux32 [x32] <cross>, 
++  bash, 
+ Build-Depends-Indep: doxygen (>= 1.7.2), graphviz (>= 2.2), ghostscript, texlive-latex-base, xsltproc, libxml2-utils, docbook-xsl-ns, 
+-Homepage: http://gcc.gnu.org/
+-Vcs-Browser: http://svn.debian.org/viewsvn/gcccvs/branches/sid/gcc-5/
+-Vcs-Svn: svn://anonscm.debian.org/gcccvs/branches/sid/gcc-5
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-upper
++Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ Package: gcc-5-base
+ Architecture: any
+@@ -38,6 +35,52 @@
+  This package contains files common to all languages and libraries
+  contained in the GNU Compiler Collection (GCC).
+ 
++Package: libgcc1
++Architecture: any
++Section: libs
++Priority: required
++Depends: gcc-5-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
++Provides: libgcc1-armel [armel], libgcc1-armhf [armhf]
++Multi-Arch: same
++Pre-Depends: ${misc:Pre-Depends}
++Breaks: ${multiarch:breaks}
++Description: GCC support library
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libgcc1-dbg
++Architecture: any
++Section: debug
++Priority: extra
++Depends: gcc-5-base (= ${gcc:Version}), libgcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Provides: libgcc1-dbg-armel [armel], libgcc1-dbg-armhf [armhf]
++Multi-Arch: same
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
++Package: libgcc2
++Architecture: m68k
++Section: libs
++Priority: required
++Depends: gcc-5-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
++Multi-Arch: same
++Pre-Depends: ${misc:Pre-Depends}
++Breaks: ${multiarch:breaks}
++Description: GCC support library
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libgcc2-dbg
++Architecture: m68k
++Section: debug
++Priority: extra
++Depends: gcc-5-base (= ${gcc:Version}), libgcc2 (= ${gcc:EpochVersion}), ${misc:Depends}
++Multi-Arch: same
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: libgcc-5-dev
+ Architecture: any
+ Section: libdevel
+@@ -76,6 +119,25 @@
+ Description: GCC support library (debug symbols)
+  Debug symbols for the GCC support library.
+ 
++Package: lib64gcc1
++Architecture: i386 powerpc sparc s390 mips mipsel mipsn32 mipsn32el x32
++Section: libs
++Priority: optional
++Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: libgcc1 (<= 1:3.3-0pre9)
++Description: GCC support library (64bit)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: lib64gcc1-dbg
++Architecture: i386 powerpc sparc s390 mips mipsel mipsn32 mipsn32el x32
++Section: debug
++Priority: extra
++Depends: gcc-5-base (= ${gcc:Version}), lib64gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: lib64gcc-5-dev
+ Architecture: i386 powerpc sparc s390 mips mipsel mipsn32 mipsn32el x32
+ Section: libdevel
+@@ -92,6 +154,25 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
++Package: lib32gcc1
++Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32 mipsn32 mipsn32el mips64 mips64el
++Section: libs
++Priority: optional
++Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: ${confl:lib32}
++Description: GCC support library (32 bit Version)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: lib32gcc1-dbg
++Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32 mipsn32 mipsn32el mips64 mips64el
++Section: debug
++Priority: extra
++Depends: gcc-5-base (= ${gcc:Version}), lib32gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: lib32gcc-5-dev
+ Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32 mipsn32 mipsn32el mips64 mips64el
+ Section: libdevel
+@@ -108,6 +189,26 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
++Package: libhfgcc1
++Architecture: armel
++Section: libs
++Priority: optional
++Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: libgcc1-armhf [armel]
++Description: GCC support library (hard float ABI)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libhfgcc1-dbg
++Architecture: armel
++Section: debug
++Priority: extra
++Depends: gcc-5-base (= ${gcc:Version}), libhfgcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Conflicts: libgcc1-dbg-armhf [armel]
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: libhfgcc-5-dev
+ Architecture: armel
+ Section: libdevel
+@@ -124,6 +225,26 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
++Package: libsfgcc1
++Architecture: armhf
++Section: libs
++Priority: optional
++Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: libgcc1-armel [armhf]
++Description: GCC support library (soft float ABI)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libsfgcc1-dbg
++Architecture: armhf
++Section: debug
++Priority: extra
++Depends: gcc-5-base (= ${gcc:Version}), libsfgcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Conflicts: libgcc1-dbg-armel [armhf]
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
++
+ Package: libsfgcc-5-dev
+ Architecture: armhf
+ Section: libdevel
+@@ -140,24 +261,27 @@
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
+-Package: libn32gcc-5-dev
++Package: libn32gcc1
+ Architecture: mips mipsel mips64 mips64el
+-Section: libdevel
++Section: libs
+ Priority: optional
+-Recommends: ${dep:libcdev}
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libgccbiarch}, ${dep:libsspbiarch},
+- ${dep:libgompbiarch}, ${dep:libitmbiarch}, ${dep:libatomicbiarch},
+- ${dep:libbtracebiarch}, ${dep:libasanbiarch}, ${dep:liblsanbiarch},
+- ${dep:libtsanbiarch}, ${dep:libubsanbiarch},
+- ${dep:libvtvbiarch}, ${dep:libcilkrtsbiarch}, ${dep:libmpxbiarch},
+- ${dep:libqmathbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Replaces: gccgo-5-multilib (<< ${gcc:Version})
+-Description: GCC support library (n32 development files)
+- This package contains the headers and static library files necessary for
+- building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
++Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${misc:Depends}
++Conflicts: libgcc1 (<= 1:3.3-0pre9)
++Description: GCC support library (n32)
++ Shared version of the support library, a library of internal subroutines
++ that GCC uses to overcome shortcomings of particular machines, or
++ special needs for some languages.
++
++Package: libn32gcc1-dbg
++Architecture: mips mipsel mips64 mips64el
++Section: debug
++Priority: extra
++Depends: gcc-5-base (= ${gcc:Version}), libn32gcc1 (= ${gcc:EpochVersion}), ${misc:Depends}
++Description: GCC support library (debug symbols)
++ Debug symbols for the GCC support library.
+ 
+-Package: libx32gcc-5-dev
+-Architecture: amd64 i386
++Package: libn32gcc-5-dev
++Architecture: mips mipsel mips64 mips64el
+ Section: libdevel
+ Priority: optional
+ Recommends: ${dep:libcdev}
+@@ -168,7 +292,7 @@
+  ${dep:libvtvbiarch}, ${dep:libcilkrtsbiarch}, ${dep:libmpxbiarch},
+  ${dep:libqmathbiarch}, ${shlibs:Depends}, ${misc:Depends}
+ Replaces: gccgo-5-multilib (<< ${gcc:Version})
+-Description: GCC support library (x32 development files)
++Description: GCC support library (n32 development files)
+  This package contains the headers and static library files necessary for
+  building C programs which use libgcc, libgomp, libquadmath, libssp or libitm.
+ 
+@@ -225,7 +349,7 @@
+ Architecture: any
+ Section: devel
+ Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), gcc-5 (= ${gcc:Version}), libgmp-dev (>= 2:5.0.1~), libmpc-dev (>= 1.0), ${shlibs:Depends}, ${misc:Depends}
++Depends: gcc-5-base (= ${gcc:Version}), gcc-5 (= ${gcc:Version}), libgmp-dev (>= 2:5.0.1~), libmpc-dev, ${shlibs:Depends}, ${misc:Depends}
+ Description: Files for GNU GCC plugin development.
+  This package contains (header) files for GNU GCC plugin development. It
+  is only used for the development of GCC plugins, but not needed to run
+@@ -377,23 +501,6 @@
+ Description: GCC OpenMP (GOMP) support library (n32 debug symbols)
+  GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+ 
+-Package: libx32gomp1
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GCC OpenMP (GOMP) support library (x32)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+- in the GNU Compiler Collection.
+-
+-Package: libx32gomp1-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libx32gomp1 (= ${gcc:Version}), ${misc:Depends}
+-Description: GCC OpenMP (GOMP) support library (x32 debug symbols)
+- GOMP is an implementation of OpenMP for the C, C++, and Fortran compilers
+-
+ Package: libhfgomp1
+ Section: libs
+ Architecture: armel
+@@ -520,26 +627,6 @@
+ # accesses to the memory of a process, enabling easy-to-use synchronization of
+ # accesses to shared memory by several threads.
+ 
+-Package: libx32itm1
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GNU Transactional Memory Library (x32)
+- This manual documents the usage and internals of libitm. It provides
+- transaction support for accesses to the memory of a process, enabling
+- easy-to-use synchronization of accesses to shared memory by several threads.
+-
+-Package: libx32itm1-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libx32itm1 (= ${gcc:Version}), ${misc:Depends}
+-Description: GNU Transactional Memory Library (x32 debug symbols)
+- This manual documents the usage and internals of libitm. It provides
+- transaction support for accesses to the memory of a process, enabling
+- easy-to-use synchronization of accesses to shared memory by several threads.
+-
+ Package: libhfitm1
+ Section: libs
+ Architecture: armel
+@@ -660,24 +747,6 @@
+  library providing __atomic built-in functions. When an atomic call cannot
+  be turned into lock-free instructions, GCC will make calls into this library.
+ 
+-Package: libx32atomic1
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: support library providing __atomic built-in functions (x32)
+- library providing __atomic built-in functions. When an atomic call cannot
+- be turned into lock-free instructions, GCC will make calls into this library.
+-
+-Package: libx32atomic1-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libx32atomic1 (= ${gcc:Version}), ${misc:Depends}
+-Description: support library providing __atomic built-in functions (x32 debug symbols)
+- library providing __atomic built-in functions. When an atomic call cannot
+- be turned into lock-free instructions, GCC will make calls into this library.
+-
+ Package: libhfatomic1
+ Section: libs
+ Architecture: armel
+@@ -796,24 +865,6 @@
+ # AddressSanitizer (ASan) is a fast memory error detector.  It finds
+ # use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+ 
+-Package: libx32asan2
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: AddressSanitizer -- a fast memory error detector (x32)
+- AddressSanitizer (ASan) is a fast memory error detector.  It finds
+- use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+-
+-Package: libx32asan2-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libx32asan2 (= ${gcc:Version}), ${misc:Depends}
+-Description: AddressSanitizer -- a fast memory error detector (x32 debug symbols)
+- AddressSanitizer (ASan) is a fast memory error detector.  It finds
+- use-after-free and {heap,stack,global}-buffer overflow bugs in C/C++ programs.
+-
+ Package: libhfasan2
+ Section: libs
+ Architecture: armel
+@@ -932,24 +983,6 @@
+ # LeakSanitizer (Lsan) is a memory leak detector which is integrated
+ # into AddressSanitizer.
+ 
+-Package: libx32lsan0
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: LeakSanitizer -- a memory leak detector (x32)
+- LeakSanitizer (Lsan) is a memory leak detector which is integrated
+- into AddressSanitizer (empty package).
+-
+-Package: libx32lsan0-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libx32lsan0 (= ${gcc:Version}), ${misc:Depends}
+-Description: LeakSanitizer -- a memory leak detector (x32 debug symbols)
+- LeakSanitizer (Lsan) is a memory leak detector which is integrated
+- into AddressSanitizer (empty package).
+-
+ Package: libtsan0
+ Section: libs
+ Architecture: any
+@@ -1061,26 +1094,6 @@
+ # Various computations will be instrumented to detect undefined behavior
+ # at runtime. Available for C and C++.
+ 
+-Package: libx32ubsan0
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: UBSan -- undefined behaviour sanitizer (x32)
+- UndefinedBehaviorSanitizer can be enabled via -fsanitize=undefined.
+- Various computations will be instrumented to detect undefined behavior
+- at runtime. Available for C and C++.
+-
+-Package: libx32ubsan0-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libx32ubsan0 (= ${gcc:Version}), ${misc:Depends}
+-Description: UBSan -- undefined behaviour sanitizer (x32 debug symbols)
+- UndefinedBehaviorSanitizer can be enabled via -fsanitize=undefined.
+- Various computations will be instrumented to detect undefined behavior
+- at runtime. Available for C and C++.
+-
+ Package: libhfubsan0
+ Section: libs
+ Architecture: armel
+@@ -1183,96 +1196,6 @@
+  Intel Cilk Plus is an extension to the C and C++ languages to support
+  data and task parallelism.
+ 
+-Package: libx32cilkrts5
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: Intel Cilk Plus language extensions (x32)
+- Intel Cilk Plus is an extension to the C and C++ languages to support
+- data and task parallelism.
+-
+-Package: libx32cilkrts5-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libx32cilkrts5 (= ${gcc:Version}), ${misc:Depends}
+-Description: Intel Cilk Plus language extensions (x32 debug symbols)
+- Intel Cilk Plus is an extension to the C and C++ languages to support
+- data and task parallelism.
+-
+-Package: libmpx0
+-Section: libs
+-Architecture: any
+-Provides: libmpx0-armel [armel], libmpx0-armhf [armhf]
+-Multi-Arch: same
+-Pre-Depends: ${misc:Pre-Depends}
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: Intel memory protection extensions (runtime)
+- Intel MPX is a set of processor features which, with compiler,
+- runtime library and OS support, brings increased robustness to
+- software by checking pointer references whose compile time normal
+- intentions are usurped at runtime due to buffer overflow.
+-
+-Package: libmpx0-dbg
+-Architecture: any
+-Section: debug
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libmpx0 (= ${gcc:Version}), ${misc:Depends}
+-Provides: libmpx0-dbg-armel [armel], libmpx0-dbg-armhf [armhf]
+-Multi-Arch: same
+-Description: Intel memory protection extensions (debug symbols)
+- Intel MPX is a set of processor features which, with compiler,
+- runtime library and OS support, brings increased robustness to
+- software by checking pointer references whose compile time normal
+- intentions are usurped at runtime due to buffer overflow.
+-
+-Package: lib32mpx0
+-Section: libs
+-Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32 mipsn32 mipsn32el mips64 mips64el
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: ${confl:lib32}
+-Description: Intel memory protection extensions (32bit)
+- Intel MPX is a set of processor features which, with compiler,
+- runtime library and OS support, brings increased robustness to
+- software by checking pointer references whose compile time normal
+- intentions are usurped at runtime due to buffer overflow.
+-
+-Package: lib32mpx0-dbg
+-Architecture: amd64 ppc64 kfreebsd-amd64 s390x sparc64 x32 mipsn32 mipsn32el mips64 mips64el
+-Section: debug
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), lib32mpx0 (= ${gcc:Version}), ${misc:Depends}
+-Description: Intel memory protection extensions (32 bit debug symbols)
+- Intel MPX is a set of processor features which, with compiler,
+- runtime library and OS support, brings increased robustness to
+- software by checking pointer references whose compile time normal
+- intentions are usurped at runtime due to buffer overflow.
+-
+-Package: lib64mpx0
+-Section: libs
+-Architecture: i386 powerpc sparc s390 mips mipsel mipsn32 mipsn32el x32
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: Intel memory protection extensions (64bit)
+- Intel MPX is a set of processor features which, with compiler,
+- runtime library and OS support, brings increased robustness to
+- software by checking pointer references whose compile time normal
+- intentions are usurped at runtime due to buffer overflow.
+-
+-Package: lib64mpx0-dbg
+-Architecture: i386 powerpc sparc s390 mips mipsel mipsn32 mipsn32el x32
+-Section: debug
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), lib64mpx0 (= ${gcc:Version}), ${misc:Depends}
+-Description: Intel memory protection extensions (64bit debug symbols)
+- Intel MPX is a set of processor features which, with compiler,
+- runtime library and OS support, brings increased robustness to
+- software by checking pointer references whose compile time normal
+- intentions are usurped at runtime due to buffer overflow.
+-
+ Package: libquadmath0
+ Section: libs
+ Architecture: any
+@@ -1355,25 +1278,6 @@
+ # A library, which provides quad-precision mathematical functions on targets
+ # supporting the __float128 datatype.
+ 
+-Package: libx32quadmath0
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: GCC Quad-Precision Math Library (x32)
+- A library, which provides quad-precision mathematical functions on targets
+- supporting the __float128 datatype. The library is used to provide on such
+- targets the REAL(16) type in the GNU Fortran compiler.
+-
+-Package: libx32quadmath0-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libx32quadmath0 (= ${gcc:Version}), ${misc:Depends}
+-Description: GCC Quad-Precision Math Library (x32 debug symbols)
+- A library, which provides quad-precision mathematical functions on targets
+- supporting the __float128 datatype.
+-
+ Package: libhfquadmath0
+ Section: libs
+ Architecture: armel
+@@ -1551,15 +1455,6 @@
+  This package contains the headers and static library files needed to build
+  GNU ObjC applications.
+ 
+-Package: libx32objc-5-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), libx32gcc-5-dev (= ${gcc:Version}), libx32objc4 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Objective-C applications (x32 development files)
+- This package contains the headers and static library files needed to build
+- GNU ObjC applications.
+-
+ Package: libhfobjc-5-dev
+ Architecture: armel
+ Section: libdevel
+@@ -1648,22 +1543,6 @@
+ Description: Runtime library for GNU Objective-C applications (n32 debug symbols)
+  Library needed for GNU ObjC applications linked against the shared library.
+ 
+-Package: libx32objc4
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Objective-C applications (x32)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+-Package: libx32objc4-dbg
+-Section: debug
+-Architecture: amd64 i386
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libx32objc4 (= ${gcc:Version}), libx32gcc1-dbg (>= ${gcc:EpochVersion}), ${misc:Depends}
+-Description: Runtime library for GNU Objective-C applications (x32 debug symbols)
+- Library needed for GNU ObjC applications linked against the shared library.
+-
+ Package: libhfobjc4
+ Section: libs
+ Architecture: armel
+@@ -1768,15 +1647,6 @@
+  This package contains the headers and static library files needed to build
+  GNU Fortran applications.
+ 
+-Package: libx32gfortran-5-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), libx32gcc-5-dev (= ${gcc:Version}), libx32gfortran3 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Fortran applications (x32 development files)
+- This package contains the headers and static library files needed to build
+- GNU Fortran applications.
+-
+ Package: libhfgfortran-5-dev
+ Architecture: armel
+ Section: libdevel
+@@ -1874,24 +1744,6 @@
+  Library needed for GNU Fortran applications linked against the
+  shared library.
+ 
+-Package: libx32gfortran3
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Description: Runtime library for GNU Fortran applications (x32)
+- Library needed for GNU Fortran applications linked against the
+- shared library.
+-
+-Package: libx32gfortran3-dbg
+-Section: debug
+-Architecture: amd64 i386
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libx32gfortran3 (= ${gcc:Version}), ${misc:Depends}
+-Description: Runtime library for GNU Fortran applications (x32 debug symbols)
+- Library needed for GNU Fortran applications linked against the
+- shared library.
+-
+ Package: libhfgfortran3
+ Section: libs
+ Architecture: armel
+@@ -2050,26 +1902,6 @@
+  shared library. This currently is an empty package, because the
+  library is completely unstripped.
+ 
+-Package: libx32go7
+-Section: libs
+-Architecture: amd64 i386
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${dep:libcbiarch}, ${shlibs:Depends}, ${misc:Depends}
+-Replaces: libx32go3
+-Description: Runtime library for GNU Go applications (x32)
+- Library needed for GNU Go applications linked against the
+- shared library.
+-
+-Package: libx32go7-dbg
+-Section: debug
+-Architecture: amd64 i386
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libx32go7 (= ${gcc:Version}), ${misc:Depends}
+-Description: Runtime library for GNU Go applications (x32 debug symbols)
+- Library needed for GNU Go applications linked against the
+- shared library. This currently is an empty package, because the
+- library is completely unstripped.
+-
+ Package: gcj-5
+ Section: java
+ Architecture: any
+@@ -2228,7 +2060,7 @@
+ Provides: libstdc++6-armel [armel], libstdc++6-armhf [armhf]
+ Multi-Arch: same
+ Pre-Depends: ${misc:Pre-Depends}
+-Breaks: ${multiarch:breaks}, libantlr-dev (<= 2.7.7+dfsg-6), libaqsis1 (<= 1.8.2-1), libassimp3 (<= 3.0~dfsg-4), blockattack (<= 1.4.1+ds1-2.1build2), boo (<= 0.9.5~git20110729.r1.202a430-2), libboost-date-time1.55.0, libcpprest2.2 (<= 2.2.0-1), printer-driver-brlaser (<= 3-3), c++-annotations (<= 10.2.0-1), chromium-browser (<= 43.0.2357.130-0ubuntu2), clustalx (<= 2.1+lgpl-2), libdavix0 (<= 0.4.0-1build1), libdballe6 (<= 6.8-1), dff (<= 1.3.0+dfsg.1-4.1build2), libdiet-sed2.8 (<= 2.8.0-1build3), libdiet-client2.8 (<= 2.8.0-1build3), libdiet-admin2.8 (<= 2.8.0-1build3), libkgeomap2 (<= 4:15.04.2-0ubuntu1), libmediawiki1 (<= 1.0~digikam4.10.0-0ubuntu2), libkvkontakte1 (<= 1.0~digikam4.10.0-0ubuntu2), emscripten (<= 1.22.1-1), ergo (<= 3.4.0-1), fceux (<= 2.2.2+dfsg0-1), flush (<= 0.9.12-3.1ubuntu1), libfreefem++ (<= 3.37.1-1), freeorion (<= 0.4.4+git20150327-2), fslview (<= 4.0.1-4), fwbuilder (<= 5.1.0-4), libgazebo5 (<= 5.0.1+dfsg-2.1), libgetfem4++ (<= 4.2.1~beta1~svn4482~dfsg-3ubuntu3), libgmsh2 (<= 2.8.5+dfsg-1.1ubuntu1), gnote (<= 3.16.2-1), gnudatalanguage (<= 0.9.5-2build1), python-healpy (<= 1.8.1-1), innoextract (<= 1.4-1build1), libinsighttoolkit4.6 (<= 4.6.0-3ubuntu3), libdap17 (<= 3.14.0-2), libdapclient6 (<= 3.14.0-2), libdapserver7 (<= 3.14.0-2), libkolabxml1 (<= 1.1.0-3), libpqxx-4.0 (<= 4.0.1+dfsg-3ubuntu1), libreoffice-core (<= 1:4.4.4~rc3-0ubuntu1), librime1 (<= 1.2+dfsg-2), libwibble-dev (<= 1.1-1), lightspark (<= 0.7.2+git20150512-2), libmarisa0 (<= 0.2.4-8build1), mira-assembler (<= 4.9.5-1), mongodb (<= 1:2.6.3-0ubuntu7), mongodb-server (<= 1:2.6.3-0ubuntu7), ncbi-blast+ (<= 2.2.30-4), libogre-1.8.0 (<= 1.8.1+dfsg-0ubuntu5), libogre-1.9.0 (<= 1.9.0+dfsg1-4), openscad (<= 2014.03+dfsg-1build1), libopenwalnut1 (<= 1.4.0~rc1+hg3a3147463ee2-1ubuntu2), passepartout (<= 0.7.1-1.1), pdf2djvu (<= 0.7.19-1ubuntu2), photoprint (<= 0.4.2~pre2-2.3), plastimatch (<= 1.6.2+dfsg-1), plee-the-bear (<= 0.6.0-3.1), povray (<= 1:3.7.0.0-8), powertop (<= 2.6.1-1), psi4 (<= 4.0~beta5+dfsg-2build1), python3-taglib (<= 0.3.6+dfsg-2build2), realtimebattle (<= 1.0.8-14), ruby-passenger (<= 4.0.53-1), libapache2-mod-passenger (<= 4.0.53-1), sqlitebrowser (<= 3.5.1-3), tecnoballz (<= 0.93.1-6), wesnoth-1.12-core (<= 1:1.12.4-1), widelands (<= 1:18-3build1), libwreport2 (<= 2.14-1), xflr5 (<= 6.09.06-2), libxmltooling6 (<= 1.5.3-2.1), 
++Breaks: ${multiarch:breaks}, 
+ Conflicts: scim (<< 1.4.2-1)
+ Replaces: libstdc++6-5-dbg (<< 4.9.0-3)
+ Description: GNU Standard C++ Library v3
+@@ -2275,19 +2107,6 @@
+  was included up to g++-2.95. The first version of libstdc++-v3 appeared
+  in g++-3.0.
+ 
+-Package: libx32stdc++6
+-Architecture: amd64 i386
+-Section: libs
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), libx32gcc1 (>= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: GNU Standard C++ Library v3 (x32)
+- This package contains an additional runtime library for C++ programs
+- built with the GNU compiler.
+- .
+- libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+- was included up to g++-2.95. The first version of libstdc++-v3 appeared
+- in g++-3.0.
+-
+ Package: libhfstdc++6
+ Architecture: armel
+ Section: libs
+@@ -2454,33 +2273,6 @@
+  This package contains the shared library of libstdc++ compiled with
+  debugging symbols.
+ 
+-Package: libx32stdc++-5-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), libx32gcc-5-dev (= ${gcc:Version}), libx32stdc++6 (>= ${gcc:Version}),
+- libstdc++-5-dev (= ${gcc:Version}), ${misc:Depends}
+-Description: GNU Standard C++ Library v3 (development files)
+- This package contains the headers and static library files necessary for
+- building C++ programs which use libstdc++.
+- .
+- libstdc++-v3 is a complete rewrite from the previous libstdc++-v2, which
+- was included up to g++-2.95. The first version of libstdc++-v3 appeared
+- in g++-3.0.
+-
+-Package: libx32stdc++6-5-dbg
+-Architecture: amd64 i386
+-Section: debug
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libx32stdc++6 (>= ${gcc:Version}),
+- libstdc++-5-dev (= ${gcc:Version}), libx32gcc1-dbg (>= ${gcc:EpochVersion}),
+- ${shlibs:Depends}, ${misc:Depends}
+-Conflicts: libx32stdc++6-dbg, libx32stdc++6-4.6-dbg,
+- libx32stdc++6-4.7-dbg, libx32stdc++6-4.8-dbg, libx32stdc++6-4.9-dbg
+-Description: GNU Standard C++ Library v3 (debugging files)
+- This package contains the shared library of libstdc++ compiled with
+- debugging symbols.
+-
+ Package: libhfstdc++-5-dev
+ Architecture: armel
+ Section: libdevel
+@@ -2550,216 +2342,6 @@
+  alphabetical list, compound list, file list, namespace members,
+  compound members and file members.
+ 
+-Package: gnat-5
+-Architecture: any
+-Priority: optional
+-Pre-Depends: ${misc:Pre-Depends}
+-Depends: gcc-5-base (= ${gcc:Version}), gcc-5 (>= ${gcc:SoftVersion}), ${dep:libgnat}, ${dep:libcdev}, ${shlibs:Depends}, ${misc:Depends}
+-Suggests: gnat-5-doc, ada-reference-manual-2012, gnat-5-sjlj
+-Breaks:   gnat (<< 4.6.1), dh-ada-library (<< 6.0), gnat-4.6-base (= 4.6.4-2),
+- gnat-4.9-base (= 4.9-20140330-1)
+-Replaces: gnat (<< 4.6.1), dh-ada-library (<< 6.0), gnat-4.6-base (= 4.6.4-2),
+- gnat-4.9-base (= 4.9-20140330-1)
+-# Takes over symlink from gnat (<< 4.6.1): /usr/bin/gnatgcc.
+-# Takes over file from dh-ada-library (<< 6.0): debian_packaging.mk.
+-# g-base 4.6.4-2, 4.9-20140330-1 contain debian_packaging.mk by mistake.
+-# Newer versions of gnat and dh-ada-library will not provide these files.
+-Conflicts: gnat (<< 4.1), gnat-3.1, gnat-3.2, gnat-3.3, gnat-3.4, gnat-3.5,
+- gnat-4.0, gnat-4.1, gnat-4.2, gnat-4.3, gnat-4.4, gnat-4.6, gnat-4.7, gnat-4.8,
+- gnat-4.9
+-# These other packages will continue to provide /usr/bin/gnatmake and
+-# other files.
+-Description: GNU Ada compiler
+- GNAT is a compiler for the Ada programming language. It produces optimized
+- code on platforms supported by the GNU Compiler Collection (GCC).
+- .
+- This package provides the compiler, tools and runtime library that handles
+- exceptions using the default zero-cost mechanism.
+-
+-Package: gnat-5-sjlj
+-Architecture: any
+-Priority: extra
+-Pre-Depends: ${misc:Pre-Depends}
+-Depends: gcc-5-base (= ${gcc:Version}), gnat-5 (= ${gnat:Version}), ${misc:Depends}
+-Description: GNU Ada compiler (setjump/longjump runtime library)
+- GNAT is a compiler for the Ada programming language. It produces optimized
+- code on platforms supported by the GNU Compiler Collection (GCC).
+- .
+- This package provides an alternative runtime library that handles
+- exceptions using the setjump/longjump mechanism (as a static library
+- only).  You can install it to supplement the normal compiler.
+-
+-Package: libgnat-5
+-Section: libs
+-Architecture: any
+-Multi-Arch: same
+-Pre-Depends: ${misc:Pre-Depends}
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), ${shlibs:Depends}, ${misc:Depends}
+-Description: runtime for applications compiled with GNAT (shared library)
+- GNAT is a compiler for the Ada programming language. It produces optimized
+- code on platforms supported by the GNU Compiler Collection (GCC).
+- .
+- The libgnat library provides runtime components needed by most
+- applications produced with GNAT.
+- .
+- This package contains the runtime shared library.
+-
+-Package: libgnat-5-dbg
+-Section: debug
+-Architecture: any
+-Multi-Arch: same
+-Pre-Depends: ${misc:Pre-Depends}
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), libgnat-5 (= ${gnat:Version}), ${misc:Depends}
+-Description: runtime for applications compiled with GNAT (debugging symbols)
+- GNAT is a compiler for the Ada programming language. It produces optimized
+- code on platforms supported by the GNU Compiler Collection (GCC).
+- .
+- The libgnat library provides runtime components needed by most
+- applications produced with GNAT.
+- .
+- This package contains the debugging symbols.
+-
+-Package: libgnatvsn5-dev
+-Section: libdevel
+-Architecture: any
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), gnat-5 (= ${gnat:Version}),
+- libgnatvsn5 (= ${gnat:Version}), ${misc:Depends}
+-Conflicts: libgnatvsn-dev (<< 5),
+- libgnatvsn4.1-dev, libgnatvsn4.3-dev, libgnatvsn4.4-dev,
+- libgnatvsn4.5-dev, libgnatvsn4.6-dev, libgnatvsn4.9-dev,
+-Description: GNU Ada compiler selected components (development files)
+- GNAT is a compiler for the Ada programming language. It produces optimized
+- code on platforms supported by the GNU Compiler Collection (GCC).
+- .
+- The libgnatvsn library exports selected GNAT components for use in other
+- packages, most notably ASIS tools. It is licensed under the GNAT-Modified
+- GPL, allowing to link proprietary programs with it.
+- .
+- This package contains the development files and static library.
+-
+-Package: libgnatvsn5
+-Architecture: any
+-Multi-Arch: same
+-Pre-Depends: ${misc:Pre-Depends}
+-Priority: optional
+-Section: libs
+-Depends: gcc-5-base (= ${gcc:Version}), libgnat-5 (= ${gnat:Version}),
+- ${shlibs:Depends}, ${misc:Depends}
+-Description: GNU Ada compiler selected components (shared library)
+- GNAT is a compiler for the Ada programming language. It produces optimized
+- code on platforms supported by the GNU Compiler Collection (GCC).
+- .
+- The libgnatvsn library exports selected GNAT components for use in other
+- packages, most notably ASIS tools. It is licensed under the GNAT-Modified
+- GPL, allowing to link proprietary programs with it.
+- .
+- This package contains the runtime shared library.
+-
+-Package: libgnatvsn5-dbg
+-Architecture: any
+-Multi-Arch: same
+-Pre-Depends: ${misc:Pre-Depends}
+-Priority: extra
+-Section: debug
+-Depends: gcc-5-base (= ${gcc:Version}), libgnatvsn5 (= ${gnat:Version}), ${misc:Depends}
+-Suggests: gnat
+-Description: GNU Ada compiler selected components (debugging symbols)
+- GNAT is a compiler for the Ada programming language. It produces optimized
+- code on platforms supported by the GNU Compiler Collection (GCC).
+- .
+- The libgnatvsn library exports selected GNAT components for use in other
+- packages, most notably ASIS tools. It is licensed under the GNAT-Modified
+- GPL, allowing to link proprietary programs with it.
+- .
+- This package contains the debugging symbols.
+-
+-Package: libgnatprj5-dev
+-Section: libdevel
+-Architecture: any
+-Priority: extra
+-Depends: gcc-5-base (= ${gcc:Version}), gnat-5 (= ${gnat:Version}),
+- libgnatprj5 (= ${gnat:Version}),
+- libgnatvsn5-dev (= ${gnat:Version}), ${misc:Depends}
+-Conflicts: libgnatprj-dev (<< 5),
+- libgnatprj4.1-dev, libgnatprj4.3-dev, libgnatprj4.4-dev,
+- libgnatprj4.5-dev, libgnatprj4.6-dev, libgnatprj4.9-dev,
+-Description: GNU Ada compiler Project Manager (development files)
+- GNAT is a compiler for the Ada programming language. It produces optimized
+- code on platforms supported by the GNU Compiler Collection (GCC).
+- .
+- GNAT uses project files to organise source and object files in large-scale
+- development efforts. The libgnatprj library exports GNAT project files
+- management for use in other packages, most notably ASIS tools (package
+- asis-programs) and GNAT Programming Studio (package gnat-gps). It is
+- licensed under the pure GPL; all programs that use it must also be
+- distributed under the GPL, or not distributed at all.
+- .
+- This package contains the development files and static library.
+-
+-Package: libgnatprj5
+-Architecture: any
+-Multi-Arch: same
+-Pre-Depends: ${misc:Pre-Depends}
+-Priority: optional
+-Section: libs
+-Depends: gcc-5-base (= ${gcc:Version}), libgnat-5 (= ${gnat:Version}),
+- libgnatvsn5 (= ${gnat:Version}),
+- ${shlibs:Depends}, ${misc:Depends}
+-Description: GNU Ada compiler Project Manager (shared library)
+- GNAT is a compiler for the Ada programming language. It produces optimized
+- code on platforms supported by the GNU Compiler Collection (GCC).
+- .
+- GNAT uses project files to organise source and object files in large-scale
+- development efforts. The libgnatprj library exports GNAT project files
+- management for use in other packages, most notably ASIS tools (package
+- asis-programs) and GNAT Programming Studio (package gnat-gps). It is
+- licensed under the pure GPL; all programs that use it must also be
+- distributed under the GPL, or not distributed at all.
+- .
+- This package contains the runtime shared library.
+-
+-Package: libgnatprj5-dbg
+-Architecture: any
+-Multi-Arch: same
+-Pre-Depends: ${misc:Pre-Depends}
+-Priority: extra
+-Section: debug
+-Depends: gcc-5-base (= ${gcc:Version}), libgnatprj5 (= ${gnat:Version}), ${misc:Depends}
+-Suggests: gnat
+-Description: GNU Ada compiler Project Manager (debugging symbols)
+- GNAT is a compiler for the Ada programming language. It produces optimized
+- code on platforms supported by the GNU Compiler Collection (GCC).
+- .
+- GNAT uses project files to organise source and object files in large-scale
+- development efforts. The libgnatprj library exports GNAT project files
+- management for use in other packages, most notably ASIS tools (package
+- asis-programs) and GNAT Programming Studio (package gnat-gps). It is
+- licensed under the pure GPL; all programs that use it must also be
+- distributed under the GPL, or not distributed at all.
+- .
+- This package contains the debugging symbols.
+-
+-Package: gnat-5-doc
+-Architecture: all
+-Section: doc
+-Priority: optional
+-Depends: dpkg (>= 1.15.4) | install-info, ${misc:Depends}
+-Suggests: gnat-5
+-Conflicts: gnat-4.1-doc, gnat-4.2-doc,
+-  gnat-4.3-doc, gnat-4.4-doc, 
+-  gnat-4.6-doc, gnat-4.9-doc
+-Description: GNU Ada compiler (documentation)
+- GNAT is a compiler for the Ada programming language. It produces optimized
+- code on platforms supported by the GNU Compiler Collection (GCC).
+- .
+- The libgnat library provides runtime components needed by most
+- applications produced with GNAT.
+- .
+- This package contains the documentation in info format.
+-
+ Package: gdc-5
+ Architecture: any
+ Priority: optional
+@@ -2831,16 +2413,6 @@
+  This is the Phobos standard library that comes with the D2 compiler.
+  .
+  For more information check http://www.dlang.org/phobos/
+-
+-Package: libx32phobos-5-dev
+-Architecture: amd64 i386
+-Section: libdevel
+-Priority: optional
+-Depends: gcc-5-base (= ${gcc:Version}), libx32gcc-5-dev (= ${gcc:Version}), ${dep:libx32z}, ${shlibs:Depends}, ${misc:Depends}
+-Description: Phobos D standard library (x32 development files)
+- This is the Phobos standard library that comes with the D2 compiler.
+- .
+- For more information check http://www.dlang.org/phobos/
+ 
+ Package: libhfphobos-5-dev
+ Architecture: armel
+diff -urN debian/control.m4 gcc-5-5.4.0/debian/control.m4
+--- debian/control.m4	2017-04-13 09:59:53.983366657 +0900
++++ gcc-5-5.4.0/debian/control.m4	2017-04-13 10:11:28.555345912 +0900
+@@ -39,23 +39,7 @@
+ Source: SRCNAME
+ Section: devel
+ Priority: PRI(optional)
+-ifelse(DIST,`Ubuntu',`dnl
+-ifelse(regexp(SRCNAME, `gnat\|gdc-'),0,`dnl
+-Maintainer: Ubuntu MOTU Developers <ubuntu-motu@lists.ubuntu.com>
+-', `dnl
+-Maintainer: Ubuntu Core developers <ubuntu-devel-discuss@lists.ubuntu.com>
+-')dnl SRCNAME
+-XSBC-Original-Maintainer: MAINTAINER
+-', `dnl
+-Maintainer: MAINTAINER
+-')dnl DIST
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Uploaders: Ludovic Brenta <lbrenta@debian.org>
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Uploaders: Iain Buclaw <ibuclaw@ubuntu.com>, Matthias Klose <doko@debian.org>
+-', `dnl
+-Uploaders: Matthias Klose <doko@debian.org>
+-')dnl SRCNAME
++Maintainer: ABE Hiroki (hATrayflood) <h.rayflood@gmail.com>
+ Standards-Version: 3.9.8
+ ifdef(`TARGET',`dnl cross
+ Build-Depends: DEBHELPER_BUILD_DEP DPKG_BUILD_DEP
+@@ -86,15 +70,8 @@
+   TARGET_TOOL_BUILD_DEP
+ Build-Depends-Indep: LIBSTDCXX_BUILD_INDEP JAVA_BUILD_INDEP
+ ')dnl
+-ifelse(regexp(SRCNAME, `gnat'),0,`dnl
+-Homepage: http://gcc.gnu.org/
+-', regexp(SRCNAME, `gdc'),0,`dnl
+-Homepage: http://gdcproject.org/
+-', `dnl
+-Homepage: http://gcc.gnu.org/
+-')dnl SRCNAME
+-Vcs-Browser: http://svn.debian.org/viewsvn/gcccvs/branches/sid/gcc`'PV/
+-Vcs-Svn: svn://anonscm.debian.org/gcccvs/branches/sid/gcc`'PV
++Homepage: https://launchpad.net/~h-rayflood/+archive/gcc-upper
++Vcs-Browser: https://github.com/hATrayflood/gcc-ppa
+ 
+ ifelse(regexp(SRCNAME, `gcc-snapshot'),0,`dnl
+ Package: gcc-snapshot`'TS
+diff -urN debian/rules.conf gcc-5-5.4.0/debian/rules.conf
+--- debian/rules.conf	2017-04-13 09:59:54.231366650 +0900
++++ gcc-5-5.4.0/debian/rules.conf	2017-04-13 20:44:47.791250634 +0900
+@@ -386,7 +386,7 @@
+   MPFR_BUILD_DEP = libmpfr-dev (>= 3.0.0-9~),
+ endif
+ 
+-ISL_BUILD_DEP = libisl-dev,
++ISL_BUILD_DEP = libisl-dev-lts,
+ ifneq (,$(filter $(distrelease),jessie sid experimental))
+   ISL_BUILD_DEP = libisl-dev (>= 0.14),
+ endif
+@@ -550,6 +550,7 @@
+ else
+   gnat_build_dep := gnat$(NT) [$(ada_no_archs)]
+ endif
++gnat_build_dep :=
+ 
+ ifeq ($(PKGSOURCE),gcc-$(BASE_VERSION))
+   ifneq ($(with_separate_gnat),yes)
+diff -urN debian/rules.defs gcc-5-5.4.0/debian/rules.defs
+--- debian/rules.defs	2017-04-13 09:59:54.243366647 +0900
++++ gcc-5-5.4.0/debian/rules.defs	2017-04-13 16:28:00.894618601 +0900
+@@ -676,6 +676,7 @@
+     endif
+   endif
+ endif
++with_ada :=
+ 
+ ifeq ($(with_ada)-$(with_separate_gnat),yes-yes)
+   ifneq (,$(findstring gnat,$(PKGSOURCE)))
+@@ -1485,6 +1486,7 @@
+   endif
+ endif
+ #with_check := disabled for this upload
++with_check := disabled for this upload
+ 
+ # not a dependency on all archs, but if available, use it for the testsuite
+ ifneq (,$(wildcard /usr/bin/localedef))
+diff -urN debian/rules.parameters gcc-5-5.4.0/debian/rules.parameters
+--- debian/rules.parameters	2017-04-13 09:59:54.243366647 +0900
++++ gcc-5-5.4.0/debian/rules.parameters	2017-04-13 10:20:09.779330662 +0900
+@@ -2,14 +2,14 @@
+ GCC_VERSION	:= 5.4.0
+ NEXT_GCC_VERSION	:= 5.4.1
+ BASE_VERSION	:= 5
+-SOURCE_VERSION	:= 5.4.0-6ubuntu1~16.04.3
+-DEB_VERSION	:= 5.4.0-6ubuntu1~16.04.3
+-DEB_EVERSION	:= 1:5.4.0-6ubuntu1~16.04.3
+-DEB_GDC_VERSION	:= 5.4.0-6ubuntu1~16.04.3
++SOURCE_VERSION	:= 5.4.0-6ubuntu1~16.04.4precise0
++DEB_VERSION	:= 5.4.0-6ubuntu1~16.04.4precise0
++DEB_EVERSION	:= 1:5.4.0-6ubuntu1~16.04.4precise0
++DEB_GDC_VERSION	:= 5.4.0-6ubuntu1~16.04.4precise0
+ DEB_SOVERSION	:= 5
+ DEB_SOEVERSION	:= 1:5
+ DEB_LIBGCC_SOVERSION	:= 
+-DEB_LIBGCC_VERSION	:= 1:5.4.0-6ubuntu1~16.04.3
++DEB_LIBGCC_VERSION	:= 1:5.4.0-6ubuntu1~16.04.4precise0
+ DEB_STDCXX_SOVERSION	:= 5
+ DEB_GCJ_SOVERSION	:= 5
+ PKG_GCJ_EXT	:= 16
+diff -urN debian/rules2 gcc-5-5.4.0/debian/rules2
+--- debian/rules2	2017-04-13 09:59:54.243366647 +0900
++++ gcc-5-5.4.0/debian/rules2	2017-04-13 16:39:28.518598358 +0900
+@@ -18,6 +18,33 @@
+ IP	= install -m 755	# Install program
+ IS	= install -m 755	# Install script
+ 
++#number of jobs to run for build
++ifeq ($(USE_NJOBS),no)
++  NJOBS :=
++  USE_CPUS := 1
++else
++  ifeq ($(with_java),yes)
++    MEM_PER_CPU = 192
++  else
++    MEM_PER_CPU = 128
++  endif
++  NUM_CPUS := $(shell if echo $(USE_NJOBS) | grep -q -E '^[0-9]+$$'; \
++			then echo $(USE_NJOBS); \
++			else getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1; fi)
++  USE_CPUS := $(shell mt=`awk '/^MemTotal/ { print $$2 }' /proc/meminfo`; \
++			awk -vn=$(NUM_CPUS) -vmt=$$mt -vm=$(MEM_PER_CPU) \
++				'END { mt/=1024; n2 = int(mt/m); print n==1 ? 1 : n2<n+1 ? n2 : n+1}' < /dev/null)
++  ifneq (,$(strip $(USE_CPUS)))
++    NJOBS := -j $(USE_CPUS)
++  endif
++endif
++
++# Support parallel=<n> in DEB_BUILD_OPTIONS (see #209008)
++ifneq (,$(filter parallel=%,$(subst $(COMMA), ,$(DEB_BUILD_OPTIONS))))
++  USE_CPUS := $(subst parallel=,,$(filter parallel=%,$(subst $(COMMA), ,$(DEB_BUILD_OPTIONS))))
++  NJOBS := -j $(USE_CPUS)
++endif
++
+ # kernel-specific ulimit hack
+ ifeq ($(findstring linux,$(DEB_HOST_GNU_SYSTEM)),linux)
+   ULIMIT_M =  if [ -e /proc/meminfo ]; then \
+@@ -1316,7 +1343,7 @@
+ 	  $(SET_PATH) \
+ 	  $(SET_SHELL) \
+ 	  $(SET_LOCPATH) \
+-	    $(MAKE) -C $(builddir) $(bootstrap_target) \
++	    $(MAKE) -C $(builddir) $(NJOBS) $(bootstrap_target) \
+ 		CC="$(CC)" \
+ 		$(STAGE1_CFLAGS_TO_PASS) \
+ 		$(STAGE1_LDFLAGS_TO_PASS) \
+@@ -1340,7 +1367,7 @@
+ 	  set +e; \
+ 	  $(SET_PATH) \
+ 	  $(SET_LOCPATH) \
+-	    $(MAKE) -C $(builddir) \
++	    $(MAKE) -C $(builddir) $(NJOBS) \
+ 		$(BOOT_CFLAGS_TO_PASS) \
+ 		$(BOOT_LDFLAGS_TO_PASS) \
+ 		$(CFLAGS_FOR_TARGET_TO_PASS) \
+@@ -1416,7 +1443,7 @@
+ 	  $(SET_LOCPATH) \
+ 	  LD_LIBRARY_PATH=$${LD_LIBRARY_PATH:+$$LD_LIBRARY_PATH:}$(builddir)/gcc \
+ 	  biarch_multidir_names=none \
+-		$(MAKE) -C $(builddir_jit) \
++		$(MAKE) -C $(builddir_jit) $(NJOBS) \
+ 		$(BOOT_CFLAGS_TO_PASS) \
+ 		$(BOOT_LDFLAGS_TO_PASS) \
+ 		$(CFLAGS_FOR_TARGET_TO_PASS) \
+@@ -1425,7 +1452,7 @@
+ ifeq ($(with_check),yes)
+   # FIXME: #782444
+   ifeq (,$(filter $(DEB_TARGET_ARCH), kfreebsd-i386 kfreebsd-amd64))
+-	-$(MAKE) -C $(builddir_jit)/gcc check-jit \
++	-$(MAKE) -C $(builddir_jit)/gcc check-jit $(NJOBS) \
+ 		RUNTESTFLAGS="-v -v"
+   endif
+ endif
+@@ -1476,7 +1503,7 @@
+ 	  $(SET_SHELL) \
+ 	  $(SET_LOCPATH) \
+ 	  LD_LIBRARY_PATH=$${LD_LIBRARY_PATH:+$$LD_LIBRARY_PATH:}$(builddir)/gcc \
+-	    $(MAKE) -C $(builddir_hppa64) \
++	    $(MAKE) -C $(builddir_hppa64) $(NJOBS) \
+ 		$(if $(CFLAGS_FOR_TARGET),CFLAGS="$(CFLAGS_FOR_TARGET)") \
+ 		$(if $(CXXFLAGS_FOR_TARGET),CXXFLAGS="$(CXXFLAGS_FOR_TARGET)") \
+ 		$(if $(LDFLAGS_FOR_TARGET),LDFLAGS="$(LDFLAGS_FOR_TARGET)") \
+@@ -1515,7 +1542,7 @@
+ 	  $(SET_PATH) \
+ 	  $(SET_SHELL) \
+ 	  $(SET_LOCPATH) \
+-	    $(MAKE) -C $(builddir_neon) \
++	    $(MAKE) -C $(builddir_neon) $(NJOBS) \
+ 		$(BOOT_CFLAGS_TO_PASS) \
+ 		$(BOOT_LDFLAGS_TO_PASS) \
+ 		$(CFLAGS_FOR_TARGET_TO_PASS) \
+@@ -1757,7 +1784,7 @@
+ 	    fi; \
+ 	    echo "Build Dependencies:" >> ts-include; \
+ 	    dpkg -l g++-* binutils* `echo '$(LIBC_DEP)' | awk '{print $$1}'` \
+-		libgmp*-dev libmpfr-dev libmpc-dev libisl-dev \
++		libgmp*-dev libmpfr-dev libmpc-dev libisl-dev* \
+ 	        | fgrep -v '<none>' >> ts-include; \
+ 	    echo '' >> ts-include; \
+ 	    cat ../$(patch_stamp) >> ts-include; \
+@@ -1833,7 +1860,7 @@
+ 	    echo '' >> ts-include; \
+ 	    echo "Build Dependencies:" >> ts-include; \
+ 	    dpkg -l g++-* binutils* `echo '$(LIBC_DEP)' | awk '{print $$1}'` \
+-		libgmp*-dev libmpfr-dev libmpc-dev libisl*-dev \
++		libgmp*-dev libmpfr-dev libmpc-dev libisl*-dev* \
+ 	        | fgrep -v '<none>' >> ts-include; \
+ 	    echo '' >> ts-include; \
+ 	    echo 'Results for the installed GCC-3.3 compilers' >> ts-include; \

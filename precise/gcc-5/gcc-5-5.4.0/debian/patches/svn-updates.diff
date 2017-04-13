@@ -1,0 +1,420 @@
+# DP: updates from the 5 branch upto 2016xxxx (r237045).
+
+last_update()
+{
+	cat > ${dir}LAST_UPDATED <EOF
+Thu Jun  2 23:09:55 CEST 2016
+Thu Jun  2 21:09:55 UTC 2016 (revision 237045)
+EOF
+}
+
+LANG=C svn diff svn://gcc.gnu.org/svn/gcc/tags/gcc_5_4_0_release svn://gcc.gnu.org/svn/gcc/branches/gcc-5-branch \
+	| sed -r 's,^--- (\S+)\t(\S+)(.*)$,--- a/src/\1\t\2,;s,^\+\+\+ (\S+)\t(\S+)(.*)$,+++ b/src/\1\t\2,' \
+	| awk '/^Index:.*\.(class|texi)/ {skip=1; next} /^Index:/ { skip=0 } skip==0'
+
+Index: gcc/DATESTAMP
+===================================================================
+--- a/src/gcc/DATESTAMP	(.../tags/gcc_5_4_0_release)
++++ b/src/gcc/DATESTAMP	(.../branches/gcc-5-branch)
+@@ -1 +1 @@
+-20160603
++20160609
+Index: gcc/ChangeLog
+===================================================================
+--- a/src/gcc/ChangeLog	(.../tags/gcc_5_4_0_release)
++++ b/src/gcc/ChangeLog	(.../branches/gcc-5-branch)
+@@ -1,3 +1,40 @@
++2016-06-07  Peter Bergner  <bergner@vnet.ibm.com>
++
++	Backport from mainline
++	2016-06-07  Peter Bergner  <bergner@vnet.ibm.com>
++
++	* doc/invoke.texi (RS/6000 and PowerPC Options): Document -mhtm and
++	-mno-htm.
++
++2016-06-07  Uros Bizjak  <ubizjak@gmail.com>
++
++	PR target/71389
++	* config/i386/i386.c (ix86_avx256_split_vector_move_misalign):
++	Copy op1 RTX to avoid invalid sharing.
++	(ix86_expand_vector_move_misalign): Ditto.
++
++2016-06-05  Uros Bizjak  <ubizjak@gmail.com>
++
++	Backport from mainline
++	2016-06-01  Uros Bizjak  <ubizjak@gmail.com>
++		    Jocelyn Mayer  <l_indien@magic.fr>
++
++	PR target/67310
++	* config/i386/driver-i386.c (host_detect_local_cpu): Correctly
++	detect processor family for signature_CENTAUR_ebx.
++	<case PROCESSOR_I486>: Pass c3, winchip2 or winchip-c6 for
++	signature_CENTAUR_ebx.
++	<case PROCESSOR _PENTIUMPRO>: Pass c3-2 for signature_CENTAUR_ebx.
++	<default>: Pass x86-64 for has_longmode.
++
++2016-06-03  Andreas Tobler  <andreast@gcc.gnu.org>
++
++	Backport from mainline
++	2016-05-30  Andreas Tobler  <andreast@gcc.gnu.org>
++
++	* config.gcc: Move hard float support for arm*hf*-*-freebsd* into
++	armv6*-*-freebsd* for FreeBSD 11. Eliminate the arm*hf*-*-freebsd*
++	target.
+ 2016-06-03  Release Manager
+ 
+ 	* GCC 5.4.0 released.
+@@ -34,7 +76,7 @@
+ 
+ 	2016-03-24  Richard Henderson  <rth@redhat.com>
+ 
+-        PR middle-end/69845
++	PR middle-end/69845
+ 	* fold-const.c (extract_muldiv_1): Correct test for multiplication
+ 	overflow.
+ 
+@@ -2192,7 +2234,7 @@
+ 
+ 	Backport from mainline
+ 	2015-11-26  Kyrylo Tkachov  <kyrylo.tkachov@arm.com>
+-	            Bernd Schmidt  <bschmidt@redhat.com>
++		    Bernd Schmidt  <bschmidt@redhat.com>
+ 
+ 	PR rtl-optimization/67226
+ 	* calls.c (store_one_arg): Take into account
+@@ -2252,7 +2294,7 @@
+ 
+ 	Backport from mainline
+ 	2015-11-24  Bernd Schmidt <bschmidt@redhat.com>
+-	            Kyrylo Tkachov  <kyrylo.tkachov@arm.com>
++		    Kyrylo Tkachov  <kyrylo.tkachov@arm.com>
+ 
+ 	PR rtl-optimization/68194
+ 	PR rtl-optimization/68328
+@@ -2525,7 +2567,7 @@
+ 
+ 	Backport from mainline
+ 	2015-11-16  Oleg Endo  <olegendo@gcc.gnu.org>
+-	            Kaz Kojima  <kkojima@gcc.gnu.org>
++		    Kaz Kojima  <kkojima@gcc.gnu.org>
+ 
+ 	PR target/68277
+ 	* config/sh/sh.md (addsi3_scr): Handle reg overlap of operands[0] and
+@@ -2599,7 +2641,7 @@
+ 
+ 	Backport from mainline
+ 	2015-10-23  Steve Ellcey  <sellcey@imgtec.com>
+-	            Andrew Pinski  <apinski@cavium.com>
++		    Andrew Pinski  <apinski@cavium.com>
+ 
+ 	PR rtl-optimization/67736
+ 	* combine.c (simplify_comparison): Use gen_lowpart_or_truncate instead
+Index: gcc/testsuite/ChangeLog
+===================================================================
+--- a/src/gcc/testsuite/ChangeLog	(.../tags/gcc_5_4_0_release)
++++ b/src/gcc/testsuite/ChangeLog	(.../branches/gcc-5-branch)
+@@ -1,3 +1,13 @@
++2016-06-08  Jakub Jelinek  <jakub@redhat.com>
++
++	PR c++/71442
++	* g++.dg/cpp0x/Wunused-variable-1.C: New test.
++
++2016-06-07  Uros Bizjak  <ubizjak@gmail.com>
++
++	PR target/71389
++	* g++.dg/pr71389.C: New test.
++
+ 2016-06-03  Release Manager
+ 
+ 	* GCC 5.4.0 released.
+@@ -31,7 +41,7 @@
+ 	* gcc.dg/pr69634.c: New.
+ 
+ 	2016-03-23  Patrick Palka  <ppalka@gcc.gnu.org>
+- 
++
+ 	PR c++/70347
+ 	* g++.dg/cpp1y/nsdmi-union1.C: New test.
+ 
+@@ -42,7 +52,7 @@
+ 
+ 	2016-03-24  Richard Henderson  <rth@redhat.com>
+ 
+-        PR middle-end/69845
++	PR middle-end/69845
+ 	* gcc.dg/tree-ssa/pr69845-1.c: New test.
+ 	* gcc.dg/tree-ssa/pr69845-2.c: New test.
+ 
+@@ -105,8 +115,8 @@
+ 	PR middle-end/67278
+ 	* gcc.dg/simd-7.c: Add -w -Wno-psabi to dg-options.
+ 
+- 	PR target/67278
+- 	* gcc.dg/simd-8.c: Add -w -Wno-psabi to dg-options.
++	PR target/67278
++	* gcc.dg/simd-8.c: Add -w -Wno-psabi to dg-options.
+ 
+ 2016-05-20  Richard Biener  <rguenther@suse.de>
+ 
+@@ -130,13 +140,13 @@
+ 	* gcc.dg/torture/pr70941.c: New testcase.
+ 
+ 	2016-05-06  Jakub Jelinek  <jakub@redhat.com>
+- 
++
+ 	PR middle-end/70941
+ 	* gcc.dg/torture/pr70941.c (abort): Remove prototype.
+ 	(a, b, c, d): Change type from char to signed char.
+ 	(main): Compare against (signed char) -1634678893 instead of
+ 	hardcoded -109.  Use __builtin_abort instead of abort.
+- 
++
+ 	2016-05-06  Richard Biener  <rguenther@suse.de>
+ 
+ 	PR middle-end/70931
+Index: gcc/testsuite/g++.dg/cpp0x/Wunused-variable-1.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/cpp0x/Wunused-variable-1.C	(.../tags/gcc_5_4_0_release)
++++ b/src/gcc/testsuite/g++.dg/cpp0x/Wunused-variable-1.C	(.../branches/gcc-5-branch)
+@@ -0,0 +1,37 @@
++// PR c++/71442
++// { dg-do compile { target c++11 } }
++// { dg-options "-Wunused-variable" }
++
++struct C
++{
++  template<typename... Ts>
++  int operator()(Ts &&...)
++  {
++    return sizeof...(Ts);
++  }
++};
++
++int
++foo ()
++{
++  C {} (1, 1L, 1LL, 1.0);
++}
++
++template<int N>
++void
++bar ()
++{
++  char a;		// { dg-warning "unused variable" }
++  short b;		// { dg-warning "unused variable" }
++  int c;		// { dg-warning "unused variable" }
++  long d;		// { dg-warning "unused variable" }
++  long long e;		// { dg-warning "unused variable" }
++  float f;		// { dg-warning "unused variable" }
++  double g;		// { dg-warning "unused variable" }
++}
++
++void
++baz ()
++{
++  bar <0> ();
++}
+Index: gcc/testsuite/g++.dg/pr71389.C
+===================================================================
+--- a/src/gcc/testsuite/g++.dg/pr71389.C	(.../tags/gcc_5_4_0_release)
++++ b/src/gcc/testsuite/g++.dg/pr71389.C	(.../branches/gcc-5-branch)
+@@ -0,0 +1,23 @@
++// { dg-do compile { target i?86-*-* x86_64-*-* } }
++// { dg-options "-std=c++11 -O3 -march=ivybridge" }
++
++#include <functional>
++
++extern int le_s6, le_s9, le_s11;
++long foo_v14[16][16];
++
++void fn1() {
++  std::array<std::array<int, 16>, 16> v13;
++  for (; le_s6;)
++    for (int k1 = 2; k1 < 4; k1 = k1 + 1) {
++      for (int n1 = 0; n1 < le_s9; n1 = 8) {
++        *foo_v14[6] = 20923310;
++        for (int i2 = n1; i2 < n1 + 8; i2 = i2 + 1)
++          v13.at(5).at(i2 + 6 - n1) = 306146921;
++      }
++
++      for (int l2 = 0; l2 < le_s11; l2 = l2 + 1)
++          *(l2 + v13.at(5).begin()) = 306146921;
++    }
++  v13.at(le_s6 - 4);
++}
+Index: gcc/cp/ChangeLog
+===================================================================
+--- a/src/gcc/cp/ChangeLog	(.../tags/gcc_5_4_0_release)
++++ b/src/gcc/cp/ChangeLog	(.../branches/gcc-5-branch)
+@@ -1,3 +1,8 @@
++2016-06-08  Jakub Jelinek  <jakub@redhat.com>
++
++	PR c++/71442
++	* pt.c (tsubst_copy): Only set TREE_USED on DECLs.
++
+ 2016-06-03  Release Manager
+ 
+ 	* GCC 5.4.0 released.
+Index: gcc/cp/pt.c
+===================================================================
+--- a/src/gcc/cp/pt.c	(.../tags/gcc_5_4_0_release)
++++ b/src/gcc/cp/pt.c	(.../branches/gcc-5-branch)
+@@ -13287,7 +13287,8 @@
+ 	      len = TREE_VEC_LENGTH (expanded);
+ 	      /* Set TREE_USED for the benefit of -Wunused.  */
+ 	      for (int i = 0; i < len; i++)
+-		TREE_USED (TREE_VEC_ELT (expanded, i)) = true;
++		if (DECL_P (TREE_VEC_ELT (expanded, i)))
++		  TREE_USED (TREE_VEC_ELT (expanded, i)) = true;
+ 	    }
+ 
+ 	  if (expanded == error_mark_node)
+Index: gcc/config.gcc
+===================================================================
+--- a/src/gcc/config.gcc	(.../tags/gcc_5_4_0_release)
++++ b/src/gcc/config.gcc	(.../branches/gcc-5-branch)
+@@ -1026,13 +1026,11 @@
+ 	case $target in
+ 	armv6*-*-freebsd*)
+ 	    tm_defines="${tm_defines} TARGET_FREEBSD_ARMv6=1"
++            if test $fbsd_major -ge 11; then
++               tm_defines="${tm_defines} TARGET_FREEBSD_ARM_HARD_FLOAT=1"
++            fi
+ 	    ;;
+ 	esac
+-	case $target in
+-	arm*hf-*-freebsd*)
+-	    tm_defines="${tm_defines} TARGET_FREEBSD_ARM_HARD_FLOAT=1"
+-	    ;;
+-	esac
+ 	with_tls=${with_tls:-gnu}
+ 	;;
+ arm*-*-netbsdelf*)
+Index: gcc/config/i386/driver-i386.c
+===================================================================
+--- a/src/gcc/config/i386/driver-i386.c	(.../tags/gcc_5_4_0_release)
++++ b/src/gcc/config/i386/driver-i386.c	(.../branches/gcc-5-branch)
+@@ -630,33 +630,27 @@
+     }
+   else if (vendor == signature_CENTAUR_ebx)
+     {
+-      if (arch)
++      processor = PROCESSOR_GENERIC;
++
++      switch (family)
+ 	{
+-	  switch (family)
+-	    {
+-	    case 6:
+-	      if (model > 9)
+-		/* Use the default detection procedure.  */
+-		processor = PROCESSOR_GENERIC;
+-	      else if (model == 9)
+-		cpu = "c3-2";
+-	      else if (model >= 6)
+-		cpu = "c3";
+-	      else
+-		processor = PROCESSOR_GENERIC;
+-	      break;
+-	    case 5:
+-	      if (has_3dnow)
+-		cpu = "winchip2";
+-	      else if (has_mmx)
+-		cpu = "winchip2-c6";
+-	      else
+-		processor = PROCESSOR_GENERIC;
+-	      break;
+-	    default:
+-	      /* We have no idea.  */
+-	      processor = PROCESSOR_GENERIC;
+-	    }
++	default:
++	  /* We have no idea.  */
++	  break;
++
++	case 5:
++	  if (has_3dnow || has_mmx)
++	    processor = PROCESSOR_I486;
++	  break;
++
++	case 6:
++	  if (model > 9 || has_longmode)
++	    /* Use the default detection procedure.  */
++	    ;
++	  else if (model == 9)
++	    processor = PROCESSOR_PENTIUMPRO;
++	  else if (model >= 6)
++	    processor = PROCESSOR_I486;
+ 	}
+     }
+   else
+@@ -687,7 +681,18 @@
+       /* Default.  */
+       break;
+     case PROCESSOR_I486:
+-      cpu = "i486";
++      if (arch && vendor == signature_CENTAUR_ebx)
++	{
++	  if (model >= 6)
++	    cpu = "c3";
++	  else if (has_3dnow)
++	    cpu = "winchip2";
++	  else
++	    /* Assume WinChip C6.  */
++	    cpu = "winchip-c6";
++	}
++      else
++	cpu = "i486";
+       break;
+     case PROCESSOR_PENTIUM:
+       if (arch && has_mmx)
+@@ -804,8 +809,13 @@
+ 		/* It is Pentium M.  */
+ 		cpu = "pentium-m";
+ 	      else if (has_sse)
+-		/* It is Pentium III.  */
+-		cpu = "pentium3";
++		{
++		  if (vendor == signature_CENTAUR_ebx)
++		    cpu = "c3-2";
++		  else
++		    /* It is Pentium III.  */
++		    cpu = "pentium3";
++		}
+ 	      else if (has_mmx)
+ 		/* It is Pentium II.  */
+ 		cpu = "pentium2";
+@@ -886,6 +896,11 @@
+ 	      else
+ 		cpu = "prescott";
+ 	    }
++	  else if (has_longmode)
++	    /* Perhaps some emulator?  Assume x86-64, otherwise gcc
++	       -march=native would be unusable for 64-bit compilations,
++	       as all the CPUs below are 32-bit only.  */
++	    cpu = "x86-64";
+ 	  else if (has_sse2)
+ 	    cpu = "pentium4";
+ 	  else if (has_cmov)
+Index: gcc/config/i386/i386.c
+===================================================================
+--- a/src/gcc/config/i386/i386.c	(.../tags/gcc_5_4_0_release)
++++ b/src/gcc/config/i386/i386.c	(.../branches/gcc-5-branch)
+@@ -17707,7 +17707,7 @@
+ 	  m = adjust_address (op0, mode, 0);
+ 	  emit_insn (extract (m, op1, const0_rtx));
+ 	  m = adjust_address (op0, mode, 16);
+-	  emit_insn (extract (m, op1, const1_rtx));
++	  emit_insn (extract (m, copy_rtx (op1), const1_rtx));
+ 	}
+       else
+ 	emit_insn (store_unaligned (op0, op1));
+@@ -18015,7 +18015,7 @@
+ 	      m = adjust_address (op0, V2SFmode, 0);
+ 	      emit_insn (gen_sse_storelps (m, op1));
+ 	      m = adjust_address (op0, V2SFmode, 8);
+-	      emit_insn (gen_sse_storehps (m, op1));
++	      emit_insn (gen_sse_storehps (m, copy_rtx (op1)));
+ 	    }
+ 	}
+     }

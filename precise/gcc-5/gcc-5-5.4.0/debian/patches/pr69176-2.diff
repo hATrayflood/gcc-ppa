@@ -1,0 +1,49 @@
+# DP: Backport dependency for PR target/69176 backport.
+
+2015-12-04  James Greenhalgh  <james.greenhalgh@arm.com>
+
+	* config/aarch64/aarch64.md (add<mode>3_pluslong): Add register
+	constraints.
+
+2015-12-04  James Greenhalgh  <james.greenhalgh@arm.com>
+
+	* gcc.c-torture/compile/20151204.c: New.
+ 
+ 
+--- a/src/gcc/testsuite/gcc.c-torture/compile/20151204.c
++++ b/src/gcc/testsuite/gcc.c-torture/compile/20151204.c
+@@ -0,0 +1,19 @@
++typedef __SIZE_TYPE__ size_t;
++
++int strcmp (const char*, const char*);
++void *memchr (const void *, int, size_t);
++char* strncpy (char *, const char *, size_t);
++
++int
++main (int argc, char** argv)
++{
++  char target[32753] = "A";
++  char buffer[32753];
++  char *x;
++  x = buffer;
++
++  if (strcmp (target, "A")
++      || memchr (target, 'A', 0) != ((void *) 0))
++    if (strncpy (x, "", 4) != x);
++  return 0;
++}
+--- a/src/gcc/config/aarch64/aarch64.md
++++ b/src/gcc/config/aarch64/aarch64.md
+@@ -1615,9 +1615,9 @@
+ 
+ (define_insn_and_split "*add<mode>3_pluslong"
+   [(set
+-    (match_operand:GPI 0 "register_operand" "")
+-    (plus:GPI (match_operand:GPI 1 "register_operand" "")
+-	      (match_operand:GPI 2 "aarch64_pluslong_operand" "")))]
++    (match_operand:GPI 0 "register_operand" "=r")
++    (plus:GPI (match_operand:GPI 1 "register_operand" "r")
++	      (match_operand:GPI 2 "aarch64_pluslong_immediate" "i")))]
+   "!aarch64_plus_operand (operands[2], VOIDmode)
+    && !aarch64_move_imm (INTVAL (operands[2]), <MODE>mode)"
+   "#"

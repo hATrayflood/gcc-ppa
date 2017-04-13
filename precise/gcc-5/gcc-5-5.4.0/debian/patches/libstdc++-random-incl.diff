@@ -1,0 +1,13 @@
+# DP: Revert a libstdc++ header reorg done after the 5.3.0 release
+
+--- a/src/libstdc++-v3/include/bits/stl_algo.h
++++ b/src/libstdc++-v3/include/bits/stl_algo.h
+@@ -63,7 +63,7 @@
+ #include <bits/predefined_ops.h>
+ 
+ #if __cplusplus >= 201103L
+-#include <bits/uniform_int_dist.h>
++#include <random>  // for std::uniform_int_distribution
+ #endif
+ 
+ // See concept_check.h for the __glibcxx_*_requires macros.

@@ -1,0 +1,731 @@
+# DP: Work around PR c++/65913, link with -latomic (older than binutils 2.25)
+
+--- a/src/gcc/cp/g++spec.c
++++ b/src/gcc/cp/g++spec.c
+@@ -264,6 +264,8 @@
+ 
+   /* Add one for shared_libgcc or extra static library.  */
+   num_args = argc + added + need_math + (library > 0) * 4 + 1;
++  /* Link libatomic.  */
++  num_args += 2;
+   new_decoded_options = XNEWVEC (struct cl_decoded_option, num_args);
+ 
+   i = 0;
+@@ -389,6 +391,17 @@
+   if (shared_libgcc && !static_link)
+     generate_option (OPT_shared_libgcc, NULL, 1, CL_DRIVER,
+ 		     &new_decoded_options[j++]);
++  if (library > 0)
++    {
++      /* Work around http://gcc.gnu.org/PR65913.  */
++      generate_option (OPT_Wl_, "--as-needed", 1, CL_DRIVER,
++		       &new_decoded_options[j]);
++      j++;
++      generate_option (OPT_l, "atomic", 1, CL_DRIVER,
++		       &new_decoded_options[j]);
++      added_libraries++;
++      j++;
++    }
+ 
+   *in_decoded_options_count = j;
+   *in_decoded_options = new_decoded_options;
+--- a/src/configure.ac
++++ b/src/configure.ac
+@@ -2683,6 +2683,11 @@
+ build_configdirs=`echo "${build_configdirs}" | sed -e 's/build-//g'`
+ bootstrap_fixincludes=no
+ 
++# If we are building libatomic, bootstrap it.
++if echo " ${target_configdirs} " | grep " libatomic " > /dev/null 2>&1 ; then
++  bootstrap_target_libs=${bootstrap_target_libs}target-libatomic,
++fi
++
+ # If we are building libgomp, bootstrap it.
+ if echo " ${target_configdirs} " | grep " libgomp " > /dev/null 2>&1 ; then
+   bootstrap_target_libs=${bootstrap_target_libs}target-libgomp,
+@@ -3389,7 +3394,7 @@
+ GCC_TARGET_TOOL(cc, CC_FOR_TARGET, CC, [gcc/xgcc -B$$r/$(HOST_SUBDIR)/gcc/])
+ dnl see comments for CXX_FOR_TARGET_FLAG_TO_PASS
+ GCC_TARGET_TOOL(c++, CXX_FOR_TARGET, CXX,
+-		[gcc/xg++ -B$$r/$(HOST_SUBDIR)/gcc/ -nostdinc++ `if test -f $$r/$(TARGET_SUBDIR)/libstdc++-v3/scripts/testsuite_flags; then $(SHELL) $$r/$(TARGET_SUBDIR)/libstdc++-v3/scripts/testsuite_flags --build-includes; else echo -funconfigured-libstdc++-v3 ; fi` -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src/.libs -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/libsupc++/.libs],
++		[gcc/xg++ -B$$r/$(HOST_SUBDIR)/gcc/ -nostdinc++ `if test -f $$r/$(TARGET_SUBDIR)/libstdc++-v3/scripts/testsuite_flags; then $(SHELL) $$r/$(TARGET_SUBDIR)/libstdc++-v3/scripts/testsuite_flags --build-includes; else echo -funconfigured-libstdc++-v3 ; fi` -L$$r/$(TARGET_SUBDIR)/libatomic/.libs -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src/.libs -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/libsupc++/.libs],
+ 		c++)
+ GCC_TARGET_TOOL(c++ for libstdc++, RAW_CXX_FOR_TARGET, CXX,
+ 		[gcc/xgcc -shared-libgcc -B$$r/$(HOST_SUBDIR)/gcc -nostdinc++ -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src/.libs -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/libsupc++/.libs],
+--- a/src/Makefile.def
++++ b/src/Makefile.def
+@@ -166,7 +166,7 @@
+ target_modules = { module= libada; };
+ target_modules = { module= libgomp; bootstrap= true; lib_path=.libs; };
+ target_modules = { module= libitm; lib_path=.libs; };
+-target_modules = { module= libatomic; lib_path=.libs; };
++target_modules = { module= libatomic; bootstrap= true; lib_path=.libs; };
+ 
+ // These are (some of) the make targets to be done in each subdirectory.
+ // Not all; these are the ones which don't have special options.
+@@ -549,6 +549,7 @@
+ dependencies = { module=all-target-libjava; on=all-target-libffi; };
+ dependencies = { module=configure-target-libobjc; on=configure-target-boehm-gc; };
+ dependencies = { module=all-target-libobjc; on=all-target-boehm-gc; };
++dependencies = { module=configure-target-libstdc++-v3; on=configure-target-libatomic; };
+ dependencies = { module=configure-target-libstdc++-v3; on=configure-target-libgomp; };
+ dependencies = { module=configure-target-liboffloadmic; on=configure-target-libgomp; };
+ dependencies = { module=configure-target-libsanitizer; on=all-target-libstdc++-v3; };
+@@ -574,6 +575,9 @@
+ dependencies = { module=install-target-libitm; on=install-target-libgcc; };
+ dependencies = { module=install-target-libobjc; on=install-target-libgcc; };
+ dependencies = { module=install-target-libstdc++-v3; on=install-target-libgcc; };
++dependencies = { module=install-target-libstdc++-v3; on=install-target-libatomic; };
++dependencies = { module=install-target-libcc1; on=install-target-libstdc++-v3; };
++dependencies = { module=install-target-libcc1; on=install-target-libatomic; };
+ 
+ // Target modules in the 'src' repository.
+ lang_env_dependencies = { module=libtermcap; };
+--- a/src/Makefile.tpl
++++ b/src/Makefile.tpl
+@@ -240,11 +240,13 @@
+ POSTSTAGE1_CXX_EXPORT = \
+ 	CXX="$(STAGE_CC_WRAPPER) $$r/$(HOST_SUBDIR)/prev-gcc/xg++$(exeext) \
+ 	  -B$$r/$(HOST_SUBDIR)/prev-gcc/ -B$(build_tooldir)/bin/ -nostdinc++ \
++	  -B$$r/prev-$(TARGET_SUBDIR)/libatomic/.libs \
+ 	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs \
+ 	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/libsupc++/.libs \
+ 	  `if $(LEAN); then echo ' -isystem '; else echo ' -I'; fi`$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/include/$(TARGET_SUBDIR) \
+ 	  `if $(LEAN); then echo ' -isystem '; else echo ' -I'; fi`$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/include \
+ 	  `if $(LEAN); then echo ' -isystem '; else echo ' -I'; fi`$$s/libstdc++-v3/libsupc++ \
++	  -L$$r/prev-$(TARGET_SUBDIR)/libatomic/.libs \
+ 	  -L$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs \
+ 	  -L$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/libsupc++/.libs"; \
+ 	  export CXX; \
+--- a/src/Makefile.in
++++ b/src/Makefile.in
+@@ -237,11 +237,13 @@
+ POSTSTAGE1_CXX_EXPORT = \
+ 	CXX="$(STAGE_CC_WRAPPER) $$r/$(HOST_SUBDIR)/prev-gcc/xg++$(exeext) \
+ 	  -B$$r/$(HOST_SUBDIR)/prev-gcc/ -B$(build_tooldir)/bin/ -nostdinc++ \
++	  -B$$r/prev-$(TARGET_SUBDIR)/libatomic/.libs \
+ 	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs \
+ 	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/libsupc++/.libs \
+ 	  `if $(LEAN); then echo ' -isystem '; else echo ' -I'; fi`$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/include/$(TARGET_SUBDIR) \
+ 	  `if $(LEAN); then echo ' -isystem '; else echo ' -I'; fi`$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/include \
+ 	  `if $(LEAN); then echo ' -isystem '; else echo ' -I'; fi`$$s/libstdc++-v3/libsupc++ \
++	  -L$$r/prev-$(TARGET_SUBDIR)/libatomic/.libs \
+ 	  -L$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs \
+ 	  -L$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/libsupc++/.libs"; \
+ 	  export CXX; \
+@@ -1132,7 +1134,9 @@
+ all-target: maybe-all-target-libgomp
+ @endif target-libgomp-no-bootstrap
+ all-target: maybe-all-target-libitm
++@if target-libatomic-no-bootstrap
+ all-target: maybe-all-target-libatomic
++@endif target-libatomic-no-bootstrap
+ 
+ # Do a target for all the subdirectories.  A ``make do-X'' will do a
+ # ``make X'' in all subdirectories (because, in general, there is a
+@@ -46810,7 +46814,6 @@
+ @if target-libatomic
+ maybe-configure-target-libatomic: configure-target-libatomic
+ configure-target-libatomic: 
+-	@: $(MAKE); $(unstage)
+ 	@r=`${PWD_COMMAND}`; export r; \
+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+ 	echo "Checking multilib configuration for libatomic..."; \
+@@ -46848,8 +46851,279 @@
+ 
+ 
+ 
++.PHONY: configure-stage1-target-libatomic maybe-configure-stage1-target-libatomic
++maybe-configure-stage1-target-libatomic:
++@if target-libatomic-bootstrap
++maybe-configure-stage1-target-libatomic: configure-stage1-target-libatomic
++configure-stage1-target-libatomic:
++	@[ $(current_stage) = stage1 ] || $(MAKE) stage1-start
++	@$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libatomic
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	TFLAGS="$(STAGE1_TFLAGS)"; \
++	echo "Checking multilib configuration for libatomic..."; \
++	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libatomic/multilib.tmp 2> /dev/null ; \
++	if test -r $(TARGET_SUBDIR)/libatomic/multilib.out; then \
++	  if cmp -s $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; then \
++	    rm -f $(TARGET_SUBDIR)/libatomic/multilib.tmp; \
++	  else \
++	    rm -f $(TARGET_SUBDIR)/libatomic/Makefile; \
++	    mv $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; \
++	  fi; \
++	else \
++	  mv $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; \
++	fi; \
++	test ! -f $(TARGET_SUBDIR)/libatomic/Makefile || exit 0; \
++	$(NORMAL_TARGET_EXPORTS) \
++	CFLAGS="$(CFLAGS_FOR_TARGET)"; export CFLAGS; \
++	CXXFLAGS="$(CXXFLAGS_FOR_TARGET)"; export CXXFLAGS; \
++	LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)"; export LIBCFLAGS;  \
++	echo Configuring stage 1 in $(TARGET_SUBDIR)/libatomic ; \
++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libatomic ; \
++	cd $(TARGET_SUBDIR)/libatomic || exit 1; \
++	case $(srcdir) in \
++	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
++	  *) topdir=`echo $(TARGET_SUBDIR)/libatomic/ | \
++		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
++	esac; \
++	module_srcdir=libatomic; \
++	$(SHELL) $$s/$$module_srcdir/configure \
++	  --srcdir=$${topdir}/$$module_srcdir \
++	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
++	  --target=${target_alias} \
++	   \
++	  $(STAGE1_CONFIGURE_FLAGS)
++@endif target-libatomic-bootstrap
+ 
++.PHONY: configure-stage2-target-libatomic maybe-configure-stage2-target-libatomic
++maybe-configure-stage2-target-libatomic:
++@if target-libatomic-bootstrap
++maybe-configure-stage2-target-libatomic: configure-stage2-target-libatomic
++configure-stage2-target-libatomic:
++	@[ $(current_stage) = stage2 ] || $(MAKE) stage2-start
++	@$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libatomic
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	TFLAGS="$(STAGE2_TFLAGS)"; \
++	echo "Checking multilib configuration for libatomic..."; \
++	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libatomic/multilib.tmp 2> /dev/null ; \
++	if test -r $(TARGET_SUBDIR)/libatomic/multilib.out; then \
++	  if cmp -s $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; then \
++	    rm -f $(TARGET_SUBDIR)/libatomic/multilib.tmp; \
++	  else \
++	    rm -f $(TARGET_SUBDIR)/libatomic/Makefile; \
++	    mv $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; \
++	  fi; \
++	else \
++	  mv $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; \
++	fi; \
++	test ! -f $(TARGET_SUBDIR)/libatomic/Makefile || exit 0; \
++	$(NORMAL_TARGET_EXPORTS) \
++	 \
++	CFLAGS="$(CFLAGS_FOR_TARGET)"; export CFLAGS; \
++	CXXFLAGS="$(CXXFLAGS_FOR_TARGET)"; export CXXFLAGS; \
++	LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)"; export LIBCFLAGS;  \
++	echo Configuring stage 2 in $(TARGET_SUBDIR)/libatomic ; \
++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libatomic ; \
++	cd $(TARGET_SUBDIR)/libatomic || exit 1; \
++	case $(srcdir) in \
++	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
++	  *) topdir=`echo $(TARGET_SUBDIR)/libatomic/ | \
++		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
++	esac; \
++	module_srcdir=libatomic; \
++	$(SHELL) $$s/$$module_srcdir/configure \
++	  --srcdir=$${topdir}/$$module_srcdir \
++	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
++	  --target=${target_alias} \
++	   --with-build-libsubdir=$(HOST_SUBDIR)  \
++	  $(STAGE2_CONFIGURE_FLAGS)
++@endif target-libatomic-bootstrap
+ 
++.PHONY: configure-stage3-target-libatomic maybe-configure-stage3-target-libatomic
++maybe-configure-stage3-target-libatomic:
++@if target-libatomic-bootstrap
++maybe-configure-stage3-target-libatomic: configure-stage3-target-libatomic
++configure-stage3-target-libatomic:
++	@[ $(current_stage) = stage3 ] || $(MAKE) stage3-start
++	@$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libatomic
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	TFLAGS="$(STAGE3_TFLAGS)"; \
++	echo "Checking multilib configuration for libatomic..."; \
++	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libatomic/multilib.tmp 2> /dev/null ; \
++	if test -r $(TARGET_SUBDIR)/libatomic/multilib.out; then \
++	  if cmp -s $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; then \
++	    rm -f $(TARGET_SUBDIR)/libatomic/multilib.tmp; \
++	  else \
++	    rm -f $(TARGET_SUBDIR)/libatomic/Makefile; \
++	    mv $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; \
++	  fi; \
++	else \
++	  mv $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; \
++	fi; \
++	test ! -f $(TARGET_SUBDIR)/libatomic/Makefile || exit 0; \
++	$(NORMAL_TARGET_EXPORTS) \
++	 \
++	CFLAGS="$(CFLAGS_FOR_TARGET)"; export CFLAGS; \
++	CXXFLAGS="$(CXXFLAGS_FOR_TARGET)"; export CXXFLAGS; \
++	LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)"; export LIBCFLAGS;  \
++	echo Configuring stage 3 in $(TARGET_SUBDIR)/libatomic ; \
++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libatomic ; \
++	cd $(TARGET_SUBDIR)/libatomic || exit 1; \
++	case $(srcdir) in \
++	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
++	  *) topdir=`echo $(TARGET_SUBDIR)/libatomic/ | \
++		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
++	esac; \
++	module_srcdir=libatomic; \
++	$(SHELL) $$s/$$module_srcdir/configure \
++	  --srcdir=$${topdir}/$$module_srcdir \
++	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
++	  --target=${target_alias} \
++	   --with-build-libsubdir=$(HOST_SUBDIR)  \
++	  $(STAGE3_CONFIGURE_FLAGS)
++@endif target-libatomic-bootstrap
++
++.PHONY: configure-stage4-target-libatomic maybe-configure-stage4-target-libatomic
++maybe-configure-stage4-target-libatomic:
++@if target-libatomic-bootstrap
++maybe-configure-stage4-target-libatomic: configure-stage4-target-libatomic
++configure-stage4-target-libatomic:
++	@[ $(current_stage) = stage4 ] || $(MAKE) stage4-start
++	@$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libatomic
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	TFLAGS="$(STAGE4_TFLAGS)"; \
++	echo "Checking multilib configuration for libatomic..."; \
++	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libatomic/multilib.tmp 2> /dev/null ; \
++	if test -r $(TARGET_SUBDIR)/libatomic/multilib.out; then \
++	  if cmp -s $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; then \
++	    rm -f $(TARGET_SUBDIR)/libatomic/multilib.tmp; \
++	  else \
++	    rm -f $(TARGET_SUBDIR)/libatomic/Makefile; \
++	    mv $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; \
++	  fi; \
++	else \
++	  mv $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; \
++	fi; \
++	test ! -f $(TARGET_SUBDIR)/libatomic/Makefile || exit 0; \
++	$(NORMAL_TARGET_EXPORTS) \
++	 \
++	CFLAGS="$(CFLAGS_FOR_TARGET)"; export CFLAGS; \
++	CXXFLAGS="$(CXXFLAGS_FOR_TARGET)"; export CXXFLAGS; \
++	LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)"; export LIBCFLAGS;  \
++	echo Configuring stage 4 in $(TARGET_SUBDIR)/libatomic ; \
++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libatomic ; \
++	cd $(TARGET_SUBDIR)/libatomic || exit 1; \
++	case $(srcdir) in \
++	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
++	  *) topdir=`echo $(TARGET_SUBDIR)/libatomic/ | \
++		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
++	esac; \
++	module_srcdir=libatomic; \
++	$(SHELL) $$s/$$module_srcdir/configure \
++	  --srcdir=$${topdir}/$$module_srcdir \
++	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
++	  --target=${target_alias} \
++	   --with-build-libsubdir=$(HOST_SUBDIR)  \
++	  $(STAGE4_CONFIGURE_FLAGS)
++@endif target-libatomic-bootstrap
++
++.PHONY: configure-stageprofile-target-libatomic maybe-configure-stageprofile-target-libatomic
++maybe-configure-stageprofile-target-libatomic:
++@if target-libatomic-bootstrap
++maybe-configure-stageprofile-target-libatomic: configure-stageprofile-target-libatomic
++configure-stageprofile-target-libatomic:
++	@[ $(current_stage) = stageprofile ] || $(MAKE) stageprofile-start
++	@$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libatomic
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	TFLAGS="$(STAGEprofile_TFLAGS)"; \
++	echo "Checking multilib configuration for libatomic..."; \
++	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libatomic/multilib.tmp 2> /dev/null ; \
++	if test -r $(TARGET_SUBDIR)/libatomic/multilib.out; then \
++	  if cmp -s $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; then \
++	    rm -f $(TARGET_SUBDIR)/libatomic/multilib.tmp; \
++	  else \
++	    rm -f $(TARGET_SUBDIR)/libatomic/Makefile; \
++	    mv $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; \
++	  fi; \
++	else \
++	  mv $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; \
++	fi; \
++	test ! -f $(TARGET_SUBDIR)/libatomic/Makefile || exit 0; \
++	$(NORMAL_TARGET_EXPORTS) \
++	 \
++	CFLAGS="$(CFLAGS_FOR_TARGET)"; export CFLAGS; \
++	CXXFLAGS="$(CXXFLAGS_FOR_TARGET)"; export CXXFLAGS; \
++	LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)"; export LIBCFLAGS;  \
++	echo Configuring stage profile in $(TARGET_SUBDIR)/libatomic ; \
++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libatomic ; \
++	cd $(TARGET_SUBDIR)/libatomic || exit 1; \
++	case $(srcdir) in \
++	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
++	  *) topdir=`echo $(TARGET_SUBDIR)/libatomic/ | \
++		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
++	esac; \
++	module_srcdir=libatomic; \
++	$(SHELL) $$s/$$module_srcdir/configure \
++	  --srcdir=$${topdir}/$$module_srcdir \
++	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
++	  --target=${target_alias} \
++	   --with-build-libsubdir=$(HOST_SUBDIR)  \
++	  $(STAGEprofile_CONFIGURE_FLAGS)
++@endif target-libatomic-bootstrap
++
++.PHONY: configure-stagefeedback-target-libatomic maybe-configure-stagefeedback-target-libatomic
++maybe-configure-stagefeedback-target-libatomic:
++@if target-libatomic-bootstrap
++maybe-configure-stagefeedback-target-libatomic: configure-stagefeedback-target-libatomic
++configure-stagefeedback-target-libatomic:
++	@[ $(current_stage) = stagefeedback ] || $(MAKE) stagefeedback-start
++	@$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libatomic
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	TFLAGS="$(STAGEfeedback_TFLAGS)"; \
++	echo "Checking multilib configuration for libatomic..."; \
++	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libatomic/multilib.tmp 2> /dev/null ; \
++	if test -r $(TARGET_SUBDIR)/libatomic/multilib.out; then \
++	  if cmp -s $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; then \
++	    rm -f $(TARGET_SUBDIR)/libatomic/multilib.tmp; \
++	  else \
++	    rm -f $(TARGET_SUBDIR)/libatomic/Makefile; \
++	    mv $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; \
++	  fi; \
++	else \
++	  mv $(TARGET_SUBDIR)/libatomic/multilib.tmp $(TARGET_SUBDIR)/libatomic/multilib.out; \
++	fi; \
++	test ! -f $(TARGET_SUBDIR)/libatomic/Makefile || exit 0; \
++	$(NORMAL_TARGET_EXPORTS) \
++	 \
++	CFLAGS="$(CFLAGS_FOR_TARGET)"; export CFLAGS; \
++	CXXFLAGS="$(CXXFLAGS_FOR_TARGET)"; export CXXFLAGS; \
++	LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)"; export LIBCFLAGS;  \
++	echo Configuring stage feedback in $(TARGET_SUBDIR)/libatomic ; \
++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libatomic ; \
++	cd $(TARGET_SUBDIR)/libatomic || exit 1; \
++	case $(srcdir) in \
++	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
++	  *) topdir=`echo $(TARGET_SUBDIR)/libatomic/ | \
++		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
++	esac; \
++	module_srcdir=libatomic; \
++	$(SHELL) $$s/$$module_srcdir/configure \
++	  --srcdir=$${topdir}/$$module_srcdir \
++	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
++	  --target=${target_alias} \
++	   --with-build-libsubdir=$(HOST_SUBDIR)  \
++	  $(STAGEfeedback_CONFIGURE_FLAGS)
++@endif target-libatomic-bootstrap
++
++
++
++
++
+ .PHONY: all-target-libatomic maybe-all-target-libatomic
+ maybe-all-target-libatomic:
+ @if gcc-bootstrap
+@@ -46859,7 +47133,6 @@
+ TARGET-target-libatomic=all
+ maybe-all-target-libatomic: all-target-libatomic
+ all-target-libatomic: configure-target-libatomic
+-	@: $(MAKE); $(unstage)
+ 	@r=`${PWD_COMMAND}`; export r; \
+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+ 	$(NORMAL_TARGET_EXPORTS)  \
+@@ -46870,8 +47143,257 @@
+ 
+ 
+ 
++.PHONY: all-stage1-target-libatomic maybe-all-stage1-target-libatomic
++.PHONY: clean-stage1-target-libatomic maybe-clean-stage1-target-libatomic
++maybe-all-stage1-target-libatomic:
++maybe-clean-stage1-target-libatomic:
++@if target-libatomic-bootstrap
++maybe-all-stage1-target-libatomic: all-stage1-target-libatomic
++all-stage1: all-stage1-target-libatomic
++TARGET-stage1-target-libatomic = $(TARGET-target-libatomic)
++all-stage1-target-libatomic: configure-stage1-target-libatomic
++	@[ $(current_stage) = stage1 ] || $(MAKE) stage1-start
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	TFLAGS="$(STAGE1_TFLAGS)"; \
++	$(NORMAL_TARGET_EXPORTS)  \
++	cd $(TARGET_SUBDIR)/libatomic && \
++	$(MAKE) $(BASE_FLAGS_TO_PASS) \
++		CFLAGS="$(CFLAGS_FOR_TARGET)" \
++		CXXFLAGS="$(CXXFLAGS_FOR_TARGET)" \
++		LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)" \
++		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
++		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
++		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
++		$(EXTRA_TARGET_FLAGS)  \
++		  \
++		TFLAGS="$(STAGE1_TFLAGS)" \
++		$(TARGET-stage1-target-libatomic)
+ 
++maybe-clean-stage1-target-libatomic: clean-stage1-target-libatomic
++clean-stage1: clean-stage1-target-libatomic
++clean-stage1-target-libatomic:
++	@if [ $(current_stage) = stage1 ]; then \
++	  [ -f $(TARGET_SUBDIR)/libatomic/Makefile ] || exit 0; \
++	else \
++	  [ -f $(TARGET_SUBDIR)/stage1-libatomic/Makefile ] || exit 0; \
++	  $(MAKE) stage1-start; \
++	fi; \
++	cd $(TARGET_SUBDIR)/libatomic && \
++	$(MAKE) $(EXTRA_TARGET_FLAGS)  \
++	  clean
++@endif target-libatomic-bootstrap
+ 
++
++.PHONY: all-stage2-target-libatomic maybe-all-stage2-target-libatomic
++.PHONY: clean-stage2-target-libatomic maybe-clean-stage2-target-libatomic
++maybe-all-stage2-target-libatomic:
++maybe-clean-stage2-target-libatomic:
++@if target-libatomic-bootstrap
++maybe-all-stage2-target-libatomic: all-stage2-target-libatomic
++all-stage2: all-stage2-target-libatomic
++TARGET-stage2-target-libatomic = $(TARGET-target-libatomic)
++all-stage2-target-libatomic: configure-stage2-target-libatomic
++	@[ $(current_stage) = stage2 ] || $(MAKE) stage2-start
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	TFLAGS="$(STAGE2_TFLAGS)"; \
++	$(NORMAL_TARGET_EXPORTS) \
++	  \
++	cd $(TARGET_SUBDIR)/libatomic && \
++	$(MAKE) $(BASE_FLAGS_TO_PASS) \
++		CFLAGS="$(CFLAGS_FOR_TARGET)" \
++		CXXFLAGS="$(CXXFLAGS_FOR_TARGET)" \
++		LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)" \
++		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
++		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
++		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
++		$(EXTRA_TARGET_FLAGS)   \
++		TFLAGS="$(STAGE2_TFLAGS)" \
++		$(TARGET-stage2-target-libatomic)
++
++maybe-clean-stage2-target-libatomic: clean-stage2-target-libatomic
++clean-stage2: clean-stage2-target-libatomic
++clean-stage2-target-libatomic:
++	@if [ $(current_stage) = stage2 ]; then \
++	  [ -f $(TARGET_SUBDIR)/libatomic/Makefile ] || exit 0; \
++	else \
++	  [ -f $(TARGET_SUBDIR)/stage2-libatomic/Makefile ] || exit 0; \
++	  $(MAKE) stage2-start; \
++	fi; \
++	cd $(TARGET_SUBDIR)/libatomic && \
++	$(MAKE) $(EXTRA_TARGET_FLAGS)   clean
++@endif target-libatomic-bootstrap
++
++
++.PHONY: all-stage3-target-libatomic maybe-all-stage3-target-libatomic
++.PHONY: clean-stage3-target-libatomic maybe-clean-stage3-target-libatomic
++maybe-all-stage3-target-libatomic:
++maybe-clean-stage3-target-libatomic:
++@if target-libatomic-bootstrap
++maybe-all-stage3-target-libatomic: all-stage3-target-libatomic
++all-stage3: all-stage3-target-libatomic
++TARGET-stage3-target-libatomic = $(TARGET-target-libatomic)
++all-stage3-target-libatomic: configure-stage3-target-libatomic
++	@[ $(current_stage) = stage3 ] || $(MAKE) stage3-start
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	TFLAGS="$(STAGE3_TFLAGS)"; \
++	$(NORMAL_TARGET_EXPORTS) \
++	  \
++	cd $(TARGET_SUBDIR)/libatomic && \
++	$(MAKE) $(BASE_FLAGS_TO_PASS) \
++		CFLAGS="$(CFLAGS_FOR_TARGET)" \
++		CXXFLAGS="$(CXXFLAGS_FOR_TARGET)" \
++		LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)" \
++		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
++		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
++		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
++		$(EXTRA_TARGET_FLAGS)   \
++		TFLAGS="$(STAGE3_TFLAGS)" \
++		$(TARGET-stage3-target-libatomic)
++
++maybe-clean-stage3-target-libatomic: clean-stage3-target-libatomic
++clean-stage3: clean-stage3-target-libatomic
++clean-stage3-target-libatomic:
++	@if [ $(current_stage) = stage3 ]; then \
++	  [ -f $(TARGET_SUBDIR)/libatomic/Makefile ] || exit 0; \
++	else \
++	  [ -f $(TARGET_SUBDIR)/stage3-libatomic/Makefile ] || exit 0; \
++	  $(MAKE) stage3-start; \
++	fi; \
++	cd $(TARGET_SUBDIR)/libatomic && \
++	$(MAKE) $(EXTRA_TARGET_FLAGS)   clean
++@endif target-libatomic-bootstrap
++
++
++.PHONY: all-stage4-target-libatomic maybe-all-stage4-target-libatomic
++.PHONY: clean-stage4-target-libatomic maybe-clean-stage4-target-libatomic
++maybe-all-stage4-target-libatomic:
++maybe-clean-stage4-target-libatomic:
++@if target-libatomic-bootstrap
++maybe-all-stage4-target-libatomic: all-stage4-target-libatomic
++all-stage4: all-stage4-target-libatomic
++TARGET-stage4-target-libatomic = $(TARGET-target-libatomic)
++all-stage4-target-libatomic: configure-stage4-target-libatomic
++	@[ $(current_stage) = stage4 ] || $(MAKE) stage4-start
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	TFLAGS="$(STAGE4_TFLAGS)"; \
++	$(NORMAL_TARGET_EXPORTS) \
++	  \
++	cd $(TARGET_SUBDIR)/libatomic && \
++	$(MAKE) $(BASE_FLAGS_TO_PASS) \
++		CFLAGS="$(CFLAGS_FOR_TARGET)" \
++		CXXFLAGS="$(CXXFLAGS_FOR_TARGET)" \
++		LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)" \
++		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
++		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
++		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
++		$(EXTRA_TARGET_FLAGS)   \
++		TFLAGS="$(STAGE4_TFLAGS)" \
++		$(TARGET-stage4-target-libatomic)
++
++maybe-clean-stage4-target-libatomic: clean-stage4-target-libatomic
++clean-stage4: clean-stage4-target-libatomic
++clean-stage4-target-libatomic:
++	@if [ $(current_stage) = stage4 ]; then \
++	  [ -f $(TARGET_SUBDIR)/libatomic/Makefile ] || exit 0; \
++	else \
++	  [ -f $(TARGET_SUBDIR)/stage4-libatomic/Makefile ] || exit 0; \
++	  $(MAKE) stage4-start; \
++	fi; \
++	cd $(TARGET_SUBDIR)/libatomic && \
++	$(MAKE) $(EXTRA_TARGET_FLAGS)   clean
++@endif target-libatomic-bootstrap
++
++
++.PHONY: all-stageprofile-target-libatomic maybe-all-stageprofile-target-libatomic
++.PHONY: clean-stageprofile-target-libatomic maybe-clean-stageprofile-target-libatomic
++maybe-all-stageprofile-target-libatomic:
++maybe-clean-stageprofile-target-libatomic:
++@if target-libatomic-bootstrap
++maybe-all-stageprofile-target-libatomic: all-stageprofile-target-libatomic
++all-stageprofile: all-stageprofile-target-libatomic
++TARGET-stageprofile-target-libatomic = $(TARGET-target-libatomic)
++all-stageprofile-target-libatomic: configure-stageprofile-target-libatomic
++	@[ $(current_stage) = stageprofile ] || $(MAKE) stageprofile-start
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	TFLAGS="$(STAGEprofile_TFLAGS)"; \
++	$(NORMAL_TARGET_EXPORTS) \
++	  \
++	cd $(TARGET_SUBDIR)/libatomic && \
++	$(MAKE) $(BASE_FLAGS_TO_PASS) \
++		CFLAGS="$(CFLAGS_FOR_TARGET)" \
++		CXXFLAGS="$(CXXFLAGS_FOR_TARGET)" \
++		LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)" \
++		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
++		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
++		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
++		$(EXTRA_TARGET_FLAGS)   \
++		TFLAGS="$(STAGEprofile_TFLAGS)" \
++		$(TARGET-stageprofile-target-libatomic)
++
++maybe-clean-stageprofile-target-libatomic: clean-stageprofile-target-libatomic
++clean-stageprofile: clean-stageprofile-target-libatomic
++clean-stageprofile-target-libatomic:
++	@if [ $(current_stage) = stageprofile ]; then \
++	  [ -f $(TARGET_SUBDIR)/libatomic/Makefile ] || exit 0; \
++	else \
++	  [ -f $(TARGET_SUBDIR)/stageprofile-libatomic/Makefile ] || exit 0; \
++	  $(MAKE) stageprofile-start; \
++	fi; \
++	cd $(TARGET_SUBDIR)/libatomic && \
++	$(MAKE) $(EXTRA_TARGET_FLAGS)   clean
++@endif target-libatomic-bootstrap
++
++
++.PHONY: all-stagefeedback-target-libatomic maybe-all-stagefeedback-target-libatomic
++.PHONY: clean-stagefeedback-target-libatomic maybe-clean-stagefeedback-target-libatomic
++maybe-all-stagefeedback-target-libatomic:
++maybe-clean-stagefeedback-target-libatomic:
++@if target-libatomic-bootstrap
++maybe-all-stagefeedback-target-libatomic: all-stagefeedback-target-libatomic
++all-stagefeedback: all-stagefeedback-target-libatomic
++TARGET-stagefeedback-target-libatomic = $(TARGET-target-libatomic)
++all-stagefeedback-target-libatomic: configure-stagefeedback-target-libatomic
++	@[ $(current_stage) = stagefeedback ] || $(MAKE) stagefeedback-start
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	TFLAGS="$(STAGEfeedback_TFLAGS)"; \
++	$(NORMAL_TARGET_EXPORTS) \
++	  \
++	cd $(TARGET_SUBDIR)/libatomic && \
++	$(MAKE) $(BASE_FLAGS_TO_PASS) \
++		CFLAGS="$(CFLAGS_FOR_TARGET)" \
++		CXXFLAGS="$(CXXFLAGS_FOR_TARGET)" \
++		LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)" \
++		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
++		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
++		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
++		$(EXTRA_TARGET_FLAGS)   \
++		TFLAGS="$(STAGEfeedback_TFLAGS)" \
++		$(TARGET-stagefeedback-target-libatomic)
++
++maybe-clean-stagefeedback-target-libatomic: clean-stagefeedback-target-libatomic
++clean-stagefeedback: clean-stagefeedback-target-libatomic
++clean-stagefeedback-target-libatomic:
++	@if [ $(current_stage) = stagefeedback ]; then \
++	  [ -f $(TARGET_SUBDIR)/libatomic/Makefile ] || exit 0; \
++	else \
++	  [ -f $(TARGET_SUBDIR)/stagefeedback-libatomic/Makefile ] || exit 0; \
++	  $(MAKE) stagefeedback-start; \
++	fi; \
++	cd $(TARGET_SUBDIR)/libatomic && \
++	$(MAKE) $(EXTRA_TARGET_FLAGS)   clean
++@endif target-libatomic-bootstrap
++
++
++
++
++
++
+ .PHONY: check-target-libatomic maybe-check-target-libatomic
+ maybe-check-target-libatomic:
+ @if target-libatomic
+@@ -49508,7 +50030,12 @@
+ configure-stageprofile-target-libgomp: maybe-all-stageprofile-gcc
+ configure-stagefeedback-target-libgomp: maybe-all-stagefeedback-gcc
+ configure-target-libitm: stage_last
+-configure-target-libatomic: stage_last
++configure-stage1-target-libatomic: maybe-all-stage1-gcc
++configure-stage2-target-libatomic: maybe-all-stage2-gcc
++configure-stage3-target-libatomic: maybe-all-stage3-gcc
++configure-stage4-target-libatomic: maybe-all-stage4-gcc
++configure-stageprofile-target-libatomic: maybe-all-stageprofile-gcc
++configure-stagefeedback-target-libatomic: maybe-all-stagefeedback-gcc
+ @endif gcc-bootstrap
+ 
+ @if gcc-no-bootstrap
+@@ -50328,6 +50855,14 @@
+ all-target-libjava: maybe-all-target-libffi
+ configure-target-libobjc: maybe-configure-target-boehm-gc
+ all-target-libobjc: maybe-all-target-boehm-gc
++configure-target-libstdc++-v3: maybe-configure-target-libatomic
++
++configure-stage1-target-libstdc++-v3: maybe-configure-stage1-target-libatomic
++configure-stage2-target-libstdc++-v3: maybe-configure-stage2-target-libatomic
++configure-stage3-target-libstdc++-v3: maybe-configure-stage3-target-libatomic
++configure-stage4-target-libstdc++-v3: maybe-configure-stage4-target-libatomic
++configure-stageprofile-target-libstdc++-v3: maybe-configure-stageprofile-target-libatomic
++configure-stagefeedback-target-libstdc++-v3: maybe-configure-stagefeedback-target-libatomic
+ configure-target-libstdc++-v3: maybe-configure-target-libgomp
+ 
+ configure-stage1-target-libstdc++-v3: maybe-configure-stage1-target-libgomp
+@@ -50377,6 +50912,9 @@
+ install-target-libitm: maybe-install-target-libgcc
+ install-target-libobjc: maybe-install-target-libgcc
+ install-target-libstdc++-v3: maybe-install-target-libgcc
++install-target-libstdc++-v3: maybe-install-target-libatomic
++install-target-libcc1: maybe-install-target-libstdc++-v3
++install-target-libcc1: maybe-install-target-libatomic
+ all-target-libgloss: maybe-all-target-newlib
+ all-target-winsup: maybe-all-target-libtermcap
+ configure-target-newlib: maybe-all-binutils
+@@ -50420,6 +50958,12 @@
+ configure-stage4-target-libgomp: maybe-all-stage4-target-libgcc
+ configure-stageprofile-target-libgomp: maybe-all-stageprofile-target-libgcc
+ configure-stagefeedback-target-libgomp: maybe-all-stagefeedback-target-libgcc
++configure-stage1-target-libatomic: maybe-all-stage1-target-libgcc
++configure-stage2-target-libatomic: maybe-all-stage2-target-libgcc
++configure-stage3-target-libatomic: maybe-all-stage3-target-libgcc
++configure-stage4-target-libatomic: maybe-all-stage4-target-libgcc
++configure-stageprofile-target-libatomic: maybe-all-stageprofile-target-libgcc
++configure-stagefeedback-target-libatomic: maybe-all-stagefeedback-target-libgcc
+ @endif gcc-bootstrap
+ 
+ @if gcc-no-bootstrap

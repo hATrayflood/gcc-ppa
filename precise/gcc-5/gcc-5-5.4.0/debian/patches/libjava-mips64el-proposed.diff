@@ -1,0 +1,19 @@
+https://gcc.gnu.org/ml/java-patches/2016-q2/msg00020.html
+
+2016-06-22  Matthew Fortune <Matthew.Fortune@imgtec.com>
+
+libjava/
+
+	* interpret-run.cc: Return integers as ffi_arg instead of jint.
+
+--- a/src/libjava/interpret-run.cc
++++ b/src/libjava/interpret-run.cc
+@@ -1838,7 +1838,7 @@ details.  */
+       return;
+ 
+     insn_ireturn:
+-      *(jint *) retp = POPI ();
++      *(ffi_arg *) retp = POPI ();
+       return;
+ 
+     insn_return:

@@ -1,0 +1,1195 @@
+# DP: - Install the shared Ada libraries as '.so.1', not '.so' to conform
+# DP:   to the Debian policy.
+# DP: - Don't include a runtime link path (-rpath), when linking binaries.
+# DP: - Build the shared libraries on hppa-linux.
+# DP: - Instead of building libada as a target library only, build it as
+# DP:   both a host and, if different, target library.
+# DP: - Build the GNAT tools in their top-level directory; do not use
+# DP:   recursive makefiles.
+# DP: - Link the GNAT tools dynamically.
+
+# This patch seems large, but the hunks in Makefile.in are actually
+# generated from Makefile.def using autogen.
+
+Index: b/src/gcc/ada/gcc-interface/config-lang.in
+===================================================================
+--- a/src/gcc/ada/gcc-interface/config-lang.in
++++ b/src/gcc/ada/gcc-interface/config-lang.in
+@@ -35,7 +35,7 @@ gtfiles="\$(srcdir)/ada/gcc-interface/ad
+ outputs="ada/gcc-interface/Makefile ada/Makefile"
+ 
+ target_libs="target-libada"
+-lang_dirs="gnattools"
++lang_dirs="libada gnattools"
+ 
+ # Ada is not enabled by default for the time being.
+ build_by_default=no
+Index: b/src/gcc/ada/link.c
+===================================================================
+--- a/src/gcc/ada/link.c
++++ b/src/gcc/ada/link.c
+@@ -105,9 +105,9 @@ const char *__gnat_default_libgcc_subdir
+ 
+ #elif defined (__FreeBSD__)
+ const char *__gnat_object_file_option = "-Wl,@";
+-const char *__gnat_run_path_option = "-Wl,-rpath,";
+-char __gnat_shared_libgnat_default = STATIC;
+-char __gnat_shared_libgcc_default = STATIC;
++const char *__gnat_run_path_option = "";
++char __gnat_shared_libgnat_default = SHARED;
++char __gnat_shared_libgcc_default = SHARED;
+ int __gnat_link_max = 8192;
+ unsigned char __gnat_objlist_file_supported = 1;
+ const char *__gnat_object_library_extension = ".a";
+@@ -127,9 +127,9 @@ const char *__gnat_default_libgcc_subdir
+ 
+ #elif defined (linux) || defined(__GLIBC__)
+ const char *__gnat_object_file_option = "-Wl,@";
+-const char *__gnat_run_path_option = "-Wl,-rpath,";
+-char __gnat_shared_libgnat_default = STATIC;
+-char __gnat_shared_libgcc_default = STATIC;
++const char *__gnat_run_path_option = "";
++char __gnat_shared_libgnat_default = SHARED;
++char __gnat_shared_libgcc_default = SHARED;
+ int __gnat_link_max = 8192;
+ unsigned char __gnat_objlist_file_supported = 1;
+ const char *__gnat_object_library_extension = ".a";
+Index: b/src/libada/Makefile.in
+===================================================================
+--- a/src/libada/Makefile.in
++++ b/src/libada/Makefile.in
+@@ -60,7 +60,7 @@ CFLAGS=-g
+ PICFLAG = @PICFLAG@
+ GNATLIBFLAGS= -W -Wall -gnatpg -nostdinc
+ GNATLIBCFLAGS= -g -O2
+-GNATLIBCFLAGS_FOR_C = -W -Wall $(GNATLIBCFLAGS) $(CFLAGS_FOR_TARGET) \
++GNATLIBCFLAGS_FOR_C = -W -Wall $(GNATLIBCFLAGS) \
+ 	-fexceptions -DIN_RTS @have_getipinfo@
+ 
+ host_subdir = @host_subdir@
+Index: b/src/Makefile.def
+===================================================================
+--- a/src/Makefile.def
++++ b/src/Makefile.def
+@@ -115,7 +115,13 @@ host_modules= { module= libtermcap; no_c
+                 missing=distclean;
+                 missing=maintainer-clean; };
+ host_modules= { module= utils; no_check=true; };
+-host_modules= { module= gnattools; };
++host_modules= { module= gnattools; no_check=true;
++		missing= info;
++		missing= dvi;
++		missing= html;
++		missing= TAGS;
++		missing= install-info;
++		missing= installcheck; };
+ host_modules= { module= lto-plugin; bootstrap=true;
+ 		extra_configure_flags='--enable-shared @extra_linker_plugin_flags@ @extra_linker_plugin_configure_flags@';
+ 		extra_make_flags='@extra_linker_plugin_flags@'; };
+@@ -158,12 +164,19 @@ target_modules = { module= libtermcap; n
+ target_modules = { module= winsup; };
+ target_modules = { module= libgloss; no_check=true; };
+ target_modules = { module= libffi; no_install=true; };
++target_modules = { module= libiberty; no_install=true; no_check=true; };
+ target_modules = { module= libjava; raw_cxx=true;
+                    extra_configure_flags="$(EXTRA_CONFIGARGS_LIBJAVA)"; };
+ target_modules = { module= zlib; };
+ target_modules = { module= boehm-gc; };
+ target_modules = { module= rda; };
+-target_modules = { module= libada; };
++target_modules = { module= libada; no_install=true; no_check=true;
++		   missing= info;
++		   missing= dvi;
++		   missing= html;
++		   missing= TAGS;
++		   missing= install-info;
++		   missing= installcheck; };
+ target_modules = { module= libgomp; bootstrap= true; lib_path=.libs; };
+ target_modules = { module= libitm; lib_path=.libs; };
+ target_modules = { module= libatomic; lib_path=.libs; };
+@@ -356,6 +369,7 @@ dependencies = { module=all-libcpp; on=a
+ 
+ dependencies = { module=all-fixincludes; on=all-libiberty; };
+ 
++dependencies = { module=all-target-libada; on=all-gcc; };
+ dependencies = { module=all-gnattools; on=all-target-libada; };
+ dependencies = { module=all-gnattools; on=all-target-libstdc++-v3; };
+ 
+Index: b/src/Makefile.in
+===================================================================
+--- a/src/Makefile.in
++++ b/src/Makefile.in
+@@ -958,6 +958,7 @@ configure-target:  \
+     maybe-configure-target-winsup \
+     maybe-configure-target-libgloss \
+     maybe-configure-target-libffi \
++    maybe-configure-target-libiberty \
+     maybe-configure-target-libjava \
+     maybe-configure-target-zlib \
+     maybe-configure-target-boehm-gc \
+@@ -1123,6 +1124,7 @@ all-target: maybe-all-target-libtermcap
+ all-target: maybe-all-target-winsup
+ all-target: maybe-all-target-libgloss
+ all-target: maybe-all-target-libffi
++all-target: maybe-all-target-libiberty
+ all-target: maybe-all-target-libjava
+ all-target: maybe-all-target-zlib
+ all-target: maybe-all-target-boehm-gc
+@@ -1217,6 +1219,7 @@ info-target: maybe-info-target-libtermca
+ info-target: maybe-info-target-winsup
+ info-target: maybe-info-target-libgloss
+ info-target: maybe-info-target-libffi
++info-target: maybe-info-target-libiberty
+ info-target: maybe-info-target-libjava
+ info-target: maybe-info-target-zlib
+ info-target: maybe-info-target-boehm-gc
+@@ -1304,6 +1307,7 @@ dvi-target: maybe-dvi-target-libtermcap
+ dvi-target: maybe-dvi-target-winsup
+ dvi-target: maybe-dvi-target-libgloss
+ dvi-target: maybe-dvi-target-libffi
++dvi-target: maybe-dvi-target-libiberty
+ dvi-target: maybe-dvi-target-libjava
+ dvi-target: maybe-dvi-target-zlib
+ dvi-target: maybe-dvi-target-boehm-gc
+@@ -1391,6 +1395,7 @@ pdf-target: maybe-pdf-target-libtermcap
+ pdf-target: maybe-pdf-target-winsup
+ pdf-target: maybe-pdf-target-libgloss
+ pdf-target: maybe-pdf-target-libffi
++pdf-target: maybe-pdf-target-libiberty
+ pdf-target: maybe-pdf-target-libjava
+ pdf-target: maybe-pdf-target-zlib
+ pdf-target: maybe-pdf-target-boehm-gc
+@@ -1478,6 +1483,7 @@ html-target: maybe-html-target-libtermca
+ html-target: maybe-html-target-winsup
+ html-target: maybe-html-target-libgloss
+ html-target: maybe-html-target-libffi
++html-target: maybe-html-target-libiberty
+ html-target: maybe-html-target-libjava
+ html-target: maybe-html-target-zlib
+ html-target: maybe-html-target-boehm-gc
+@@ -1565,6 +1571,7 @@ TAGS-target: maybe-TAGS-target-libtermca
+ TAGS-target: maybe-TAGS-target-winsup
+ TAGS-target: maybe-TAGS-target-libgloss
+ TAGS-target: maybe-TAGS-target-libffi
++TAGS-target: maybe-TAGS-target-libiberty
+ TAGS-target: maybe-TAGS-target-libjava
+ TAGS-target: maybe-TAGS-target-zlib
+ TAGS-target: maybe-TAGS-target-boehm-gc
+@@ -1652,6 +1659,7 @@ install-info-target: maybe-install-info-
+ install-info-target: maybe-install-info-target-winsup
+ install-info-target: maybe-install-info-target-libgloss
+ install-info-target: maybe-install-info-target-libffi
++install-info-target: maybe-install-info-target-libiberty
+ install-info-target: maybe-install-info-target-libjava
+ install-info-target: maybe-install-info-target-zlib
+ install-info-target: maybe-install-info-target-boehm-gc
+@@ -1739,6 +1747,7 @@ install-pdf-target: maybe-install-pdf-ta
+ install-pdf-target: maybe-install-pdf-target-winsup
+ install-pdf-target: maybe-install-pdf-target-libgloss
+ install-pdf-target: maybe-install-pdf-target-libffi
++install-pdf-target: maybe-install-pdf-target-libiberty
+ install-pdf-target: maybe-install-pdf-target-libjava
+ install-pdf-target: maybe-install-pdf-target-zlib
+ install-pdf-target: maybe-install-pdf-target-boehm-gc
+@@ -1826,6 +1835,7 @@ install-html-target: maybe-install-html-
+ install-html-target: maybe-install-html-target-winsup
+ install-html-target: maybe-install-html-target-libgloss
+ install-html-target: maybe-install-html-target-libffi
++install-html-target: maybe-install-html-target-libiberty
+ install-html-target: maybe-install-html-target-libjava
+ install-html-target: maybe-install-html-target-zlib
+ install-html-target: maybe-install-html-target-boehm-gc
+@@ -1913,6 +1923,7 @@ installcheck-target: maybe-installcheck-
+ installcheck-target: maybe-installcheck-target-winsup
+ installcheck-target: maybe-installcheck-target-libgloss
+ installcheck-target: maybe-installcheck-target-libffi
++installcheck-target: maybe-installcheck-target-libiberty
+ installcheck-target: maybe-installcheck-target-libjava
+ installcheck-target: maybe-installcheck-target-zlib
+ installcheck-target: maybe-installcheck-target-boehm-gc
+@@ -2000,6 +2011,7 @@ mostlyclean-target: maybe-mostlyclean-ta
+ mostlyclean-target: maybe-mostlyclean-target-winsup
+ mostlyclean-target: maybe-mostlyclean-target-libgloss
+ mostlyclean-target: maybe-mostlyclean-target-libffi
++mostlyclean-target: maybe-mostlyclean-target-libiberty
+ mostlyclean-target: maybe-mostlyclean-target-libjava
+ mostlyclean-target: maybe-mostlyclean-target-zlib
+ mostlyclean-target: maybe-mostlyclean-target-boehm-gc
+@@ -2087,6 +2099,7 @@ clean-target: maybe-clean-target-libterm
+ clean-target: maybe-clean-target-winsup
+ clean-target: maybe-clean-target-libgloss
+ clean-target: maybe-clean-target-libffi
++clean-target: maybe-clean-target-libiberty
+ clean-target: maybe-clean-target-libjava
+ clean-target: maybe-clean-target-zlib
+ clean-target: maybe-clean-target-boehm-gc
+@@ -2174,6 +2187,7 @@ distclean-target: maybe-distclean-target
+ distclean-target: maybe-distclean-target-winsup
+ distclean-target: maybe-distclean-target-libgloss
+ distclean-target: maybe-distclean-target-libffi
++distclean-target: maybe-distclean-target-libiberty
+ distclean-target: maybe-distclean-target-libjava
+ distclean-target: maybe-distclean-target-zlib
+ distclean-target: maybe-distclean-target-boehm-gc
+@@ -2261,6 +2275,7 @@ maintainer-clean-target: maybe-maintaine
+ maintainer-clean-target: maybe-maintainer-clean-target-winsup
+ maintainer-clean-target: maybe-maintainer-clean-target-libgloss
+ maintainer-clean-target: maybe-maintainer-clean-target-libffi
++maintainer-clean-target: maybe-maintainer-clean-target-libiberty
+ maintainer-clean-target: maybe-maintainer-clean-target-libjava
+ maintainer-clean-target: maybe-maintainer-clean-target-zlib
+ maintainer-clean-target: maybe-maintainer-clean-target-boehm-gc
+@@ -2403,6 +2418,7 @@ check-target:  \
+     maybe-check-target-winsup \
+     maybe-check-target-libgloss \
+     maybe-check-target-libffi \
++    maybe-check-target-libiberty \
+     maybe-check-target-libjava \
+     maybe-check-target-zlib \
+     maybe-check-target-boehm-gc \
+@@ -2577,6 +2593,7 @@ install-target:  \
+     maybe-install-target-winsup \
+     maybe-install-target-libgloss \
+     maybe-install-target-libffi \
++    maybe-install-target-libiberty \
+     maybe-install-target-libjava \
+     maybe-install-target-zlib \
+     maybe-install-target-boehm-gc \
+@@ -2684,6 +2701,7 @@ install-strip-target:  \
+     maybe-install-strip-target-winsup \
+     maybe-install-strip-target-libgloss \
+     maybe-install-strip-target-libffi \
++    maybe-install-strip-target-libiberty \
+     maybe-install-strip-target-libjava \
+     maybe-install-strip-target-zlib \
+     maybe-install-strip-target-boehm-gc \
+@@ -30180,12 +30198,6 @@ maybe-check-gnattools:
+ maybe-check-gnattools: check-gnattools
+ 
+ check-gnattools:
+-	@: $(MAKE); $(unstage)
+-	@r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(HOST_EXPORTS) \
+-	(cd $(HOST_SUBDIR)/gnattools && \
+-	  $(MAKE) $(FLAGS_TO_PASS)  check)
+ 
+ @endif gnattools
+ 
+@@ -30226,24 +30238,8 @@ maybe-info-gnattools:
+ @if gnattools
+ maybe-info-gnattools: info-gnattools
+ 
+-info-gnattools: \
+-    configure-gnattools 
+-	@: $(MAKE); $(unstage)
+-	@[ -f ./gnattools/Makefile ] || exit 0; \
+-	r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(HOST_EXPORTS) \
+-	for flag in $(EXTRA_HOST_FLAGS) ; do \
+-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-	done; \
+-	echo "Doing info in gnattools" ; \
+-	(cd $(HOST_SUBDIR)/gnattools && \
+-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-	          "RANLIB=$${RANLIB}" \
+-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-	          info) \
+-	  || exit 1
++# gnattools doesn't support info.
++info-gnattools:
+ 
+ @endif gnattools
+ 
+@@ -30252,24 +30248,8 @@ maybe-dvi-gnattools:
+ @if gnattools
+ maybe-dvi-gnattools: dvi-gnattools
+ 
+-dvi-gnattools: \
+-    configure-gnattools 
+-	@: $(MAKE); $(unstage)
+-	@[ -f ./gnattools/Makefile ] || exit 0; \
+-	r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(HOST_EXPORTS) \
+-	for flag in $(EXTRA_HOST_FLAGS) ; do \
+-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-	done; \
+-	echo "Doing dvi in gnattools" ; \
+-	(cd $(HOST_SUBDIR)/gnattools && \
+-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-	          "RANLIB=$${RANLIB}" \
+-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-	          dvi) \
+-	  || exit 1
++# gnattools doesn't support dvi.
++dvi-gnattools:
+ 
+ @endif gnattools
+ 
+@@ -30304,24 +30284,8 @@ maybe-html-gnattools:
+ @if gnattools
+ maybe-html-gnattools: html-gnattools
+ 
+-html-gnattools: \
+-    configure-gnattools 
+-	@: $(MAKE); $(unstage)
+-	@[ -f ./gnattools/Makefile ] || exit 0; \
+-	r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(HOST_EXPORTS) \
+-	for flag in $(EXTRA_HOST_FLAGS) ; do \
+-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-	done; \
+-	echo "Doing html in gnattools" ; \
+-	(cd $(HOST_SUBDIR)/gnattools && \
+-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-	          "RANLIB=$${RANLIB}" \
+-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-	          html) \
+-	  || exit 1
++# gnattools doesn't support html.
++html-gnattools:
+ 
+ @endif gnattools
+ 
+@@ -30330,24 +30294,8 @@ maybe-TAGS-gnattools:
+ @if gnattools
+ maybe-TAGS-gnattools: TAGS-gnattools
+ 
+-TAGS-gnattools: \
+-    configure-gnattools 
+-	@: $(MAKE); $(unstage)
+-	@[ -f ./gnattools/Makefile ] || exit 0; \
+-	r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(HOST_EXPORTS) \
+-	for flag in $(EXTRA_HOST_FLAGS) ; do \
+-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-	done; \
+-	echo "Doing TAGS in gnattools" ; \
+-	(cd $(HOST_SUBDIR)/gnattools && \
+-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-	          "RANLIB=$${RANLIB}" \
+-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-	          TAGS) \
+-	  || exit 1
++# gnattools doesn't support TAGS.
++TAGS-gnattools:
+ 
+ @endif gnattools
+ 
+@@ -30356,25 +30304,8 @@ maybe-install-info-gnattools:
+ @if gnattools
+ maybe-install-info-gnattools: install-info-gnattools
+ 
+-install-info-gnattools: \
+-    configure-gnattools \
+-    info-gnattools 
+-	@: $(MAKE); $(unstage)
+-	@[ -f ./gnattools/Makefile ] || exit 0; \
+-	r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(HOST_EXPORTS) \
+-	for flag in $(EXTRA_HOST_FLAGS) ; do \
+-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-	done; \
+-	echo "Doing install-info in gnattools" ; \
+-	(cd $(HOST_SUBDIR)/gnattools && \
+-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-	          "RANLIB=$${RANLIB}" \
+-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-	          install-info) \
+-	  || exit 1
++# gnattools doesn't support install-info.
++install-info-gnattools:
+ 
+ @endif gnattools
+ 
+@@ -30437,24 +30368,8 @@ maybe-installcheck-gnattools:
+ @if gnattools
+ maybe-installcheck-gnattools: installcheck-gnattools
+ 
+-installcheck-gnattools: \
+-    configure-gnattools 
+-	@: $(MAKE); $(unstage)
+-	@[ -f ./gnattools/Makefile ] || exit 0; \
+-	r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(HOST_EXPORTS) \
+-	for flag in $(EXTRA_HOST_FLAGS) ; do \
+-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-	done; \
+-	echo "Doing installcheck in gnattools" ; \
+-	(cd $(HOST_SUBDIR)/gnattools && \
+-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-	          "RANLIB=$${RANLIB}" \
+-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-	          installcheck) \
+-	  || exit 1
++# gnattools doesn't support installcheck.
++installcheck-gnattools:
+ 
+ @endif gnattools
+ 
+@@ -43078,6 +42993,449 @@ maintainer-clean-target-libffi:
+ 
+ 
+ 
++.PHONY: configure-target-libiberty maybe-configure-target-libiberty
++maybe-configure-target-libiberty:
++@if gcc-bootstrap
++configure-target-libiberty: stage_current
++@endif gcc-bootstrap
++@if target-libiberty
++maybe-configure-target-libiberty: configure-target-libiberty
++configure-target-libiberty: 
++	@: $(MAKE); $(unstage)
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	echo "Checking multilib configuration for libiberty..."; \
++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libiberty ; \
++	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libiberty/multilib.tmp 2> /dev/null ; \
++	if test -r $(TARGET_SUBDIR)/libiberty/multilib.out; then \
++	  if cmp -s $(TARGET_SUBDIR)/libiberty/multilib.tmp $(TARGET_SUBDIR)/libiberty/multilib.out; then \
++	    rm -f $(TARGET_SUBDIR)/libiberty/multilib.tmp; \
++	  else \
++	    rm -f $(TARGET_SUBDIR)/libiberty/Makefile; \
++	    mv $(TARGET_SUBDIR)/libiberty/multilib.tmp $(TARGET_SUBDIR)/libiberty/multilib.out; \
++	  fi; \
++	else \
++	  mv $(TARGET_SUBDIR)/libiberty/multilib.tmp $(TARGET_SUBDIR)/libiberty/multilib.out; \
++	fi; \
++	test ! -f $(TARGET_SUBDIR)/libiberty/Makefile || exit 0; \
++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libiberty ; \
++	$(NORMAL_TARGET_EXPORTS)  \
++	echo Configuring in $(TARGET_SUBDIR)/libiberty; \
++	cd "$(TARGET_SUBDIR)/libiberty" || exit 1; \
++	case $(srcdir) in \
++	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
++	  *) topdir=`echo $(TARGET_SUBDIR)/libiberty/ | \
++		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
++	esac; \
++	module_srcdir=libiberty; \
++	rm -f no-such-file || : ; \
++	CONFIG_SITE=no-such-file $(SHELL) \
++	  $$s/$$module_srcdir/configure \
++	  --srcdir=$${topdir}/$$module_srcdir \
++	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
++	  --target=${target_alias}  \
++	  || exit 1
++@endif target-libiberty
++
++
++
++
++
++.PHONY: all-target-libiberty maybe-all-target-libiberty
++maybe-all-target-libiberty:
++@if gcc-bootstrap
++all-target-libiberty: stage_current
++@endif gcc-bootstrap
++@if target-libiberty
++TARGET-target-libiberty=all
++maybe-all-target-libiberty: all-target-libiberty
++all-target-libiberty: configure-target-libiberty
++	@: $(MAKE); $(unstage)
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS)  \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) $(EXTRA_TARGET_FLAGS)   \
++		$(TARGET-target-libiberty))
++@endif target-libiberty
++
++
++
++
++
++.PHONY: check-target-libiberty maybe-check-target-libiberty
++maybe-check-target-libiberty:
++@if target-libiberty
++maybe-check-target-libiberty: check-target-libiberty
++
++# Dummy target for uncheckable module.
++check-target-libiberty:
++
++@endif target-libiberty
++
++.PHONY: install-target-libiberty maybe-install-target-libiberty
++maybe-install-target-libiberty:
++@if target-libiberty
++maybe-install-target-libiberty: install-target-libiberty
++
++# Dummy target for uninstallable.
++install-target-libiberty:
++
++@endif target-libiberty
++
++.PHONY: install-strip-target-libiberty maybe-install-strip-target-libiberty
++maybe-install-strip-target-libiberty:
++@if target-libiberty
++maybe-install-strip-target-libiberty: install-strip-target-libiberty
++
++# Dummy target for uninstallable.
++install-strip-target-libiberty:
++
++@endif target-libiberty
++
++# Other targets (info, dvi, pdf, etc.)
++
++.PHONY: maybe-info-target-libiberty info-target-libiberty
++maybe-info-target-libiberty:
++@if target-libiberty
++maybe-info-target-libiberty: info-target-libiberty
++
++info-target-libiberty: \
++    configure-target-libiberty 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libiberty/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing info in $(TARGET_SUBDIR)/libiberty" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
++	           info) \
++	  || exit 1
++
++@endif target-libiberty
++
++.PHONY: maybe-dvi-target-libiberty dvi-target-libiberty
++maybe-dvi-target-libiberty:
++@if target-libiberty
++maybe-dvi-target-libiberty: dvi-target-libiberty
++
++dvi-target-libiberty: \
++    configure-target-libiberty 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libiberty/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing dvi in $(TARGET_SUBDIR)/libiberty" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
++	           dvi) \
++	  || exit 1
++
++@endif target-libiberty
++
++.PHONY: maybe-pdf-target-libiberty pdf-target-libiberty
++maybe-pdf-target-libiberty:
++@if target-libiberty
++maybe-pdf-target-libiberty: pdf-target-libiberty
++
++pdf-target-libiberty: \
++    configure-target-libiberty 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libiberty/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing pdf in $(TARGET_SUBDIR)/libiberty" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
++	           pdf) \
++	  || exit 1
++
++@endif target-libiberty
++
++.PHONY: maybe-html-target-libiberty html-target-libiberty
++maybe-html-target-libiberty:
++@if target-libiberty
++maybe-html-target-libiberty: html-target-libiberty
++
++html-target-libiberty: \
++    configure-target-libiberty 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libiberty/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing html in $(TARGET_SUBDIR)/libiberty" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
++	           html) \
++	  || exit 1
++
++@endif target-libiberty
++
++.PHONY: maybe-TAGS-target-libiberty TAGS-target-libiberty
++maybe-TAGS-target-libiberty:
++@if target-libiberty
++maybe-TAGS-target-libiberty: TAGS-target-libiberty
++
++TAGS-target-libiberty: \
++    configure-target-libiberty 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libiberty/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing TAGS in $(TARGET_SUBDIR)/libiberty" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
++	           TAGS) \
++	  || exit 1
++
++@endif target-libiberty
++
++.PHONY: maybe-install-info-target-libiberty install-info-target-libiberty
++maybe-install-info-target-libiberty:
++@if target-libiberty
++maybe-install-info-target-libiberty: install-info-target-libiberty
++
++install-info-target-libiberty: \
++    configure-target-libiberty \
++    info-target-libiberty 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libiberty/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing install-info in $(TARGET_SUBDIR)/libiberty" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
++	           install-info) \
++	  || exit 1
++
++@endif target-libiberty
++
++.PHONY: maybe-install-pdf-target-libiberty install-pdf-target-libiberty
++maybe-install-pdf-target-libiberty:
++@if target-libiberty
++maybe-install-pdf-target-libiberty: install-pdf-target-libiberty
++
++install-pdf-target-libiberty: \
++    configure-target-libiberty \
++    pdf-target-libiberty 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libiberty/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing install-pdf in $(TARGET_SUBDIR)/libiberty" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
++	           install-pdf) \
++	  || exit 1
++
++@endif target-libiberty
++
++.PHONY: maybe-install-html-target-libiberty install-html-target-libiberty
++maybe-install-html-target-libiberty:
++@if target-libiberty
++maybe-install-html-target-libiberty: install-html-target-libiberty
++
++install-html-target-libiberty: \
++    configure-target-libiberty \
++    html-target-libiberty 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libiberty/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing install-html in $(TARGET_SUBDIR)/libiberty" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
++	           install-html) \
++	  || exit 1
++
++@endif target-libiberty
++
++.PHONY: maybe-installcheck-target-libiberty installcheck-target-libiberty
++maybe-installcheck-target-libiberty:
++@if target-libiberty
++maybe-installcheck-target-libiberty: installcheck-target-libiberty
++
++installcheck-target-libiberty: \
++    configure-target-libiberty 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libiberty/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing installcheck in $(TARGET_SUBDIR)/libiberty" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
++	           installcheck) \
++	  || exit 1
++
++@endif target-libiberty
++
++.PHONY: maybe-mostlyclean-target-libiberty mostlyclean-target-libiberty
++maybe-mostlyclean-target-libiberty:
++@if target-libiberty
++maybe-mostlyclean-target-libiberty: mostlyclean-target-libiberty
++
++mostlyclean-target-libiberty: 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libiberty/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing mostlyclean in $(TARGET_SUBDIR)/libiberty" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
++	           mostlyclean) \
++	  || exit 1
++
++@endif target-libiberty
++
++.PHONY: maybe-clean-target-libiberty clean-target-libiberty
++maybe-clean-target-libiberty:
++@if target-libiberty
++maybe-clean-target-libiberty: clean-target-libiberty
++
++clean-target-libiberty: 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libiberty/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing clean in $(TARGET_SUBDIR)/libiberty" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
++	           clean) \
++	  || exit 1
++
++@endif target-libiberty
++
++.PHONY: maybe-distclean-target-libiberty distclean-target-libiberty
++maybe-distclean-target-libiberty:
++@if target-libiberty
++maybe-distclean-target-libiberty: distclean-target-libiberty
++
++distclean-target-libiberty: 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libiberty/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing distclean in $(TARGET_SUBDIR)/libiberty" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
++	           distclean) \
++	  || exit 1
++
++@endif target-libiberty
++
++.PHONY: maybe-maintainer-clean-target-libiberty maintainer-clean-target-libiberty
++maybe-maintainer-clean-target-libiberty:
++@if target-libiberty
++maybe-maintainer-clean-target-libiberty: maintainer-clean-target-libiberty
++
++maintainer-clean-target-libiberty: 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libiberty/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing maintainer-clean in $(TARGET_SUBDIR)/libiberty" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libiberty && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
++	           maintainer-clean) \
++	  || exit 1
++
++@endif target-libiberty
++
++
++
++
++
+ .PHONY: configure-target-libjava maybe-configure-target-libjava
+ maybe-configure-target-libjava:
+ @if gcc-bootstrap
+@@ -44985,13 +45343,8 @@ maybe-check-target-libada:
+ @if target-libada
+ maybe-check-target-libada: check-target-libada
+ 
++# Dummy target for uncheckable module.
+ check-target-libada:
+-	@: $(MAKE); $(unstage)
+-	@r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(NORMAL_TARGET_EXPORTS) \
+-	(cd $(TARGET_SUBDIR)/libada && \
+-	  $(MAKE) $(TARGET_FLAGS_TO_PASS)   check)
+ 
+ @endif target-libada
+ 
+@@ -45000,13 +45353,8 @@ maybe-install-target-libada:
+ @if target-libada
+ maybe-install-target-libada: install-target-libada
+ 
+-install-target-libada: installdirs
+-	@: $(MAKE); $(unstage)
+-	@r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(NORMAL_TARGET_EXPORTS) \
+-	(cd $(TARGET_SUBDIR)/libada && \
+-	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  install)
++# Dummy target for uninstallable.
++install-target-libada:
+ 
+ @endif target-libada
+ 
+@@ -45015,13 +45363,8 @@ maybe-install-strip-target-libada:
+ @if target-libada
+ maybe-install-strip-target-libada: install-strip-target-libada
+ 
+-install-strip-target-libada: installdirs
+-	@: $(MAKE); $(unstage)
+-	@r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(NORMAL_TARGET_EXPORTS) \
+-	(cd $(TARGET_SUBDIR)/libada && \
+-	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  install-strip)
++# Dummy target for uninstallable.
++install-strip-target-libada:
+ 
+ @endif target-libada
+ 
+@@ -45032,24 +45375,8 @@ maybe-info-target-libada:
+ @if target-libada
+ maybe-info-target-libada: info-target-libada
+ 
+-info-target-libada: \
+-    configure-target-libada 
+-	@: $(MAKE); $(unstage)
+-	@[ -f $(TARGET_SUBDIR)/libada/Makefile ] || exit 0 ; \
+-	r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(NORMAL_TARGET_EXPORTS) \
+-	echo "Doing info in $(TARGET_SUBDIR)/libada" ; \
+-	for flag in $(EXTRA_TARGET_FLAGS); do \
+-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-	done; \
+-	(cd $(TARGET_SUBDIR)/libada && \
+-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-	          "RANLIB=$${RANLIB}" \
+-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-	           info) \
+-	  || exit 1
++# libada doesn't support info.
++info-target-libada:
+ 
+ @endif target-libada
+ 
+@@ -45058,24 +45385,8 @@ maybe-dvi-target-libada:
+ @if target-libada
+ maybe-dvi-target-libada: dvi-target-libada
+ 
+-dvi-target-libada: \
+-    configure-target-libada 
+-	@: $(MAKE); $(unstage)
+-	@[ -f $(TARGET_SUBDIR)/libada/Makefile ] || exit 0 ; \
+-	r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(NORMAL_TARGET_EXPORTS) \
+-	echo "Doing dvi in $(TARGET_SUBDIR)/libada" ; \
+-	for flag in $(EXTRA_TARGET_FLAGS); do \
+-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-	done; \
+-	(cd $(TARGET_SUBDIR)/libada && \
+-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-	          "RANLIB=$${RANLIB}" \
+-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-	           dvi) \
+-	  || exit 1
++# libada doesn't support dvi.
++dvi-target-libada:
+ 
+ @endif target-libada
+ 
+@@ -45110,24 +45421,8 @@ maybe-html-target-libada:
+ @if target-libada
+ maybe-html-target-libada: html-target-libada
+ 
+-html-target-libada: \
+-    configure-target-libada 
+-	@: $(MAKE); $(unstage)
+-	@[ -f $(TARGET_SUBDIR)/libada/Makefile ] || exit 0 ; \
+-	r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(NORMAL_TARGET_EXPORTS) \
+-	echo "Doing html in $(TARGET_SUBDIR)/libada" ; \
+-	for flag in $(EXTRA_TARGET_FLAGS); do \
+-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-	done; \
+-	(cd $(TARGET_SUBDIR)/libada && \
+-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-	          "RANLIB=$${RANLIB}" \
+-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-	           html) \
+-	  || exit 1
++# libada doesn't support html.
++html-target-libada:
+ 
+ @endif target-libada
+ 
+@@ -45136,24 +45431,8 @@ maybe-TAGS-target-libada:
+ @if target-libada
+ maybe-TAGS-target-libada: TAGS-target-libada
+ 
+-TAGS-target-libada: \
+-    configure-target-libada 
+-	@: $(MAKE); $(unstage)
+-	@[ -f $(TARGET_SUBDIR)/libada/Makefile ] || exit 0 ; \
+-	r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(NORMAL_TARGET_EXPORTS) \
+-	echo "Doing TAGS in $(TARGET_SUBDIR)/libada" ; \
+-	for flag in $(EXTRA_TARGET_FLAGS); do \
+-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-	done; \
+-	(cd $(TARGET_SUBDIR)/libada && \
+-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-	          "RANLIB=$${RANLIB}" \
+-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-	           TAGS) \
+-	  || exit 1
++# libada doesn't support TAGS.
++TAGS-target-libada:
+ 
+ @endif target-libada
+ 
+@@ -45162,25 +45441,8 @@ maybe-install-info-target-libada:
+ @if target-libada
+ maybe-install-info-target-libada: install-info-target-libada
+ 
+-install-info-target-libada: \
+-    configure-target-libada \
+-    info-target-libada 
+-	@: $(MAKE); $(unstage)
+-	@[ -f $(TARGET_SUBDIR)/libada/Makefile ] || exit 0 ; \
+-	r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(NORMAL_TARGET_EXPORTS) \
+-	echo "Doing install-info in $(TARGET_SUBDIR)/libada" ; \
+-	for flag in $(EXTRA_TARGET_FLAGS); do \
+-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-	done; \
+-	(cd $(TARGET_SUBDIR)/libada && \
+-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-	          "RANLIB=$${RANLIB}" \
+-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-	           install-info) \
+-	  || exit 1
++# libada doesn't support install-info.
++install-info-target-libada:
+ 
+ @endif target-libada
+ 
+@@ -45243,24 +45505,8 @@ maybe-installcheck-target-libada:
+ @if target-libada
+ maybe-installcheck-target-libada: installcheck-target-libada
+ 
+-installcheck-target-libada: \
+-    configure-target-libada 
+-	@: $(MAKE); $(unstage)
+-	@[ -f $(TARGET_SUBDIR)/libada/Makefile ] || exit 0 ; \
+-	r=`${PWD_COMMAND}`; export r; \
+-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-	$(NORMAL_TARGET_EXPORTS) \
+-	echo "Doing installcheck in $(TARGET_SUBDIR)/libada" ; \
+-	for flag in $(EXTRA_TARGET_FLAGS); do \
+-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-	done; \
+-	(cd $(TARGET_SUBDIR)/libada && \
+-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-	          "RANLIB=$${RANLIB}" \
+-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-	           installcheck) \
+-	  || exit 1
++# libada doesn't support installcheck.
++installcheck-target-libada:
+ 
+ @endif target-libada
+ 
+@@ -49496,6 +49742,7 @@ configure-target-libtermcap: stage_last
+ configure-target-winsup: stage_last
+ configure-target-libgloss: stage_last
+ configure-target-libffi: stage_last
++configure-target-libiberty: stage_last
+ configure-target-libjava: stage_last
+ configure-target-zlib: stage_last
+ configure-target-boehm-gc: stage_last
+@@ -49530,6 +49777,7 @@ configure-target-libtermcap: maybe-all-g
+ configure-target-winsup: maybe-all-gcc
+ configure-target-libgloss: maybe-all-gcc
+ configure-target-libffi: maybe-all-gcc
++configure-target-libiberty: maybe-all-gcc
+ configure-target-libjava: maybe-all-gcc
+ configure-target-zlib: maybe-all-gcc
+ configure-target-boehm-gc: maybe-all-gcc
+@@ -49874,6 +50122,7 @@ all-stage3-fixincludes: maybe-all-stage3
+ all-stage4-fixincludes: maybe-all-stage4-libiberty
+ all-stageprofile-fixincludes: maybe-all-stageprofile-libiberty
+ all-stagefeedback-fixincludes: maybe-all-stagefeedback-libiberty
++all-target-libada: maybe-all-gcc
+ all-gnattools: maybe-all-target-libada
+ all-gnattools: maybe-all-target-libstdc++-v3
+ all-lto-plugin: maybe-all-libiberty
+@@ -50440,6 +50689,7 @@ configure-target-libtermcap: maybe-all-t
+ configure-target-winsup: maybe-all-target-libgcc
+ configure-target-libgloss: maybe-all-target-libgcc
+ configure-target-libffi: maybe-all-target-libgcc
++configure-target-libiberty: maybe-all-target-libgcc
+ configure-target-libjava: maybe-all-target-libgcc
+ configure-target-zlib: maybe-all-target-libgcc
+ configure-target-boehm-gc: maybe-all-target-libgcc
+@@ -50487,6 +50737,7 @@ configure-target-winsup: maybe-all-targe
+ configure-target-libffi: maybe-all-target-newlib maybe-all-target-libgloss
+ configure-target-libffi: maybe-all-target-libstdc++-v3
+ 
++
+ configure-target-libjava: maybe-all-target-newlib maybe-all-target-libgloss
+ configure-target-libjava: maybe-all-target-libstdc++-v3
+ 
+Index: b/src/configure.ac
+===================================================================
+--- a/src/configure.ac
++++ b/src/configure.ac
+@@ -147,6 +147,11 @@ libgcj="target-libffi \
+ 	target-zlib \
+ 	target-libjava"
+ 
++case "${target}" in
++  hppa64-*linux*) ;;
++  *) target_libiberty="target-libiberty";;
++esac
++
+ # these libraries are built for the target environment, and are built after
+ # the host libraries and the host tools (which may be a cross compiler)
+ # Note that libiberty is not a target library.
+@@ -170,6 +175,7 @@ target_libraries="target-libgcc \
+ 		${libgcj} \
+ 		target-libobjc \
+ 		target-libada \
++		${target_libiberty} \
+ 		target-libgo"
+ 
+ # these tools are built using the target libraries, and are intended to
+Index: b/src/gcc/ada/gcc-interface/Make-lang.in
+===================================================================
+--- a/src/gcc/ada/gcc-interface/Make-lang.in
++++ b/src/gcc/ada/gcc-interface/Make-lang.in
+@@ -58,11 +58,7 @@ WARN_ADAFLAGS= -W -Wall
+ # need to be built by a recent/matching native so we might as well leave the
+ # checks fully active.
+ 
+-ifeq ($(CROSS),)
+ ADAFLAGS= $(COMMON_ADAFLAGS) -gnatwns
+-else
+-ADAFLAGS= $(COMMON_ADAFLAGS)
+-endif
+ 
+ ALL_ADAFLAGS = \
+   $(CFLAGS) $(ADA_CFLAGS) $(ADAFLAGS) $(CHECKING_ADAFLAGS) $(WARN_ADAFLAGS)
+Index: b/src/libada/configure.ac
+===================================================================
+--- a/src/libada/configure.ac
++++ b/src/libada/configure.ac
+@@ -127,8 +127,7 @@ AC_PROG_AWK
+ AC_PROG_LN_S
+ 
+ # Determine what to build for 'gnatlib'
+-if test $build = $target \
+-   && test ${enable_shared} = yes ; then
++if test ${enable_shared} = yes ; then
+   # Note that build=target is almost certainly the wrong test; FIXME
+   default_gnatlib_target="gnatlib-shared"
+ else

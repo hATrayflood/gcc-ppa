@@ -1,0 +1,17 @@
+# DP: Ignore bootstrap comparison failure on ia64. Filed upstream as
+# DP: PR middle-end/65874.
+
+Index: b/src/configure.ac
+===================================================================
+--- a/src/configure.ac
++++ b/src/configure.ac
+@@ -3550,6 +3550,9 @@ fi
+ 
+ compare_exclusions="gcc/cc*-checksum\$(objext) | gcc/ada/*tools/*"
+ case "$target" in
++  ia64-*linux-gnu)
++    compare_exclusions="gcc/cc*-checksum\$(objext) | gcc/ada/*tools/* | gcc/ira.o"
++    ;;
+   hppa*64*-*-hpux*) ;;
+   hppa*-*-hpux*) compare_exclusions="gcc/cc*-checksum\$(objext) | */libgcc/lib2funcs* | gcc/ada/*tools/*" ;;
+   powerpc*-ibm-aix*) compare_exclusions="gcc/cc*-checksum\$(objext) | gcc/ada/*tools/* | *libgomp*\$(objext)" ;;

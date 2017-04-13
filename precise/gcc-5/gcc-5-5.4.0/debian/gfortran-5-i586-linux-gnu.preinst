@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "upgrade" ] || [ "$1" = "configure" ]; then
+    update-alternatives --quiet --remove i586-linux-gnu-gfortran /usr/bin/i586-linux-gnu-gfortran-5
+fi
+
+#DEBHELPER#
+
+exit 0

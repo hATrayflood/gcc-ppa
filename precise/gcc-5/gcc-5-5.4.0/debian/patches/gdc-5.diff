@@ -1,0 +1,138 @@
+# DP: This implements D language support in the GCC back end, and adds
+# DP: relevant documentation about the GDC front end (code part).
+
+Index: b/src/gcc/config/darwin.h
+===================================================================
+--- a/src/gcc/config/darwin.h
++++ b/src/gcc/config/darwin.h
+@@ -49,6 +49,10 @@ see the files COPYING3 and COPYING.RUNTI
+ /* Suppress g++ attempt to link in the math library automatically. */
+ #define MATH_LIBRARY ""
+ 
++/* Suppress gdc attempt to link in the thread and time library automatically. */
++#define THREAD_LIBRARY ""
++#define TIME_LIBRARY ""
++
+ /* We have atexit.  */
+ 
+ #define HAVE_ATEXIT
+Index: b/src/gcc/config/i386/cygming.h
+===================================================================
+--- a/src/gcc/config/i386/cygming.h
++++ b/src/gcc/config/i386/cygming.h
+@@ -170,6 +170,10 @@ along with GCC; see the file COPYING3.
+ 
+ #undef MATH_LIBRARY
+ #define MATH_LIBRARY ""
++#undef THREAD_LIBRARY
++#define THREAD_LIBRARY ""
++#undef TIME_LIBRARY
++#define TIME_LIBRARY ""
+ 
+ #undef TARGET_LIBC_HAS_FUNCTION
+ #define TARGET_LIBC_HAS_FUNCTION no_c99_libc_has_function
+Index: b/src/gcc/config/linux-android.h
+===================================================================
+--- a/src/gcc/config/linux-android.h
++++ b/src/gcc/config/linux-android.h
+@@ -57,3 +57,9 @@
+ 
+ #define ANDROID_ENDFILE_SPEC \
+   "%{shared: crtend_so%O%s;: crtend_android%O%s}"
++
++/* Suppress gdc attempt to link in the thread and time library automatically. */
++#if ANDROID_DEFAULT
++# define THREAD_LIBRARY ""
++# define TIME_LIBRARY ""
++#endif
+Index: b/src/gcc/config/rs6000/rs6000.c
+===================================================================
+--- a/src/gcc/config/rs6000/rs6000.c
++++ b/src/gcc/config/rs6000/rs6000.c
+@@ -25738,7 +25738,8 @@ rs6000_output_function_epilogue (FILE *f
+       if (lang_GNU_C ()
+ 	  || ! strcmp (language_string, "GNU GIMPLE")
+ 	  || ! strcmp (language_string, "GNU Go")
+-	  || ! strcmp (language_string, "libgccjit"))
++	  || ! strcmp (language_string, "libgccjit")
++	  || ! strcmp (language_string, "GNU D"))
+ 	i = 0;
+       else if (! strcmp (language_string, "GNU F77")
+ 	       || lang_GNU_Fortran ())
+Index: b/src/gcc/dwarf2out.c
+===================================================================
+--- a/src/gcc/dwarf2out.c
++++ b/src/gcc/dwarf2out.c
+@@ -4756,6 +4756,15 @@ is_ada (void)
+   return lang == DW_LANG_Ada95 || lang == DW_LANG_Ada83;
+ }
+ 
++/* Return TRUE if the language is D.  */
++static inline bool
++is_dlang (void)
++{
++  unsigned int lang = get_AT_unsigned (comp_unit_die (), DW_AT_language);
++
++  return lang == DW_LANG_D;
++}
++
+ /* Remove the specified attribute if present.  */
+ 
+ static void
+@@ -19844,6 +19853,8 @@ gen_compile_unit_die (const char *filena
+ 	language = DW_LANG_ObjC;
+       else if (strcmp (language_string, "GNU Objective-C++") == 0)
+ 	language = DW_LANG_ObjC_plus_plus;
++      else if (strcmp (language_string, "GNU D") == 0)
++	language = DW_LANG_D;
+       else if (dwarf_version >= 5 || !dwarf_strict)
+ 	{
+ 	  if (strcmp (language_string, "GNU Go") == 0)
+@@ -20813,7 +20824,7 @@ declare_in_namespace (tree thing, dw_die
+ 
+   if (ns_context != context_die)
+     {
+-      if (is_fortran ())
++      if (is_fortran () || is_dlang ())
+ 	return ns_context;
+       if (DECL_P (thing))
+ 	gen_decl_die (thing, NULL, ns_context);
+@@ -20836,7 +20847,7 @@ gen_namespace_die (tree decl, dw_die_ref
+     {
+       /* Output a real namespace or module.  */
+       context_die = setup_namespace_context (decl, comp_unit_die ());
+-      namespace_die = new_die (is_fortran ()
++      namespace_die = new_die (is_fortran () || is_dlang ()
+ 			       ? DW_TAG_module : DW_TAG_namespace,
+ 			       context_die, decl);
+       /* For Fortran modules defined in different CU don't add src coords.  */
+@@ -20899,7 +20910,7 @@ gen_decl_die (tree decl, tree origin, dw
+       break;
+ 
+     case CONST_DECL:
+-      if (!is_fortran () && !is_ada ())
++      if (!is_fortran () && !is_ada () && !is_dlang ())
+ 	{
+ 	  /* The individual enumerators of an enum type get output when we output
+ 	     the Dwarf representation of the relevant enum type itself.  */
+@@ -21370,7 +21381,7 @@ dwarf2out_decl (tree decl)
+     case CONST_DECL:
+       if (debug_info_level <= DINFO_LEVEL_TERSE)
+ 	return;
+-      if (!is_fortran () && !is_ada ())
++      if (!is_fortran () && !is_ada () && !is_dlang ())
+ 	return;
+       if (TREE_STATIC (decl) && decl_function_context (decl))
+ 	context_die = lookup_decl_die (DECL_CONTEXT (decl));
+Index: b/src/gcc/gcc.c
+===================================================================
+--- a/src/gcc/gcc.c
++++ b/src/gcc/gcc.c
+@@ -1148,6 +1148,7 @@ static const struct compiler default_com
+   {".java", "#Java", 0, 0, 0}, {".class", "#Java", 0, 0, 0},
+   {".zip", "#Java", 0, 0, 0}, {".jar", "#Java", 0, 0, 0},
+   {".go", "#Go", 0, 1, 0},
++  {".d", "#D", 0, 1, 0}, {".dd", "#D", 0, 1, 0}, {".di", "#D", 0, 1, 0},
+   /* Next come the entries for C.  */
+   {".c", "@c", 0, 0, 1},
+   {"@c",

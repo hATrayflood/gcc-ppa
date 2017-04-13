@@ -1,0 +1,66 @@
+This is a gross hack to cross build libgnatprj without having the
+gmp.h header for the target architecture.  Are libgnatvsn and libgnatprj
+really target libraries, or host libraries? The odd thing is that
+the gnat cross build tools are not linked against these two libraries.
+
+Index: b/src/gcc/wide-int.h
+===================================================================
+--- a/src/gcc/wide-int.h
++++ b/src/gcc/wide-int.h
+@@ -3089,8 +3089,10 @@ namespace wi
+   wide_int from_buffer (const unsigned char *, unsigned int);
+ 
+ #ifndef GENERATOR_FILE
++#ifndef LIBGNATPRJ_CROSS_HACK
+   void to_mpz (const wide_int_ref &, mpz_t, signop);
+ #endif
++#endif
+ 
+   wide_int mask (unsigned int, bool, unsigned int);
+   wide_int shifted_mask (unsigned int, unsigned int, bool, unsigned int);
+Index: b/src/gcc/system.h
+===================================================================
+--- a/src/gcc/system.h
++++ b/src/gcc/system.h
+@@ -659,8 +659,10 @@ extern int vsnprintf (char *, size_t, co
+ 
+ /* Do not introduce a gmp.h dependency on the build system.  */
+ #ifndef GENERATOR_FILE
++#ifndef LIBGNATPRJ_CROSS_HACK
+ #include <gmp.h>
+ #endif
++#endif
+ 
+ /* Get libiberty declarations.  */
+ #include "libiberty.h"
+Index: b/src/libgnatprj/Makefile.in
+===================================================================
+--- a/src/libgnatprj/Makefile.in
++++ b/src/libgnatprj/Makefile.in
+@@ -37,7 +37,7 @@ TOOLS_TARGET_PAIRS := @TOOLS_TARGET_PAIR
+ LN_S := @LN_S@
+ 
+ ifneq (@build@,@host@)
+-   CFLAGS += -b @host@
++   override CFLAGS += -DLIBGNATPRJ_CROSS_HACK
+ endif
+ 
+ .PHONY: libgnatprj install
+Index: b/src/gcc/double-int.h
+===================================================================
+--- a/src/gcc/double-int.h
++++ b/src/gcc/double-int.h
+@@ -431,11 +431,13 @@ double_int::popcount () const
+ 
+ 
+ #ifndef GENERATOR_FILE
++#ifndef LIBGNATPRJ_CROSS_HACK
+ /* Conversion to and from GMP integer representations.  */
+ 
+ void mpz_set_double_int (mpz_t, double_int, bool);
+ double_int mpz_get_double_int (const_tree, mpz_t, bool);
+ #endif
++#endif
+ 
+ namespace wi
+ {

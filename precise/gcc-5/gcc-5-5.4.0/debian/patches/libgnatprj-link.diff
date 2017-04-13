@@ -1,0 +1,21 @@
+# DP: Don't link libgnatprj using --no-allow-shlib-undefined on older releases.
+
+in precise:
+/lib/x86_64-linux-gnu/libc.so.6: undefined reference to `_rtld_global@GLIBC_PRIVATE'
+/lib/x86_64-linux-gnu/libc.so.6: undefined reference to `_dl_argv@GLIBC_PRIVATE'
+/lib/x86_64-linux-gnu/libc.so.6: undefined reference to `_rtld_global_ro@GLIBC_PRIVATE'
+/lib/x86_64-linux-gnu/libc.so.6: undefined reference to `__libc_enable_secure@GLIBC_PRIVATE'
+/lib/x86_64-linux-gnu/libc.so.6: undefined reference to `__tls_get_addr@GLIBC_2.3'
+collect2: error: ld returned 1 exit status
+
+--- a/src/libgnatprj/Makefile.in
++++ b/src/libgnatprj/Makefile.in
+@@ -74,7 +74,7 @@
+ 
+ libgnatprj.so.$(LIB_VERSION): $(addprefix obj-shared/,$(OBJECTS))
+ 	: # Make libgnatprj.so
+-	$(GCC) -o $@ -shared -fPIC -Wl,--soname,$@ -Wl,--no-allow-shlib-undefined \
++	$(GCC) -o $@ -shared -fPIC -Wl,--soname,$@ \
+ 	   $^ $(addprefix ../libiberty/pic/,$(LIBIBERTY_OBJECTS)) \
+ 	   -L../gcc/ada/rts -lgnat-$(LIB_VERSION) \
+ 	   -L../libgnatvsn -lgnatvsn

@@ -1,0 +1,220 @@
+# DP: Fix PR driver/70192, taken from the trunk
+
+gcc/
+
+2016-03-17  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR driver/70192
+	* opts.c (finish_options): Don't set flag_pie to the default if
+	-fpic, -fPIC, -fno-pic or -fno-PIC is used.  Set flag_pic to 0
+	if it is -1.
+
+ 
+gcc/testsuite/
+
+2016-03-17  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR driver/70192
+	* gcc.dg/pic-1.c: New test.
+	* gcc.dg/pic-2.c: Likewise.
+	* gcc.dg/pic-3.c: Likewise.
+	* gcc.dg/pic-4.c: Likewise.
+	* gcc.dg/pie-1.c: Likewise.
+	* gcc.dg/pie-2.c: Likewise.
+	* gcc.dg/pie-3.c: Likewise.
+	* gcc.dg/pie-4.c: Likewise.
+	* gcc.dg/pie-5.c: Likewise.
+	* gcc.dg/pie-6.c: Likewise.
+
+Index: b/src/gcc/testsuite/gcc.dg/pic-2.c
+===================================================================
+--- /dev/null
++++ b/src/gcc/testsuite/gcc.dg/pic-2.c
+@@ -0,0 +1,10 @@
++/* { dg-do compile } */
++/* { dg-options "-fPIC" } */
++
++#if __PIC__ != 2
++# error __PIC__ is not 2!
++#endif
++
++#ifdef __PIE__
++# error __PIE__ is defined!
++#endif
+Index: b/src/gcc/testsuite/gcc.dg/pie-2.c
+===================================================================
+--- /dev/null
++++ b/src/gcc/testsuite/gcc.dg/pie-2.c
+@@ -0,0 +1,10 @@
++/* { dg-do compile } */
++/* { dg-options "-fPIE" } */
++
++#if __PIC__ != 2
++# error __PIC__ is not 2!
++#endif
++
++#if __PIE__ != 2
++# error __PIE__ is not 2!
++#endif
+Index: b/src/gcc/testsuite/gcc.dg/pie-6.c
+===================================================================
+--- /dev/null
++++ b/src/gcc/testsuite/gcc.dg/pie-6.c
+@@ -0,0 +1,6 @@
++/* { dg-do compile { target { ! pie_enabled } } } */
++/* { dg-options "" } */
++
++#ifdef __PIE__
++# error __PIE__ is defined!
++#endif
+Index: b/src/gcc/testsuite/gcc.dg/pic-3.c
+===================================================================
+--- /dev/null
++++ b/src/gcc/testsuite/gcc.dg/pic-3.c
+@@ -0,0 +1,10 @@
++/* { dg-do compile { target { ! *-*-darwin* } } } */
++/* { dg-options "-fno-pic" } */
++
++#ifdef __PIC__
++# error __PIC__ is defined!
++#endif
++
++#ifdef __PIE__
++# error __PIE__ is defined!
++#endif
+Index: b/src/gcc/testsuite/gcc.dg/pie-3.c
+===================================================================
+--- /dev/null
++++ b/src/gcc/testsuite/gcc.dg/pie-3.c
+@@ -0,0 +1,10 @@
++/* { dg-do compile { target { ! *-*-darwin* } } } */
++/* { dg-options "-fno-pie" } */
++
++#ifdef __PIC__
++# error __PIC__ is defined!
++#endif
++
++#ifdef __PIE__
++# error __PIE__ is defined!
++#endif
+Index: b/src/gcc/testsuite/gcc.dg/pic-4.c
+===================================================================
+--- /dev/null
++++ b/src/gcc/testsuite/gcc.dg/pic-4.c
+@@ -0,0 +1,10 @@
++/* { dg-do compile { target { ! *-*-darwin* } } } */
++/* { dg-options "-fno-PIC" } */
++
++#ifdef __PIC__
++# error __PIC__ is defined!
++#endif
++
++#ifdef __PIE__
++# error __PIE__ is defined!
++#endif
+Index: b/src/gcc/testsuite/gcc.dg/pie-4.c
+===================================================================
+--- /dev/null
++++ b/src/gcc/testsuite/gcc.dg/pie-4.c
+@@ -0,0 +1,10 @@
++/* { dg-do compile { target { ! *-*-darwin* } } } */
++/* { dg-options "-fno-PIE" } */
++
++#ifdef __PIC__
++# error __PIC__ is defined!
++#endif
++
++#ifdef __PIE__
++# error __PIE__ is defined!
++#endif
+Index: b/src/gcc/testsuite/gcc.dg/pic-1.c
+===================================================================
+--- /dev/null
++++ b/src/gcc/testsuite/gcc.dg/pic-1.c
+@@ -0,0 +1,10 @@
++/* { dg-do compile { target { ! *-*-darwin* } } } */
++/* { dg-options "-fpic" } */
++
++#if __PIC__ != 1
++# error __PIC__ is not 1!
++#endif
++
++#ifdef __PIE__
++# error __PIE__ is defined!
++#endif
+Index: b/src/gcc/testsuite/gcc.dg/pie-1.c
+===================================================================
+--- /dev/null
++++ b/src/gcc/testsuite/gcc.dg/pie-1.c
+@@ -0,0 +1,10 @@
++/* { dg-do compile { target { ! *-*-darwin* } } } */
++/* { dg-options "-fpie" } */
++
++#if __PIC__ != 1
++# error __PIC__ is not 1!
++#endif
++
++#if __PIE__ != 1
++# error __PIE__ is not 1!
++#endif
+Index: b/src/gcc/testsuite/gcc.dg/pie-5.c
+===================================================================
+--- /dev/null
++++ b/src/gcc/testsuite/gcc.dg/pie-5.c
+@@ -0,0 +1,10 @@
++/* { dg-do compile { target pie_enabled } } */
++/* { dg-options "" } */
++
++#ifndef __PIC__
++# error __PIC__ is not defined!
++#endif
++
++#ifndef __PIE__
++# error __PIE__ is not defined!
++#endif
+Index: b/src/gcc/opts.c
+===================================================================
+--- a/src/gcc/opts.c
++++ b/src/gcc/opts.c
+@@ -745,13 +745,18 @@ finish_options (struct gcc_options *opts
+ 	 default value.  */
+       if (opts->x_flag_pie == -1)
+ 	{
+-	  if (opts->x_flag_pic == 0)
++	  /* We initialize opts->x_flag_pic to -1 so that we can tell if
++	     -fpic, -fPIC, -fno-pic or -fno-PIC is used.  */
++	  if (opts->x_flag_pic == -1)
+ 	    opts->x_flag_pie = DEFAULT_FLAG_PIE;
+ 	  else
+ 	    opts->x_flag_pie = 0;
+ 	}
++      /* If -fPIE or -fpie is used, turn on PIC.  */
+       if (opts->x_flag_pie)
+ 	opts->x_flag_pic = opts->x_flag_pie;
++      else if (opts->x_flag_pic == -1)
++	opts->x_flag_pic = 0;
+       if (opts->x_flag_pic && !opts->x_flag_pie)
+ 	opts->x_flag_shlib = 1;
+       opts->x_flag_opts_finished = true;
+Index: b/src/gcc/common.opt
+===================================================================
+--- a/src/gcc/common.opt
++++ b/src/gcc/common.opt
+@@ -1764,7 +1764,7 @@ Common Report Var(flag_peephole2) Optimi
+ Enable an RTL peephole pass before sched2
+ 
+ fPIC
+-Common Report Var(flag_pic,2) Negative(fPIE)
++Common Report Var(flag_pic,2) Negative(fPIE) Init(-1)
+ Generate position-independent code if possible (large mode)
+ 
+ fPIE
+@@ -1772,7 +1772,7 @@ Common Report Var(flag_pie,2) Negative(f
+ Generate position-independent code for executables if possible (large mode)
+ 
+ fpic
+-Common Report Var(flag_pic,1) Negative(fpie)
++Common Report Var(flag_pic,1) Negative(fpie) Init(-1)
+ Generate position-independent code if possible (small mode)
+ 
+ fpie
