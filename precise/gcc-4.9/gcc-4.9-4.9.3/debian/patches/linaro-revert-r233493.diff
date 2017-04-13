@@ -1,0 +1,174 @@
+Index: gcc/c/c-parser.c
+===================================================================
+--- a/src/gcc/c/c-parser.c	(revision 233493)
++++ a/src/gcc/c/c-parser.c	(revision 233491)
+@@ -1161,8 +1161,7 @@
+ static tree c_parser_attributes (c_parser *);
+ static struct c_type_name *c_parser_type_name (c_parser *);
+ static struct c_expr c_parser_initializer (c_parser *);
+-static struct c_expr c_parser_braced_init (c_parser *, tree, bool,
+-					   struct obstack *);
++static struct c_expr c_parser_braced_init (c_parser *, tree, bool);
+ static void c_parser_initelt (c_parser *, struct obstack *);
+ static void c_parser_initval (c_parser *, struct c_expr *,
+ 			      struct obstack *);
+@@ -4089,7 +4088,7 @@
+ c_parser_initializer (c_parser *parser)
+ {
+   if (c_parser_next_token_is (parser, CPP_OPEN_BRACE))
+-    return c_parser_braced_init (parser, NULL_TREE, false, NULL);
++    return c_parser_braced_init (parser, NULL_TREE, false);
+   else
+     {
+       struct c_expr ret;
+@@ -4109,8 +4108,7 @@
+    top-level initializer in a declaration.  */
+ 
+ static struct c_expr
+-c_parser_braced_init (c_parser *parser, tree type, bool nested_p,
+-		      struct obstack *outer_obstack)
++c_parser_braced_init (c_parser *parser, tree type, bool nested_p)
+ {
+   struct c_expr ret;
+   struct obstack braced_init_obstack;
+@@ -4119,10 +4117,7 @@
+   gcc_assert (c_parser_next_token_is (parser, CPP_OPEN_BRACE));
+   c_parser_consume_token (parser);
+   if (nested_p)
+-    {
+-      finish_implicit_inits (outer_obstack);
+-      push_init_level (0, &braced_init_obstack);
+-    }
++    push_init_level (0, &braced_init_obstack);
+   else
+     really_start_incremental_init (type);
+   if (c_parser_next_token_is (parser, CPP_CLOSE_BRACE))
+@@ -4369,8 +4364,7 @@
+   struct c_expr init;
+   gcc_assert (!after || c_dialect_objc ());
+   if (c_parser_next_token_is (parser, CPP_OPEN_BRACE) && !after)
+-    init = c_parser_braced_init (parser, NULL_TREE, true,
+-				 braced_init_obstack);
++    init = c_parser_braced_init (parser, NULL_TREE, true);
+   else
+     {
+       location_t loc = c_parser_peek_token (parser)->location;
+@@ -7570,7 +7564,7 @@
+       error_at (type_loc, "compound literal has variable size");
+       type = error_mark_node;
+     }
+-  init = c_parser_braced_init (parser, type, false, NULL);
++  init = c_parser_braced_init (parser, type, false);
+   finish_init ();
+   maybe_warn_string_init (type, init);
+ 
+Index: gcc/c/c-typeck.c
+===================================================================
+--- a/src/gcc/c/c-typeck.c	(revision 233493)
++++ a/src/gcc/c/c-typeck.c	(revision 233491)
+@@ -7164,29 +7164,6 @@
+     }
+ }
+ 
+-/* Called when we see an open brace for a nested initializer.  Finish
+-   off any pending levels with implicit braces.  */
+-void
+-finish_implicit_inits (struct obstack *braced_init_obstack)
+-{
+-  while (constructor_stack->implicit)
+-    {
+-      if ((TREE_CODE (constructor_type) == RECORD_TYPE
+-	   || TREE_CODE (constructor_type) == UNION_TYPE)
+-	  && constructor_fields == 0)
+-	process_init_element (pop_init_level (1, braced_init_obstack),
+-			      true, braced_init_obstack);
+-      else if (TREE_CODE (constructor_type) == ARRAY_TYPE
+-	       && constructor_max_index
+-	       && tree_int_cst_lt (constructor_max_index,
+-				   constructor_index))
+-	process_init_element (pop_init_level (1, braced_init_obstack),
+-			      true, braced_init_obstack);
+-      else
+-	break;
+-    }
+-}
+-
+ /* Push down into a subobject, for initialization.
+    If this is for an explicit set of braces, IMPLICIT is 0.
+    If it is because the next element belongs at a lower level,
+@@ -7198,6 +7175,32 @@
+   struct constructor_stack *p;
+   tree value = NULL_TREE;
+ 
++  /* If we've exhausted any levels that didn't have braces,
++     pop them now.  If implicit == 1, this will have been done in
++     process_init_element; do not repeat it here because in the case
++     of excess initializers for an empty aggregate this leads to an
++     infinite cycle of popping a level and immediately recreating
++     it.  */
++  if (implicit != 1)
++    {
++      while (constructor_stack->implicit)
++	{
++	  if ((TREE_CODE (constructor_type) == RECORD_TYPE
++	       || TREE_CODE (constructor_type) == UNION_TYPE)
++	      && constructor_fields == 0)
++	    process_init_element (pop_init_level (1, braced_init_obstack),
++				  true, braced_init_obstack);
++	  else if (TREE_CODE (constructor_type) == ARRAY_TYPE
++		   && constructor_max_index
++		   && tree_int_cst_lt (constructor_max_index,
++				       constructor_index))
++	    process_init_element (pop_init_level (1, braced_init_obstack),
++				  true, braced_init_obstack);
++	  else
++	    break;
++	}
++    }
++
+   /* Unless this is an explicit brace, we need to preserve previous
+      content if any.  */
+   if (implicit)
+@@ -7608,7 +7611,6 @@
+     }
+ 
+   constructor_designated = 1;
+-  finish_implicit_inits (braced_init_obstack);
+   push_init_level (2, braced_init_obstack);
+   return 0;
+ }
+@@ -8939,7 +8941,6 @@
+ 	      p = p->next;
+ 	      if (!p)
+ 		break;
+-	      finish_implicit_inits (braced_init_obstack);
+ 	      push_init_level (2, braced_init_obstack);
+ 	      p->stack = constructor_stack;
+ 	      if (p->range_end && tree_int_cst_equal (p->index, p->range_end))
+Index: gcc/c/c-tree.h
+===================================================================
+--- a/src/gcc/c/c-tree.h	(revision 233493)
++++ a/src/gcc/c/c-tree.h	(revision 233491)
+@@ -608,7 +608,6 @@
+ extern void start_init (tree, tree, int);
+ extern void finish_init (void);
+ extern void really_start_incremental_init (tree);
+-extern void finish_implicit_inits (struct obstack *);
+ extern void push_init_level (int, struct obstack *);
+ extern struct c_expr pop_init_level (int, struct obstack *);
+ extern void set_init_index (tree, tree, struct obstack *);
+Index: gcc/testsuite/gcc.dg/pr69522.c
+===================================================================
+--- a/src/gcc/testsuite/gcc.dg/pr69522.c	(revision 233493)
++++ a/src/gcc/testsuite/gcc.dg/pr69522.c	(nonexistent)
+@@ -1,10 +0,0 @@
+-/* { dg-do compile } */
+-/* { dg-options "" } */
+-struct str {};
+-struct {
+-  struct str b;
+-  float c[1];
+-  int d[1];
+-  float e[2];
+-  int f[1];
+-} a = {{}, 0, {0.5}, 0, 0, {0}};

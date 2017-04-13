@@ -1,6 +1,6 @@
 *.deb
 debian
-gcc-4.9_4.9.2-*
-gcc-4.9_4.9.2.orig.*
-gcc-4.9-4.9.2.orig/*
-!gcc-4.9-4.9.2.orig/debian
+gcc-4.9_4.9.3-*
+gcc-4.9_4.9.3.orig.*
+gcc-4.9-4.9.3/*
+!gcc-4.9-4.9.3/debian
