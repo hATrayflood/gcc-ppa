@@ -1452,7 +1452,7 @@ $(build_jit_stamp): $(configure_jit_stamp)
 ifeq ($(with_check),yes)
   # FIXME: #782444
   ifeq (,$(filter $(DEB_TARGET_ARCH), kfreebsd-i386 kfreebsd-amd64))
-	-$(MAKE) -C $(builddir_jit)/gcc check-jit $(NJOBS) \
+	-$(MAKE) -C $(builddir_jit)/gcc check-jit \
 		RUNTESTFLAGS="-v -v"
   endif
 endif
