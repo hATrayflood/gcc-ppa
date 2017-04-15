@@ -116,7 +116,7 @@ Section: libs
 Priority: PRI(required)
 Depends: ${misc:Depends}
 Replaces: ${base:Replaces}
-Breaks: gcc-4.4-base (<< 4.4.7), gcc-4.7-base (<< 4.7.3), gcj-4.4-base (<< 4.4.6-9~), gnat-4.4-base (<< 4.4.6-3~), gcj-4.6-base (<< 4.6.1-4~), gnat-4.6-base (<< 4.6.4), dehydra (<= 0.9.hg20110609-2)
+Breaks: gcc-4.4-base (<< 4.4.7), gcc-4.7-base (<< 4.7.3), gcj-4.4-base (<< 4.4.6-9~), gnat-4.4-base (<< 4.4.6-3~), gcj-4.6-base (<< 4.6.1-4~), gnat-4.6-base (<< 4.6.3), dehydra (<= 0.9.hg20110609-2)
 BUILT_USING`'dnl
 Description: GCC, the GNU Compiler Collection (base package)
  This package contains files common to all languages and libraries
